@@ -1,0 +1,32 @@
+/* La mayor parte del diseño Premium heredará las clases de LoginPage.css */
+/* Aquí agregamos variaciones exclusivas para el Registro */
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .input-group {
+  flex: 1;
+}
+
+.register-card {
+  max-width: 540px; /* Un poco más ancha para las dos columnas */
+}
+
+.status-pill--blue {
+  border-color: #60a5fa55;
+  color: #60a5fa;
+}
+
+.status-dot--blue {
+  background-color: #60a5fa;
+  box-shadow: 0 0 10px #60a5fa;
+}
+
+/* Responsive adicional para form-row */
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+  }
+}
