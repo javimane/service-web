@@ -1,26 +1,29 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { supabase } from '../../services/supabaseClient';
-import './LoginPage.css';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "../../services/supabaseClient";
+import "./LoginPage.css";
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState('');
+  const [authError, setAuthError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
     const newErrors = {};
     if (!formData.email) {
-      newErrors.email = 'El correo electrónico es requerido';
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
-      newErrors.email = 'El formato del correo es inválido';
+      newErrors.email = "El correo electrónico es requerido";
+    } else if (
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)
+    ) {
+      newErrors.email = "El formato del correo es inválido";
     }
 
     if (!formData.password) {
-      newErrors.password = 'La contraseña es requerida';
+      newErrors.password = "La contraseña es requerida";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
     }
 
     setErrors(newErrors);
@@ -29,12 +32,12 @@ export default function LoginPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     // Limpiar error al escribir
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    setAuthError('');
+    setAuthError("");
   };
 
   const handleSubmit = async (e) => {
@@ -42,7 +45,7 @@ export default function LoginPage() {
     if (!validate()) return;
 
     setIsLoading(true);
-    setAuthError('');
+    setAuthError("");
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -54,11 +57,13 @@ export default function LoginPage() {
         setAuthError(error.message);
       } else {
         // Redirigir o actualizar estado global
-        console.log('Inicio de sesión exitoso', data);
-        alert('¡Inicio de sesión exitoso!');
+        console.log("Inicio de sesión exitoso", data);
+        alert("¡Inicio de sesión exitoso!");
       }
     } catch (err) {
-      setAuthError('Error inesperado al intentar iniciar sesión: ' + err.message);
+      setAuthError(
+        "Error inesperado al intentar iniciar sesión: " + err.message,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -70,9 +75,10 @@ export default function LoginPage() {
         <div className="brand-content">
           <h1 className="brand-title">Obsidian Pro</h1>
           <p className="brand-subtitle">
-            Precision architected interfaces for the next generation of professional services.
+            Precision architected interfaces for the next generation of
+            professional services.
           </p>
-          
+
           <div className="hero-graphic">
             <div className="hero-mesh"></div>
             <div className="status-pill">
@@ -82,16 +88,20 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      
+
       <div className="login-right">
         <div className="login-card">
           <h2 className="login-title">Bienvenido</h2>
-          <p className="login-subtitle">Ingrese sus credenciales para acceder al panel.</p>
-          
+          <p className="login-subtitle">
+            Ingrese sus credenciales para acceder al panel.
+          </p>
+
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             <div className="input-group">
               <label htmlFor="email">CORREO ELECTRÓNICO</label>
-              <div className={`input-wrapper ${errors.email ? 'has-error' : ''}`}>
+              <div
+                className={`input-wrapper ${errors.email ? "has-error" : ""}`}
+              >
                 <input
                   id="email"
                   name="email"
@@ -102,38 +112,55 @@ export default function LoginPage() {
                 />
                 <span className="input-icon">@</span>
               </div>
-              {errors.email && <span className="error-text">{errors.email}</span>}
+              {errors.email && (
+                <span className="error-text">{errors.email}</span>
+              )}
             </div>
 
             <div className="input-group">
               <div className="label-row">
                 <label htmlFor="password">CONTRASEÑA</label>
-                <a href="#" className="forgot-password">¿OLVIDÓ SU CONTRASEÑA?</a>
+                <a href="#" className="forgot-password">
+                  ¿OLVIDÓ SU CONTRASEÑA?
+                </a>
               </div>
-              <div className={`input-wrapper ${errors.password ? 'has-error' : ''}`}>
+              <div
+                className={`input-wrapper ${errors.password ? "has-error" : ""}`}
+              >
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
                 />
-                <span className="input-icon">🔒</span>
+                <button
+                  type="button"
+                  className="input-icon-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={
+                    showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
+                >
+                  {showPassword ? "🔓" : "🔒"}
+                </button>
               </div>
-              {errors.password && <span className="error-text">{errors.password}</span>}
+              {errors.password && (
+                <span className="error-text">{errors.password}</span>
+              )}
             </div>
 
             {authError && <div className="auth-error-alert">{authError}</div>}
 
             <button type="submit" className="btn-primary" disabled={isLoading}>
-              {isLoading ? 'Ingresando...' : 'Ingresar'}
+              {isLoading ? "Ingresando..." : "Ingresar"}
             </button>
-            
+
             <div className="divider">
               <span>O CONTINUAR CON</span>
             </div>
-            
+
             <div className="social-buttons">
               <button type="button" className="btn-social">
                 G Google
@@ -142,19 +169,21 @@ export default function LoginPage() {
                 f Facebook
               </button>
             </div>
-            
+
             <p className="register-prompt">
               ¿No tienes una cuenta? <Link to="/register">Crear cuenta</Link>
             </p>
           </form>
         </div>
-        
-        <div className="footer-links">
-          <span>© 2024 OBSIDIAN PRO. ARCHITECTURAL PRECISION IN EVERY SERVICE.</span>
-          <div className="footer-right">
-            <a href="#">PRIVACY POLICY</a>
-            <a href="#">SUPPORT</a>
-          </div>
+      </div>
+
+      <div className="footer-links">
+        <span>
+          © 2024 OBSIDIAN PRO. ARCHITECTURAL PRECISION IN EVERY SERVICE.
+        </span>
+        <div className="footer-right">
+          <a href="#">PRIVACY POLICY</a>
+          <a href="#">SUPPORT</a>
         </div>
       </div>
     </div>
