@@ -1,0 +1,22 @@
+.home-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-page__main {
+  flex: 1;
+}
+
+.home-page__hero {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 0;
+}
+
+.home-page__hero-title {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
