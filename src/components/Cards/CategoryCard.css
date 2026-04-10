@@ -1,0 +1,55 @@
+.category-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+  width: 160px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.category-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Gradient overlay for text readability */
+.category-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 30%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+}
+
+.category-card__body {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.75rem;
+}
+
+.category-card__name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+
+.category-card__count {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

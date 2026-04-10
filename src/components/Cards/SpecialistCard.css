@@ -1,0 +1,105 @@
+.specialist-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  min-width: 260px;
+  flex: 1;
+}
+
+.specialist-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--accent-color);
+}
+
+/* Top row */
+.specialist-card__top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.specialist-card__avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--border-color);
+}
+
+.specialist-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.specialist-card__name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.specialist-card__specialty {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+/* Availability badge */
+.specialist-card__badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.specialist-card__badge--available {
+  background-color: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+.specialist-card__badge--busy {
+  background-color: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+}
+
+/* Bottom row */
+.specialist-card__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.specialist-card__stat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.specialist-card__rating {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.specialist-card__reviews {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.specialist-card__price {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-color);
+}
