@@ -43,7 +43,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--accent-color);
-  margin-top: -0.75rem;
+  margin-top: 0.1rem;
 }
 
 .showcase__bio {
