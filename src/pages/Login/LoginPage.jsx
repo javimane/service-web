@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { ROUTES } from "../../routes/paths";
 import { supabase } from "../../services/supabaseClient";
 import "./LoginPage.css";
 
@@ -171,7 +172,7 @@ export default function LoginPage() {
             </div>
 
             <p className="register-prompt">
-              ¿No tienes una cuenta? <Link to="/register">Crear cuenta</Link>
+              ¿No tienes una cuenta? <Link to={ROUTES.register}>Crear cuenta</Link>
             </p>
           </form>
         </div>

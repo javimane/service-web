@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ROUTES } from '../../routes/paths';
 import SearchBar from './SearchBar';
 import './Navbar.css';
 
@@ -7,7 +8,7 @@ export default function Navbar() {
     <header className="navbar">
       <div className="navbar__inner">
         {/* Logo */}
-        <Link to="/" className="navbar__logo" aria-label="Obsidian Kinetic home">
+        <Link to={ROUTES.home} className="navbar__logo" aria-label="Obsidian Kinetic home">
           <span className="navbar__logo-letter">U</span>
         </Link>
 

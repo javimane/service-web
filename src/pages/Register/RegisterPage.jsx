@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ROUTES } from "../../routes/paths";
 import { supabase } from "../../services/supabaseClient";
 import Modal from "../../components/Modal/Modal";
 import "./RegisterPage.css";
@@ -110,7 +111,7 @@ export default function RegisterPage() {
 
   const handleModalClose = () => {
     setModalOpen(false);
-    navigate("/login");
+    navigate(ROUTES.login);
   };
 
   return (
@@ -252,7 +253,7 @@ export default function RegisterPage() {
             </button>
 
             <p className="register-prompt">
-              ¿Ya tienes una cuenta? <Link to="/login">Ingresar</Link>
+              ¿Ya tienes una cuenta? <Link to={ROUTES.login}>Ingresar</Link>
             </p>
           </form>
         </div>
