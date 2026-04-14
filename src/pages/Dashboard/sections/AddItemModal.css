@@ -1,0 +1,137 @@
+.add-items-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.form-description {
+  color: #a1a1aa;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.items-table-header {
+  display: grid;
+  grid-template-columns: 2fr 80px 100px 40px;
+  gap: 1rem;
+  padding: 0 1rem;
+}
+
+.items-table-header span {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #71717a;
+  letter-spacing: 0.05em;
+}
+
+.items-table-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.items-table-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.items-table-body::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+
+.item-input-row {
+  display: grid;
+  grid-template-columns: 2fr 80px 100px 40px;
+  gap: 1rem;
+  align-items: center;
+}
+
+.item-input-row input {
+  background: #1e1e1e;
+  border: 1px solid #27272a;
+  padding: 12px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.item-input-row input:focus {
+  outline: none;
+  border-color: #52525b;
+}
+
+.row-delete-btn {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.row-delete-btn:hover {
+  opacity: 1;
+}
+
+.add-row-btn {
+  background: #1a1a1a;
+  border: 1px dashed #333;
+  color: #a1a1aa;
+  padding: 12px;
+  border-radius: 12px;
+  width: 100%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-row-btn:hover {
+  background: #222;
+  border-color: #444;
+  color: #fff;
+}
+
+.modal-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #27272a;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid #27272a;
+  color: #a1a1aa;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-submit {
+  background: #B5FF24;
+  color: #000;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-submit:hover {
+  background: #c7ff5c;
+}
