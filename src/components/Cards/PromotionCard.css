@@ -1,0 +1,98 @@
+.promotion-card {
+  min-width: 240px;
+  width: 260px;
+  background: var(--bg-card, #ffffff);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  box-shadow: 0 10px 25px rgba(251, 191, 36, 0.08);
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.promotion-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(251, 191, 36, 0.15);
+  border-color: #fbbf24;
+}
+
+.promotion-card__image-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #f1f3f7;
+  overflow: hidden;
+}
+
+.promotion-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.promotion-card:hover .promotion-card__image {
+  transform: scale(1.1);
+}
+
+.promotion-card__badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #fbbf24; /* Amber yellow */
+  color: #1e293b;
+  padding: 6px 12px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1;
+}
+
+.promotion-card__badge-icon {
+  color: #1e293b;
+}
+
+.promotion-card__content {
+  padding: 1.25rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%); /* Very light yellow bottom */
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.promotion-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  line-height: 1.3;
+}
+
+.promotion-card__professional {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
+}
+
+.promotion-card__action-text {
+  margin-top: auto;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #d97706; /* Darker amber */
+  display: flex;
+  align-items: center;
+}
+
+.promotion-card__action-text::after {
+  content: ' →';
+  margin-left: 4px;
+}

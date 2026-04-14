@@ -1,0 +1,201 @@
+.promotions-section {
+  width: 100%;
+  max-width: 1232px;
+  padding: 0 1.5rem;
+  margin: 0 auto 3.5rem;
+}
+
+.promotions-section__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.promotions-section__title {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1.2;
+  color: var(--text-primary, #1e293b);
+}
+
+.promotions-section__carousel {
+  position: relative;
+  margin: 0 -1.5rem;
+  padding: 0 1.5rem;
+}
+
+.promotions-section__scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2rem;
+  padding-top: 0.5rem;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  cursor: grab;
+}
+
+.promotions-section__scroll.is-dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+}
+
+.promotions-section__scroll .promotion-card {
+  cursor: grab;
+}
+
+.promotions-section__scroll.is-dragging .promotion-card {
+  cursor: grabbing;
+}
+
+.promotions-section__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.promotions-section__scroll.is-dragging > * {
+  pointer-events: none;
+}
+
+/* ─── Modal Detail Styles (Coupon Style) ────────────────────────── */
+.promo-modal {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.promo-modal__coupon {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.promo-modal__top-banner {
+  background: #fbbf24;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #1e293b;
+}
+
+.promo-modal__offer-badge {
+  font-size: 1.75rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.promo-modal__image-wrapper {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.promo-modal__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.promo-modal__body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.promo-modal__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.promo-modal__description {
+  margin: 0;
+  font-size: 1rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.promo-modal__details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.promo-modal__detail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.promo-modal__code-box {
+  background: #fffbeb;
+  border: 2px dashed #fbbf24;
+  border-radius: 16px;
+  padding: 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.promo-modal__code-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #d97706;
+  letter-spacing: 0.1em;
+}
+
+.promo-modal__code-value {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #1e293b;
+  letter-spacing: 0.05em;
+  font-family: monospace;
+}
+
+.promo-modal__download-btn {
+  background: #1e293b;
+  color: #ffffff;
+  border: none;
+  padding: 1rem;
+  border-radius: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.promo-modal__download-btn:hover {
+  background: #0f172a;
+  transform: translateY(-2px);
+}
+
+.promo-modal__footer-text {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}

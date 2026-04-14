@@ -46,11 +46,14 @@ export const professionals = [
     reviews: 112,
     price: "$700",
     whatsapp: "+5491123456789",
+    verified: true,
+    licensed: true,
+    licenseNumber: "PL-1739",
     avatar:
       "https://images.unsplash.com/photo-1507120366490-728175be5a79?w=200&q=80",
     description:
       "Atención rápida, reparación de caños y desagües con garantía.",
-    coordinates: { lat: 37.7749, lng: -122.4194 }
+    coordinates: { lat: 37.7749, lng: -122.4194 },
   },
   {
     id: 2,
@@ -63,10 +66,13 @@ export const professionals = [
     reviews: 84,
     price: "$950",
     whatsapp: "+5491165432100",
+    verified: true,
+    licensed: false,
+    licenseNumber: "EL-8402",
     avatar:
       "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
     description: "Instalaciones seguras, mantenimiento y urgencias 24/7.",
-    coordinates: { lat: 37.7849, lng: -122.4294 }
+    coordinates: { lat: 37.7849, lng: -122.4294 },
   },
   {
     id: 3,
@@ -79,10 +85,13 @@ export const professionals = [
     reviews: 71,
     price: "$600",
     whatsapp: "+5493512345678",
+    verified: false,
+    licensed: true,
+    licenseNumber: "PT-5193",
     avatar:
       "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=80",
     description: "Acabados prolijos y asesoría de paleta de colores.",
-    coordinates: { lat: 37.7649, lng: -122.4094 }
+    coordinates: { lat: 37.7649, lng: -122.4094 },
   },
   {
     id: 4,
@@ -95,10 +104,13 @@ export const professionals = [
     reviews: 127,
     price: "$1,200",
     whatsapp: "+5491122233344",
+    verified: true,
+    licensed: true,
+    licenseNumber: "DI-2247",
     avatar:
       "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=200&q=80",
     description: "Diseños modernos con foco en funcionalidad y confort.",
-    coordinates: { lat: 37.7549, lng: -122.4394 }
+    coordinates: { lat: 37.7549, lng: -122.4394 },
   },
   {
     id: 5,
@@ -111,10 +123,13 @@ export const professionals = [
     reviews: 54,
     price: "$1,100",
     whatsapp: "+5492619876543",
+    verified: true,
+    licensed: false,
+    licenseNumber: "CR-9122",
     avatar:
       "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80",
     description: "Muebles y estructuras de madera con acabados premium.",
-    coordinates: { lat: 37.7949, lng: -122.4494 }
+    coordinates: { lat: 37.7949, lng: -122.4494 },
   },
   {
     id: 6,
@@ -127,10 +142,13 @@ export const professionals = [
     reviews: 89,
     price: "$450",
     whatsapp: "+5492911234567",
+    verified: true,
+    licensed: true,
+    licenseNumber: "CL-4421",
     avatar:
       "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=80",
     description: "Limpiezas de casas y oficinas con productos ecológicos.",
-    coordinates: { lat: 37.7749, lng: -122.4594 }
+    coordinates: { lat: 37.7749, lng: -122.4594 },
   },
   {
     id: 7,
@@ -143,10 +161,13 @@ export const professionals = [
     reviews: 48,
     price: "$820",
     whatsapp: "+5492613344556",
+    verified: false,
+    licensed: true,
+    licenseNumber: "EL-3067",
     avatar:
       "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80",
     description: "Reparación de tableros, iluminación y enchufes.",
-    coordinates: { lat: 37.7849, lng: -122.4094 }
+    coordinates: { lat: 37.7849, lng: -122.4094 },
   },
   {
     id: 8,
@@ -159,13 +180,15 @@ export const professionals = [
     reviews: 62,
     price: "$750",
     whatsapp: "+5493541234567",
+    verified: false,
+    licensed: false,
+    licenseNumber: "PT-7735",
     avatar:
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
     description: "Proteger y renovar fachadas con acabado duradero.",
-    coordinates: { lat: 37.7649, lng: -122.4294 }
+    coordinates: { lat: 37.7649, lng: -122.4294 },
   },
 ];
-
 
 export const showcasedSpecialist = {
   id: 4,
@@ -292,7 +315,8 @@ export const showcasedSpecialist = {
     {
       id: 3,
       author: "Sophie Dupont",
-      photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
+      photo:
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
       rating: 5,
       text: "Un placer trabajar con alguien que realmente entiende la armonía de los espacios modernos.",
     },
@@ -337,4 +361,3 @@ export const showcasedSpecialist = {
     },
   ],
 };
-

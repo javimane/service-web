@@ -1,5 +1,7 @@
 import Navbar from "../../components/Navbar/Navbar";
 import CategoriesSection from "./sections/CategoriesSection";
+import NearbyServicesSection from "./sections/NearbyServicesSection";
+import PromotionsSection from "./sections/PromotionsSection";
 import FeaturedSpecialists from "./sections/FeaturedSpecialists";
 import ProfessionalReelsSection from "./sections/ProfessionalReelsSection";
 import SpecialistShowcase from "./sections/SpecialistShowcase";
@@ -18,6 +20,8 @@ export default function HomePage() {
         </div>
 
         <CategoriesSection />
+        <NearbyServicesSection />
+        <PromotionsSection />
         <FeaturedSpecialists />
         <ProfessionalReelsSection />
         <SpecialistShowcase />
