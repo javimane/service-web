@@ -1,10 +1,11 @@
-import Navbar from '../../components/Navbar/Navbar';
-import CategoriesSection from './sections/CategoriesSection';
-import FeaturedSpecialists from './sections/FeaturedSpecialists';
-import SpecialistShowcase from './sections/SpecialistShowcase';
-import JoinCTASection from './sections/JoinCTASection';
-import Footer from '../../components/Footer/Footer';
-import './HomePage.css';
+import Navbar from "../../components/Navbar/Navbar";
+import CategoriesSection from "./sections/CategoriesSection";
+import FeaturedSpecialists from "./sections/FeaturedSpecialists";
+import ProfessionalReelsSection from "./sections/ProfessionalReelsSection";
+import SpecialistShowcase from "./sections/SpecialistShowcase";
+import JoinCTASection from "./sections/JoinCTASection";
+import Footer from "../../components/Footer/Footer";
+import "./HomePage.css";
 
 export default function HomePage() {
   return (
@@ -18,6 +19,7 @@ export default function HomePage() {
 
         <CategoriesSection />
         <FeaturedSpecialists />
+        <ProfessionalReelsSection />
         <SpecialistShowcase />
         <JoinCTASection />
       </main>
