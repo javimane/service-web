@@ -5,14 +5,21 @@ export default function Footer() {
     <footer className="footer">
       <div className="footer__inner">
         <div className="footer__brand">
-          <span className="footer__logo-letter">U</span>
-          <div className="footer__brand-text">
-            <span className="footer__brand-name">Obsidian</span>
-            <span className="footer__brand-sub">Kinetic</span>
+          <div className="footer__brand-logo">
+            <span className="footer__logo-text">OBSIDIAN PRO</span>
           </div>
+          <p className="footer__copy">© 2024 Obsidian Pro. Architectural precision in every service.</p>
         </div>
-        <p className="footer__copy">© 2024 Obsidian Kinetic. Architectural precision in every service.</p>
+        
+        <div className="footer__links">
+          <a href="#">Legal</a>
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">API</a>
+          <a href="#">Support</a>
+        </div>
       </div>
     </footer>
   );
 }
+

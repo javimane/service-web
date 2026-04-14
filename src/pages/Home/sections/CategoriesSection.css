@@ -11,13 +11,74 @@
   margin-bottom: 1.25rem;
 }
 
+.categories-section__carousel {
+  position: relative;
+}
+
 /* Horizontal scrollable strip */
 .categories-section__scroll {
   display: flex;
   gap: 1rem;
   overflow-x: auto;
-  padding-bottom: 0.75rem;
-  scrollbar-width: none; /* Firefox */
+  overflow-y: hidden;
+  padding: 0.75rem 1rem;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  cursor: grab;
+  scroll-behavior: smooth;
+}
+
+.categories-section__scroll.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.categories-section__scroll > * {
+  scroll-snap-align: start;
+  user-select: none;
+}
+
+.carousel-control {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+  z-index: 2;
+}
+
+.carousel-control:hover {
+  transform: translateY(-50%) scale(1.04);
+  background: var(--bg-color);
+}
+
+.carousel-control--left {
+  left: 0.5rem;
+}
+
+.carousel-control--right {
+  right: 0.5rem;
+}
+
+.carousel-control:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.carousel-control--hidden {
+  display: none;
 }
 
 .categories-section__scroll::-webkit-scrollbar {

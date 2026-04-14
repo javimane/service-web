@@ -26,6 +26,15 @@
   aspect-ratio: 3 / 4;
   object-fit: cover;
   border-radius: 12px;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+  cursor: pointer;
+}
+
+.showcase__avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
 }
 
 .showcase__name {

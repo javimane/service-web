@@ -1,23 +1,34 @@
-import './SpecialistCard.css';
+import { Link } from "react-router-dom";
+import "./SpecialistCard.css";
+import { ROUTES } from "../../routes/paths";
 
 export default function SpecialistCard({ specialist }) {
-  const { name, specialty, rating, reviews, priceRange, available, avatar } = specialist;
+  const { name, specialty, rating, reviews, priceRange, available, avatar } =
+    specialist;
 
   return (
     <article className="specialist-card">
       <div className="specialist-card__top">
-        <img
-          className="specialist-card__avatar"
-          src={avatar}
-          alt={name}
-          loading="lazy"
-        />
+        <Link
+          to={ROUTES.profile}
+          className="specialist-card__avatar-link"
+          aria-label={`Ver perfil de ${name}`}
+        >
+          <img
+            className="specialist-card__avatar"
+            src={avatar}
+            alt={name}
+            loading="lazy"
+          />
+        </Link>
         <div className="specialist-card__info">
           <h3 className="specialist-card__name">{name}</h3>
           <span className="specialist-card__specialty">{specialty}</span>
         </div>
-        <span className={`specialist-card__badge ${available ? 'specialist-card__badge--available' : 'specialist-card__badge--busy'}`}>
-          {available ? 'Disponible' : 'Ocupado'}
+        <span
+          className={`specialist-card__badge ${available ? "specialist-card__badge--available" : "specialist-card__badge--busy"}`}
+        >
+          {available ? "Disponible" : "Ocupado"}
         </span>
       </div>
 

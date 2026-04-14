@@ -1,0 +1,64 @@
+.payment-methods-card {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
+}
+
+.payment-methods-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.card-subtitle {
+  font-size: 0.7rem;
+  color: #888;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.payment-methods-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.payment-method-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #ddd;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.payment-method-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.method-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4facfe; /* Primary accent color */
+}
+
+/* Light mode support (assuming there is a .light-mode class on body or parent) */
+:global(.light-mode) .payment-methods-card {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+:global(.light-mode) .payment-method-item {
+  background: white;
+  color: #444;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}

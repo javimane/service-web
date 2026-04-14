@@ -1,63 +1,340 @@
 export const featuredSpecialists = [
   {
     id: 1,
-    name: 'Marcus Thorne',
-    specialty: 'El Especialista',
+    name: "Marcus Thorne",
+    specialty: "El Especialista",
     rating: 4.9,
     reviews: 98,
-    priceRange: '$60–80',
+    priceRange: "$60–80",
     available: true,
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+    avatar:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
   },
   {
     id: 2,
-    name: 'Elena Vance',
-    specialty: 'Diseño de Interiores',
+    name: "Elena Vance",
+    specialty: "Diseño de Interiores",
     rating: 5.0,
     reviews: 74,
-    priceRange: '$80–120',
+    priceRange: "$80–120",
     available: true,
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
+    avatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
   },
   {
     id: 3,
-    name: 'David Reyes',
-    specialty: 'Electricidad',
+    name: "David Reyes",
+    specialty: "Electricidad",
     rating: 4.8,
     reviews: 53,
-    priceRange: '$50–70',
+    priceRange: "$50–70",
     available: false,
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80',
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
   },
 ];
 
+export const professionals = [
+  {
+    id: 1,
+    name: "Carlos Gómez",
+    specialty: "Plomería general",
+    category: "Plumbing",
+    province: "Buenos Aires",
+    city: "Mar del Plata",
+    rating: 4.9,
+    reviews: 112,
+    price: "$700",
+    whatsapp: "+5491123456789",
+    avatar:
+      "https://images.unsplash.com/photo-1507120366490-728175be5a79?w=200&q=80",
+    description:
+      "Atención rápida, reparación de caños y desagües con garantía.",
+    coordinates: { lat: 37.7749, lng: -122.4194 }
+  },
+  {
+    id: 2,
+    name: "Sofía Méndez",
+    specialty: "Electricista residencial",
+    category: "Electrical",
+    province: "Buenos Aires",
+    city: "La Plata",
+    rating: 4.8,
+    reviews: 84,
+    price: "$950",
+    whatsapp: "+5491165432100",
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+    description: "Instalaciones seguras, mantenimiento y urgencias 24/7.",
+    coordinates: { lat: 37.7849, lng: -122.4294 }
+  },
+  {
+    id: 3,
+    name: "Martín Rojas",
+    specialty: "Pintura de interiores",
+    category: "Painting",
+    province: "Córdoba",
+    city: "Córdoba",
+    rating: 4.7,
+    reviews: 71,
+    price: "$600",
+    whatsapp: "+5493512345678",
+    avatar:
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=80",
+    description: "Acabados prolijos y asesoría de paleta de colores.",
+    coordinates: { lat: 37.7649, lng: -122.4094 }
+  },
+  {
+    id: 4,
+    name: "Valentina Cruz",
+    specialty: "Diseño de interiores",
+    category: "Design",
+    province: "Buenos Aires",
+    city: "CABA",
+    rating: 4.95,
+    reviews: 127,
+    price: "$1,200",
+    whatsapp: "+5491122233344",
+    avatar:
+      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=200&q=80",
+    description: "Diseños modernos con foco en funcionalidad y confort.",
+    coordinates: { lat: 37.7549, lng: -122.4394 }
+  },
+  {
+    id: 5,
+    name: "Gonzalo Pérez",
+    specialty: "Carpintería a medida",
+    category: "Carpentry",
+    province: "Mendoza",
+    city: "Mendoza",
+    rating: 4.85,
+    reviews: 54,
+    price: "$1,100",
+    whatsapp: "+5492619876543",
+    avatar:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80",
+    description: "Muebles y estructuras de madera con acabados premium.",
+    coordinates: { lat: 37.7949, lng: -122.4494 }
+  },
+  {
+    id: 6,
+    name: "Mariana López",
+    specialty: "Limpieza profesional",
+    category: "Cleaning",
+    province: "Buenos Aires",
+    city: "Bahía Blanca",
+    rating: 4.75,
+    reviews: 89,
+    price: "$450",
+    whatsapp: "+5492911234567",
+    avatar:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&q=80",
+    description: "Limpiezas de casas y oficinas con productos ecológicos.",
+    coordinates: { lat: 37.7749, lng: -122.4594 }
+  },
+  {
+    id: 7,
+    name: "Andrés Silva",
+    specialty: "Mantenimiento eléctrico",
+    category: "Electrical",
+    province: "Mendoza",
+    city: "San Rafael",
+    rating: 4.65,
+    reviews: 48,
+    price: "$820",
+    whatsapp: "+5492613344556",
+    avatar:
+      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80",
+    description: "Reparación de tableros, iluminación y enchufes.",
+    coordinates: { lat: 37.7849, lng: -122.4094 }
+  },
+  {
+    id: 8,
+    name: "Paula Duarte",
+    specialty: "Pintura exterior",
+    category: "Painting",
+    province: "Córdoba",
+    city: "Villa Carlos Paz",
+    rating: 4.6,
+    reviews: 62,
+    price: "$750",
+    whatsapp: "+5493541234567",
+    avatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+    description: "Proteger y renovar fachadas con acabado duradero.",
+    coordinates: { lat: 37.7649, lng: -122.4294 }
+  },
+];
+
+
 export const showcasedSpecialist = {
   id: 4,
-  name: 'Julian Vargas',
-  specialty: 'Diseño de Espacios',
-  bio: 'Especializado en la creación de espacios minimalistas con enfoque en la iluminación natural y el diseño estructural contemporáneo.',
-  rating: 4.9,
-  reviews: 120,
-  yearsOfExperience: 8,
-  avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80',
-  portfolio: [
-    'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=400&q=80',
-    'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&q=80',
-    'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=400&q=80',
-    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
+  name: "Julian Vargas",
+  specialty: "Diseño de Espacios",
+  title: "Experto Arquitecto de Interiores",
+  bio: "Especializado en la creación de espacios minimalistas con enfoque en la iluminación conética y el diseño estructural contemporáneo.",
+  city: "San Francisco",
+  province: "California",
+  whatsapp: "+14155550123",
+  licensed: true,
+  website: "https://julianvargasdesign.com",
+  socials: [
+    {
+      id: "instagram",
+      label: "Instagram",
+      url: "https://instagram.com/julianvargas",
+    },
+    {
+      id: "linkedin",
+      label: "LinkedIn",
+      url: "https://linkedin.com/in/julianvargas",
+    },
   ],
-  testimonials: [
+  rating: 4.9,
+  reviews: 128,
+  yearsOfExperience: 8,
+  avatar:
+    "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80",
+  portfolio: [
+    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=400&q=80",
+    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&q=80",
+    "https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=400&q=80",
+    "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80",
+    "https://images.unsplash.com/photo-1615873968403-89e068628260?w=400&q=80",
+    "https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=400&q=80",
+    "https://images.unsplash.com/photo-1616137422495-1e902b72174c?w=400&q=80",
+    "https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?w=400&q=80",
+    "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=400&q=80",
+    "https://images.unsplash.com/photo-1615874959474-d609969a20ed?w=400&q=80",
+  ],
+  services: [
     {
       id: 1,
-      author: 'Clara Ruiz',
-      rating: 5,
-      text: 'Transformó completamente mi espacio. Su enfoque minimalista superó todas mis expectativas. Recomiendo 100% su trabajo.',
+      title: "Consultoría de Espacios",
+      price: "$120",
+      description: "Propuesta personalizada para optimizar cada ambiente.",
     },
     {
       id: 2,
-      author: 'Marco Chen',
+      title: "Proyecto Integral",
+      price: "$2,400",
+      description:
+        "Diseño completo con renders, planos y acompañamiento técnico.",
+    },
+    {
+      id: 3,
+      title: "Home Staging",
+      price: "$300",
+      description:
+        "Mejoras rápidas para venta o alquiler con alto impacto visual.",
+    },
+    {
+      id: 4,
+      title: "Diseño de Iluminación",
+      price: "$450",
+      description: "Esquema luminotécnico para ambientes residenciales.",
+    },
+    {
+      id: 5,
+      title: "Selección de Mobiliario",
+      price: "$200",
+      description: "Asesoría en compra y disposición de muebles premium.",
+    },
+    {
+      id: 6,
+      title: "Renders 3D Realistas",
+      price: "$150/imagen",
+      description: "Visualización fotorrealista de tus proyectos.",
+    },
+    {
+      id: 7,
+      title: "Planos Técnicos",
+      price: "$500",
+      description: "Documentación necesaria para obra y construcción.",
+    },
+    {
+      id: 8,
+      title: "Gestión de Estilismo",
+      price: "$180",
+      description: "Decoración final y detalles para sesiones de fotos.",
+    },
+    {
+      id: 9,
+      title: "Remodelación de Cocinas",
+      price: "$1,200",
+      description: "Diseño funcional y estético del corazón del hogar.",
+    },
+    {
+      id: 10,
+      title: "Diseño de Terrazas",
+      price: "$850",
+      description: "Optimización de espacios exteriores y paisajismo.",
+    },
+  ],
+
+  testimonials: [
+    {
+      id: 1,
+      author: "Elena Rossi",
+      photo:
+        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80",
       rating: 5,
-      text: 'Profesional y puntual. El resultado final fue increíble — completamente distinto al proyecto de diseño original.',
+      text: "Julian transformó nuestro loft en una obra maestra. Su ojo para el detalle y la forma en que maneja la luz es simplemente incomparable.",
+    },
+    {
+      id: 2,
+      author: "Marco Chen",
+      photo:
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=80",
+      rating: 5,
+      text: "Altamente profesional y con una visión futurista. Recomendación 10/10 para cualquier proyecto de diseño de alta gama.",
+    },
+    {
+      id: 3,
+      author: "Sophie Dupont",
+      photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
+      rating: 5,
+      text: "Un placer trabajar con alguien que realmente entiende la armonía de los espacios modernos.",
+    },
+  ],
+  paymentMethods: [
+    { id: "visa", label: "Visa", type: "credit" },
+    { id: "mastercard", label: "Mastercard", type: "credit" },
+    { id: "amex", label: "Amex", type: "credit" },
+    { id: "cash", label: "Efectivo", type: "cash" },
+    { id: "transfer", label: "Transferencia", type: "bank" },
+  ],
+  bankPromotions: [
+    {
+      day: "Lunes",
+      bank: "Banco Galicia",
+      discount: "15%",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Banco_Galicia_logo.svg/2560px-Banco_Galicia_logo.svg.png",
+    },
+    {
+      day: "Martes",
+      bank: "Santander",
+      discount: "20%",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Santander_Logotipo.svg/2560px-Santander_Logotipo.svg.png",
+    },
+    {
+      day: "Miércoles",
+      bank: "BBVA",
+      discount: "25%",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/BBVA_2019.svg/2560px-BBVA_2019.svg.png",
+    },
+    {
+      day: "Jueves",
+      bank: "Banco Nación",
+      discount: "10%",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Logo_Banco_Naci%C3%B3n.svg/1200px-Logo_Banco_Naci%C3%B3n.svg.png",
+    },
+    {
+      day: "Viernes",
+      bank: "Macro",
+      discount: "30%",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Banco_Macro_logo.svg/2560px-Banco_Macro_logo.svg.png",
     },
   ],
 };
+
