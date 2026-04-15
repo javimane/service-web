@@ -5,6 +5,7 @@ import {
   FileText,
   MessageSquare,
   Ticket,
+  Bell,
   ChevronDown,
   Settings,
   HelpCircle,
@@ -24,6 +25,7 @@ export default function DashboardSidebar({
   onCreateProposal,
   onDashboardClick,
   onMessagesClick,
+  onNotificationsClick,
   onPromotionsCreate,
   onPromotionsViewAll,
 }) {
@@ -94,6 +96,12 @@ export default function DashboardSidebar({
       label: "MESSAGES",
       icon: MessageSquare,
       onClick: onMessagesClick ?? (() => navigate(ROUTES.messages)),
+    },
+    {
+      key: "notifications",
+      label: "NOTIFICATIONS",
+      icon: Bell,
+      onClick: onNotificationsClick,
     },
     {
       key: "settings",

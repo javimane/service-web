@@ -8,14 +8,70 @@ import {
   Settings,
   LogOut,
   MessageSquare,
+  FileText,
+  Ticket,
+  TrendingUp,
+  CheckCheck,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import "./Navbar.css";
 
+const notifications = [
+  {
+    id: 1,
+    icon: FileText,
+    iconColor: "blue",
+    title: "Propuesta aceptada",
+    description: 'Tu propuesta "Remodelación Terraza" fue aprobada.',
+    time: "Hace 5 min",
+    unread: true,
+  },
+  {
+    id: 2,
+    icon: MessageSquare,
+    iconColor: "green",
+    title: "Nuevo mensaje",
+    description: "Julian Vargas te envió un mensaje.",
+    time: "Hace 30 min",
+    unread: true,
+  },
+  {
+    id: 3,
+    icon: Ticket,
+    iconColor: "orange",
+    title: "Promoción por vencer",
+    description: '"Descuento 20%" expira en 2 días.',
+    time: "Hace 1 hora",
+    unread: true,
+  },
+  {
+    id: 4,
+    icon: TrendingUp,
+    iconColor: "purple",
+    title: "Estadísticas semanales",
+    description: "Tu perfil creció un +12.4% esta semana.",
+    time: "Hace 3 horas",
+    unread: false,
+  },
+  {
+    id: 5,
+    icon: FileText,
+    iconColor: "blue",
+    title: "Nueva reseña",
+    description: "Elena Rossi dejó una reseña de 5 estrellas.",
+    time: "Ayer",
+    unread: false,
+  },
+];
+
 export default function Navbar() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const menuRef = useRef(null);
+  const notifRef = useRef(null);
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
 
   const navLinks = [
     { label: "Dashboard", path: ROUTES.home },
@@ -23,18 +79,29 @@ export default function Navbar() {
     { label: "Map", path: ROUTES.map },
   ];
 
-  // Close menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setIsNotifOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+    setIsNotifOpen(false);
+  };
+
+  const toggleNotif = () => {
+    setIsNotifOpen(!isNotifOpen);
+    setIsMenuOpen(false);
+  };
 
   return (
     <header className="navbar">
@@ -71,9 +138,69 @@ export default function Navbar() {
           >
             <MessageSquare size={20} />
           </Link>
-          <button className="navbar__icon-btn" aria-label="Notifications">
-            <Bell size={20} />
-          </button>
+          <div className="navbar__notif-container" ref={notifRef}>
+            <button
+              className={`navbar__icon-btn ${isNotifOpen ? "active" : ""}`}
+              aria-label="Notifications"
+              onClick={toggleNotif}
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="navbar__notif-badge">{unreadCount}</span>
+              )}
+            </button>
+
+            {isNotifOpen && (
+              <div className="navbar__notif-dropdown">
+                <div className="notif-dropdown__header">
+                  <span className="notif-dropdown__title">Notificaciones</span>
+                  <button
+                    type="button"
+                    className="notif-dropdown__mark-all"
+                    aria-label="Marcar todas como leídas"
+                  >
+                    <CheckCheck size={16} />
+                  </button>
+                </div>
+                <div className="notif-dropdown__list">
+                  {notifications.map((notif) => {
+                    const IconComp = notif.icon;
+                    return (
+                      <div
+                        key={notif.id}
+                        className={`notif-item ${notif.unread ? "notif-item--unread" : ""}`}
+                      >
+                        <div
+                          className={`notif-item__icon notif-item__icon--${notif.iconColor}`}
+                        >
+                          <IconComp size={16} />
+                        </div>
+                        <div className="notif-item__content">
+                          <span className="notif-item__title">
+                            {notif.title}
+                          </span>
+                          <span className="notif-item__desc">
+                            {notif.description}
+                          </span>
+                        </div>
+                        <span className="notif-item__time">{notif.time}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="notif-dropdown__footer">
+                  <Link
+                    to={ROUTES.dashboard}
+                    state={{ view: "notifications" }}
+                    className="notif-dropdown__view-all"
+                    onClick={() => setIsNotifOpen(false)}
+                  >
+                    Ver todas las notificaciones
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="navbar__user-container" ref={menuRef}>
             <button

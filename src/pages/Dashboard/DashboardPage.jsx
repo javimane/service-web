@@ -17,6 +17,7 @@ import { ROUTES } from "../../routes/paths";
 import ProposalCreator from "./sections/ProposalCreator";
 import PromotionCreator from "./sections/PromotionCreator";
 import AllPromotionsPage from "./sections/AllPromotionsPage";
+import NotificationsPage from "./sections/NotificationsPage";
 import MessagesPage from "../Messages/MessagesPage";
 import "./DashboardPage.css";
 
@@ -31,6 +32,10 @@ export default function DashboardPage() {
       setView("create-proposal");
       return;
     }
+    if (location.state?.view === "notifications") {
+      setView("notifications");
+      return;
+    }
 
     setView("overview");
   }, [location.state]);
@@ -42,6 +47,7 @@ export default function DashboardPage() {
   const handleGoSettings = () => navigate(ROUTES.settings);
   const handleShowOverview = () => setView("overview");
   const handleShowMessages = () => setView("messages");
+  const handleShowNotifications = () => setView("notifications");
   const handleShowPromotionsCreate = () => setView("promotions-create");
   const handleShowPromotionsAll = () => setView("promotions-all");
 
@@ -54,17 +60,20 @@ export default function DashboardPage() {
               ? "proposals"
               : view === "messages"
                 ? "messages"
-                : view === "promotions-create"
-                  ? "promotions-create"
-                  : view === "promotions-all"
-                    ? "promotions-all"
-                    : "dashboard"
+                : view === "notifications"
+                  ? "notifications"
+                  : view === "promotions-create"
+                    ? "promotions-create"
+                    : view === "promotions-all"
+                      ? "promotions-all"
+                      : "dashboard"
           }
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed((current) => !current)}
           onCreateProposal={handleCreateProposal}
           onDashboardClick={handleShowOverview}
           onMessagesClick={handleShowMessages}
+          onNotificationsClick={handleShowNotifications}
           onPromotionsCreate={handleShowPromotionsCreate}
           onPromotionsViewAll={handleShowPromotionsAll}
         />
@@ -74,6 +83,8 @@ export default function DashboardPage() {
             <ProposalCreator onBack={handleGoBack} />
           ) : view === "messages" ? (
             <MessagesPage embedded />
+          ) : view === "notifications" ? (
+            <NotificationsPage />
           ) : view === "promotions-create" ? (
             <PromotionCreator
               onBack={handleGoBack}
