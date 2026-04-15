@@ -1,6 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Paperclip, Mic, Smile, Send, ImageIcon } from "lucide-react";
+import {
+  Search,
+  Paperclip,
+  Mic,
+  Smile,
+  Send,
+  ImageIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import "./MessagesPage.css";
+import Navbar from "../../components/Navbar/Navbar";
 
 const conversations = [
   {
@@ -94,12 +104,13 @@ const conversations = [
   },
 ];
 
-export default function MessagesPage() {
+export default function MessagesPage({ embedded = false }) {
   const [activeConversation, setActiveConversation] = useState(
     conversations[0],
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [newMessage, setNewMessage] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef(null);
 
   const filteredConversations = conversations.filter((c) =>
@@ -123,129 +134,191 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="messages-page">
-      {/* Sidebar */}
-      <aside className="messages-sidebar">
-        <h1 className="messages-sidebar__title">Messages</h1>
-
-        <div className="messages-sidebar__search">
-          <Search size={16} />
-          <input
-            type="text"
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <div className="messages-sidebar__list">
-          {filteredConversations.map((conv) => (
+    <>
+      {!embedded && <Navbar />}
+      <div
+        className={`messages-page ${sidebarCollapsed ? "messages-page--sidebar-collapsed" : ""}`}
+      >
+        {/* Sidebar */}
+        <aside
+          className={`messages-sidebar ${sidebarCollapsed ? "messages-sidebar--collapsed" : ""}`}
+        >
+          <div className="messages-sidebar__header">
+            {!sidebarCollapsed && (
+              <h1 className="messages-sidebar__title">Messages</h1>
+            )}
             <button
-              key={conv.id}
-              className={`conversation-item ${activeConversation.id === conv.id ? "active" : ""}`}
-              onClick={() => setActiveConversation(conv)}
+              type="button"
+              className="messages-sidebar__toggle"
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              aria-label={
+                sidebarCollapsed
+                  ? "Expand conversations"
+                  : "Collapse conversations"
+              }
+              title={
+                sidebarCollapsed
+                  ? "Expand conversations"
+                  : "Collapse conversations"
+              }
             >
-              <div className="conversation-item__avatar">
-                {conv.avatar}
-                {conv.online && <span className="online-dot" />}
-              </div>
-              <div className="conversation-item__content">
-                <div className="conversation-item__header">
-                  <span className="conversation-item__name">{conv.name}</span>
-                  <span className="conversation-item__time">{conv.time}</span>
-                </div>
-                <p className="conversation-item__preview">{conv.lastMessage}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      {/* Chat Area */}
-      <main className="chat-area">
-        {/* Chat Header */}
-        <div className="chat-header">
-          <div className="chat-header__avatar">
-            {activeConversation.avatar}
-            {activeConversation.online && <span className="online-dot" />}
-          </div>
-          <div className="chat-header__info">
-            <span className="chat-header__name">{activeConversation.name}</span>
-            <span className="chat-header__status">
-              {activeConversation.online ? "ACTIVE NOW" : "OFFLINE"} •{" "}
-              {activeConversation.role.toUpperCase()}
-            </span>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="chat-messages">
-          {activeConversation.messages.map((msg) => (
-            <div key={msg.id}>
-              {msg.date && (
-                <div className="chat-date-separator">
-                  <span>{msg.date}</span>
-                </div>
+              {sidebarCollapsed ? (
+                <PanelLeftOpen size={18} />
+              ) : (
+                <PanelLeftClose size={18} />
               )}
-              <div
-                className={`chat-bubble-wrapper ${msg.sender === "me" ? "sent" : "received"}`}
-              >
-                <div
-                  className={`chat-bubble ${msg.sender === "me" ? "chat-bubble--sent" : "chat-bubble--received"}`}
-                >
-                  {msg.image && (
-                    <div className="chat-bubble__image">
-                      <ImageIcon size={32} />
-                      <div className="chat-bubble__image-overlay">
-                        <span className="chat-bubble__image-title">
-                          {msg.image.title}
+            </button>
+          </div>
+
+          {!sidebarCollapsed && (
+            <>
+              <div className="messages-sidebar__search">
+                <Search size={16} />
+                <input
+                  type="text"
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="messages-sidebar__list">
+                {filteredConversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    className={`conversation-item ${activeConversation.id === conv.id ? "active" : ""}`}
+                    onClick={() => setActiveConversation(conv)}
+                  >
+                    <div className="conversation-item__avatar">
+                      {conv.avatar}
+                      {conv.online && <span className="online-dot" />}
+                    </div>
+                    <div className="conversation-item__content">
+                      <div className="conversation-item__header">
+                        <span className="conversation-item__name">
+                          {conv.name}
                         </span>
-                        <span className="chat-bubble__image-subtitle">
-                          {msg.image.subtitle}
+                        <span className="conversation-item__time">
+                          {conv.time}
                         </span>
                       </div>
+                      <p className="conversation-item__preview">
+                        {conv.lastMessage}
+                      </p>
                     </div>
-                  )}
-                  <p>{msg.text}</p>
-                </div>
-                <span className="chat-bubble__time">
-                  {msg.time}
-                  {msg.status && ` • ${msg.status}`}
-                </span>
+                  </button>
+                ))}
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+            </>
+          )}
 
-        {/* Message Input */}
-        <div className="chat-input-bar">
-          <button className="chat-input-bar__icon" aria-label="Attach file">
-            <Paperclip size={20} />
-          </button>
-          <button className="chat-input-bar__icon" aria-label="Voice message">
-            <Mic size={20} />
-          </button>
-          <input
-            type="text"
-            className="chat-input-bar__input"
-            placeholder="Write your message here..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <button className="chat-input-bar__icon" aria-label="Emoji">
-            <Smile size={20} />
-          </button>
-          <button
-            className="chat-input-bar__send"
-            onClick={handleSend}
-            aria-label="Send message"
-          >
-            <Send size={18} />
-          </button>
-        </div>
-      </main>
-    </div>
+          {sidebarCollapsed && (
+            <div className="messages-sidebar__avatars">
+              {filteredConversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  className={`conversation-avatar-btn ${activeConversation.id === conv.id ? "active" : ""}`}
+                  onClick={() => setActiveConversation(conv)}
+                  title={conv.name}
+                >
+                  <div className="conversation-item__avatar">
+                    {conv.avatar}
+                    {conv.online && <span className="online-dot" />}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </aside>
+
+        {/* Chat Area */}
+        <main className="chat-area">
+          {/* Chat Header */}
+          <div className="chat-header">
+            <div className="chat-header__avatar">
+              {activeConversation.avatar}
+              {activeConversation.online && <span className="online-dot" />}
+            </div>
+            <div className="chat-header__info">
+              <span className="chat-header__name">
+                {activeConversation.name}
+              </span>
+              <span className="chat-header__status">
+                {activeConversation.online ? "ACTIVE NOW" : "OFFLINE"} •{" "}
+                {activeConversation.role.toUpperCase()}
+              </span>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="chat-messages">
+            {activeConversation.messages.map((msg) => (
+              <div key={msg.id}>
+                {msg.date && (
+                  <div className="chat-date-separator">
+                    <span>{msg.date}</span>
+                  </div>
+                )}
+                <div
+                  className={`chat-bubble-wrapper ${msg.sender === "me" ? "sent" : "received"}`}
+                >
+                  <div
+                    className={`chat-bubble ${msg.sender === "me" ? "chat-bubble--sent" : "chat-bubble--received"}`}
+                  >
+                    {msg.image && (
+                      <div className="chat-bubble__image">
+                        <ImageIcon size={32} />
+                        <div className="chat-bubble__image-overlay">
+                          <span className="chat-bubble__image-title">
+                            {msg.image.title}
+                          </span>
+                          <span className="chat-bubble__image-subtitle">
+                            {msg.image.subtitle}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    <p>{msg.text}</p>
+                  </div>
+                  <span className="chat-bubble__time">
+                    {msg.time}
+                    {msg.status && ` • ${msg.status}`}
+                  </span>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Message Input */}
+          <div className="chat-input-bar">
+            <button className="chat-input-bar__icon" aria-label="Attach file">
+              <Paperclip size={20} />
+            </button>
+            <button className="chat-input-bar__icon" aria-label="Voice message">
+              <Mic size={20} />
+            </button>
+            <input
+              type="text"
+              className="chat-input-bar__input"
+              placeholder="Write your message here..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <button className="chat-input-bar__icon" aria-label="Emoji">
+              <Smile size={20} />
+            </button>
+            <button
+              className="chat-input-bar__send"
+              onClick={handleSend}
+              aria-label="Send message"
+            >
+              <Send size={18} />
+            </button>
+          </div>
+        </main>
+      </div>
+    </>
   );
 }

@@ -73,7 +73,7 @@ export default function DashboardPage() {
           {view === "create-proposal" ? (
             <ProposalCreator onBack={handleGoBack} />
           ) : view === "messages" ? (
-            <MessagesPage />
+            <MessagesPage embedded />
           ) : view === "promotions-create" ? (
             <PromotionCreator
               onBack={handleGoBack}
