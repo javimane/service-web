@@ -123,7 +123,7 @@
 }
 
 .btn-submit {
-  background: #B5FF24;
+  background: #b5ff24;
   color: #000;
   border: none;
   padding: 12px 24px;
@@ -134,4 +134,23 @@
 
 .btn-submit:hover {
   background: #c7ff5c;
+}
+
+@media (max-width: 768px) {
+  .items-table-header {
+    display: none;
+  }
+
+  .item-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-footer-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn-cancel,
+  .btn-submit {
+    width: 100%;
+  }
 }

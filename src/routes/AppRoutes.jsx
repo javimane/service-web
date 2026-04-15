@@ -7,6 +7,8 @@ import ServicesPage from "../pages/Services/ServicesPage";
 import CategoriesPage from "../pages/Categories/CategoriesPage";
 import MapPage from "../pages/Map/MapPage";
 import DashboardPage from "../pages/Dashboard/DashboardPage";
+import AnalyticsPage from "../pages/Analytics/AnalyticsPage";
+import SettingsPage from "../pages/Settings/SettingsPage";
 import { ROUTES } from "./paths";
 
 export default function AppRoutes() {
@@ -20,9 +22,9 @@ export default function AppRoutes() {
       <Route path={ROUTES.services} element={<ServicesPage />} />
       <Route path={ROUTES.map} element={<MapPage />} />
       <Route path={ROUTES.dashboard} element={<DashboardPage />} />
+      <Route path={ROUTES.analytics} element={<AnalyticsPage />} />
+      <Route path={ROUTES.settings} element={<SettingsPage />} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );
 }
-
-
