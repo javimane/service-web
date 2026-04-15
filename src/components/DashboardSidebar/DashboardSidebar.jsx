@@ -1,7 +1,11 @@
+import { useState } from "react";
 import {
   LayoutDashboard,
   BarChart3,
   FileText,
+  MessageSquare,
+  Ticket,
+  ChevronDown,
   Settings,
   HelpCircle,
   LogOut,
@@ -19,8 +23,14 @@ export default function DashboardSidebar({
   onToggle,
   onCreateProposal,
   onDashboardClick,
+  onMessagesClick,
+  onPromotionsCreate,
+  onPromotionsViewAll,
 }) {
   const navigate = useNavigate();
+  const [promosOpen, setPromosOpen] = useState(
+    activeItem === "promotions-create" || activeItem === "promotions-all",
+  );
 
   const handleSupport = () => {
     if (typeof window !== "undefined") {
@@ -62,12 +72,39 @@ export default function DashboardSidebar({
       onClick: openProposalCreator,
     },
     {
+      key: "promotions",
+      label: "PROMOTIONS",
+      icon: Ticket,
+      expandable: true,
+      subItems: [
+        {
+          key: "promotions-create",
+          label: "Crear Promoción",
+          onClick: onPromotionsCreate,
+        },
+        {
+          key: "promotions-all",
+          label: "Ver Todas",
+          onClick: onPromotionsViewAll,
+        },
+      ],
+    },
+    {
+      key: "messages",
+      label: "MESSAGES",
+      icon: MessageSquare,
+      onClick: onMessagesClick ?? (() => navigate(ROUTES.messages)),
+    },
+    {
       key: "settings",
       label: "ACCOUNT SETTINGS",
       icon: Settings,
       onClick: () => navigate(ROUTES.settings),
     },
   ];
+
+  const isPromosActive =
+    activeItem === "promotions-create" || activeItem === "promotions-all";
 
   return (
     <aside
@@ -99,18 +136,59 @@ export default function DashboardSidebar({
       </div>
 
       <nav className="sidebar-nav">
-        {navItems.map(({ key, label, icon: Icon, onClick }) => (
-          <button
-            key={key}
-            type="button"
-            className={`nav-item ${activeItem === key ? "active" : ""}`}
-            onClick={onClick}
-            title={label}
-          >
-            <Icon size={20} />
-            <span className="nav-label">{label}</span>
-          </button>
-        ))}
+        {navItems.map(
+          ({ key, label, icon: Icon, onClick, expandable, subItems }) =>
+            expandable ? (
+              <div key={key} className="nav-group">
+                <button
+                  type="button"
+                  className={`nav-item ${isPromosActive ? "active" : ""}`}
+                  onClick={() => setPromosOpen((v) => !v)}
+                  title={label}
+                >
+                  <Icon size={20} />
+                  <span className="nav-label">{label}</span>
+                  <ChevronDown
+                    size={14}
+                    className={`nav-chevron ${promosOpen ? "nav-chevron--open" : ""}`}
+                  />
+                </button>
+                {promosOpen && (
+                  <div className="nav-sub-items">
+                    {subItems.map((sub) => (
+                      <button
+                        key={sub.key}
+                        type="button"
+                        className={`nav-sub-item ${activeItem === sub.key ? "active" : ""}`}
+                        onClick={() => {
+                          sub.onClick();
+                          setPromosOpen(false);
+                        }}
+                        title={sub.label}
+                      >
+                        <span className="nav-sub-dot" />
+                        <span className="nav-sub-label">{sub.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                key={key}
+                type="button"
+                className={`nav-item ${activeItem === key ? "active" : ""}`}
+                onClick={() => {
+                  setPromosOpen(false);
+                  onClick();
+                }}
+                title={label}
+              >
+                <Icon size={20} />
+                <span className="nav-label">{label}</span>
+              </button>
+            ),
+        )}
       </nav>
 
       <div className="sidebar-footer">

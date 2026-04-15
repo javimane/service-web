@@ -63,7 +63,7 @@
 }
 
 .badge--active {
-  background: #c5ff2e;
+  background: var(--highlight);
   color: #000;
 }
 

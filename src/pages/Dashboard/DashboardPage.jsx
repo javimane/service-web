@@ -15,6 +15,9 @@ import { engagementData, activities, clips } from "../../data/dashboardData";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import { ROUTES } from "../../routes/paths";
 import ProposalCreator from "./sections/ProposalCreator";
+import PromotionCreator from "./sections/PromotionCreator";
+import AllPromotionsPage from "./sections/AllPromotionsPage";
+import MessagesPage from "../Messages/MessagesPage";
 import "./DashboardPage.css";
 
 export default function DashboardPage() {
@@ -38,21 +41,46 @@ export default function DashboardPage() {
   const handleGoServices = () => navigate(ROUTES.services);
   const handleGoSettings = () => navigate(ROUTES.settings);
   const handleShowOverview = () => setView("overview");
+  const handleShowMessages = () => setView("messages");
+  const handleShowPromotionsCreate = () => setView("promotions-create");
+  const handleShowPromotionsAll = () => setView("promotions-all");
 
   return (
     <div className="dashboard-page-wrapper">
       <div className="dashboard-page">
         <DashboardSidebar
-          activeItem={view === "create-proposal" ? "proposals" : "dashboard"}
+          activeItem={
+            view === "create-proposal"
+              ? "proposals"
+              : view === "messages"
+                ? "messages"
+                : view === "promotions-create"
+                  ? "promotions-create"
+                  : view === "promotions-all"
+                    ? "promotions-all"
+                    : "dashboard"
+          }
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed((current) => !current)}
           onCreateProposal={handleCreateProposal}
           onDashboardClick={handleShowOverview}
+          onMessagesClick={handleShowMessages}
+          onPromotionsCreate={handleShowPromotionsCreate}
+          onPromotionsViewAll={handleShowPromotionsAll}
         />
 
         <main className="dashboard-main">
           {view === "create-proposal" ? (
             <ProposalCreator onBack={handleGoBack} />
+          ) : view === "messages" ? (
+            <MessagesPage />
+          ) : view === "promotions-create" ? (
+            <PromotionCreator
+              onBack={handleGoBack}
+              onViewAll={handleShowPromotionsAll}
+            />
+          ) : view === "promotions-all" ? (
+            <AllPromotionsPage onCreateNew={handleShowPromotionsCreate} />
           ) : (
             <div className="dashboard-content">
               <div className="welcome-section">

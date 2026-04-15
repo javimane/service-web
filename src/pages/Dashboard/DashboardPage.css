@@ -30,7 +30,7 @@
   height: 100vh;
   z-index: 10;
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
   border-radius: 0 30px 30px 0;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
   transition:
@@ -51,7 +51,7 @@
   font-size: 1.5rem;
   font-weight: 800;
   margin-bottom: 32px;
-  color: #c5ff2e;
+  color: var(--highlight);
 }
 
 .brand-logo-btn {
@@ -118,6 +118,104 @@
   background: var(--accent-transparent);
   color: var(--accent-color);
   box-shadow: inset 4px 0 0 var(--accent-color);
+}
+
+/* Nav Expandable Group */
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.nav-chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+  opacity: 0.5;
+}
+
+.nav-chevron--open {
+  transform: rotate(180deg);
+}
+
+.nav-sub-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 20px;
+  margin-top: 2px;
+}
+
+.nav-sub-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-sub-item:hover {
+  color: var(--text-primary);
+  background: var(--bg-color);
+}
+
+.nav-sub-item.active {
+  color: var(--accent-color);
+  background: var(--accent-transparent);
+}
+
+.nav-sub-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.nav-sub-label {
+  white-space: nowrap;
+}
+
+.nav-sub-item.active .nav-sub-dot {
+  background: var(--accent-color);
+}
+
+/* Collapsed sidebar: popout submenu to the right */
+.dashboard-sidebar--collapsed .nav-group {
+  position: relative;
+}
+
+.dashboard-sidebar--collapsed .nav-sub-items {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-top: 0;
+  padding-left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 8px;
+  min-width: 200px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  z-index: 50;
+  margin-left: 8px;
+}
+
+.dashboard-sidebar--collapsed .nav-sub-item {
+  white-space: nowrap;
+}
+
+.dashboard-sidebar--collapsed .nav-chevron {
+  display: none;
 }
 
 .nav-label,
@@ -187,7 +285,9 @@
 .dashboard-sidebar--collapsed .footer-label {
   opacity: 0;
   width: 0;
+  height: 0;
   overflow: hidden;
+  position: absolute;
 }
 
 .dashboard-sidebar--collapsed .sidebar-brand {
@@ -254,7 +354,7 @@
 }
 
 .trending-up {
-  color: #c5ff2e;
+  color: var(--highlight);
   font-weight: 800;
 }
 
@@ -322,8 +422,8 @@
 }
 
 .bar.highlight {
-  background: #c5ff2e;
-  box-shadow: 0 0 20px rgba(197, 255, 46, 0.3);
+  background: var(--highlight);
+  box-shadow: 0 0 20px var(--highlight-glow-strong);
 }
 
 .stars {
@@ -361,7 +461,7 @@
 }
 
 .trend-plus {
-  color: #c5ff2e;
+  color: var(--highlight);
 }
 
 /* Compact Cards */
@@ -373,7 +473,7 @@
 }
 
 .play-icon-bg {
-  background: #c5ff2e;
+  background: var(--highlight);
   color: #000;
   width: 48px;
   height: 48px;
@@ -389,7 +489,7 @@
 }
 
 .live-badge {
-  background: #c5ff2e;
+  background: var(--highlight);
   color: #000;
   padding: 2px 8px;
   border-radius: 4px;
@@ -419,7 +519,7 @@
   height: 120px;
   border-radius: 50%;
   background: conic-gradient(
-    #c5ff2e var(--progress),
+    var(--highlight) var(--progress),
     rgba(255, 255, 255, 0.05) 0
   );
   display: flex;
@@ -570,8 +670,8 @@
 }
 
 .status-tag.active {
-  background: rgba(197, 255, 46, 0.15);
-  color: #c5ff2e;
+  background: var(--highlight-soft);
+  color: var(--highlight);
 }
 .status-tag.archived {
   background: rgba(255, 255, 255, 0.05);
@@ -607,7 +707,7 @@
 }
 
 .action-btn-main {
-  background: #c5ff2e;
+  background: var(--highlight);
   border: none;
   padding: 16px 20px;
   border-radius: 20px;
@@ -643,7 +743,7 @@
 
 .action-icon {
   background: #000;
-  color: #c5ff2e;
+  color: var(--highlight);
   width: 32px;
   height: 32px;
   border-radius: 12px;
@@ -695,7 +795,7 @@
 }
 
 .activity-icon-box.accepted {
-  background: #c5ff2e;
+  background: var(--highlight);
   color: #000;
 }
 .activity-icon-box.sent {
@@ -727,7 +827,7 @@
 }
 
 .status-pill.accepted {
-  color: #c5ff2e;
+  color: var(--highlight);
 }
 .status-pill.sent {
   color: #7b61ff;

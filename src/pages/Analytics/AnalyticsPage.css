@@ -65,7 +65,7 @@
 .performance-bar__fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #7b61ff 0%, #c5ff2e 100%);
+  background: linear-gradient(90deg, #7b61ff 0%, var(--highlight) 100%);
 }
 
 .analytics-panel-card {
@@ -97,7 +97,7 @@
 }
 
 .channel-trend {
-  color: #c5ff2e;
+  color: var(--highlight);
   font-weight: 800;
 }
 

@@ -1,8 +1,8 @@
 .proposal-creator {
   padding: 2.5rem;
-  background-color: #0f0f0f;
+  background-color: var(--bg-color);
   min-height: 100%;
-  color: #ffffff;
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -23,8 +23,8 @@
 
 .back-btn {
   background: transparent;
-  border: 1px solid #333;
-  color: #fff;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 8px;
   border-radius: 12px;
   cursor: pointer;
@@ -32,8 +32,8 @@
 }
 
 .back-btn:hover {
-  background: #222;
-  border-color: #555;
+  background: var(--bg-card);
+  border-color: var(--border-color);
 }
 
 .proposal-header h1 {
@@ -48,9 +48,9 @@
 }
 
 .btn-secondary {
-  background: #1a1a1a;
-  border: 1px solid #333;
-  color: #fff;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 10px 20px;
   border-radius: 12px;
   font-weight: 600;
@@ -58,9 +58,9 @@
 }
 
 .btn-primary {
-  background: #333;
-  border: 1px solid #444;
-  color: #fff;
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 10px 20px;
   border-radius: 12px;
   font-weight: 600;
@@ -75,8 +75,8 @@
 }
 
 .proposal-card {
-  background: #151515;
-  border: 1px solid #222;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 28px;
   padding: 2rem;
   display: flex;
@@ -97,7 +97,7 @@
 .step-label {
   font-size: 0.65rem;
   font-weight: 800;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   letter-spacing: 0.1em;
 }
 
@@ -117,7 +117,7 @@
 .form-group label {
   font-size: 0.6rem;
   font-weight: 800;
-  color: #71717a;
+  color: var(--text-secondary);
   letter-spacing: 0.05em;
 }
 
@@ -132,17 +132,17 @@
 .date-icon {
   position: absolute;
   left: 14px;
-  color: #52525b;
+  color: var(--text-secondary);
 }
 
 .search-input-wrapper input,
 .date-input-wrapper input {
   width: 100%;
-  background: #1e1e1e;
-  border: 1px solid #27272a;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
   padding: 14px 14px 14px 44px;
   border-radius: 16px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -150,13 +150,13 @@
   position: absolute;
   right: 14px;
   font-size: 0.7rem;
-  color: #52525b;
+  color: var(--text-secondary);
 }
 
 .add-new-btn {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.7rem;
   font-weight: 800;
   display: flex;
@@ -179,9 +179,9 @@
 }
 
 .add-item-trigger {
-  background: #1a1a1a;
-  border: 1px solid #333;
-  color: #fff;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 8px 16px;
   border-radius: 99px;
   font-size: 0.7rem;
@@ -217,13 +217,13 @@
 }
 
 .items-scroll::-webkit-scrollbar-thumb {
-  background: #333;
+  background: var(--border-color);
   border-radius: 10px;
 }
 
 .item-row {
-  background: #1e1e1e;
-  border: 1px solid #27272a;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
   padding: 1.5rem;
   border-radius: 20px;
   display: flex;
@@ -238,14 +238,14 @@
   right: 14px;
   background: transparent;
   border: none;
-  color: #71717a;
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .item-label {
   font-size: 0.55rem;
   font-weight: 800;
-  color: #52525b;
+  color: var(--text-secondary);
   letter-spacing: 0.05em;
   display: block;
   margin-bottom: 4px;
@@ -276,7 +276,7 @@
 
 /* Summary Card */
 .proposal-summary-card {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 36px;
   padding: 2.5rem;
   display: flex;
@@ -297,7 +297,7 @@
 }
 
 .summary-info p {
-  color: #71717a;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;
 }
@@ -317,11 +317,11 @@
 .badge-label {
   font-size: 0.6rem;
   font-weight: 800;
-  color: #52525b;
+  color: var(--text-secondary);
 }
 
 .badge-value {
-  background: #27272a;
+  background: var(--border-color);
   padding: 4px 12px;
   border-radius: 99px;
   font-size: 0.75rem;
@@ -352,12 +352,12 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.95rem;
-  color: #a1a1aa;
+  color: var(--text-secondary);
 }
 
 .value-divider {
   height: 1px;
-  background: #27272a;
+  background: var(--border-color);
   margin: 0.5rem 0;
 }
 
@@ -370,7 +370,7 @@
 .total-label {
   font-size: 0.6rem;
   font-weight: 800;
-  color: #71717a;
+  color: var(--text-secondary);
 }
 
 .total-value {
@@ -386,7 +386,7 @@
   justify-content: space-between;
   align-items: center;
   padding-top: 2rem;
-  border-top: 1px solid #1a1a1a;
+  border-top: 1px solid var(--border-color);
 }
 
 .footer-meta {
@@ -401,16 +401,16 @@
 }
 
 .meta-icon {
-  background: #1a1a1a;
+  background: var(--bg-card);
   padding: 10px;
   border-radius: 12px;
-  color: #52525b;
+  color: var(--text-secondary);
 }
 
 .meta-label {
   font-size: 0.6rem;
   font-weight: 800;
-  color: #52525b;
+  color: var(--text-secondary);
   display: block;
 }
 
@@ -426,8 +426,8 @@
 }
 
 .btn-preview {
-  background: #27272a;
-  color: #fff;
+  background: var(--border-color);
+  color: var(--text-primary);
   border: none;
   padding: 14px 24px;
   border-radius: 16px;
@@ -440,7 +440,7 @@
 }
 
 .btn-send {
-  background: #b5ff24;
+  background: var(--highlight);
   color: #000;
   border: none;
   padding: 14px 24px;
@@ -451,11 +451,11 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(181, 255, 36, 0.15);
+  box-shadow: 0 10px 25px var(--highlight-glow);
 }
 
 .btn-send:hover {
-  background: #c7ff5c;
+  filter: brightness(1.1);
   transform: translateY(-2px);
 }
 
@@ -464,11 +464,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #52525b;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   text-align: center;
   padding: 2rem;
-  border: 1px dashed #333;
+  border: 1px dashed var(--border-color);
   border-radius: 20px;
 }
 

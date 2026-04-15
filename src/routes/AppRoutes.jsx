@@ -9,6 +9,7 @@ import MapPage from "../pages/Map/MapPage";
 import DashboardPage from "../pages/Dashboard/DashboardPage";
 import AnalyticsPage from "../pages/Analytics/AnalyticsPage";
 import SettingsPage from "../pages/Settings/SettingsPage";
+import MessagesPage from "../pages/Messages/MessagesPage";
 import { ROUTES } from "./paths";
 
 export default function AppRoutes() {
@@ -24,6 +25,7 @@ export default function AppRoutes() {
       <Route path={ROUTES.dashboard} element={<DashboardPage />} />
       <Route path={ROUTES.analytics} element={<AnalyticsPage />} />
       <Route path={ROUTES.settings} element={<SettingsPage />} />
+      <Route path={ROUTES.messages} element={<MessagesPage />} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );

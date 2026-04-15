@@ -6,7 +6,7 @@
 }
 
 .form-description {
-  color: #a1a1aa;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   margin: 0;
 }
@@ -21,7 +21,7 @@
 .items-table-header span {
   font-size: 0.6rem;
   font-weight: 800;
-  color: #71717a;
+  color: var(--text-secondary);
   letter-spacing: 0.05em;
 }
 
@@ -39,7 +39,7 @@
 }
 
 .items-table-body::-webkit-scrollbar-thumb {
-  background: #333;
+  background: var(--border-color);
   border-radius: 10px;
 }
 
@@ -51,17 +51,17 @@
 }
 
 .item-input-row input {
-  background: #1e1e1e;
-  border: 1px solid #27272a;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
   padding: 12px;
   border-radius: 12px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 
 .item-input-row input:focus {
   outline: none;
-  border-color: #52525b;
+  border-color: var(--text-secondary);
 }
 
 .row-delete-btn {
@@ -81,9 +81,9 @@
 }
 
 .add-row-btn {
-  background: #1a1a1a;
-  border: 1px dashed #333;
-  color: #a1a1aa;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  color: var(--text-secondary);
   padding: 12px;
   border-radius: 12px;
   width: 100%;
@@ -98,9 +98,9 @@
 }
 
 .add-row-btn:hover {
-  background: #222;
-  border-color: #444;
-  color: #fff;
+  background: var(--input-bg);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 .modal-footer-actions {
@@ -109,13 +109,13 @@
   gap: 1rem;
   margin-top: 1rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #27272a;
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-cancel {
   background: transparent;
-  border: 1px solid #27272a;
-  color: #a1a1aa;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   padding: 12px 24px;
   border-radius: 12px;
   font-weight: 600;
@@ -123,7 +123,7 @@
 }
 
 .btn-submit {
-  background: #b5ff24;
+  background: var(--highlight);
   color: #000;
   border: none;
   padding: 12px 24px;
@@ -133,7 +133,7 @@
 }
 
 .btn-submit:hover {
-  background: #c7ff5c;
+  filter: brightness(1.1);
 }
 
 @media (max-width: 768px) {

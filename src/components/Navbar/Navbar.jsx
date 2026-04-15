@@ -1,19 +1,26 @@
-import { Link, useLocation } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
-import { ROUTES } from '../../routes/paths';
-import { Bell, User, LayoutDashboard, Settings, LogOut, MessageSquare } from 'lucide-react';
-import SearchBar from './SearchBar';
-import './Navbar.css';
+import { Link, useLocation } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { ROUTES } from "../../routes/paths";
+import {
+  Bell,
+  User,
+  LayoutDashboard,
+  Settings,
+  LogOut,
+  MessageSquare,
+} from "lucide-react";
+import SearchBar from "./SearchBar";
+import "./Navbar.css";
 
 export default function Navbar() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  
+
   const navLinks = [
-    { label: 'Dashboard', path: ROUTES.home },
-    { label: 'Services', path: ROUTES.services },
-    { label: 'Map', path: ROUTES.map },
+    { label: "Dashboard", path: ROUTES.home },
+    { label: "Services", path: ROUTES.services },
+    { label: "Map", path: ROUTES.map },
   ];
 
   // Close menu when clicking outside
@@ -40,10 +47,10 @@ export default function Navbar() {
         {/* Navigation Links */}
         <nav className="navbar__nav">
           {navLinks.map((link) => (
-            <Link 
-              key={link.label} 
-              to={link.path} 
-              className={`navbar__link ${location.pathname === link.path ? 'active' : ''}`}
+            <Link
+              key={link.label}
+              to={link.path}
+              className={`navbar__link ${location.pathname === link.path ? "active" : ""}`}
             >
               {link.label}
             </Link>
@@ -57,16 +64,20 @@ export default function Navbar() {
 
         {/* Right side icons */}
         <div className="navbar__right">
-          <button className="navbar__icon-btn" aria-label="Messages">
+          <Link
+            to={ROUTES.messages}
+            className="navbar__icon-btn"
+            aria-label="Messages"
+          >
             <MessageSquare size={20} />
-          </button>
+          </Link>
           <button className="navbar__icon-btn" aria-label="Notifications">
             <Bell size={20} />
           </button>
-          
+
           <div className="navbar__user-container" ref={menuRef}>
-            <button 
-              className={`navbar__icon-btn navbar__avatar ${isMenuOpen ? 'active' : ''}`} 
+            <button
+              className={`navbar__icon-btn navbar__avatar ${isMenuOpen ? "active" : ""}`}
               onClick={toggleMenu}
               aria-label="User Menu"
             >
@@ -77,17 +88,27 @@ export default function Navbar() {
               <div className="navbar__dropdown">
                 <div className="dropdown__header">
                   <div className="dropdown__user-info">
-                    <span className="dropdown__username">Architect Julian Vance</span>
+                    <span className="dropdown__username">
+                      Architect Julian Vance
+                    </span>
                     <span className="dropdown__user-role">Premium Member</span>
                   </div>
                 </div>
                 <div className="dropdown__divider"></div>
                 <div className="dropdown__body">
-                  <Link to={ROUTES.profile} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
+                  <Link
+                    to={ROUTES.profile}
+                    className="dropdown__item"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
                     <Settings size={18} />
                     <span>Mi Cuenta</span>
                   </Link>
-                  <Link to={ROUTES.dashboard} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
+                  <Link
+                    to={ROUTES.dashboard}
+                    className="dropdown__item"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
                     <LayoutDashboard size={18} />
                     <span>Dashboard</span>
                   </Link>
@@ -103,10 +124,7 @@ export default function Navbar() {
             )}
           </div>
         </div>
-
       </div>
     </header>
   );
 }
-
-

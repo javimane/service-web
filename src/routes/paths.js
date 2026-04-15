@@ -9,4 +9,5 @@ export const ROUTES = {
   dashboard: "/dashboard",
   analytics: "/analytics",
   settings: "/settings",
+  messages: "/messages",
 };
