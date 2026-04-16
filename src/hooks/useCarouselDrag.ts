@@ -56,7 +56,7 @@ export default function useCarouselDrag(
   const handlePointerMove = useCallback(
     (event) => {
       const slider = sliderRef.current;
-      if (!slider) return;
+      if (!slider || pointerIdRef.current == null) return;
 
       const x = event.clientX - slider.offsetLeft;
       const y = event.clientY - slider.offsetTop;

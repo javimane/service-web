@@ -4,6 +4,7 @@ import { Search, ArrowRight } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import CategoriesSection from "./sections/CategoriesSection";
 import NearbyServicesSection from "./sections/NearbyServicesSection";
+import NearbyProductsSection from "./sections/NearbyProductsSection";
 import ProductsCarousel from "./sections/ProductsCarousel";
 import PromotionsSection from "./sections/PromotionsSection";
 import FeaturedSpecialists from "./sections/FeaturedSpecialists";
@@ -91,6 +92,7 @@ export default function HomePage() {
 
         <CategoriesSection />
         <NearbyServicesSection />
+        <NearbyProductsSection />
         <ProductsCarousel />
         <PromotionsSection />
         <FeaturedSpecialists />

@@ -38,7 +38,6 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   touch-action: pan-x;
-  cursor: grab;
 }
 
 .products-carousel-section__scroll.is-dragging {
@@ -57,6 +56,7 @@
 /* ===== PRODUCT CARD ===== */
 .product-carousel-card {
   flex-shrink: 0;
+  min-width: 220px;
   width: 220px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -202,6 +202,7 @@
   }
 
   .product-carousel-card {
+    min-width: 180px;
     width: 180px;
   }
 }
