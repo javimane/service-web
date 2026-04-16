@@ -13,8 +13,13 @@ import {
   Image as ImageIcon,
   Check,
   AlertTriangle,
+  Upload,
+  Link as LinkIcon,
+  Barcode,
+  Info,
 } from "lucide-react";
 import { products as initialProducts } from "../../../data/products";
+import { supabase } from "../../../services/supabaseClient";
 import "./DashboardProducts.css";
 
 const formatPrice = (n: number) =>
@@ -49,7 +54,33 @@ export default function DashboardProducts() {
     stock: "",
     image: "",
     description: "",
+    ean: "",
+    webUrl: "",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
+
+  // Edit product modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<{
+    id: number;
+    title: string;
+    price: string;
+    category: string;
+    stock: string;
+    image: string;
+    description: string;
+    ean: string;
+    webUrl: string;
+  } | null>(null);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState("");
+
+  // EAN duplicate flow
+  const [eanLoading, setEanLoading] = useState(false);
+  const [eanMatch, setEanMatch] = useState<any>(null);
+  const [eanPriceMode, setEanPriceMode] = useState<"same" | "custom">("same");
+  const [eanCustomPrice, setEanCustomPrice] = useState("");
 
   // Sorting
   const toggleSort = (field) => {
@@ -120,6 +151,86 @@ export default function DashboardProducts() {
     }, 1200);
   };
 
+  // Image file handler
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+  };
+
+  // EAN check against DB
+  const handleCheckEan = async () => {
+    const ean = newProduct.ean.trim();
+    if (!ean) return;
+    setEanLoading(true);
+    setEanMatch(null);
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("ean", ean)
+        .maybeSingle();
+
+      if (!error && data) {
+        setEanMatch(data);
+        setEanPriceMode("same");
+        setEanCustomPrice("");
+      }
+    } catch {
+      // silently fail — product not found
+    }
+    setEanLoading(false);
+  };
+
+  // Add existing product from EAN match
+  const handleAddFromEan = () => {
+    if (!eanMatch) return;
+    const id = Math.max(...productsList.map((p) => p.id), 0) + 1;
+    const finalPrice =
+      eanPriceMode === "custom" && eanCustomPrice
+        ? parseInt(eanCustomPrice, 10)
+        : eanMatch.price;
+    setProductsList((prev) => [
+      ...prev,
+      {
+        ...eanMatch,
+        id,
+        price: finalPrice,
+        originalPrice: eanMatch.price,
+      },
+    ]);
+    resetAddModal();
+  };
+
+  // Reset add modal state
+  const resetAddModal = () => {
+    setNewProduct({
+      title: "",
+      price: "",
+      category: "",
+      stock: "",
+      image: "",
+      description: "",
+      ean: "",
+      webUrl: "",
+    });
+    setImageFile(null);
+    setImagePreview("");
+    setEanMatch(null);
+    setEanLoading(false);
+    setEanCustomPrice("");
+    setAddOpen(false);
+  };
+
   // Add product
   const handleAddProduct = () => {
     if (!newProduct.title.trim() || !newProduct.price) return;
@@ -139,21 +250,81 @@ export default function DashboardProducts() {
         category: newProduct.category || "General",
         condition: "Nuevo",
         stock: parseInt(newProduct.stock, 10) || 0,
-        image: newProduct.image || "",
-        mercadoLibreUrl: "",
+        image: imagePreview || newProduct.image || "",
+        mercadoLibreUrl: newProduct.webUrl || "",
         description: newProduct.description || "",
         features: [],
+        ean: newProduct.ean || "",
       },
     ]);
-    setNewProduct({
-      title: "",
-      price: "",
-      category: "",
-      stock: "",
-      image: "",
-      description: "",
+    resetAddModal();
+  };
+
+  // Open edit modal
+  const openEditModal = (product: ProductItem) => {
+    setEditProduct({
+      id: product.id,
+      title: product.title,
+      price: String(product.price),
+      category: product.category || "",
+      stock: String(product.stock || 0),
+      image: product.image || "",
+      description: product.description || "",
+      ean: (product as any).ean || "",
+      webUrl: (product as any).mercadoLibreUrl || "",
     });
-    setAddOpen(false);
+    setEditImagePreview(product.image || "");
+    setEditImageFile(null);
+    setEditOpen(true);
+  };
+
+  // Edit image handler
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setEditImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeEditImage = () => {
+    setEditImageFile(null);
+    setEditImagePreview("");
+    if (editProduct) {
+      setEditProduct({ ...editProduct, image: "" });
+    }
+  };
+
+  // Save edited product
+  const handleEditProduct = () => {
+    if (!editProduct || !editProduct.title.trim() || !editProduct.price) return;
+    setProductsList((prev) =>
+      prev.map((p) =>
+        p.id === editProduct.id
+          ? {
+              ...p,
+              title: editProduct.title,
+              price: parseInt(editProduct.price, 10) || 0,
+              category: editProduct.category || p.category,
+              stock: parseInt(editProduct.stock, 10) || 0,
+              image: editImagePreview || editProduct.image || "",
+              description: editProduct.description || "",
+              mercadoLibreUrl: editProduct.webUrl || "",
+              ean: editProduct.ean || "",
+            }
+          : p,
+      ),
+    );
+    resetEditModal();
+  };
+
+  const resetEditModal = () => {
+    setEditProduct(null);
+    setEditImageFile(null);
+    setEditImagePreview("");
+    setEditOpen(false);
   };
 
   // Delete product
@@ -312,6 +483,7 @@ export default function DashboardProducts() {
                       className="dash-products__action-btn"
                       aria-label="Editar"
                       title="Editar"
+                      onClick={() => openEditModal(product)}
                     >
                       <Edit3 size={15} />
                     </button>
@@ -458,10 +630,7 @@ export default function DashboardProducts() {
 
       {/* ===== Add Product Modal ===== */}
       {addOpen && (
-        <div
-          className="dash-products__overlay"
-          onClick={() => setAddOpen(false)}
-        >
+        <div className="dash-products__overlay" onClick={resetAddModal}>
           <div
             className="dash-products__modal dash-products__modal--wide"
             onClick={(e) => e.stopPropagation()}
@@ -470,7 +639,280 @@ export default function DashboardProducts() {
               <h2>Agregar Producto</h2>
               <button
                 className="dash-products__modal-close"
-                onClick={() => setAddOpen(false)}
+                onClick={resetAddModal}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* EAN field with check */}
+            <div className="dash-products__modal-field dash-products__field--full">
+              <label>Código EAN / UPC</label>
+              <div className="dash-products__ean-row">
+                <div
+                  className="dash-products__modal-input-wrap"
+                  style={{ flex: 1 }}
+                >
+                  <Barcode size={16} />
+                  <input
+                    type="text"
+                    placeholder="Ej: 7790001234567"
+                    value={newProduct.ean}
+                    onChange={(e) =>
+                      setNewProduct({ ...newProduct, ean: e.target.value })
+                    }
+                  />
+                </div>
+                <button
+                  className="dash-products__ean-check-btn"
+                  onClick={handleCheckEan}
+                  disabled={!newProduct.ean.trim() || eanLoading}
+                >
+                  {eanLoading ? "Buscando..." : "Verificar"}
+                </button>
+              </div>
+            </div>
+
+            {/* EAN Match found */}
+            {eanMatch && (
+              <div className="dash-products__ean-match">
+                <div className="dash-products__ean-match-header">
+                  <Info size={16} />
+                  <span>Este producto ya existe en nuestra base de datos</span>
+                </div>
+                <div className="dash-products__ean-match-card">
+                  {eanMatch.image && (
+                    <img
+                      src={eanMatch.image}
+                      alt=""
+                      className="dash-products__ean-match-img"
+                    />
+                  )}
+                  <div className="dash-products__ean-match-info">
+                    <span className="dash-products__ean-match-name">
+                      {eanMatch.title}
+                    </span>
+                    <span className="dash-products__ean-match-price">
+                      {formatPrice(eanMatch.price)}
+                    </span>
+                    {eanMatch.category && (
+                      <span className="dash-products__ean-match-cat">
+                        {eanMatch.category}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="dash-products__modal-field">
+                  <label>¿A qué precio querés agregarlo?</label>
+                  <div className="dash-products__modal-toggle">
+                    <button
+                      className={eanPriceMode === "same" ? "active" : ""}
+                      onClick={() => setEanPriceMode("same")}
+                    >
+                      Mismo precio ({formatPrice(eanMatch.price)})
+                    </button>
+                    <button
+                      className={eanPriceMode === "custom" ? "active" : ""}
+                      onClick={() => setEanPriceMode("custom")}
+                    >
+                      Precio personalizado
+                    </button>
+                  </div>
+                </div>
+
+                {eanPriceMode === "custom" && (
+                  <div className="dash-products__modal-field">
+                    <label>Tu precio (ARS)</label>
+                    <div className="dash-products__modal-input-wrap">
+                      <DollarSign size={16} />
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ingresá tu precio"
+                        value={eanCustomPrice}
+                        onChange={(e) => setEanCustomPrice(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="dash-products__modal-footer">
+                  <button
+                    className="dash-products__modal-cancel"
+                    onClick={() => setEanMatch(null)}
+                  >
+                    Crear nuevo
+                  </button>
+                  <button
+                    className="dash-products__modal-apply"
+                    onClick={handleAddFromEan}
+                    disabled={
+                      eanPriceMode === "custom" &&
+                      (!eanCustomPrice || parseInt(eanCustomPrice) <= 0)
+                    }
+                  >
+                    Agregar a mi cuenta
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Regular form (hidden when EAN match is shown) */}
+            {!eanMatch && (
+              <>
+                <div className="dash-products__form-grid">
+                  <div className="dash-products__modal-field dash-products__field--full">
+                    <label>Nombre del producto *</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Taladro Bosch 550W"
+                      value={newProduct.title}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, title: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="dash-products__modal-field">
+                    <label>Precio (ARS) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={newProduct.price}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, price: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="dash-products__modal-field">
+                    <label>Categoría</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Herramientas"
+                      value={newProduct.category}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          category: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="dash-products__modal-field">
+                    <label>Stock</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={newProduct.stock}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, stock: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="dash-products__modal-field">
+                    <label>URL de página web</label>
+                    <div className="dash-products__modal-input-wrap">
+                      <LinkIcon size={16} />
+                      <input
+                        type="url"
+                        placeholder="https://www.ejemplo.com/producto"
+                        value={newProduct.webUrl}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            webUrl: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Image upload */}
+                  <div className="dash-products__modal-field dash-products__field--full">
+                    <label>Imagen del producto</label>
+                    {imagePreview ? (
+                      <div className="dash-products__image-preview">
+                        <img src={imagePreview} alt="Preview" />
+                        <button
+                          className="dash-products__image-remove"
+                          onClick={removeImage}
+                          type="button"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="dash-products__image-upload">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          hidden
+                        />
+                        <Upload size={20} />
+                        <span>Subir imagen</span>
+                        <span className="dash-products__image-upload-hint">
+                          JPG, PNG o WebP (máx. 5MB)
+                        </span>
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="dash-products__modal-field dash-products__field--full">
+                    <label>Descripción</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Descripción breve del producto..."
+                      value={newProduct.description}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          description: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="dash-products__modal-footer">
+                  <button
+                    className="dash-products__modal-cancel"
+                    onClick={resetAddModal}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="dash-products__modal-apply"
+                    onClick={handleAddProduct}
+                    disabled={!newProduct.title.trim() || !newProduct.price}
+                  >
+                    Agregar Producto
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== Edit Product Modal ===== */}
+      {editOpen && editProduct && (
+        <div className="dash-products__overlay" onClick={resetEditModal}>
+          <div
+            className="dash-products__modal dash-products__modal--wide"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="dash-products__modal-header">
+              <h2>Editar Producto</h2>
+              <button
+                className="dash-products__modal-close"
+                onClick={resetEditModal}
               >
                 <X size={20} />
               </button>
@@ -482,9 +924,9 @@ export default function DashboardProducts() {
                 <input
                   type="text"
                   placeholder="Ej: Taladro Bosch 550W"
-                  value={newProduct.title}
+                  value={editProduct.title}
                   onChange={(e) =>
-                    setNewProduct({ ...newProduct, title: e.target.value })
+                    setEditProduct({ ...editProduct, title: e.target.value })
                   }
                 />
               </div>
@@ -495,9 +937,9 @@ export default function DashboardProducts() {
                   type="number"
                   min="0"
                   placeholder="0"
-                  value={newProduct.price}
+                  value={editProduct.price}
                   onChange={(e) =>
-                    setNewProduct({ ...newProduct, price: e.target.value })
+                    setEditProduct({ ...editProduct, price: e.target.value })
                   }
                 />
               </div>
@@ -507,9 +949,12 @@ export default function DashboardProducts() {
                 <input
                   type="text"
                   placeholder="Ej: Herramientas"
-                  value={newProduct.category}
+                  value={editProduct.category}
                   onChange={(e) =>
-                    setNewProduct({ ...newProduct, category: e.target.value })
+                    setEditProduct({
+                      ...editProduct,
+                      category: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -520,23 +965,75 @@ export default function DashboardProducts() {
                   type="number"
                   min="0"
                   placeholder="0"
-                  value={newProduct.stock}
+                  value={editProduct.stock}
                   onChange={(e) =>
-                    setNewProduct({ ...newProduct, stock: e.target.value })
+                    setEditProduct({ ...editProduct, stock: e.target.value })
                   }
                 />
               </div>
 
               <div className="dash-products__modal-field">
-                <label>URL de imagen</label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  value={newProduct.image}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, image: e.target.value })
-                  }
-                />
+                <label>Código EAN / UPC</label>
+                <div className="dash-products__modal-input-wrap">
+                  <Barcode size={16} />
+                  <input
+                    type="text"
+                    placeholder="Ej: 7790001234567"
+                    value={editProduct.ean}
+                    onChange={(e) =>
+                      setEditProduct({ ...editProduct, ean: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="dash-products__modal-field dash-products__field--full">
+                <label>URL de página web</label>
+                <div className="dash-products__modal-input-wrap">
+                  <LinkIcon size={16} />
+                  <input
+                    type="url"
+                    placeholder="https://www.ejemplo.com/producto"
+                    value={editProduct.webUrl}
+                    onChange={(e) =>
+                      setEditProduct({
+                        ...editProduct,
+                        webUrl: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Image upload */}
+              <div className="dash-products__modal-field dash-products__field--full">
+                <label>Imagen del producto</label>
+                {editImagePreview ? (
+                  <div className="dash-products__image-preview">
+                    <img src={editImagePreview} alt="Preview" />
+                    <button
+                      className="dash-products__image-remove"
+                      onClick={removeEditImage}
+                      type="button"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="dash-products__image-upload">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditImageChange}
+                      hidden
+                    />
+                    <Upload size={20} />
+                    <span>Subir imagen</span>
+                    <span className="dash-products__image-upload-hint">
+                      JPG, PNG o WebP (máx. 5MB)
+                    </span>
+                  </label>
+                )}
               </div>
 
               <div className="dash-products__modal-field dash-products__field--full">
@@ -544,10 +1041,10 @@ export default function DashboardProducts() {
                 <textarea
                   rows={3}
                   placeholder="Descripción breve del producto..."
-                  value={newProduct.description}
+                  value={editProduct.description}
                   onChange={(e) =>
-                    setNewProduct({
-                      ...newProduct,
+                    setEditProduct({
+                      ...editProduct,
                       description: e.target.value,
                     })
                   }
@@ -558,16 +1055,16 @@ export default function DashboardProducts() {
             <div className="dash-products__modal-footer">
               <button
                 className="dash-products__modal-cancel"
-                onClick={() => setAddOpen(false)}
+                onClick={resetEditModal}
               >
                 Cancelar
               </button>
               <button
                 className="dash-products__modal-apply"
-                onClick={handleAddProduct}
-                disabled={!newProduct.title.trim() || !newProduct.price}
+                onClick={handleEditProduct}
+                disabled={!editProduct.title.trim() || !editProduct.price}
               >
-                Agregar Producto
+                Guardar Cambios
               </button>
             </div>
           </div>
