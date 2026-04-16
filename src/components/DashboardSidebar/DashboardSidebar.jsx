@@ -13,6 +13,7 @@ import {
   Plus,
   PanelLeftClose,
   PanelLeftOpen,
+  Package,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
@@ -28,6 +29,7 @@ export default function DashboardSidebar({
   onNotificationsClick,
   onPromotionsCreate,
   onPromotionsViewAll,
+  onProductsClick,
 }) {
   const navigate = useNavigate();
   const [promosOpen, setPromosOpen] = useState(
@@ -90,6 +92,12 @@ export default function DashboardSidebar({
           onClick: onPromotionsViewAll,
         },
       ],
+    },
+    {
+      key: "products",
+      label: "PRODUCTS",
+      icon: Package,
+      onClick: onProductsClick ?? (() => navigate(ROUTES.products)),
     },
     {
       key: "messages",

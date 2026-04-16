@@ -18,7 +18,7 @@ import ProposalCreator from "./sections/ProposalCreator";
 import PromotionCreator from "./sections/PromotionCreator";
 import AllPromotionsPage from "./sections/AllPromotionsPage";
 import NotificationsPage from "./sections/NotificationsPage";
-import MessagesPage from "../Messages/MessagesPage";
+import DashboardProducts from "./sections/DashboardProducts";
 import "./DashboardPage.css";
 
 export default function DashboardPage() {
@@ -46,10 +46,11 @@ export default function DashboardPage() {
   const handleGoServices = () => navigate(ROUTES.services);
   const handleGoSettings = () => navigate(ROUTES.settings);
   const handleShowOverview = () => setView("overview");
-  const handleShowMessages = () => setView("messages");
+  const handleShowMessages = () => navigate(ROUTES.messages);
   const handleShowNotifications = () => setView("notifications");
   const handleShowPromotionsCreate = () => setView("promotions-create");
   const handleShowPromotionsAll = () => setView("promotions-all");
+  const handleShowProducts = () => setView("products");
 
   return (
     <div className="dashboard-page-wrapper">
@@ -58,14 +59,14 @@ export default function DashboardPage() {
           activeItem={
             view === "create-proposal"
               ? "proposals"
-              : view === "messages"
-                ? "messages"
-                : view === "notifications"
-                  ? "notifications"
-                  : view === "promotions-create"
-                    ? "promotions-create"
-                    : view === "promotions-all"
-                      ? "promotions-all"
+              : view === "notifications"
+                ? "notifications"
+                : view === "promotions-create"
+                  ? "promotions-create"
+                  : view === "promotions-all"
+                    ? "promotions-all"
+                    : view === "products"
+                      ? "products"
                       : "dashboard"
           }
           isCollapsed={isSidebarCollapsed}
@@ -76,13 +77,14 @@ export default function DashboardPage() {
           onNotificationsClick={handleShowNotifications}
           onPromotionsCreate={handleShowPromotionsCreate}
           onPromotionsViewAll={handleShowPromotionsAll}
+          onProductsClick={handleShowProducts}
         />
 
         <main className="dashboard-main">
           {view === "create-proposal" ? (
             <ProposalCreator onBack={handleGoBack} />
-          ) : view === "messages" ? (
-            <MessagesPage embedded />
+          ) : view === "products" ? (
+            <DashboardProducts />
           ) : view === "notifications" ? (
             <NotificationsPage />
           ) : view === "promotions-create" ? (
