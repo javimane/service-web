@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
 import { supabase } from "../../services/supabaseClient";
 import "./LoginPage.css";
 
-export default function LoginPage() {
+export default function LoginPage({ isModal, onClose, onSwitchMode }) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -57,9 +58,11 @@ export default function LoginPage() {
       if (error) {
         setAuthError(error.message);
       } else {
-        // Redirigir o actualizar estado global
-        console.log("Inicio de sesión exitoso", data);
-        alert("¡Inicio de sesión exitoso!");
+        if (isModal) {
+          onClose?.();
+        } else {
+          navigate(ROUTES.home);
+        }
       }
     } catch (err) {
       setAuthError(
@@ -69,6 +72,103 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const formCard = (
+    <div className="login-card">
+      <h2 className="login-title">Bienvenido</h2>
+      <p className="login-subtitle">
+        Ingrese sus credenciales para acceder al panel.
+      </p>
+
+      <form className="login-form" onSubmit={handleSubmit} noValidate>
+        <div className="input-group">
+          <label htmlFor="email">CORREO ELECTRÓNICO</label>
+          <div className={`input-wrapper ${errors.email ? "has-error" : ""}`}>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="arquitecto@obsidian.pro"
+            />
+            <span className="input-icon">@</span>
+          </div>
+          {errors.email && <span className="error-text">{errors.email}</span>}
+        </div>
+
+        <div className="input-group">
+          <div className="label-row">
+            <label htmlFor="password">CONTRASEÑA</label>
+            <a href="#" className="forgot-password">
+              ¿OLVIDÓ SU CONTRASEÑA?
+            </a>
+          </div>
+          <div
+            className={`input-wrapper ${errors.password ? "has-error" : ""}`}
+          >
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              className="input-icon-btn"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={
+                showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+              }
+            >
+              {showPassword ? "🔓" : "🔒"}
+            </button>
+          </div>
+          {errors.password && (
+            <span className="error-text">{errors.password}</span>
+          )}
+        </div>
+
+        {authError && <div className="auth-error-alert">{authError}</div>}
+
+        <button type="submit" className="btn-primary" disabled={isLoading}>
+          {isLoading ? "Ingresando..." : "Ingresar"}
+        </button>
+
+        <div className="divider">
+          <span>O CONTINUAR CON</span>
+        </div>
+
+        <div className="social-buttons">
+          <button type="button" className="btn-social">
+            G Google
+          </button>
+          <button type="button" className="btn-social">
+            f Facebook
+          </button>
+        </div>
+
+        <p className="register-prompt">
+          ¿No tienes una cuenta?{" "}
+          {isModal ? (
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => onSwitchMode?.("register")}
+            >
+              Crear cuenta
+            </button>
+          ) : (
+            <Link to={ROUTES.register}>Crear cuenta</Link>
+          )}
+        </p>
+      </form>
+    </div>
+  );
+
+  if (isModal) return formCard;
 
   return (
     <div className="login-container">
@@ -90,93 +190,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="login-right">
-        <div className="login-card">
-          <h2 className="login-title">Bienvenido</h2>
-          <p className="login-subtitle">
-            Ingrese sus credenciales para acceder al panel.
-          </p>
-
-          <form className="login-form" onSubmit={handleSubmit} noValidate>
-            <div className="input-group">
-              <label htmlFor="email">CORREO ELECTRÓNICO</label>
-              <div
-                className={`input-wrapper ${errors.email ? "has-error" : ""}`}
-              >
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="arquitecto@obsidian.pro"
-                />
-                <span className="input-icon">@</span>
-              </div>
-              {errors.email && (
-                <span className="error-text">{errors.email}</span>
-              )}
-            </div>
-
-            <div className="input-group">
-              <div className="label-row">
-                <label htmlFor="password">CONTRASEÑA</label>
-                <a href="#" className="forgot-password">
-                  ¿OLVIDÓ SU CONTRASEÑA?
-                </a>
-              </div>
-              <div
-                className={`input-wrapper ${errors.password ? "has-error" : ""}`}
-              >
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  className="input-icon-btn"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={
-                    showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
-                  }
-                >
-                  {showPassword ? "🔓" : "🔒"}
-                </button>
-              </div>
-              {errors.password && (
-                <span className="error-text">{errors.password}</span>
-              )}
-            </div>
-
-            {authError && <div className="auth-error-alert">{authError}</div>}
-
-            <button type="submit" className="btn-primary" disabled={isLoading}>
-              {isLoading ? "Ingresando..." : "Ingresar"}
-            </button>
-
-            <div className="divider">
-              <span>O CONTINUAR CON</span>
-            </div>
-
-            <div className="social-buttons">
-              <button type="button" className="btn-social">
-                G Google
-              </button>
-              <button type="button" className="btn-social">
-                f Facebook
-              </button>
-            </div>
-
-            <p className="register-prompt">
-              ¿No tienes una cuenta? <Link to={ROUTES.register}>Crear cuenta</Link>
-            </p>
-          </form>
-        </div>
-      </div>
+      <div className="login-right">{formCard}</div>
 
       <div className="footer-links">
         <span>

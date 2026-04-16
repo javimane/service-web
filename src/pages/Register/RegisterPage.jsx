@@ -6,7 +6,7 @@ import { supabase } from "../../services/supabaseClient";
 import Modal from "../../components/Modal/Modal";
 import "./RegisterPage.css";
 
-export default function RegisterPage() {
+export default function RegisterPage({ isModal, onClose, onSwitchMode }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -112,8 +112,151 @@ export default function RegisterPage() {
 
   const handleModalClose = () => {
     setModalOpen(false);
-    navigate(ROUTES.login);
+    if (isModal) {
+      onSwitchMode?.("login");
+    } else {
+      navigate(ROUTES.login);
+    }
   };
+
+  const formCard = (
+    <div className="login-card register-card">
+      <h2 className="login-title">Crear Cuenta</h2>
+      <p className="login-subtitle">
+        Complete los datos para registrarse en el panel.
+      </p>
+
+      <form
+        className="login-form register-form"
+        onSubmit={handleSubmit}
+        noValidate
+      >
+        <div className="input-group">
+          <label htmlFor="name">NOMBRE COMPLETO</label>
+          <div className={`input-wrapper ${errors.name ? "has-error" : ""}`}>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Ej. Juan Pérez"
+            />
+            <span className="input-icon">👤</span>
+          </div>
+          {errors.name && <span className="error-text">{errors.name}</span>}
+        </div>
+
+        <div className="input-group">
+          <label htmlFor="email">CORREO ELECTRÓNICO</label>
+          <div className={`input-wrapper ${errors.email ? "has-error" : ""}`}>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="arquitecto@obsidian.pro"
+            />
+            <span className="input-icon">@</span>
+          </div>
+          {errors.email && <span className="error-text">{errors.email}</span>}
+        </div>
+
+        <div className="form-row">
+          <div className="input-group">
+            <label htmlFor="password">CONTRASEÑA</label>
+            <div
+              className={`input-wrapper ${errors.password ? "has-error" : ""}`}
+            >
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                className="input-icon-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={
+                  showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                }
+              >
+                {showPassword ? "🔓" : "🔒"}
+              </button>
+            </div>
+            {errors.password && (
+              <span className="error-text">{errors.password}</span>
+            )}
+          </div>
+
+          <div className="input-group">
+            <label htmlFor="confirmPassword">CONFIRMAR</label>
+            <div
+              className={`input-wrapper ${errors.confirmPassword ? "has-error" : ""}`}
+            >
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                className="input-icon-btn"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label={
+                  showConfirmPassword
+                    ? "Ocultar contraseña"
+                    : "Mostrar contraseña"
+                }
+              >
+                {showConfirmPassword ? "🔓" : "🔒"}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <span className="error-text">{errors.confirmPassword}</span>
+            )}
+          </div>
+        </div>
+
+        {authError && <div className="auth-error-alert">{authError}</div>}
+
+        <button type="submit" className="btn-primary" disabled={isLoading}>
+          {isLoading ? "Creando cuenta..." : "Registrarse"}
+        </button>
+
+        <p className="register-prompt">
+          ¿Ya tienes una cuenta?{" "}
+          {isModal ? (
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => onSwitchMode?.("login")}
+            >
+              Ingresar
+            </button>
+          ) : (
+            <Link to={ROUTES.login}>Ingresar</Link>
+          )}
+        </p>
+      </form>
+
+      <Modal
+        isOpen={modalOpen}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={handleModalClose}
+      />
+    </div>
+  );
+
+  if (isModal) return formCard;
 
   return (
     <div className="login-container">
@@ -135,137 +278,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      <div className="login-right">
-        <div className="login-card register-card">
-          <h2 className="login-title">Crear Cuenta</h2>
-          <p className="login-subtitle">
-            Complete los datos para registrarse en el panel.
-          </p>
-
-          <form
-            className="login-form register-form"
-            onSubmit={handleSubmit}
-            noValidate
-          >
-            <div className="input-group">
-              <label htmlFor="name">NOMBRE COMPLETO</label>
-              <div
-                className={`input-wrapper ${errors.name ? "has-error" : ""}`}
-              >
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Ej. Juan Pérez"
-                />
-                <span className="input-icon">👤</span>
-              </div>
-              {errors.name && <span className="error-text">{errors.name}</span>}
-            </div>
-
-            <div className="input-group">
-              <label htmlFor="email">CORREO ELECTRÓNICO</label>
-              <div
-                className={`input-wrapper ${errors.email ? "has-error" : ""}`}
-              >
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="arquitecto@obsidian.pro"
-                />
-                <span className="input-icon">@</span>
-              </div>
-              {errors.email && (
-                <span className="error-text">{errors.email}</span>
-              )}
-            </div>
-
-            <div className="form-row">
-              <div className="input-group">
-                <label htmlFor="password">CONTRASEÑA</label>
-                <div
-                  className={`input-wrapper ${errors.password ? "has-error" : ""}`}
-                >
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    className="input-icon-btn"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={
-                      showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
-                    }
-                  >
-                    {showPassword ? "🔓" : "🔒"}
-                  </button>
-                </div>
-                {errors.password && (
-                  <span className="error-text">{errors.password}</span>
-                )}
-              </div>
-
-              <div className="input-group">
-                <label htmlFor="confirmPassword">CONFIRMAR</label>
-                <div
-                  className={`input-wrapper ${errors.confirmPassword ? "has-error" : ""}`}
-                >
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    className="input-icon-btn"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={
-                      showConfirmPassword
-                        ? "Ocultar contraseña"
-                        : "Mostrar contraseña"
-                    }
-                  >
-                    {showConfirmPassword ? "🔓" : "🔒"}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <span className="error-text">{errors.confirmPassword}</span>
-                )}
-              </div>
-            </div>
-
-            {authError && <div className="auth-error-alert">{authError}</div>}
-
-            <button type="submit" className="btn-primary" disabled={isLoading}>
-              {isLoading ? "Creando cuenta..." : "Registrarse"}
-            </button>
-
-            <p className="register-prompt">
-              ¿Ya tienes una cuenta? <Link to={ROUTES.login}>Ingresar</Link>
-            </p>
-          </form>
-        </div>
-
-        <Modal
-          isOpen={modalOpen}
-          title={modalTitle}
-          message={modalMessage}
-          onClose={handleModalClose}
-        />
-      </div>
+      <div className="login-right">{formCard}</div>
 
       <div className="footer-links">
         <span>

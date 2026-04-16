@@ -422,3 +422,37 @@
     display: none;
   }
 }
+
+/* ===== AUTH BUTTONS (not logged in) ===== */
+.navbar__auth-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.navbar__auth-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+.navbar__auth-btn--primary {
+  background: var(--accent-color);
+  color: #fff;
+  border-color: var(--accent-color);
+}
+
+.navbar__auth-btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #fff;
+}

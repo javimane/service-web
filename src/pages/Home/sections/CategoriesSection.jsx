@@ -76,7 +76,10 @@ export default function CategoriesSection() {
   return (
     <section className="categories-section">
       <div className="categories-section__header">
-        <span className="section-label">Categorías</span>
+        <div>
+          <span className="section-label">Explorar</span>
+          <h2 className="categories-section__title">Categorías</h2>
+        </div>
         <button
           className="section-link"
           onClick={() => navigate("/categories")}

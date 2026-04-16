@@ -1,9 +1,9 @@
 /* ─── Section container ─────────────────────────────────────────── */
 .professional-reels {
   width: 100%;
-  max-width: 1232px;
+  max-width: 1280px;
   padding: 2rem 1.5rem;
-  margin: 0 auto 2rem;
+  margin: 0 auto 3rem;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 32px;
@@ -60,7 +60,9 @@
   border: none;
   padding: 0;
   background: #000;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
@@ -120,7 +122,9 @@
   justify-content: center;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .reel-card:hover .reel-card__play-btn {
@@ -209,7 +213,9 @@
   align-items: center;
   gap: 4px;
   cursor: pointer;
-  transition: color 0.2s, transform 0.15s;
+  transition:
+    color 0.2s,
+    transform 0.15s;
   user-select: none;
 }
 
@@ -236,8 +242,12 @@
 }
 
 @keyframes reels-overlay-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ─── Modal container (portrait phone-like) ─────────────────────── */
@@ -251,8 +261,14 @@
 }
 
 @keyframes reels-modal-in {
-  from { transform: scale(0.88) translateY(20px); opacity: 0; }
-  to   { transform: scale(1) translateY(0); opacity: 1; }
+  from {
+    transform: scale(0.88) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 .reels-modal__video-wrap {
@@ -283,7 +299,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.65) 0%,
+    transparent 100%
+  );
   z-index: 10;
 }
 
@@ -364,7 +384,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, transform 0.15s;
+  transition:
+    background 0.2s,
+    transform 0.15s;
 }
 
 .reels-modal__ctrl-btn:hover {
@@ -379,7 +401,7 @@
   left: 0;
   right: 0;
   padding: 16px 16px 20px;
-  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 100%);
   z-index: 10;
 }
 
@@ -421,7 +443,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.15s,
+    opacity 0.2s;
   opacity: 0.8;
 }
 
@@ -446,7 +471,10 @@
 }
 
 .reels-modal__like-btn {
-  transition: background 0.2s, transform 0.15s, color 0.2s !important;
+  transition:
+    background 0.2s,
+    transform 0.15s,
+    color 0.2s !important;
 }
 
 .reels-modal__like-btn--active {
@@ -483,7 +511,9 @@
   background: rgba(255, 255, 255, 0.35);
   cursor: pointer;
   padding: 0;
-  transition: background 0.2s, transform 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s;
 }
 
 .reels-modal__dot--active {

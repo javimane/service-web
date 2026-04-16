@@ -1,4 +1,4 @@
-import './Footer.css';
+import "./Footer.css";
 
 export default function Footer() {
   return (
@@ -8,9 +8,11 @@ export default function Footer() {
           <div className="footer__brand-logo">
             <span className="footer__logo-text">OBSIDIAN PRO</span>
           </div>
-          <p className="footer__copy">© 2024 Obsidian Pro. Architectural precision in every service.</p>
+          <p className="footer__copy">
+            © 2026 Obsidian Pro. Architectural precision in every service.
+          </p>
         </div>
-        
+
         <div className="footer__links">
           <a href="#">Legal</a>
           <a href="#">Privacy</a>
@@ -22,4 +24,3 @@ export default function Footer() {
     </footer>
   );
 }
-

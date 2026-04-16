@@ -1,14 +1,22 @@
 .categories-section {
-  padding: 2rem 1.5rem 0;
+  width: 100%;
   max-width: 1280px;
-  margin: 0 auto;
+  padding: 0 1.5rem;
+  margin: 0 auto 3rem;
 }
 
 .categories-section__header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.categories-section__title {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1.2;
+  color: var(--text-primary);
 }
 
 .categories-section__carousel {
