@@ -1,8 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import './Modal.css';
 
-export default function Modal({ isOpen, onClose, title, children }) {
+type ModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message?: string;
+  children?: ReactNode;
+};
+
+export default function Modal({ isOpen, onClose, title, message, children }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -26,7 +34,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
           </button>
         </div>
         <div className="modal-content">
-          {children}
+          {message ? <p>{message}</p> : children}
         </div>
       </div>
     </div>

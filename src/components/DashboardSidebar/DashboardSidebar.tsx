@@ -19,6 +19,19 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
 import { supabase } from "../../services/supabaseClient";
 
+type DashboardSidebarProps = {
+  activeItem?: string;
+  isCollapsed?: boolean;
+  onToggle?: () => void;
+  onCreateProposal?: () => void;
+  onDashboardClick?: () => void;
+  onMessagesClick?: () => void;
+  onNotificationsClick?: () => void;
+  onPromotionsCreate?: () => void;
+  onPromotionsViewAll?: () => void;
+  onProductsClick?: () => void;
+};
+
 export default function DashboardSidebar({
   activeItem = "dashboard",
   isCollapsed = false,
@@ -30,7 +43,7 @@ export default function DashboardSidebar({
   onPromotionsCreate,
   onPromotionsViewAll,
   onProductsClick,
-}) {
+}: DashboardSidebarProps) {
   const navigate = useNavigate();
   const [promosOpen, setPromosOpen] = useState(
     activeItem === "promotions-create" || activeItem === "promotions-all",

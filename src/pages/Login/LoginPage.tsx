@@ -4,16 +4,22 @@ import { ROUTES } from "../../routes/paths";
 import { supabase } from "../../services/supabaseClient";
 import "./LoginPage.css";
 
-export default function LoginPage({ isModal, onClose, onSwitchMode }) {
+type LoginPageProps = {
+  isModal?: boolean;
+  onClose?: () => void;
+  onSwitchMode?: (mode: string) => void;
+};
+
+export default function LoginPage({ isModal, onClose, onSwitchMode }: LoginPageProps) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
     if (!formData.email) {
       newErrors.email = "El correo electrónico es requerido";
     } else if (

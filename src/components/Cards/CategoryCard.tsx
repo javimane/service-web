@@ -1,7 +1,13 @@
 import { Check, Zap } from "lucide-react";
 import "./CategoryCard.css";
 
-export default function CategoryCard({ category, onClick, active }) {
+type CategoryCardProps = {
+  category: any;
+  onClick?: () => void;
+  active?: boolean;
+};
+
+export default function CategoryCard({ category, onClick, active }: CategoryCardProps) {
   const { label, specialists, image, type, status } = category;
   const handleClick = () => onClick?.();
 

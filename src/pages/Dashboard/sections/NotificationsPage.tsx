@@ -154,7 +154,7 @@ export default function NotificationsPage() {
   const unreadCount = allNotifications.filter((n) => n.unread).length;
 
   // Group by date
-  const grouped = filtered.reduce((acc, n) => {
+  const grouped = filtered.reduce<Record<string, typeof allNotifications>>((acc, n) => {
     if (!acc[n.date]) acc[n.date] = [];
     acc[n.date].push(n);
     return acc;

@@ -17,15 +17,17 @@ import {
 import { products as initialProducts } from "../../../data/products";
 import "./DashboardProducts.css";
 
-const formatPrice = (n) =>
+const formatPrice = (n: number) =>
   n.toLocaleString("es-AR", {
     style: "currency",
     currency: "ARS",
     minimumFractionDigits: 0,
   });
 
+type ProductItem = (typeof initialProducts)[number];
+
 export default function DashboardProducts() {
-  const [productsList, setProductsList] = useState(initialProducts);
+  const [productsList, setProductsList] = useState<ProductItem[]>(initialProducts);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState("title");
   const [sortDir, setSortDir] = useState("asc");
@@ -137,6 +139,7 @@ export default function DashboardProducts() {
         condition: "Nuevo",
         stock: parseInt(newProduct.stock, 10) || 0,
         image: newProduct.image || "",
+        mercadoLibreUrl: "",
         description: newProduct.description || "",
         features: [],
       },

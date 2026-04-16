@@ -1,13 +1,17 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, type ReactNode } from 'react';
 
-const ThemeContext = createContext();
+type ThemeContextValue = {
+  theme: string;
+  toggleTheme: () => void;
+};
 
-export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [theme, setTheme] = useState<string>(() => {
     const savedTheme = localStorage.getItem('app-theme');
     if (savedTheme) return savedTheme;
-    // Comprobar preferencia del sistema
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
@@ -15,13 +19,12 @@ export const ThemeProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    // Al cambiar el tema, guardar en local storage y aplicar a root
     localStorage.setItem('app-theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   return (
@@ -32,5 +35,11 @@ export const ThemeProvider = ({ children }) => {
 };
 
 export const useTheme = () => {
-  return useContext(ThemeContext);
+  const context = useContext(ThemeContext);
+
+  if (!context) {
+    throw new Error('useTheme must be used within ThemeProvider');
+  }
+
+  return context;
 };

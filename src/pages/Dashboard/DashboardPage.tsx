@@ -199,7 +199,7 @@ export default function DashboardPage() {
                   <div className="circular-progress-container">
                     <div
                       className="circular-progress"
-                      style={{ "--progress": "89%" }}
+                      style={{ "--progress": "89%" } as any}
                     >
                       <div className="progress-inner">89%</div>
                     </div>

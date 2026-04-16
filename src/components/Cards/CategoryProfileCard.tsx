@@ -1,7 +1,13 @@
 import { Check, Zap } from "lucide-react";
 import "./CategoryProfileCard.css";
 
-export default function CategoryCard({ category, onClick, active }) {
+type CategoryProfileCardProps = {
+  category: any;
+  onClick?: () => void;
+  active?: boolean;
+};
+
+export default function CategoryCard({ category, onClick, active }: CategoryProfileCardProps) {
   const { label, specialists, image, type, status } = category;
 
   // Mock avatars for the stack

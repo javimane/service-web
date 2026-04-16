@@ -13,6 +13,8 @@ vi.mock('../../services/supabaseClient', () => ({
   },
 }));
 
+const signInWithPasswordMock = vi.mocked(supabase.auth.signInWithPassword);
+
 describe('LoginPage', () => {
   const renderWithRouter = (ui) => render(<BrowserRouter>{ui}</BrowserRouter>);
 
@@ -47,10 +49,10 @@ describe('LoginPage', () => {
   it('llama a Supabase al enviar datos válidos', async () => {
     vi.spyOn(window, 'alert').mockImplementation(() => {});
     // Configurar respuesta del mock
-    supabase.auth.signInWithPassword.mockResolvedValueOnce({
-      data: { user: { id: 1 } },
+    signInWithPasswordMock.mockResolvedValueOnce({
+      data: { user: { id: '1' } },
       error: null,
-    });
+    } as any);
     
     renderWithRouter(<LoginPage />);
     const emailInput = screen.getByPlaceholderText('arquitecto@obsidian.pro');
@@ -63,7 +65,7 @@ describe('LoginPage', () => {
     fireEvent.click(submitBtn);
     
     await waitFor(() => {
-      expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
+      expect(signInWithPasswordMock).toHaveBeenCalledWith({
         email: 'test@obsidian.pro',
         password: '1234567',
       });

@@ -6,7 +6,13 @@ import { supabase } from "../../services/supabaseClient";
 import Modal from "../../components/Modal/Modal";
 import "./RegisterPage.css";
 
-export default function RegisterPage({ isModal, onClose, onSwitchMode }) {
+type RegisterPageProps = {
+  isModal?: boolean;
+  onClose?: () => void;
+  onSwitchMode?: (mode: string) => void;
+};
+
+export default function RegisterPage({ isModal, onClose, onSwitchMode }: RegisterPageProps) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -14,7 +20,7 @@ export default function RegisterPage({ isModal, onClose, onSwitchMode }) {
     password: "",
     confirmPassword: "",
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +30,7 @@ export default function RegisterPage({ isModal, onClose, onSwitchMode }) {
   const [modalMessage, setModalMessage] = useState("");
 
   const validate = () => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
 
     if (!formData.name) {
       newErrors.name = "El nombre es requerido";

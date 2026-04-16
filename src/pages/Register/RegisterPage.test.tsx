@@ -13,8 +13,7 @@ vi.mock('../../services/supabaseClient', () => ({
   },
 }));
 
-// Mock window.alert
-const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
+const signUpMock = vi.mocked(supabase.auth.signUp);
 
 describe('RegisterPage', () => {
   const renderWithRouter = (ui) => {
@@ -52,10 +51,10 @@ describe('RegisterPage', () => {
   });
 
   it('llama a Supabase al enviar datos válidos', async () => {
-    supabase.auth.signUp.mockResolvedValueOnce({
-      data: { user: { id: 1 } },
+    signUpMock.mockResolvedValueOnce({
+      data: { user: { id: '1' } },
       error: null,
-    });
+    } as any);
     
     renderWithRouter(<RegisterPage />);
     const nameInput = screen.getByPlaceholderText('Ej. Juan Pérez');
@@ -66,22 +65,22 @@ describe('RegisterPage', () => {
     
     fireEvent.change(nameInput, { target: { value: 'Juan Lopez' } });
     fireEvent.change(emailInput, { target: { value: 'juan@obsidian.pro' } });
-    fireEvent.change(passwordInput, { target: { value: '1234567' } });
-    fireEvent.change(confirmInput, { target: { value: '1234567' } });
+    fireEvent.change(passwordInput, { target: { value: 'Password1!' } });
+    fireEvent.change(confirmInput, { target: { value: 'Password1!' } });
     
     fireEvent.click(submitBtn);
     
     await waitFor(() => {
-      expect(supabase.auth.signUp).toHaveBeenCalledWith({
+      expect(signUpMock).toHaveBeenCalledWith({
         email: 'juan@obsidian.pro',
-        password: '1234567',
+        password: 'Password1!',
         options: {
           data: {
             full_name: 'Juan Lopez',
           }
         }
       });
-      expect(alertMock).toHaveBeenCalledWith('¡Cuenta creada exitosamente! Por favor revise su correo.');
+      expect(screen.getByText('¡Cuenta creada exitosamente! Por favor revise su correo.')).toBeInTheDocument();
     });
   });
 });
