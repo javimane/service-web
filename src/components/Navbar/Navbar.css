@@ -423,6 +423,50 @@
   }
 }
 
+/* ===== PLANS BUTTON ===== */
+.navbar__plans-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: linear-gradient(
+    135deg,
+    rgba(251, 191, 36, 0.12),
+    rgba(245, 158, 11, 0.12)
+  );
+  color: #f59e0b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-family: var(--font-family);
+  flex-shrink: 0;
+}
+
+.navbar__plans-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(251, 191, 36, 0.2),
+    rgba(245, 158, 11, 0.2)
+  );
+  border-color: rgba(245, 158, 11, 0.3);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .navbar__plans-btn span {
+    display: none;
+  }
+
+  .navbar__plans-btn {
+    padding: 7px;
+    border-radius: 8px;
+  }
+}
+
 /* ===== AUTH BUTTONS (not logged in) ===== */
 .navbar__auth-btn {
   display: flex;

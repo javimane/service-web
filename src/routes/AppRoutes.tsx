@@ -12,6 +12,7 @@ import AnalyticsPage from "../pages/Analytics/AnalyticsPage";
 import SettingsPage from "../pages/Settings/SettingsPage";
 import MessagesPage from "../pages/Messages/MessagesPage";
 import ProductsPage from "../pages/Products/ProductsPage";
+import PlanPaymentPage from "../pages/PlanPayment/PlanPaymentPage";
 import { ROUTES } from "./paths";
 
 function OpenAuthAndRedirect({ mode }) {
@@ -31,6 +32,7 @@ export default function AppRoutes() {
       <Route path={ROUTES.services} element={<ServicesPage />} />
       <Route path={ROUTES.map} element={<MapPage />} />
       <Route path={ROUTES.products} element={<ProductsPage />} />
+      <Route path={ROUTES.planPayment} element={<PlanPaymentPage />} />
       <Route path={ROUTES.profile} element={<ProfilePage />} />
       <Route
         path={ROUTES.login}

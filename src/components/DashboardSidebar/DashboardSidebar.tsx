@@ -221,20 +221,10 @@ export default function DashboardSidebar({
       </nav>
 
       <div className="sidebar-footer">
-        <button
-          type="button"
-          className="create-proposal-btn"
-          onClick={openProposalCreator}
-          title="Create proposal"
-        >
-          <Plus size={18} />
-          <span className="btn-label">Create Proposal</span>
-        </button>
-
         <div className="footer-links">
           <button
             type="button"
-            className="footer-link"
+            className="footer-link footer-link--support"
             onClick={handleSupport}
             title="Support"
           >
@@ -243,7 +233,7 @@ export default function DashboardSidebar({
           </button>
           <button
             type="button"
-            className="footer-link"
+            className="footer-link footer-link--logout"
             onClick={handleLogout}
             title="Logout"
           >

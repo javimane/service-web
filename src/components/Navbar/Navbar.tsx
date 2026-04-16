@@ -18,8 +18,10 @@ import {
   CheckCheck,
   Package,
   BarChart3,
+  Crown,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
+import PlansModal from "../PlansModal/PlansModal";
 import "./Navbar.css";
 
 const notifications = [
@@ -77,6 +79,7 @@ export default function Navbar() {
   const { openAuth } = useAuthModal();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isPlansOpen, setIsPlansOpen] = useState(false);
   const menuRef = useRef(null);
   const notifRef = useRef(null);
 
@@ -146,6 +149,19 @@ export default function Navbar() {
         <div className="navbar__search">
           <SearchBar />
         </div>
+
+        {/* Plans button */}
+        <button
+          className="navbar__plans-btn"
+          onClick={() => setIsPlansOpen(true)}
+        >
+          <Crown size={16} />
+          <span>Planes</span>
+        </button>
+        <PlansModal
+          isOpen={isPlansOpen}
+          onClose={() => setIsPlansOpen(false)}
+        />
 
         {/* Right side — authenticated */}
         {user ? (

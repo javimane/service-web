@@ -279,6 +279,32 @@
   color: var(--text-primary);
 }
 
+.footer-link--support {
+  background: #3b82f6;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.footer-link--support:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.footer-link--logout {
+  background: #ef4444;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.footer-link--logout:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
 .dashboard-sidebar--collapsed .brand-logo,
 .dashboard-sidebar--collapsed .nav-label,
 .dashboard-sidebar--collapsed .btn-label,
@@ -300,6 +326,19 @@
   justify-content: center;
   padding-left: 12px;
   padding-right: 12px;
+}
+
+.dashboard-sidebar--collapsed .footer-link--support,
+.dashboard-sidebar--collapsed .footer-link--logout {
+  padding: 10px;
+  justify-content: center;
+  width: auto;
+  align-self: center;
+  border-radius: 50%;
+}
+
+.dashboard-sidebar--collapsed .footer-links {
+  align-items: center;
 }
 
 .dashboard-sidebar--collapsed .nav-item.active {
