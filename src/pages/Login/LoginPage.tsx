@@ -10,7 +10,11 @@ type LoginPageProps = {
   onSwitchMode?: (mode: string) => void;
 };
 
-export default function LoginPage({ isModal, onClose, onSwitchMode }: LoginPageProps) {
+export default function LoginPage({
+  isModal,
+  onClose,
+  onSwitchMode,
+}: LoginPageProps) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});

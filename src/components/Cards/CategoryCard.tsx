@@ -7,7 +7,11 @@ type CategoryCardProps = {
   active?: boolean;
 };
 
-export default function CategoryCard({ category, onClick, active }: CategoryCardProps) {
+export default function CategoryCard({
+  category,
+  onClick,
+  active,
+}: CategoryCardProps) {
   const { label, specialists, image, type, status } = category;
   const handleClick = () => onClick?.();
 

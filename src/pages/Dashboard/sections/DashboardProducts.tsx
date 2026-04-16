@@ -27,7 +27,8 @@ const formatPrice = (n: number) =>
 type ProductItem = (typeof initialProducts)[number];
 
 export default function DashboardProducts() {
-  const [productsList, setProductsList] = useState<ProductItem[]>(initialProducts);
+  const [productsList, setProductsList] =
+    useState<ProductItem[]>(initialProducts);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState("title");
   const [sortDir, setSortDir] = useState("asc");

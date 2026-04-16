@@ -12,7 +12,11 @@ type RegisterPageProps = {
   onSwitchMode?: (mode: string) => void;
 };
 
-export default function RegisterPage({ isModal, onClose, onSwitchMode }: RegisterPageProps) {
+export default function RegisterPage({
+  isModal,
+  onClose,
+  onSwitchMode,
+}: RegisterPageProps) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",

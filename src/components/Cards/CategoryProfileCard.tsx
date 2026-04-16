@@ -7,19 +7,23 @@ type CategoryProfileCardProps = {
   active?: boolean;
 };
 
-export default function CategoryCard({ category, onClick, active }: CategoryProfileCardProps) {
+export default function CategoryCard({
+  category,
+  onClick,
+  active,
+}: CategoryProfileCardProps) {
   const { label, specialists, image, type, status } = category;
 
   // Mock avatars for the stack
   const avatars = [
     "https://i.pravatar.cc/150?u=1",
     "https://i.pravatar.cc/150?u=2",
-    "https://i.pravatar.cc/150?u=3"
+    "https://i.pravatar.cc/150?u=3",
   ];
 
   return (
     <article
-      className={`category-card${status === 'VERIFIED' ? ' category-card--verified' : ''}`}
+      className={`category-card${status === "VERIFIED" ? " category-card--verified" : ""}`}
       onClick={onClick}
     >
       <div className="category-card__image-container">
@@ -30,7 +34,7 @@ export default function CategoryCard({ category, onClick, active }: CategoryProf
           loading="lazy"
         />
         <div className="category-card__badge">
-          {status === 'VERIFIED' ? (
+          {status === "VERIFIED" ? (
             <span className="badge badge--verified">
               <Check size={10} /> VERIFIED
             </span>
@@ -57,14 +61,22 @@ export default function CategoryCard({ category, onClick, active }: CategoryProf
         <div className="category-card__footer">
           <div className="avatar-stack">
             {avatars.map((url, i) => (
-              <img key={i} src={url} alt="Expert" className="avatar-stack__item" />
+              <img
+                key={i}
+                src={url}
+                alt="Expert"
+                className="avatar-stack__item"
+              />
             ))}
             <span className="avatar-stack__more">+{specialists - 3}</span>
           </div>
-          <button className="category-card__button" onClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}>
+          <button
+            className="category-card__button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+          >
             Explore Category
           </button>
         </div>
@@ -72,4 +84,3 @@ export default function CategoryCard({ category, onClick, active }: CategoryProf
     </article>
   );
 }
-
