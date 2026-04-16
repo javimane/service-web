@@ -8,7 +8,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 35rem 2rem 2rem;
+  padding: 5rem 0.75rem 1rem;
+  align-items: flex-start;
   animation: plansModalFadeIn 0.2s ease-out;
 }
 
@@ -305,14 +306,108 @@
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .plans-modal-overlay {
-    padding: 1rem;
+    padding: 5rem 0.75rem 1rem;
+    align-items: flex-start;
   }
 
   .plans-modal {
-    padding: 1.5rem;
+    padding: 1.25rem;
+    border-radius: 20px;
+    max-height: 95vh;
+  }
+
+  .plans-modal__close {
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .plans-modal__header {
+    margin-bottom: 1.25rem;
+  }
+
+  .plans-modal__icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+  }
+
+  .plans-modal__icon-wrapper svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .plans-modal__title {
+    font-size: 1.15rem;
+  }
+
+  .plans-modal__subtitle {
+    font-size: 0.78rem;
   }
 
   .plans-modal__grid {
     grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .plans-modal__card {
+    padding: 1.25rem;
+    gap: 12px;
+    border-radius: 16px;
+  }
+
+  .plans-modal__plan-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .plans-modal__plan-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .plans-modal__plan-name {
+    font-size: 0.92rem;
+  }
+
+  .plans-modal__plan-desc {
+    font-size: 0.72rem;
+  }
+
+  .plans-modal__amount {
+    font-size: 1.4rem;
+  }
+
+  .plans-modal__currency {
+    font-size: 0.85rem;
+  }
+
+  .plans-modal__features {
+    gap: 8px;
+  }
+
+  .plans-modal__features li {
+    font-size: 0.72rem;
+  }
+
+  .plans-modal__features li svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .plans-modal__select-btn {
+    padding: 11px 16px;
+    font-size: 0.82rem;
+    border-radius: 12px;
+  }
+
+  .plans-modal__badge {
+    font-size: 0.62rem;
+    padding: 4px 10px;
+    top: -10px;
+    right: 14px;
   }
 }

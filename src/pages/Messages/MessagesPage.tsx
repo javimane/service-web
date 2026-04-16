@@ -13,11 +13,11 @@ import {
   Phone,
   Video,
   MoreVertical,
-  User,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { ROUTES } from "../../routes/paths";
+import Navbar from "../../components/Navbar/Navbar";
 import "./MessagesPage.css";
+import NavbarMessage from "../../components/Navbar/NavBar Messaje/NavbarMessage";
 
 const conversations = [
   {
@@ -142,15 +142,6 @@ export default function MessagesPage() {
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const displayName =
-    user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuario";
-  const userInitials = displayName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
   const filteredConversations = conversations.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
@@ -178,6 +169,7 @@ export default function MessagesPage() {
 
   return (
     <div className="msg-app">
+      <NavbarMessage />
       <div className="msg-app__container">
         {/* ===== Top Bar ===== */}
         <header className="msg-topbar">
@@ -216,14 +208,6 @@ export default function MessagesPage() {
                 <Search size={18} />
               </button>
             </div>
-
-            <button
-              className="msg-topbar__avatar"
-              onClick={() => navigate(ROUTES.profile)}
-              aria-label="Mi perfil"
-            >
-              {userInitials || <User size={18} />}
-            </button>
           </div>
         </header>
 

@@ -35,7 +35,7 @@
     overflow: hidden;
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-card);
-    height: calc(100vh - 24px);
+    height: calc(100vh - 72px - 24px);
     flex: unset;
   }
 }

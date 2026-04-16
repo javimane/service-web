@@ -19,6 +19,7 @@ import PromotionCreator from "./sections/PromotionCreator";
 import AllPromotionsPage from "./sections/AllPromotionsPage";
 import NotificationsPage from "./sections/NotificationsPage";
 import DashboardProducts from "./sections/DashboardProducts";
+import SubscriptionSection from "./sections/SubscriptionSection";
 import "./DashboardPage.css";
 
 export default function DashboardPage() {
@@ -51,6 +52,7 @@ export default function DashboardPage() {
   const handleShowPromotionsCreate = () => setView("promotions-create");
   const handleShowPromotionsAll = () => setView("promotions-all");
   const handleShowProducts = () => setView("products");
+  const handleShowSubscription = () => setView("subscription");
 
   return (
     <div className="dashboard-page-wrapper">
@@ -67,7 +69,9 @@ export default function DashboardPage() {
                     ? "promotions-all"
                     : view === "products"
                       ? "products"
-                      : "dashboard"
+                      : view === "subscription"
+                        ? "subscription"
+                        : "dashboard"
           }
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed((current) => !current)}
@@ -78,11 +82,14 @@ export default function DashboardPage() {
           onPromotionsCreate={handleShowPromotionsCreate}
           onPromotionsViewAll={handleShowPromotionsAll}
           onProductsClick={handleShowProducts}
+          onSubscriptionClick={handleShowSubscription}
         />
 
         <main className="dashboard-main">
           {view === "create-proposal" ? (
             <ProposalCreator onBack={handleGoBack} />
+          ) : view === "subscription" ? (
+            <SubscriptionSection />
           ) : view === "products" ? (
             <DashboardProducts />
           ) : view === "notifications" ? (
@@ -322,8 +329,6 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
-
-      <Footer />
     </div>
   );
 }

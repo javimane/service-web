@@ -19,9 +19,12 @@ import {
   Package,
   BarChart3,
   Crown,
+  Menu,
+  X,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
+import ThemeToggle from "../ThemeToggle/ThemeToggle";
 import "./Navbar.css";
 
 const notifications = [
@@ -80,15 +83,17 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isPlansOpen, setIsPlansOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const notifRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   const navLinks = [
-    { label: "Inicio", path: ROUTES.home },
-    { label: "Servicios", path: ROUTES.services },
     { label: "Mapa", path: ROUTES.map },
+    { label: "Servicios", path: ROUTES.services },
+    { label: "Productos", path: ROUTES.products },
   ];
 
   // Close menus when clicking outside
@@ -99,6 +104,12 @@ export default function Navbar() {
       }
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setIsNotifOpen(false);
+      }
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target)
+      ) {
+        setIsMobileMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -127,7 +138,39 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar__inner container">
-        {/* Logo */}
+        {/* Mobile menu + Logo */}
+        <div className="navbar__mobile-menu" ref={mobileMenuRef}>
+          <button
+            className="navbar__hamburger"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Menú de navegación"
+          >
+            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+
+          {isMobileMenuOpen && (
+            <div className="navbar__mobile-dropdown">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  to={link.path}
+                  className={`navbar__mobile-link ${location.pathname === link.path ? "active" : ""}`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <Link
+                to={ROUTES.products}
+                className={`navbar__mobile-link ${location.pathname === ROUTES.products ? "active" : ""}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Productos
+              </Link>
+            </div>
+          )}
+        </div>
+
         <Link to={ROUTES.home} className="navbar__logo">
           Obsidiana Pro
         </Link>
@@ -166,6 +209,7 @@ export default function Navbar() {
         {/* Right side — authenticated */}
         {user ? (
           <div className="navbar__right">
+            <ThemeToggle />
             <Link
               to={ROUTES.messages}
               className="navbar__icon-btn"
@@ -309,6 +353,7 @@ export default function Navbar() {
         ) : (
           /* Right side — not authenticated */
           <div className="navbar__right">
+            <ThemeToggle />
             <button
               className="navbar__auth-btn"
               onClick={() => openAuth("login")}

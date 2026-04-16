@@ -14,6 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Package,
+  CreditCard,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
@@ -30,6 +31,7 @@ type DashboardSidebarProps = {
   onPromotionsCreate?: () => void;
   onPromotionsViewAll?: () => void;
   onProductsClick?: () => void;
+  onSubscriptionClick?: () => void;
 };
 
 export default function DashboardSidebar({
@@ -43,6 +45,7 @@ export default function DashboardSidebar({
   onPromotionsCreate,
   onPromotionsViewAll,
   onProductsClick,
+  onSubscriptionClick,
 }: DashboardSidebarProps) {
   const navigate = useNavigate();
   const [promosOpen, setPromosOpen] = useState(
@@ -123,6 +126,12 @@ export default function DashboardSidebar({
       label: "NOTIFICATIONS",
       icon: Bell,
       onClick: onNotificationsClick,
+    },
+    {
+      key: "subscription",
+      label: "SUBSCRIPTION",
+      icon: CreditCard,
+      onClick: onSubscriptionClick ?? (() => {}),
     },
     {
       key: "settings",

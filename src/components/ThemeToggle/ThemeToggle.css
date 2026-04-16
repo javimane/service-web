@@ -1,16 +1,14 @@
 .theme-toggle {
   background: transparent;
-  padding: 8px;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  position: absolute;
-  top: 24px;
-  right: 24px;
+  position: relative;
   outline: none;
-  z-index: 100;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .theme-toggle:focus-visible {
@@ -39,7 +37,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
