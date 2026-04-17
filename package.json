@@ -20,6 +20,7 @@
     "@schedule-x/theme-default": "^4.5.0",
     "@supabase/supabase-js": "^2.102.1",
     "clsx": "^2.1.1",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^1.8.0",
     "preact": "^10.29.1",
     "react": "^19.2.4",

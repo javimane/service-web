@@ -11,15 +11,20 @@ import {
   Upload,
   Ticket,
   X,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
+import { toJpeg } from "html-to-image";
 import "./PromotionCreator.css";
 
-function generateUUID() {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+function generateCouponCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `PROMO-${code}`;
 }
 
 const DISCOUNT_TYPES = [
@@ -31,10 +36,12 @@ const DISCOUNT_TYPES = [
 
 export default function PromotionCreator({ onBack, onViewAll }) {
   const fileInputRef = useRef(null);
+  const couponRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({
     title: "",
     description: "",
+    professionalName: "",
     validFrom: "",
     validTo: "",
     unlimitedStock: false,
@@ -45,8 +52,12 @@ export default function PromotionCreator({ onBack, onViewAll }) {
     imagePreview: null,
   });
 
-  const [promoCode] = useState(generateUUID());
+  const [promoCode] = useState(generateCouponCode());
   const [isDragging, setIsDragging] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [errors, setErrors] = useState<any>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -84,8 +95,80 @@ export default function PromotionCreator({ onBack, onViewAll }) {
     updateField("imagePreview", null);
   };
 
-  const handleCreate = () => {
-    // Future: submit to backend
+  const validateForm = () => {
+    const newErrors: any = {};
+    if (!form.title.trim()) newErrors.title = "El título es obligatorio";
+    if (!form.description.trim()) newErrors.description = "La descripción es obligatoria";
+    if (!form.professionalName.trim()) newErrors.professionalName = "El nombre del profesional es obligatorio";
+    if (!form.validFrom) newErrors.validFrom = "La fecha de inicio es obligatoria";
+    if (!form.validTo) newErrors.validTo = "La fecha de fin es obligatoria";
+    if (form.validFrom && form.validTo && form.validFrom > form.validTo) {
+      newErrors.validTo = "La fecha de fin debe ser posterior a la de inicio";
+    }
+    if (!form.discountValue || form.discountValue <= 0) {
+      newErrors.discountValue = "El valor debe ser mayor a 0";
+    }
+    if (!form.image) newErrors.image = "Debes subir una imagen para la promoción";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleDownloadCoupon = async () => {
+    if (!couponRef.current) return;
+
+    try {
+      const dataUrl = await toJpeg(couponRef.current, { 
+        quality: 0.95,
+        backgroundColor: '#fff',
+        pixelRatio: 2 // Higher quality
+      });
+      const link = document.createElement("a");
+      link.download = `cupón-${form.title || "promo"}.jpg`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Error al generar imagen:", err);
+      alert("No se pudo generar el archivo del cupón.");
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    setSuccess(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("description", form.description);
+      formData.append("professionalName", form.professionalName);
+      formData.append("validFrom", form.validFrom);
+      formData.append("validTo", form.validTo);
+      formData.append("unlimitedStock", String(form.unlimitedStock));
+      formData.append("discountType", form.discountType);
+      formData.append("discountValue", String(form.discountValue));
+      formData.append("applicableTo", form.applicableTo);
+      formData.append("code", promoCode);
+      if (form.image) {
+        formData.append("image", form.image);
+      }
+
+      const response = await fetch("/api/promotions", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Error al guardar la promoción");
+
+      setSuccess(true);
+      setTimeout(() => onViewAll(), 1500);
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const discountSuffix =
@@ -128,7 +211,7 @@ export default function PromotionCreator({ onBack, onViewAll }) {
               <Info size={18} /> Basic Info
             </h2>
 
-            <div className="promo-field">
+            <div className={`promo-field ${errors.title ? "promo-field--error" : ""}`}>
               <label className="promo-field__label">
                 TÍTULO DE LA PROMOCIÓN
               </label>
@@ -139,9 +222,22 @@ export default function PromotionCreator({ onBack, onViewAll }) {
                 value={form.title}
                 onChange={(e) => updateField("title", e.target.value)}
               />
+              {errors.title && <span className="promo-field__error">{errors.title}</span>}
             </div>
 
-            <div className="promo-field">
+            <div className={`promo-field ${errors.professionalName ? "promo-field--error" : ""}`}>
+              <label className="promo-field__label">NOMBRE DEL PROFESIONAL</label>
+              <input
+                type="text"
+                className="promo-field__input"
+                placeholder="Ej. Carlos Plomería"
+                value={form.professionalName}
+                onChange={(e) => updateField("professionalName", e.target.value)}
+              />
+              {errors.professionalName && <span className="promo-field__error">{errors.professionalName}</span>}
+            </div>
+
+            <div className={`promo-field ${errors.description ? "promo-field--error" : ""}`}>
               <label className="promo-field__label">DESCRIPCIÓN</label>
               <textarea
                 className="promo-field__textarea"
@@ -150,14 +246,17 @@ export default function PromotionCreator({ onBack, onViewAll }) {
                 value={form.description}
                 onChange={(e) => updateField("description", e.target.value)}
               />
+              {errors.description && <span className="promo-field__error">{errors.description}</span>}
             </div>
           </section>
 
           {/* Visuals */}
-          <section className="promo-card">
+          <section className={`promo-card ${errors.image ? "promo-card--error" : ""}`}>
             <h2 className="promo-card__heading">
               <ImageIcon size={18} /> Visuals
             </h2>
+            {errors.image && <span className="promo-field__error" style={{ marginBottom: "10px", display: "block" }}>{errors.image}</span>}
+
 
             {form.imagePreview ? (
               <div className="promo-image-preview">
@@ -225,7 +324,7 @@ export default function PromotionCreator({ onBack, onViewAll }) {
 
               {(form.discountType === "percentage" ||
                 form.discountType === "fixed") && (
-                <div className="promo-field">
+                <div className={`promo-field ${errors.discountValue ? "promo-field--error" : ""}`}>
                   <label className="promo-field__label">VALOR</label>
                   <div className="promo-field__input-group">
                     <input
@@ -241,6 +340,7 @@ export default function PromotionCreator({ onBack, onViewAll }) {
                       {discountSuffix}
                     </span>
                   </div>
+                  {errors.discountValue && <span className="promo-field__error">{errors.discountValue}</span>}
                 </div>
               )}
             </section>
@@ -276,36 +376,43 @@ export default function PromotionCreator({ onBack, onViewAll }) {
               <Calendar size={18} /> Validity &amp; Stock
             </h2>
 
-            <div className="promo-field">
-              <label className="promo-field__label">VÁLIDO DESDE</label>
-              <input
-                type="date"
-                className="promo-field__input"
-                value={form.validFrom}
-                onChange={(e) => updateField("validFrom", e.target.value)}
-              />
+            <div className="promo-creator__row">
+              <div className={`promo-field ${errors.validFrom ? "promo-field--error" : ""}`}>
+                <label className="promo-field__label">VÁLIDO DESDE</label>
+                <input
+                  type="date"
+                  className="promo-field__input"
+                  value={form.validFrom}
+                  onChange={(e) => updateField("validFrom", e.target.value)}
+                />
+                {errors.validFrom && <span className="promo-field__error">{errors.validFrom}</span>}
+              </div>
+
+              <div className={`promo-field ${errors.validTo ? "promo-field--error" : ""}`}>
+                <label className="promo-field__label">VÁLIDO HASTA</label>
+                <input
+                  type="date"
+                  className="promo-field__input"
+                  value={form.validTo}
+                  onChange={(e) => updateField("validTo", e.target.value)}
+                />
+                {errors.validTo && <span className="promo-field__error">{errors.validTo}</span>}
+              </div>
             </div>
 
-            <div className="promo-field">
-              <label className="promo-field__label">VÁLIDO HASTA</label>
-              <input
-                type="date"
-                className="promo-field__input"
-                value={form.validTo}
-                onChange={(e) => updateField("validTo", e.target.value)}
-              />
+            <div className="promo-switch-container">
+              <label className="promo-switch">
+                <input
+                  type="checkbox"
+                  checked={form.unlimitedStock}
+                  onChange={(e) =>
+                    updateField("unlimitedStock", e.target.checked)
+                  }
+                />
+                <span className="promo-switch__slider" />
+              </label>
+              <span className="promo-switch__label">HASTA AGOTAR STOCK</span>
             </div>
-
-            <label className="promo-checkbox">
-              <input
-                type="checkbox"
-                checked={form.unlimitedStock}
-                onChange={(e) =>
-                  updateField("unlimitedStock", e.target.checked)
-                }
-              />
-              <span>HASTA AGOTAR STOCK</span>
-            </label>
           </section>
 
           {/* Preview Card */}
@@ -361,8 +468,8 @@ export default function PromotionCreator({ onBack, onViewAll }) {
         <div className="promo-creator__footer-actions">
           <button
             type="button"
-            className="promo-btn promo-btn--outline"
-            onClick={onViewAll}
+            className="promo-btn promo-btn--preview"
+            onClick={() => setIsPreviewOpen(true)}
           >
             <Eye size={16} />
             VISTA PREVIA
@@ -375,12 +482,90 @@ export default function PromotionCreator({ onBack, onViewAll }) {
             type="button"
             className="promo-btn promo-btn--primary"
             onClick={handleCreate}
+            disabled={isSubmitting}
           >
-            CREAR PROMOCIÓN
-            <Send size={16} />
+            {isSubmitting ? "GUARDANDO..." : "CREAR PROMOCIÓN"}
+            {success ? <CheckCircle2 size={16} /> : <Send size={16} />}
           </button>
         </div>
       </footer>
+
+      {/* Coupon Preview Modal */}
+      {isPreviewOpen && (
+        <div className="coupon-modal-overlay" onClick={() => setIsPreviewOpen(false)}>
+          <div className="coupon-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="coupon-modal__close" onClick={() => setIsPreviewOpen(false)}>
+              <X size={24} />
+            </button>
+            <div className="coupon-card-container">
+              <div className="coupon-card" ref={couponRef}>
+                <div className="coupon-card__header">
+                  <Ticket size={28} className="coupon-ticket-icon" />
+                  <div className="coupon-card__discount">
+                    {offerLabel} OFF
+                  </div>
+                </div>
+                <div className="coupon-card__image">
+                  {form.imagePreview ? (
+                    <img src={form.imagePreview} alt="Promo" />
+                  ) : (
+                    <div className="coupon-card__placeholder">
+                      <ImageIcon size={64} />
+                    </div>
+                  )}
+                </div>
+                <div className="coupon-card__body">
+                  <h2 className="coupon-card__title">
+                    {form.title || "Gran Inauguración"}
+                  </h2>
+                  <p className="coupon-card__description">
+                    {form.description || "Descuento especial en todos los servicios de plomería."}
+                  </p>
+                  
+                  <div className="coupon-card__info-box">
+                    <div className="coupon-card__info-item">
+                      <Eye size={16} />
+                      <span><strong>Profesional:</strong> {form.professionalName || "Carlos Plomería"}</span>
+                    </div>
+                    <div className="coupon-card__info-item">
+                      <Calendar size={16} />
+                      <span><strong>Validez:</strong> {form.validFrom || "2026-04-15"} al {form.validTo || "2026-05-15"}</span>
+                    </div>
+                  </div>
+
+                  <div className="coupon-card__verify-box">
+                    <span className="verify-label">CÓDIGO DE VERIFICACIÓN</span>
+                    <span className="verify-code">{promoCode}</span>
+                  </div>
+
+                  <button 
+                    className={`coupon-card__download-btn ${success ? 'coupon-card__download-btn--success' : 'coupon-card__download-btn--locked'}`} 
+                    onClick={success ? handleDownloadCoupon : undefined}
+                    title={!success ? "Debes crear la promoción para descargar el cupón" : ""}
+                  >
+                    {success ? (
+                      <>
+                        <Download size={18} />
+                        Descargar Cupón (JPG)
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle size={18} />
+                        Crea la promo para descargar
+                      </>
+                    )}
+                  </button>
+
+                  <div className="coupon-card__footer">
+                    <CheckCircle2 size={14} />
+                    <span>Presenta este cupón al momento del servicio</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
