@@ -15,6 +15,7 @@ import {
   PanelLeftOpen,
   Package,
   CreditCard,
+  CalendarDays,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
@@ -32,6 +33,7 @@ type DashboardSidebarProps = {
   onPromotionsViewAll?: () => void;
   onProductsClick?: () => void;
   onSubscriptionClick?: () => void;
+  onCalendarClick?: () => void;
 };
 
 export default function DashboardSidebar({
@@ -46,6 +48,7 @@ export default function DashboardSidebar({
   onPromotionsViewAll,
   onProductsClick,
   onSubscriptionClick,
+  onCalendarClick,
 }: DashboardSidebarProps) {
   const navigate = useNavigate();
   const [promosOpen, setPromosOpen] = useState(
@@ -114,6 +117,12 @@ export default function DashboardSidebar({
       label: "PRODUCTS",
       icon: Package,
       onClick: onProductsClick ?? (() => navigate(ROUTES.products)),
+    },
+    {
+      key: "calendar",
+      label: "CALENDAR",
+      icon: CalendarDays,
+      onClick: onCalendarClick ?? (() => {}),
     },
     {
       key: "messages",
