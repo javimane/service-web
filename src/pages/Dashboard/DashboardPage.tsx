@@ -21,6 +21,7 @@ import NotificationsPage from "./sections/NotificationsPage";
 import DashboardProducts from "./sections/DashboardProducts";
 import SubscriptionSection from "./sections/SubscriptionSection";
 import CalendarSection from "./sections/CalendarSection";
+import BankPromotionsPage from "./sections/BankPromotionsPage";
 import "./DashboardPage.css";
 
 export default function DashboardPage() {
@@ -55,6 +56,7 @@ export default function DashboardPage() {
   const handleShowProducts = () => setView("products");
   const handleShowSubscription = () => setView("subscription");
   const handleShowCalendar = () => setView("calendar");
+  const handleShowBankPromos = () => setView("bank-promotions");
 
   return (
     <div className="dashboard-page-wrapper">
@@ -75,7 +77,9 @@ export default function DashboardPage() {
                         ? "subscription"
                         : view === "calendar"
                           ? "calendar"
-                          : "dashboard"
+                          : view === "bank-promotions"
+                            ? "bank-promotions"
+                            : "dashboard"
           }
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed((current) => !current)}
@@ -88,6 +92,7 @@ export default function DashboardPage() {
           onProductsClick={handleShowProducts}
           onSubscriptionClick={handleShowSubscription}
           onCalendarClick={handleShowCalendar}
+          onBankPromosClick={handleShowBankPromos}
         />
 
         <main className="dashboard-main">
@@ -108,6 +113,8 @@ export default function DashboardPage() {
             />
           ) : view === "promotions-all" ? (
             <AllPromotionsPage onCreateNew={handleShowPromotionsCreate} />
+          ) : view === "bank-promotions" ? (
+            <BankPromotionsPage />
           ) : (
             <div className="dashboard-content">
               <div className="welcome-section">
