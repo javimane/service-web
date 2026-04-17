@@ -36,7 +36,9 @@
   border-radius: 8px;
   font-size: 0.85rem;
   color: #ddd;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .payment-method-item:hover {
@@ -51,14 +53,14 @@
   color: #4facfe; /* Primary accent color */
 }
 
-/* Light mode support (assuming there is a .light-mode class on body or parent) */
-:global(.light-mode) .payment-methods-card {
-  background: rgba(0, 0, 0, 0.02);
-  border-color: rgba(0, 0, 0, 0.05);
+/* Light mode support */
+[data-theme="light"] .payment-methods-card {
+  background: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.08);
 }
 
-:global(.light-mode) .payment-method-item {
-  background: white;
+[data-theme="light"] .payment-method-item {
+  background: #ffffff;
   color: #444;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }

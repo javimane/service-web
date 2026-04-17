@@ -1,7 +1,7 @@
-/* Modern Service Card - Dark Design */
+/* Modern Service Card - Premium Contrast */
 .service-card-modern {
-  background: #111111;
-  border: 1px solid #1f2937;
+  background: var(--surface-contrast);
+  border: 1px solid var(--surface-contrast-border);
   border-radius: 32px;
   padding: 1.75rem;
   display: flex;
@@ -11,16 +11,18 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.18);
 }
 
 .service-card-modern:hover {
-  border-color: #B5FF24;
+  border-color: #b5ff24;
   transform: translateY(-8px);
-  background: #161616;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 20px rgba(181, 255, 36, 0.05);
+  background: var(--surface-contrast-hover);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.35),
+    0 0 20px rgba(181, 255, 36, 0.06);
 }
 
-/* Card Header: Location & Badge */
 .card-top {
   display: flex;
   justify-content: space-between;
@@ -31,7 +33,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #B5FF24;
+  color: #b5ff24;
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -43,16 +45,31 @@
   font-size: 0.65rem;
   font-weight: 900;
   letter-spacing: 0.05em;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.badge-premium { color: #facc15; background: rgba(250, 204, 21, 0.1); border-color: rgba(250, 204, 21, 0.2); }
-.badge-featured { color: #818cf8; background: rgba(129, 140, 248, 0.1); border-color: rgba(129, 140, 248, 0.2); }
-.badge-eco { color: #4ade80; background: rgba(74, 222, 128, 0.1); border-color: rgba(74, 222, 128, 0.2); }
-.badge-technical { color: #38bdf8; background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.2); }
+.badge-premium {
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.1);
+  border-color: rgba(250, 204, 21, 0.2);
+}
+.badge-featured {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.1);
+  border-color: rgba(129, 140, 248, 0.2);
+}
+.badge-eco {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.2);
+}
+.badge-technical {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.2);
+}
 
-/* Card Main: Title & Author */
 .card-main {
   display: flex;
   flex-direction: column;
@@ -64,7 +81,7 @@
   font-weight: 800;
   margin: 0;
   line-height: 1.1;
-  color: #ffffff;
+  color: var(--surface-contrast-text);
   letter-spacing: -0.02em;
 }
 
@@ -79,7 +96,7 @@
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid #27272a;
+  border: 1px solid var(--surface-contrast-border);
 }
 
 .author-meta {
@@ -90,7 +107,7 @@
 .author-name {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--surface-contrast-text);
 }
 
 .author-rating {
@@ -99,18 +116,16 @@
   gap: 4px;
   font-size: 0.75rem;
   font-weight: 800;
-  color: #B5FF24;
+  color: #b5ff24;
 }
 
-/* Description (List View) */
 .card-description {
   margin: 0;
   font-size: 0.95rem;
-  color: #a1a1aa;
+  color: var(--surface-contrast-muted);
   line-height: 1.6;
 }
 
-/* Card Footer: Price & CTA */
 .card-footer {
   margin-top: auto;
   display: flex;
@@ -122,18 +137,27 @@
 .card-price {
   display: flex;
   align-items: baseline;
-  color: #6366f1; /* Indigo/Violet price as in image */
+  color: #8b5cf6;
   font-weight: 900;
 }
 
-.price-currency { font-size: 1rem; margin-right: 2px; }
-.price-value { font-size: 1.6rem; letter-spacing: -0.02em; }
-.price-plus { font-size: 1rem; margin-left: 1px; }
+.price-currency {
+  font-size: 1rem;
+  margin-right: 2px;
+}
+.price-value {
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+}
+.price-plus {
+  font-size: 1rem;
+  margin-left: 1px;
+}
 
 .card-cta {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--surface-contrast-text);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -146,10 +170,9 @@
 }
 
 .service-card-modern:hover .card-cta {
-  color: #B5FF24;
+  color: #b5ff24;
 }
 
-/* LIST VIEW LAYOUT OVERRIDES */
 .service-card-modern.view-list {
   flex-direction: row;
   align-items: center;
@@ -157,13 +180,32 @@
   gap: 2.5rem;
 }
 
-.view-list .card-top { flex-direction: column; align-items: flex-start; gap: 8px; min-width: 120px; }
-.view-list .card-main { flex: 1; gap: 0.5rem; }
-.view-list .card-title { font-size: 1.5rem; }
-.view-list .card-author { order: 2; margin-top: 4px; }
-.view-list .card-footer { flex-direction: column; min-width: 140px; border: none; padding: 0; align-items: flex-end; gap: 8px; }
+.view-list .card-top {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 120px;
+}
+.view-list .card-main {
+  flex: 1;
+  gap: 0.5rem;
+}
+.view-list .card-title {
+  font-size: 1.5rem;
+}
+.view-list .card-author {
+  order: 2;
+  margin-top: 4px;
+}
+.view-list .card-footer {
+  flex-direction: column;
+  min-width: 140px;
+  border: none;
+  padding: 0;
+  align-items: flex-end;
+  gap: 8px;
+}
 
-/* Responsive adjustments */
 @media (max-width: 640px) {
   .service-card-modern.view-list {
     flex-direction: column;

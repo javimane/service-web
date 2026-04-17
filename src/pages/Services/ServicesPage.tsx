@@ -6,6 +6,7 @@ import { professionals } from "../../data/specialists";
 import ServiceCard from "../../components/Cards/ServiceCard";
 import ServicesFilters from "./ServicesFilters";
 import ServiceDetailModal from "./ServiceDetailModal";
+import { useTheme } from "../../context/ThemeContext";
 import { filterServices, getUniqueValues } from "./serviceUtils";
 import "./ServicesPage.css";
 
@@ -19,15 +20,19 @@ export default function ServicesPage() {
   });
   const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'list'
   const [selectedService, setSelectedService] = useState(null);
+  const { theme } = useTheme();
 
-  // Sync title and dark mode class for this specific page
   useEffect(() => {
     document.title = "Servicios Individuales | Obsidian Pro";
-    document.documentElement.classList.add('dark-theme');
-    return () => {
-      document.documentElement.classList.remove('dark-theme');
-    };
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark-theme", theme === "dark");
+
+    return () => {
+      document.documentElement.classList.remove("dark-theme");
+    };
+  }, [theme]);
 
   const categories = useMemo(
     () => getUniqueValues(professionals, "category"),
@@ -88,17 +93,17 @@ export default function ServicesPage() {
             </div>
 
             <div className="view-toggle">
-              <button 
-                className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                onClick={() => setViewMode('grid')}
+              <button
+                className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
+                onClick={() => setViewMode("grid")}
                 aria-label="Vista Cuadrícula"
               >
                 <LayoutGrid size={18} />
                 <span>Grid</span>
               </button>
-              <button 
-                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                onClick={() => setViewMode('list')}
+              <button
+                className={`view-btn ${viewMode === "list" ? "active" : ""}`}
+                onClick={() => setViewMode("list")}
                 aria-label="Vista Lista"
               >
                 <List size={18} />
@@ -116,7 +121,7 @@ export default function ServicesPage() {
                 onClick={setSelectedService}
               />
             ))}
-            
+
             {filteredServices.length === 0 && (
               <div className="services-empty">
                 <div className="services-empty__icon">🔍</div>

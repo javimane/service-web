@@ -150,8 +150,6 @@ export default function AnalyticsPage() {
           </div>
         </main>
       </div>
-
-      <Footer />
     </div>
   );
 }

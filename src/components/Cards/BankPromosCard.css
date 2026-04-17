@@ -1,7 +1,11 @@
 .bank-promos-card {
   margin-top: 1rem;
   padding: 1.25rem;
-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.05) 0%, rgba(0, 242, 254, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(79, 172, 254, 0.05) 0%,
+    rgba(0, 242, 254, 0.05) 100%
+  );
   border-radius: 12px;
   border: 1px solid rgba(79, 172, 254, 0.2);
   cursor: pointer;
@@ -10,9 +14,13 @@
 
 .bank-promos-card:hover {
   transform: translateY(-4px);
-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(79, 172, 254, 0.1) 0%,
+    rgba(0, 242, 254, 0.1) 100%
+  );
   border-color: rgba(79, 172, 254, 0.4);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .promo-preview {
@@ -114,7 +122,7 @@
   align-items: center;
   justify-content: center;
   padding: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .bank-logo {
@@ -166,20 +174,24 @@
 }
 
 /* Light Mode */
-:global(.light-mode) .bank-promos-card {
-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.05) 0%, rgba(0, 242, 254, 0.05) 100%);
+[data-theme="light"] .bank-promos-card {
+  background: linear-gradient(
+    135deg,
+    rgba(79, 172, 254, 0.05) 0%,
+    rgba(0, 242, 254, 0.05) 100%
+  );
   border-color: rgba(79, 172, 254, 0.2);
 }
 
-:global(.light-mode) .promo-preview__content p {
+[data-theme="light"] .promo-preview__content p {
   color: #333;
 }
 
-:global(.light-mode) .promo-day-row {
+[data-theme="light"] .promo-day-row {
   background: #f8f9fa;
   border-color: #eee;
 }
 
-:global(.light-mode) .bank-name {
+[data-theme="light"] .bank-name {
   color: #333;
 }

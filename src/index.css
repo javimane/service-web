@@ -1,17 +1,23 @@
 :root {
   /* Modo Claro por defecto */
-  --bg-color: #8a93a677;
-  --bg-card: #e2e6eb;
-  --text-primary: #1a1b1e;
-  --text-secondary: #6b7280;
-  --accent-color: #7b61ff;
-  --accent-hover: #6a4ff0;
-  --accent-transparent: rgba(123, 97, 255, 0.1);
-  --border-color: #e5e7eb;
-  --input-bg: #f9fafb;
+  --bg-color: #f3f5f8;
+  --bg-card: #ffffff;
+  --surface-soft: #eef2f7;
+  --surface-contrast: #151821;
+  --surface-contrast-hover: #1c2230;
+  --surface-contrast-border: #293244;
+  --surface-contrast-text: #f8fafc;
+  --surface-contrast-muted: #cbd5e1;
+  --text-primary: #111827;
+  --text-secondary: #667085;
+  --accent-color: #6d5efc;
+  --accent-hover: #5b4de6;
+  --accent-transparent: rgba(109, 94, 252, 0.12);
+  --border-color: #d8e1ec;
+  --input-bg: #f8fafc;
   --error-color: #ef4444;
   --success-color: #10b981;
-  --shadow-card: 0 10px 25px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 14px 34px rgba(15, 23, 42, 0.08);
 
   --highlight: #ff6b6b;
   --highlight-text: #ff6b6b;
@@ -29,6 +35,12 @@
   /* Modo Oscuro - Estilo Premium 'Obsidian' */
   --bg-color: #0b0c10;
   --bg-card: #15161b;
+  --surface-soft: #1c1d24;
+  --surface-contrast: #15161b;
+  --surface-contrast-hover: #1c1d24;
+  --surface-contrast-border: #272832;
+  --surface-contrast-text: #f3f4f6;
+  --surface-contrast-muted: #b7c0cf;
   --text-primary: #f3f4f6;
   --text-secondary: #9ca3af;
   --accent-color: #a78bfa;
@@ -56,7 +68,7 @@
 
 body {
   font-family: var(--font-family);
-  background-color: var(--bg-color);
+  background: var(--bg-color);
   color: var(--text-primary);
   min-height: 100vh;
   transition:
