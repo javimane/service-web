@@ -106,12 +106,12 @@ export default function DashboardSidebar({
         {
           key: "promotions-create",
           label: "Crear Promoción",
-          onClick: onPromotionsCreate,
+          onClick: onPromotionsCreate ?? (() => navigate(ROUTES.dashboard, { state: { view: 'promotions-create' } })),
         },
         {
           key: "promotions-all",
           label: "Ver Todas",
-          onClick: onPromotionsViewAll,
+          onClick: onPromotionsViewAll ?? (() => navigate(ROUTES.dashboard, { state: { view: 'promotions-all' } })),
         },
       ],
     },
@@ -119,19 +119,19 @@ export default function DashboardSidebar({
       key: "bank-promotions",
       label: "BANK PROMOTIONS",
       icon: Landmark,
-      onClick: onBankPromosClick ?? (() => {}),
+      onClick: onBankPromosClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'bank-promotions' } })),
     },
     {
       key: "products",
       label: "PRODUCTS",
       icon: Package,
-      onClick: onProductsClick ?? (() => navigate(ROUTES.products)),
+      onClick: onProductsClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'products' } })),
     },
     {
       key: "calendar",
       label: "CALENDAR",
       icon: CalendarDays,
-      onClick: onCalendarClick ?? (() => {}),
+      onClick: onCalendarClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'calendar' } })),
     },
     {
       key: "messages",
@@ -143,13 +143,13 @@ export default function DashboardSidebar({
       key: "notifications",
       label: "NOTIFICATIONS",
       icon: Bell,
-      onClick: onNotificationsClick,
+      onClick: onNotificationsClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'notifications' } })),
     },
     {
       key: "subscription",
       label: "SUBSCRIPTION",
       icon: CreditCard,
-      onClick: onSubscriptionClick ?? (() => {}),
+      onClick: onSubscriptionClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'subscription' } })),
     },
     {
       key: "settings",

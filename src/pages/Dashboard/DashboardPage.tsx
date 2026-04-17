@@ -31,16 +31,11 @@ export default function DashboardPage() {
   const [view, setView] = useState("overview");
 
   useEffect(() => {
-    if (location.state?.view === "create-proposal") {
-      setView("create-proposal");
-      return;
+    if (location.state?.view) {
+      setView(location.state.view);
+    } else {
+      setView("overview");
     }
-    if (location.state?.view === "notifications") {
-      setView("notifications");
-      return;
-    }
-
-    setView("overview");
   }, [location.state]);
 
   const handleCreateProposal = () => setView("create-proposal");
