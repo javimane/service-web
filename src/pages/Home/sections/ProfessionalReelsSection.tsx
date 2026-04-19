@@ -1,5 +1,13 @@
-import { useRef, useState } from "react";
-import { Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Play,
+  Pause,
+  Heart,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from "lucide-react";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./ProfessionalReelsSection.css";
 
@@ -11,7 +19,7 @@ const reels = [
   { id: 5, videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4" },
 ];
 
-function ReelThumbnail({ src }) {
+function ReelThumbnail({ src }: { src: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   const handleLoadedMetadata = () => {
     if (ref.current) ref.current.currentTime = 0.01;
@@ -30,9 +38,14 @@ function ReelThumbnail({ src }) {
 }
 
 export default function ProfessionalReelsSection() {
-  const [selectedReel, setSelectedReel] = useState<any>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [likedReels, setLikedReels] = useState<number[]>([]);
   const sliderRef = useRef<HTMLDivElement>(null);
-  
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const selectedReel = selectedIndex !== null ? reels[selectedIndex] : null;
+
   const {
     showLeftArrow,
     showRightArrow,
@@ -42,6 +55,57 @@ export default function ProfessionalReelsSection() {
     handlePointerUp,
     updateArrowVisibility,
   } = useCarouselDrag(sliderRef, ".reel-card");
+
+  useEffect(() => {
+    if (selectedReel && videoRef.current) {
+      const video = videoRef.current;
+      video.currentTime = 0;
+      void video.play().catch(() => undefined);
+      setIsPlaying(true);
+    }
+  }, [selectedReel]);
+
+  const togglePlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      void video.play().catch(() => undefined);
+      setIsPlaying(true);
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const toggleLike = () => {
+    if (!selectedReel) return;
+
+    setLikedReels((prev) =>
+      prev.includes(selectedReel.id)
+        ? prev.filter((id) => id !== selectedReel.id)
+        : [...prev, selectedReel.id],
+    );
+  };
+
+  const restartReel = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.currentTime = 0;
+    void video.play().catch(() => undefined);
+    setIsPlaying(true);
+  };
+
+  const showPreviousReel = () => {
+    setSelectedIndex((prev) =>
+      prev === null ? 0 : (prev - 1 + reels.length) % reels.length,
+    );
+  };
+
+  const showNextReel = () => {
+    setSelectedIndex((prev) => (prev === null ? 0 : (prev + 1) % reels.length));
+  };
 
   return (
     <section className="professional-reels">
@@ -60,8 +124,8 @@ export default function ProfessionalReelsSection() {
           <ChevronLeft size={18} />
         </button>
 
-        <div 
-          ref={sliderRef} 
+        <div
+          ref={sliderRef}
           className="professional-reels__scroll"
           onScroll={updateArrowVisibility}
           onPointerDown={handlePointerDown}
@@ -70,11 +134,11 @@ export default function ProfessionalReelsSection() {
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerUp}
         >
-          {reels.map((reel) => (
+          {reels.map((reel, index) => (
             <button
               key={reel.id}
               className="reel-card"
-              onClick={() => setSelectedReel(reel)}
+              onClick={() => setSelectedIndex(index)}
             >
               <ReelThumbnail src={reel.videoUrl} />
               <div className="reel-card__overlay" />
@@ -97,14 +161,99 @@ export default function ProfessionalReelsSection() {
       </div>
 
       {selectedReel && (
-        <div className="reels-modal-overlay" onClick={() => setSelectedReel(null)}>
-          <div className="reels-modal" onClick={e => e.stopPropagation()}>
-             <video 
-                src={selectedReel.videoUrl} 
-                autoPlay 
-                controls 
-                style={{ height: '80vh', borderRadius: '12px' }} 
+        <div
+          className="reels-modal-overlay"
+          onClick={() => setSelectedIndex(null)}
+        >
+          <div className="reels-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="reels-modal__nav reels-modal__nav--left"
+              onClick={showPreviousReel}
+              aria-label="Reel anterior"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            <button
+              type="button"
+              className="reels-modal__nav reels-modal__nav--right"
+              onClick={showNextReel}
+              aria-label="Siguiente reel"
+            >
+              <ChevronRight size={20} />
+            </button>
+
+            <button
+              type="button"
+              className="reels-modal__close"
+              onClick={() => setSelectedIndex(null)}
+              aria-label="Cerrar reel"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="reels-modal__phone-frame">
+              <video
+                ref={videoRef}
+                className="reels-modal__video"
+                src={selectedReel.videoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
               />
+
+              <div className="reels-modal__topbar">
+                <span>Reel</span>
+              </div>
+
+              <button
+                type="button"
+                className="reels-modal__center-control"
+                onClick={togglePlayback}
+                aria-label={isPlaying ? "Pausar" : "Reproducir"}
+              >
+                {isPlaying ? (
+                  <Pause size={18} />
+                ) : (
+                  <Play size={18} fill="currentColor" />
+                )}
+              </button>
+
+              <div className="reels-modal__actions">
+                <button
+                  type="button"
+                  className={`reels-modal__icon-btn ${likedReels.includes(selectedReel.id) ? "is-active" : ""}`}
+                  onClick={toggleLike}
+                  aria-label="Me gusta"
+                >
+                  <Heart
+                    size={18}
+                    fill={
+                      likedReels.includes(selectedReel.id)
+                        ? "currentColor"
+                        : "none"
+                    }
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  className="reels-modal__icon-btn"
+                  onClick={restartReel}
+                  aria-label="Reiniciar reel"
+                >
+                  <RotateCcw size={17} />
+                </button>
+              </div>
+
+              <div className="reels-modal__meta">
+                <div className="reels-modal__badge">
+                  <span>{isPlaying ? "Reproduciendo" : "En pausa"}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

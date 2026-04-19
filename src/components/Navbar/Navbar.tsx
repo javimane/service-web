@@ -91,6 +91,7 @@ export default function Navbar() {
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   const navLinks = [
+    { label: "Categorías", path: ROUTES.categories },
     { label: "Mapa", path: ROUTES.map },
     { label: "Servicios", path: ROUTES.services },
     { label: "Productos", path: ROUTES.products },
@@ -160,13 +161,6 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              <Link
-                to={ROUTES.products}
-                className={`navbar__mobile-link ${location.pathname === ROUTES.products ? "active" : ""}`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Productos
-              </Link>
             </div>
           )}
         </div>
@@ -209,7 +203,6 @@ export default function Navbar() {
         {/* Right side — authenticated */}
         {user ? (
           <div className="navbar__right">
-            
             <Link
               to={ROUTES.messages}
               className="navbar__icon-btn"
@@ -353,7 +346,6 @@ export default function Navbar() {
         ) : (
           /* Right side — not authenticated */
           <div className="navbar__right">
-            
             <button
               className="navbar__auth-btn"
               onClick={() => openAuth("login")}

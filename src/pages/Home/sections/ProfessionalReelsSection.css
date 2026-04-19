@@ -46,7 +46,7 @@
   border-radius: 12px;
   overflow: hidden;
   background: #000;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
 }
 
@@ -59,7 +59,7 @@
 .reel-card__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 40%);
 }
 
 .reel-card__label {
@@ -90,7 +90,7 @@
   z-index: 10;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   color: var(--text-primary);
 }
 
@@ -118,9 +118,153 @@
 .reels-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.9);
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
+}
+
+.reels-modal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reels-modal__nav,
+.reels-modal__close {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+}
+
+.reels-modal__close {
+  top: 12px;
+  right: 12px;
+}
+
+.reels-modal__nav--left {
+  left: -54px;
+}
+
+.reels-modal__nav--right {
+  right: -54px;
+}
+
+.reels-modal__phone-frame {
+  position: relative;
+  width: min(360px, 92vw);
+  aspect-ratio: 9 / 16;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+
+.reels-modal__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.reels-modal__topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 18px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
+}
+
+.reels-modal__center-control {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.reels-modal__actions {
+  position: absolute;
+  right: 14px;
+  bottom: 108px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reels-modal__icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reels-modal__icon-btn.is-active {
+  color: #ff4d6d;
+}
+
+.reels-modal__meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 18px;
+  display: flex;
+  align-items: end;
+  justify-content: flex-start;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), transparent 60%);
+}
+
+.reels-modal__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .reels-modal__nav--left {
+    left: 8px;
+  }
+
+  .reels-modal__nav--right {
+    right: 8px;
+  }
 }

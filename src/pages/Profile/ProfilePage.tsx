@@ -53,7 +53,7 @@ export default function ProfilePage() {
     city,
     province,
     whatsapp,
-    socials,
+    website,
     rating,
     reviews,
     yearsOfExperience,
@@ -73,7 +73,6 @@ export default function ProfilePage() {
   const testimonialsScroll = useDraggableScroll();
 
   return (
-
     <div className="profile-page">
       <Navbar />
 
@@ -102,7 +101,7 @@ export default function ProfilePage() {
             </div>
             <div className="stat-item">
               <div className="stat-content">
-                 <MessageCircle size={14} className="stat-icon" />
+                <MessageCircle size={14} className="stat-icon" />
                 <span className="stat-value">{reviews}</span>
               </div>
               <span className="stat-label">TRABAJOS</span>
@@ -115,23 +114,28 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="profile-sidebar__social">
-            {socials.map((social) => (
-              <a key={social.id} href={social.url} target="_blank" rel="noreferrer">
-                {social.label} <ArrowUpRight size={14} />
+          {website && (
+            <div className="profile-sidebar__social">
+              <a
+                href={website}
+                target="_blank"
+                rel="noreferrer"
+                className="website-link"
+              >
+                Página Web <ArrowUpRight size={14} />
               </a>
-            ))}
-          </div>
+            </div>
+          )}
 
           <PaymentMethodsCard methods={paymentMethods} />
-          
-          <BankPromosCard 
-            promotions={bankPromotions} 
+
+          <BankPromosCard
+            promotions={bankPromotions}
             onOpenPromos={() => setIsBankPromosModalOpen(true)}
           />
 
-          <a 
-            href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`} 
+          <a
+            href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
             className="cta-button whatsapp"
             target="_blank"
             rel="noreferrer"
@@ -144,7 +148,9 @@ export default function ProfilePage() {
         <section className="profile-content">
           <header className="profile-content__header">
             <div className="location-info">
-              <span>{city}, {province}</span>
+              <span>
+                {city}, {province}
+              </span>
             </div>
             <p className="bio">{bio}</p>
           </header>
@@ -152,7 +158,10 @@ export default function ProfilePage() {
           <div className="profile-section">
             <div className="section-header">
               <h2>PORTAFOLIO</h2>
-              <button onClick={() => setIsPortfolioModalOpen(true)} className="ver-todo">
+              <button
+                onClick={() => setIsPortfolioModalOpen(true)}
+                className="ver-todo"
+              >
                 VER TODO
               </button>
             </div>
@@ -168,12 +177,15 @@ export default function ProfilePage() {
           <div className="profile-section">
             <div className="section-header">
               <h2>SERVICIOS</h2>
-              <button onClick={() => setIsServicesModalOpen(true)} className="ver-todo">
+              <button
+                onClick={() => setIsServicesModalOpen(true)}
+                className="ver-todo"
+              >
                 VER TODO
               </button>
             </div>
-            <div 
-              className={`services-scroll-container ${servicesScroll.isDragging ? 'dragging' : ''}`}
+            <div
+              className={`services-scroll-container ${servicesScroll.isDragging ? "dragging" : ""}`}
               ref={servicesScroll.ref}
               {...servicesScroll.events}
             >
@@ -195,12 +207,15 @@ export default function ProfilePage() {
           <div className="profile-section">
             <div className="section-header">
               <h2>TESTIMONIOS</h2>
-              <button onClick={() => setIsTestimonialsModalOpen(true)} className="ver-todo">
+              <button
+                onClick={() => setIsTestimonialsModalOpen(true)}
+                className="ver-todo"
+              >
                 VER TODO
               </button>
             </div>
-            <div 
-              className={`testimonials-scroll-container ${testimonialsScroll.isDragging ? 'dragging' : ''}`}
+            <div
+              className={`testimonials-scroll-container ${testimonialsScroll.isDragging ? "dragging" : ""}`}
               ref={testimonialsScroll.ref}
               {...testimonialsScroll.events}
             >
@@ -208,12 +223,14 @@ export default function ProfilePage() {
                 {testimonials.map((test) => (
                   <div key={test.id} className="testimonial-card">
                     <div className="testimonial-header">
-                      <img src={test.photo} alt={test.author} className="author-photo" />
+                      <img
+                        src={test.photo}
+                        alt={test.author}
+                        className="author-photo"
+                      />
                       <div className="author-info">
                         <h3>{test.author}</h3>
-                        <div className="rating">
-                          {"★".repeat(test.rating)}
-                        </div>
+                        <div className="rating">{"★".repeat(test.rating)}</div>
                       </div>
                       <MessageCircle className="quote-icon" size={24} />
                     </div>
@@ -223,26 +240,30 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-
         </section>
       </main>
 
       {/* Modals */}
-      <Modal 
-        isOpen={isPortfolioModalOpen} 
-        onClose={() => setIsPortfolioModalOpen(false)} 
+      <Modal
+        isOpen={isPortfolioModalOpen}
+        onClose={() => setIsPortfolioModalOpen(false)}
         title="Galería Completa"
       >
         <div className="modal-portfolio-grid">
           {portfolio.map((image, idx) => (
-            <img key={idx} src={image} alt={`Work Full ${idx}`} className="modal-image" />
+            <img
+              key={idx}
+              src={image}
+              alt={`Work Full ${idx}`}
+              className="modal-image"
+            />
           ))}
         </div>
       </Modal>
 
-      <Modal 
-        isOpen={isServicesModalOpen} 
-        onClose={() => setIsServicesModalOpen(false)} 
+      <Modal
+        isOpen={isServicesModalOpen}
+        onClose={() => setIsServicesModalOpen(false)}
         title="Todos los Servicios"
       >
         <div className="modal-services-list">
@@ -258,18 +279,20 @@ export default function ProfilePage() {
         </div>
       </Modal>
 
-
-      <Modal 
-        isOpen={isTestimonialsModalOpen} 
-        onClose={() => setIsTestimonialsModalOpen(false)} 
+      <Modal
+        isOpen={isTestimonialsModalOpen}
+        onClose={() => setIsTestimonialsModalOpen(false)}
         title="Todos los Testimonios"
       >
-
         <div className="modal-testimonials-list">
           {testimonials.map((test) => (
             <div key={test.id} className="testimonial-card modal-version">
               <div className="testimonial-header">
-                <img src={test.photo} alt={test.author} className="author-photo" />
+                <img
+                  src={test.photo}
+                  alt={test.author}
+                  className="author-photo"
+                />
                 <div>
                   <h3>{test.author}</h3>
                   <div className="rating">{"★".repeat(test.rating)}</div>
@@ -281,9 +304,9 @@ export default function ProfilePage() {
         </div>
       </Modal>
 
-      <Modal 
-        isOpen={isBankPromosModalOpen} 
-        onClose={() => setIsBankPromosModalOpen(false)} 
+      <Modal
+        isOpen={isBankPromosModalOpen}
+        onClose={() => setIsBankPromosModalOpen(false)}
         title="Promociones Bancarias"
       >
         <div className="bank-promos-modal-content">
@@ -295,26 +318,31 @@ export default function ProfilePage() {
                 </div>
                 <div className="bank-info">
                   <div className="bank-logo-container">
-                    <img src={promo.logo} alt={promo.bank} className="bank-logo" />
+                    <img
+                      src={promo.logo}
+                      alt={promo.bank}
+                      className="bank-logo"
+                    />
                   </div>
                   <div className="bank-details">
                     <span className="bank-name">{promo.bank}</span>
-                    <span className="bank-discount">{promo.discount} de descuento</span>
+                    <span className="bank-discount">
+                      {promo.discount} de descuento
+                    </span>
                   </div>
                 </div>
-                <div className="promo-cta">
-                  Aprovechar
-                </div>
+                <div className="promo-cta">Aprovechar</div>
               </div>
             ))}
           </div>
-          <p className="promo-footer">Válido para pagos con tarjeta de crédito y débito. Sujeto a términos y condiciones de cada entidad bancaria.</p>
+          <p className="promo-footer">
+            Válido para pagos con tarjeta de crédito y débito. Sujeto a términos
+            y condiciones de cada entidad bancaria.
+          </p>
         </div>
       </Modal>
-
 
       <Footer />
     </div>
   );
 }
-

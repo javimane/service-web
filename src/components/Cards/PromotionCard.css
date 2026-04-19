@@ -19,7 +19,7 @@
 .promotion-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 20px 40px rgba(251, 191, 36, 0.15);
-  border-color: #fbbf24;
+  border-color: var(--hover-border-color);
 }
 
 .promotion-card__image-container {

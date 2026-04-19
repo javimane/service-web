@@ -2,13 +2,17 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  background-color: var(--bg-card);
+  width: 100%;
+  background-color: rgba(248, 249, 250, 0.96);
   border-bottom: 1px solid var(--border-color);
   backdrop-filter: blur(12px);
   transition: all 0.3s ease;
 }
 
 .navbar__inner {
+  width: min(100%, 1400px);
+  margin: 0 auto;
+  padding: 0 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -419,6 +423,11 @@
 @media (max-width: 640px) {
   .navbar__search {
     display: none;
+  }
+
+  .navbar__inner {
+    padding: 0 18px;
+    gap: 0.9rem;
   }
 }
 
