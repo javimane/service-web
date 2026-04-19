@@ -91,12 +91,12 @@ export default function HomePage() {
         </section>
 
         <CategoriesSection />
-        <NearbyServicesSection />
-        <NearbyProductsSection />
-        <ProductsCarousel />
         <PromotionsSection />
+        <NearbyServicesSection />
         <FeaturedSpecialists />
+        <NearbyProductsSection />
         <ProfessionalReelsSection />
+        <ProductsCarousel />
         <JoinCTASection />
       </main>
 

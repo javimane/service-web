@@ -19,7 +19,7 @@ import "./NavbarMessaje.css";
 import { useAuth } from "../../../context/AuthContext";
 import { ROUTES } from "../../../routes/paths";
 import { supabase } from "../../../services/supabaseClient";
-import ThemeToggle from "../../ThemeToggle/ThemeToggle";
+
 
 const notifications = [
   {
@@ -122,7 +122,7 @@ export default function NavbarMessage() {
 
         {/* Right side */}
         <div className="navbar__right">
-          <ThemeToggle />
+          
 
           <div className="navbar__notif-container" ref={notifRef}>
             <button

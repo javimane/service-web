@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
-import ThemeToggle from "../ThemeToggle/ThemeToggle";
+
 import "./Navbar.css";
 
 const notifications = [
@@ -209,7 +209,7 @@ export default function Navbar() {
         {/* Right side — authenticated */}
         {user ? (
           <div className="navbar__right">
-            <ThemeToggle />
+            
             <Link
               to={ROUTES.messages}
               className="navbar__icon-btn"
@@ -353,7 +353,7 @@ export default function Navbar() {
         ) : (
           /* Right side — not authenticated */
           <div className="navbar__right">
-            <ThemeToggle />
+            
             <button
               className="navbar__auth-btn"
               onClick={() => openAuth("login")}

@@ -316,18 +316,7 @@
   display: none;
 }
 
-/* Dark theme deep overrides */
-[data-theme="dark"] .calendar-section__calendar {
-  --sx-color-surface: var(--bg-card);
-  --sx-color-on-surface: var(--text-primary);
-  --sx-color-surface-container-low: var(--bg-color);
-  --sx-color-on-primary: #fff;
-  --sx-color-primary: var(--accent-color);
-}
 
-[data-theme="dark"] .calendar-section__calendar .sx__chevron-wrapper {
-  color: var(--text-primary);
-}
 
 /* Light theme overrides */
 :root .calendar-section__calendar {

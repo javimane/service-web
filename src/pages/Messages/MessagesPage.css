@@ -24,9 +24,7 @@
     --msg-bg-pattern: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 
-  [data-theme="dark"] .msg-app {
-    --msg-bg-pattern: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a78bfa' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  }
+
 
   .msg-app__container {
     margin-top: 12px;
@@ -444,11 +442,7 @@
     var(--bg-color);
 }
 
-[data-theme="dark"] .msg-chat__messages {
-  background:
-    url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23a78bfa' fill-opacity='0.03'%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3Ccircle cx='80' cy='50' r='2'/%3E%3Ccircle cx='150' cy='30' r='2.5'/%3E%3Ccircle cx='40' cy='100' r='2'/%3E%3Ccircle cx='120' cy='90' r='3'/%3E%3Ccircle cx='180' cy='120' r='2'/%3E%3Ccircle cx='60' cy='160' r='2.5'/%3E%3Ccircle cx='140' cy='170' r='2'/%3E%3Ccircle cx='30' cy='140' r='1.5'/%3E%3Ccircle cx='100' cy='150' r='2'/%3E%3Ccircle cx='170' cy='60' r='1.5'/%3E%3Ccircle cx='50' cy='70' r='1.5'/%3E%3Cpath d='M90 10l3 6-3 6-3-6z'/%3E%3Cpath d='M160 140l3 6-3 6-3-6z'/%3E%3Cpath d='M10 170l3 6-3 6-3-6z'/%3E%3Crect x='110' y='45' width='5' height='5' rx='1' transform='rotate(45 112.5 47.5)'/%3E%3Crect x='30' y='180' width='5' height='5' rx='1' transform='rotate(45 32.5 182.5)'/%3E%3Crect x='175' y='85' width='4' height='4' rx='1' transform='rotate(45 177 87)'/%3E%3C/g%3E%3C/svg%3E"),
-    var(--bg-color);
-}
+
 
 .msg-chat__messages::-webkit-scrollbar {
   width: 5px;

@@ -93,6 +93,7 @@
   height: 80%;
   object-fit: contain;
   transition: transform 0.3s ease;
+  pointer-events: none;
 }
 
 .product-carousel-card:hover .product-carousel-card__image img {

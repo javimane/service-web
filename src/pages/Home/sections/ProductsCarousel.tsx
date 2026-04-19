@@ -28,14 +28,9 @@ export default function ProductsCarousel() {
   return (
     <section className="products-carousel-section">
       <div className="products-carousel-section__header">
-        <div>
-          <span className="section-label">Productos</span>
-          <h2 className="products-carousel-section__title">
-            Herramientas y materiales
-          </h2>
-        </div>
+        <h2 className="products-carousel-section__title">Herramientas y materiales</h2>
         <button className="section-link" onClick={() => navigate("/products")}>
-          Ver todo
+          Ver todo &gt;
         </button>
       </div>
 
@@ -67,7 +62,7 @@ export default function ProductsCarousel() {
               onClick={() => setSelectedProduct(product)}
             >
               <div className="product-carousel-card__image">
-                <img src={product.image} alt={product.title} />
+                <img src={product.image} alt={product.title} draggable="false" />
                 {product.discount > 0 && (
                   <span className="product-carousel-card__badge">
                     -{product.discount}%

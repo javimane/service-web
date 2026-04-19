@@ -1,52 +1,95 @@
 .featured-specialists {
-  width: 100%;
-  max-width: 1280px;
-  padding: 0 1.5rem;
-  margin: 0 auto 3rem;
+  padding: 40px 0;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .featured-specialists__header {
   display: flex;
-  align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  align-items: flex-end;
+  margin-bottom: 24px;
+  padding: 0 40px;
 }
 
 .featured-specialists__title {
-  margin: 0.25rem 0 0;
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  line-height: 1.2;
+  font-size: 2rem;
+  font-weight: 900;
   color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.03em;
+}
+
+.featured-specialists__view-all {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.featured-specialists__view-all:hover {
+  text-decoration: underline;
 }
 
 .featured-specialists__carousel {
   position: relative;
-  margin: 0 -1.5rem;
-  padding: 0 1.5rem;
+  padding: 0 40px;
 }
 
 .featured-specialists__scroll {
   display: flex;
-  gap: 1rem;
+  gap: 20px;
   overflow-x: auto;
-  overflow-y: hidden;
-  padding-top: 0.5rem;
-  padding-bottom: 1.5rem;
   scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
+  padding: 20px 0;
   scrollbar-width: none;
-  touch-action: pan-x;
-}
-
-.featured-specialists__scroll.is-dragging {
-  cursor: grabbing;
-  scroll-behavior: auto;
 }
 
 .featured-specialists__scroll::-webkit-scrollbar {
   display: none;
 }
 
-.featured-specialists__scroll.is-dragging > * {
+/* Carousel controls */
+.carousel-control {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  color: var(--text-primary);
+}
+
+.carousel-control:hover {
+  background: var(--surface-soft);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-control--left {
+  left: 20px;
+}
+
+.carousel-control--right {
+  right: 20px;
+}
+
+.carousel-control--hidden {
+  opacity: 0;
   pointer-events: none;
 }

@@ -53,5 +53,58 @@ export const categories = [
     type: 'PHOTOMETRIC ART',
     status: 'ACTIVE'
   },
+  {
+    id: 7,
+    name: 'Salud',
+    label: 'Salud',
+    specialists: 45,
+    image: '',
+    type: 'WELLNESS',
+    status: 'ACTIVE'
+  },
+  {
+    id: 8,
+    name: 'Alimentos',
+    label: 'Alimentos',
+    specialists: 38,
+    image: '',
+    type: 'GASTRONOMY',
+    status: 'ACTIVE'
+  },
+  {
+    id: 9,
+    name: 'Hogar',
+    label: 'Hogar',
+    specialists: 62,
+    image: '',
+    type: 'DOMESTIC',
+    status: 'ACTIVE'
+  },
+  {
+    id: 10,
+    name: 'Moda',
+    label: 'Moda',
+    specialists: 29,
+    image: '',
+    type: 'STYLE',
+    status: 'ACTIVE'
+  },
+  {
+    id: 11,
+    name: 'Educación',
+    label: 'Educación',
+    specialists: 51,
+    image: '',
+    type: 'KNOWLEDGE',
+    status: 'ACTIVE'
+  },
+  {
+    id: 12,
+    name: 'Mascotas',
+    label: 'Mascotas',
+    specialists: 15,
+    image: '',
+    type: 'PET CARE',
+    status: 'ACTIVE'
+  },
 ];
-

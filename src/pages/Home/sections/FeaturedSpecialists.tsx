@@ -6,7 +6,7 @@ import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./FeaturedSpecialists.css";
 
 export default function FeaturedSpecialists() {
-  const sliderRef = useRef(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
   const {
     showLeftArrow,
     showRightArrow,
@@ -20,13 +20,10 @@ export default function FeaturedSpecialists() {
   return (
     <section className="featured-specialists">
       <div className="featured-specialists__header">
-        <div>
-          <span className="section-label">Profesionales</span>
-          <h2 className="featured-specialists__title">
-            Especialistas Destacados
-          </h2>
-        </div>
-        <button className="section-link">Ver todo</button>
+        <h2 className="featured-specialists__title">Profesionales Destacados</h2>
+        <button className="featured-specialists__view-all">
+          View all &gt;
+        </button>
       </div>
 
       <div className="featured-specialists__carousel">

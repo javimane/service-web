@@ -1,170 +1,43 @@
-.category-card {
-  position: relative;
-  width: 250px;
-  min-width: 250px;
-  max-width: 250px;
-  height: 310px;
-  border-radius: 20px;
-  overflow: hidden;
+.cat-minimal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   cursor: pointer;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  transition:
-    transform 0.3s cubic-bezier(0.2, 0, 0.2, 1),
-    box-shadow 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 250px;
-  box-sizing: border-box;
+  transition: transform 0.2s ease;
+  min-width: 100px;
+  user-select: none;
 }
 
-.category-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-card);
-  border-color: var(--accent-color);
+.cat-minimal-card:hover {
+  transform: translateY(-4px);
 }
 
-.category-card__image-container {
-  position: relative;
-  width: 100%;
-  height: 140px;
-  overflow: hidden;
-}
-
-.category-card__image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-  pointer-events: none;
-  -webkit-user-drag: none;
-  user-drag: none;
-}
-
-.category-card:hover .category-card__image {
-  transform: scale(1.05);
-}
-
-.category-card__badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-}
-
-.badge {
+.cat-minimal-card__icon-box {
+  width: 80px;
+  height: 80px;
+  background: var(--surface-soft);
+  border-radius: 16px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: 99px;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-}
-
-.badge--active {
-  background: var(--highlight);
-  color: #000;
-}
-
-.badge--verified {
-  background: var(--accent-color);
-  color: #fff;
-  backdrop-filter: blur(4px);
-}
-
-.category-card__content {
-  padding: 1rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.category-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.75rem;
-}
-
-.category-card__name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 1px;
-  line-height: 1.2;
-}
-
-.category-card__type {
-  font-size: 0.6rem;
-  color: var(--accent-color);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.category-card__stats {
-  text-align: right;
-}
-
-.category-card__count {
-  display: block;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-.category-card__count-label {
-  font-size: 0.5rem;
-  color: var(--text-secondary);
-  font-weight: 700;
-}
-
-.category-card__footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: auto;
-}
-
-.avatar-stack {
-  display: flex;
-  align-items: center;
-}
-
-.avatar-stack__item {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1.5px solid var(--bg-card);
-  margin-left: -6px;
-}
-
-.avatar-stack__item:first-child {
-  margin-left: 0;
-}
-
-.avatar-stack__more {
-  font-size: 0.6rem;
-  color: var(--text-secondary);
-  margin-left: 4px;
-  font-weight: 600;
-}
-
-.category-card__button {
-  background: var(--bg-color);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 99px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  justify-content: center;
   transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
-.category-card__button:hover {
-  background: var(--accent-color);
-  color: #fff;
+.cat-minimal-card:hover .cat-minimal-card__icon-box {
+  background: var(--bg-color);
   border-color: var(--accent-color);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
 }
+
+.cat-minimal-card__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Specific colors for icons can be handled via inline styles or classes if needed, 
+   but the box itself is clean as per reference. */

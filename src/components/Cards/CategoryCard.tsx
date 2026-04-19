@@ -1,88 +1,56 @@
-import { Check, Zap } from "lucide-react";
+import { 
+  Palette, 
+  Wrench, 
+  Cpu, 
+  Leaf, 
+  Map, 
+  Lightbulb,
+  Heart,
+  Coffee,
+  Home,
+  Shirt,
+  GraduationCap,
+  PawPrint,
+  HelpCircle 
+} from "lucide-react";
 import "./CategoryCard.css";
 
 type CategoryCardProps = {
   category: any;
   onClick?: () => void;
-  active?: boolean;
+};
+
+// Icon Mapping based on Name or Label
+const ICON_MAP: Record<string, { icon: any, color: string }> = {
+  'Interior Design': { icon: Palette, color: "#9c27b0" },
+  'Engineering': { icon: Wrench, color: "#1976d2" },
+  'Smart Systems': { icon: Cpu, color: "#00bcd4" },
+  'Paisajismo': { icon: Leaf, color: "#22c55e" },
+  'Urbanismo': { icon: Map, color: "#f97316" },
+  'Iluminación': { icon: Lightbulb, color: "#eab308" },
+  'Salud': { icon: Heart, color: "#10b981" },
+  'Alimentos': { icon: Coffee, color: "#92400e" },
+  'Hogar': { icon: Home, color: "#3b82f6" },
+  'Moda': { icon: Shirt, color: "#ec4899" },
+  'Educación': { icon: GraduationCap, color: "#6366f1" },
+  'Mascotas': { icon: PawPrint, color: "#f59e0b" },
 };
 
 export default function CategoryCard({
   category,
   onClick,
-  active,
 }: CategoryCardProps) {
-  const { label, specialists, image, type, status } = category;
-  const handleClick = () => onClick?.();
-
-  // Mock avatars for the stack
-  const avatars = [
-    "https://i.pravatar.cc/150?u=1",
-    "https://i.pravatar.cc/150?u=2",
-    "https://i.pravatar.cc/150?u=3",
-  ];
+  const { label } = category;
+  
+  const mapping = ICON_MAP[label] || { icon: HelpCircle, color: "#666" };
+  const IconComponent = mapping.icon;
 
   return (
-    <article
-      className={`category-card${status === "VERIFIED" ? " category-card--verified" : ""}`}
-      onClick={onClick}
-    >
-      <div className="category-card__image-container">
-        <img
-          className="category-card__image"
-          src={image}
-          alt={label}
-          loading="lazy"
-          draggable="false"
-        />
-        <div className="category-card__badge">
-          {status === "VERIFIED" ? (
-            <span className="badge badge--verified">
-              <Check size={10} /> VERIFIED
-            </span>
-          ) : (
-            <span className="badge badge--active">
-              <Zap size={10} fill="currentColor" /> ACTIVE
-            </span>
-          )}
-        </div>
+    <article className="cat-minimal-card" onClick={onClick}>
+      <div className="cat-minimal-card__icon-box">
+        <IconComponent size={32} color={mapping.color} strokeWidth={2.5} />
       </div>
-
-      <div className="category-card__content">
-        <div className="category-card__header">
-          <div className="category-card__title-group">
-            <h3 className="category-card__name">{label}</h3>
-            <p className="category-card__type">{type}</p>
-          </div>
-          <div className="category-card__stats">
-            <span className="category-card__count">{specialists}</span>
-            <span className="category-card__count-label">EXPERTS</span>
-          </div>
-        </div>
-
-        <div className="category-card__footer">
-          <div className="avatar-stack">
-            {avatars.map((url, i) => (
-              <img
-                key={i}
-                src={url}
-                alt="Expert"
-                className="avatar-stack__item"
-              />
-            ))}
-            <span className="avatar-stack__more">+{specialists - 3}</span>
-          </div>
-          <button
-            className="category-card__button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClick();
-            }}
-          >
-            Explore Category
-          </button>
-        </div>
-      </div>
+      <h3 className="cat-minimal-card__label">{label}</h3>
     </article>
   );
 }

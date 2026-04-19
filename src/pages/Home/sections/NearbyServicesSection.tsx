@@ -78,11 +78,8 @@ export default function NearbyServicesSection() {
   return (
     <section className="nearby-services">
       <div className="nearby-services__header">
-        <div>
-          <span className="section-label">A tu alrededor</span>
-          <h2 className="nearby-services__title">Servicios cerca de ti</h2>
-        </div>
-        <button className="section-link">Explorar mapa</button>
+        <h2 className="nearby-services__title">Servicios cerca de ti</h2>
+        <button className="section-link">Explorar mapa &gt;</button>
       </div>
 
       <div className="nearby-services__carousel">

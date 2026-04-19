@@ -18,7 +18,7 @@ export default function PromotionCard({ promotion, onClick }) {
       }}
     >
       <div className="promotion-card__image-container">
-        <img src={image} alt={title} className="promotion-card__image" loading="lazy" />
+        <img src={image} alt={title} className="promotion-card__image" loading="lazy" draggable="false" />
         <div className="promotion-card__badge">
           <Ticket size={14} className="promotion-card__badge-icon" />
           <span className="promotion-card__offer-text">{offer}</span>

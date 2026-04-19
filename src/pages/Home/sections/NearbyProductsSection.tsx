@@ -262,12 +262,9 @@ export default function NearbyProductsSection() {
   return (
     <section className="nearby-products">
       <div className="nearby-products__header">
-        <div>
-          <span className="section-label">Cerca tuyo</span>
-          <h2 className="nearby-products__title">Productos de profesionales</h2>
-        </div>
+        <h2 className="nearby-products__title">Productos de la App</h2>
         <button className="section-link" onClick={() => navigate("/products")}>
-          Ver todo
+          Ver todo &gt;
         </button>
       </div>
 

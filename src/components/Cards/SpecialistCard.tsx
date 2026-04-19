@@ -2,18 +2,34 @@ import { Link } from "react-router-dom";
 import "./SpecialistCard.css";
 import { ROUTES } from "../../routes/paths";
 
+const SPECIALTY_COLORS: Record<string, string> = {
+  'Diseñador': '#1e3a8a',
+  'Diseñadora': '#1e3a8a',
+  'Interior Design': '#1e3a8a',
+  'Plomero': '#0d9488',
+  'Engineering': '#0d9488',
+  'Tutor': '#f97316',
+  'Tutora': '#f97316',
+  'Smart Systems': '#2dd4bf',
+};
+
 export default function SpecialistCard({ specialist }) {
-  const { name, specialty, rating, reviews, priceRange, available, avatar } =
-    specialist;
+  const { name, specialty, rating, avatar } = specialist;
+
+  // Find a color based on specialty string matching
+  const headerColor = Object.entries(SPECIALTY_COLORS).find(([key]) => 
+    specialty.toLowerCase().includes(key.toLowerCase())
+  )?.[1] || '#2dd4bf';
 
   return (
     <article className="specialist-card">
-      <div className="specialist-card__top">
-        <Link
-          to={ROUTES.profile}
-          className="specialist-card__avatar-link"
-          aria-label={`Ver perfil de ${name}`}
-        >
+      <div 
+        className="specialist-card__header" 
+        style={{ backgroundColor: headerColor }}
+      />
+      
+      <div className="specialist-card__avatar-wrap">
+        <Link to={ROUTES.profile}>
           <img
             className="specialist-card__avatar"
             src={avatar}
@@ -21,23 +37,20 @@ export default function SpecialistCard({ specialist }) {
             loading="lazy"
           />
         </Link>
-        <div className="specialist-card__info">
-          <h3 className="specialist-card__name">{name}</h3>
-          <span className="specialist-card__specialty">{specialty}</span>
-        </div>
-        <span
-          className={`specialist-card__badge ${available ? "specialist-card__badge--available" : "specialist-card__badge--busy"}`}
-        >
-          {available ? "Disponible" : "Ocupado"}
-        </span>
       </div>
 
-      <div className="specialist-card__bottom">
-        <div className="specialist-card__stat">
-          <span className="specialist-card__rating">★ {rating}</span>
-          <span className="specialist-card__reviews">{reviews} reseñas</span>
+      <div className="specialist-card__body">
+        <h3 className="specialist-card__name">{name}</h3>
+        <span className="specialist-card__specialty">{specialty}</span>
+      </div>
+
+      <div className="specialist-card__footer">
+        <div className="specialist-card__rating-stars">
+          <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
         </div>
-        <span className="specialist-card__price">{priceRange}</span>
+        <div className="specialist-card__rating-value">
+          {rating}
+        </div>
       </div>
     </article>
   );

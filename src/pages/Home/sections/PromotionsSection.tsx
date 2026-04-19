@@ -40,11 +40,8 @@ export default function PromotionsSection() {
   return (
     <section className="promotions-section">
       <div className="promotions-section__header">
-        <div>
-          <span className="section-label">Oportunidades</span>
-          <h2 className="promotions-section__title">Promociones Imperdibles</h2>
-        </div>
-        <button className="section-link">Ver todo</button>
+        <h2 className="promotions-section__title">Promociones Imperdibles</h2>
+        <button className="section-link">Ver todo &gt;</button>
       </div>
 
       <div className="promotions-section__carousel">
