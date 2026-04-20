@@ -1,4 +1,4 @@
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 import {
   Camera,
   ImagePlus,
@@ -8,12 +8,12 @@ import {
   Video,
 } from "lucide-react";
 import { showcasedSpecialist } from "../../../data/specialists";
+import Modal from "../../../components/Modal/Modal";
 import "./ProfessionalProfileSection.css";
 
 type GalleryImage = {
   id: string;
   url: string;
-  label: string;
 };
 
 type VideoItem = {
@@ -28,7 +28,6 @@ const initialImages: GalleryImage[] = showcasedSpecialist.portfolio
   .map((url, index) => ({
     id: `img-${index + 1}`,
     url,
-    label: `Trabajo ${index + 1}`,
   }));
 
 const initialVideos: VideoItem[] = [
@@ -58,6 +57,20 @@ export default function ProfessionalProfileSection() {
   const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
   const [savedMessage, setSavedMessage] = useState("");
 
+  // Modales para imagen y video
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  // Estado para imagen temporal
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const newImageInputRef = useRef<HTMLInputElement>(null);
+
+  // Estado para video temporal
+  const [newVideoFile, setNewVideoFile] = useState<File | null>(null);
+  const [newVideoTitle, setNewVideoTitle] = useState("");
+  const [newVideoDescription, setNewVideoDescription] = useState("");
+  const newVideoInputRef = useRef<HTMLInputElement>(null);
+
   const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -67,55 +80,64 @@ export default function ProfessionalProfileSection() {
     setSavedMessage("Foto de perfil actualizada.");
   };
 
-  const updateImage = (
-    id: string,
-    field: keyof Omit<GalleryImage, "id">,
-    value: string,
-  ) => {
-    setImages((current) =>
-      current.map((image) =>
-        image.id === id ? { ...image, [field]: value } : image,
-      ),
-    );
-  };
-
-  const addImage = () => {
-    setImages((current) => [
-      ...current,
-      { id: createId("img"), url: "", label: "Nueva imagen" },
-    ]);
-  };
-
+  // No se edita más la imagen, solo se elimina
   const removeImage = (id: string) => {
     setImages((current) => current.filter((image) => image.id !== id));
   };
 
-  const updateVideo = (
-    id: string,
-    field: keyof Omit<VideoItem, "id">,
-    value: string,
-  ) => {
-    setVideos((current) =>
-      current.map((video) =>
-        video.id === id ? { ...video, [field]: value } : video,
-      ),
-    );
+  const openImageModal = () => {
+    setNewImageFile(null);
+    setIsImageModalOpen(true);
+    if (newImageInputRef.current) newImageInputRef.current.value = "";
   };
 
-  const addVideo = () => {
+  const handleImageFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setNewImageFile(file);
+  };
+
+  const handleAddImage = () => {
+    if (!newImageFile) return;
+    const url = URL.createObjectURL(newImageFile);
+    setImages((current) => [...current, { id: createId("img"), url }]);
+    setIsImageModalOpen(false);
+    setNewImageFile(null);
+  };
+
+  // Video: solo se edita título y descripción, no el archivo
+  const removeVideo = (id: string) => {
+    setVideos((current) => current.filter((video) => video.id !== id));
+  };
+
+  const openVideoModal = () => {
+    setNewVideoFile(null);
+    setNewVideoTitle("");
+    setNewVideoDescription("");
+    setIsVideoModalOpen(true);
+    if (newVideoInputRef.current) newVideoInputRef.current.value = "";
+  };
+
+  const handleVideoFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setNewVideoFile(file);
+  };
+
+  const handleAddVideo = () => {
+    if (!newVideoFile || !newVideoTitle.trim()) return;
+    const url = URL.createObjectURL(newVideoFile);
     setVideos((current) => [
       ...current,
       {
         id: createId("video"),
-        title: "Nuevo video",
-        url: "",
-        description: "",
+        title: newVideoTitle,
+        url,
+        description: newVideoDescription,
       },
     ]);
-  };
-
-  const removeVideo = (id: string) => {
-    setVideos((current) => current.filter((video) => video.id !== id));
+    setIsVideoModalOpen(false);
+    setNewVideoFile(null);
+    setNewVideoTitle("");
+    setNewVideoDescription("");
   };
 
   const handleSave = () => {
@@ -236,7 +258,7 @@ export default function ProfessionalProfileSection() {
               <button
                 type="button"
                 className="professional-profile__add-btn"
-                onClick={addImage}
+                onClick={openImageModal}
               >
                 Agregar imagen
               </button>
@@ -250,41 +272,13 @@ export default function ProfessionalProfileSection() {
                 >
                   <div className="professional-profile__image-preview">
                     {image.url ? (
-                      <img
-                        src={image.url}
-                        alt={image.label || "Imagen del perfil"}
-                      />
+                      <img src={image.url} alt="Imagen del perfil" />
                     ) : (
                       <div className="professional-profile__placeholder">
                         Sin vista previa
                       </div>
                     )}
                   </div>
-
-                  <label className="professional-profile__field">
-                    <span>URL de la imagen</span>
-                    <input
-                      type="text"
-                      value={image.url}
-                      onChange={(event) =>
-                        updateImage(image.id, "url", event.target.value)
-                      }
-                      placeholder="https://..."
-                    />
-                  </label>
-
-                  <label className="professional-profile__field">
-                    <span>Descripción corta</span>
-                    <input
-                      type="text"
-                      value={image.label}
-                      onChange={(event) =>
-                        updateImage(image.id, "label", event.target.value)
-                      }
-                      placeholder="Ej. Cocina terminada"
-                    />
-                  </label>
-
                   <button
                     type="button"
                     className="professional-profile__remove-btn"
@@ -306,7 +300,7 @@ export default function ProfessionalProfileSection() {
               <button
                 type="button"
                 className="professional-profile__add-btn"
-                onClick={addVideo}
+                onClick={openVideoModal}
               >
                 Agregar video
               </button>
@@ -329,9 +323,7 @@ export default function ProfessionalProfileSection() {
                       <input
                         type="text"
                         value={video.title}
-                        onChange={(event) =>
-                          updateVideo(video.id, "title", event.target.value)
-                        }
+                        readOnly
                         placeholder="Ej. Recorrido del local"
                       />
                     </label>
@@ -341,9 +333,7 @@ export default function ProfessionalProfileSection() {
                       <input
                         type="text"
                         value={video.url}
-                        onChange={(event) =>
-                          updateVideo(video.id, "url", event.target.value)
-                        }
+                        readOnly
                         placeholder="https://..."
                       />
                     </label>
@@ -353,13 +343,7 @@ export default function ProfessionalProfileSection() {
                       <textarea
                         rows={3}
                         value={video.description}
-                        onChange={(event) =>
-                          updateVideo(
-                            video.id,
-                            "description",
-                            event.target.value,
-                          )
-                        }
+                        readOnly
                         placeholder="Contá de qué se trata este video."
                       />
                     </label>
@@ -378,6 +362,103 @@ export default function ProfessionalProfileSection() {
           </div>
         </div>
       </div>
+
+      {/* Modal para subir imagen */}
+      <Modal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        title="Subir imagen de perfil"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleAddImage();
+          }}
+          style={{ display: "flex", flexDirection: "column", gap: 20 }}
+        >
+          <input
+            type="file"
+            accept="image/*"
+            ref={newImageInputRef}
+            onChange={handleImageFileChange}
+            required
+          />
+          {newImageFile && (
+            <img
+              src={URL.createObjectURL(newImageFile)}
+              alt="Vista previa"
+              style={{
+                maxWidth: 320,
+                maxHeight: 180,
+                borderRadius: 12,
+                alignSelf: "center",
+              }}
+            />
+          )}
+          <button
+            type="submit"
+            className="professional-profile__save-btn"
+            disabled={!newImageFile}
+          >
+            Subir imagen
+          </button>
+        </form>
+      </Modal>
+
+      {/* Modal para subir video */}
+      <Modal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        title="Subir video destacado"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleAddVideo();
+          }}
+          style={{ display: "flex", flexDirection: "column", gap: 20 }}
+        >
+          <input
+            type="file"
+            accept="video/*"
+            ref={newVideoInputRef}
+            onChange={handleVideoFileChange}
+            required
+          />
+          {newVideoFile && (
+            <video
+              src={URL.createObjectURL(newVideoFile)}
+              controls
+              style={{
+                maxWidth: 320,
+                maxHeight: 180,
+                borderRadius: 12,
+                alignSelf: "center",
+              }}
+            />
+          )}
+          <input
+            type="text"
+            placeholder="Título del video"
+            value={newVideoTitle}
+            onChange={(e) => setNewVideoTitle(e.target.value)}
+            required
+          />
+          <textarea
+            placeholder="Descripción del video"
+            value={newVideoDescription}
+            onChange={(e) => setNewVideoDescription(e.target.value)}
+            rows={3}
+          />
+          <button
+            type="submit"
+            className="professional-profile__save-btn"
+            disabled={!newVideoFile || !newVideoTitle.trim()}
+          >
+            Subir video
+          </button>
+        </form>
+      </Modal>
     </section>
   );
 }

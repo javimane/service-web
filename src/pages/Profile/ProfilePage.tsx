@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Star, MessageCircle, Phone, ArrowUpRight } from "lucide-react";
+import { Star, MessageCircle, Phone, ArrowUpRight, Play } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import Modal from "../../components/Modal/Modal";
@@ -62,6 +62,7 @@ export default function ProfilePage() {
     testimonials,
     paymentMethods,
     bankPromotions,
+    videos,
   } = showcasedSpecialist;
 
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
@@ -71,6 +72,7 @@ export default function ProfilePage() {
 
   const servicesScroll = useDraggableScroll();
   const testimonialsScroll = useDraggableScroll();
+  const videosScroll = useDraggableScroll();
 
   return (
     <div className="profile-page">
@@ -176,6 +178,53 @@ export default function ProfilePage() {
 
           <div className="profile-section">
             <div className="section-header">
+              <h2>VIDEOS</h2>
+            </div>
+            <div
+              className={`videos-scroll-container ${videosScroll.isDragging ? "dragging" : ""}`}
+              ref={videosScroll.ref}
+              {...videosScroll.events}
+            >
+              <div className="videos-scroll">
+                {videos.map((video) => (
+                  <div key={video.id} className="reel-card-profile">
+                    <div className="reel-card-profile__video-wrap">
+                      <video
+                        src={video.url}
+                        className="reel-card-profile__video"
+                        muted
+                        playsInline
+                        preload="metadata"
+                        onLoadedMetadata={(e) =>
+                          ((e.target as HTMLVideoElement).currentTime = 0.01)
+                        }
+                      />
+                      <button
+                        className="reel-card-profile__play"
+                        tabIndex={0}
+                        aria-label={`Reproducir video: ${video.title}`}
+                      >
+                        <Play size={24} fill="white" />
+                      </button>
+                    </div>
+                    <div className="reel-card-profile__info">
+                      <div className="reel-card-profile__title">
+                        {video.title}
+                      </div>
+                      {video.description && (
+                        <div className="reel-card-profile__desc">
+                          {video.description}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="profile-section">
+            <div className="section-header">
               <h2>SERVICIOS</h2>
               <button
                 onClick={() => setIsServicesModalOpen(true)}
@@ -235,6 +284,34 @@ export default function ProfilePage() {
                       <MessageCircle className="quote-icon" size={24} />
                     </div>
                     <p className="testimonial-text">"{test.text}"</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="profile-section">
+            <div className="section-header">
+              <h2>VIDEOS</h2>
+            </div>
+            <div
+              className={`videos-scroll-container ${videosScroll.isDragging ? "dragging" : ""}`}
+              ref={videosScroll.ref}
+              {...videosScroll.events}
+            >
+              <div className="videos-scroll">
+                {videos.map((video) => (
+                  <div key={video.id} className="video-card-mini">
+                    <video
+                      src={video.url}
+                      controls
+                      poster=""
+                      className="video-card-mini__video"
+                    />
+                    <div className="video-card-mini__info">
+                      <h3>{video.title}</h3>
+                      <p>{video.description}</p>
+                    </div>
                   </div>
                 ))}
               </div>

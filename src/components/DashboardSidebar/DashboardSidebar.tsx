@@ -18,6 +18,7 @@ import {
   CalendarDays,
   Landmark,
   UserRound,
+  Clapperboard,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
@@ -39,6 +40,7 @@ type DashboardSidebarProps = {
   onCalendarClick?: () => void;
   onBankPromosClick?: () => void;
   onProfileClick?: () => void;
+  onReelsClick?: () => void;
 };
 
 export default function DashboardSidebar({
@@ -56,6 +58,7 @@ export default function DashboardSidebar({
   onCalendarClick,
   onBankPromosClick,
   onProfileClick,
+  onReelsClick,
 }: DashboardSidebarProps) {
   const navigate = useNavigate();
   const [promosOpen, setPromosOpen] = useState(
@@ -161,6 +164,14 @@ export default function DashboardSidebar({
       onClick:
         onProfileClick ??
         (() => navigate(ROUTES.dashboard, { state: { view: "profile" } })),
+    },
+    {
+      key: "reels",
+      label: "REELS",
+      icon: Clapperboard,
+      onClick:
+        onReelsClick ??
+        (() => navigate(ROUTES.dashboard, { state: { view: "reels" } })),
     },
     {
       key: "messages",

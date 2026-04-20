@@ -1,5 +1,5 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState, useRef, useEffect } from "react";
 import { ROUTES } from "../../routes/paths";
 import { supabase } from "../../services/supabaseClient";
 import { useAuth } from "../../context/AuthContext";
@@ -21,10 +21,12 @@ import {
   Crown,
   Menu,
   X,
+  UploadCloud,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
 import BrandLogo from "../BrandLogo/BrandLogo";
+import ReelsModal from "../ReelsModal/ReelsModal";
 
 import "./Navbar.css";
 
@@ -88,6 +90,7 @@ export default function Navbar() {
   const menuRef = useRef(null);
   const notifRef = useRef(null);
   const mobileMenuRef = useRef(null);
+  const [setIsReelsModalOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
@@ -333,6 +336,15 @@ export default function Navbar() {
                       <BarChart3 size={18} />
                       <span>Analíticas</span>
                     </Link>
+                    <button
+                      className="dropdown__item"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <UploadCloud size={18} />
+                      <span>Subir Reel</span>
+                    </button>
                   </div>
                   <div className="dropdown__divider"></div>
                   <div className="dropdown__footer">

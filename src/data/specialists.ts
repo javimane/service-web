@@ -360,4 +360,24 @@ export const showcasedSpecialist = {
       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Banco_Macro_logo.svg/2560px-Banco_Macro_logo.svg.png",
     },
   ],
+  videos: [
+    {
+      id: 1,
+      title: "Diseño Minimalista",
+      description: "Recorrido por mi último proyecto de salón minimalista.",
+      url: "https://assets.mixkit.co/videos/preview/mixkit-curvy-road-along-the-beach-at-sunset-40291-large.mp4",
+    },
+    {
+      id: 2,
+      title: "Iluminación Cinética",
+      description: "Demostración de cómo la luz cambia el espacio.",
+      url: "https://assets.mixkit.co/videos/preview/mixkit-stars-in-the-night-sky-over-a-calm-lake-40292-large.mp4",
+    },
+    {
+      id: 3,
+      title: "Proceso Creativo",
+      description: "Desde el boceto hasta la realidad.",
+      url: "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-morning-sunlight-40293-large.mp4",
+    },
+  ],
 };

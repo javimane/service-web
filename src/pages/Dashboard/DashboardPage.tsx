@@ -6,6 +6,7 @@ import {
   Plus,
   ChevronRight,
   TrendingUp,
+  Clapperboard,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -23,6 +24,7 @@ import SubscriptionSection from "./sections/SubscriptionSection";
 import CalendarSection from "./sections/CalendarSection";
 import BankPromotionsPage from "./sections/BankPromotionsPage";
 import ProfessionalProfileSection from "./sections/ProfessionalProfileSection";
+import ReelsSection from "./sections/ReelsSection";
 import "./DashboardPage.css";
 
 export default function DashboardPage() {
@@ -54,6 +56,7 @@ export default function DashboardPage() {
   const handleShowCalendar = () => setView("calendar");
   const handleShowBankPromos = () => setView("bank-promotions");
   const handleShowProfile = () => setView("profile");
+  const handleShowReels = () => setView("reels");
 
   return (
     <div className="dashboard-page-wrapper">
@@ -76,9 +79,11 @@ export default function DashboardPage() {
                           ? "calendar"
                           : view === "bank-promotions"
                             ? "bank-promotions"
-                            : view === "profile"
-                              ? "profile"
-                              : "dashboard"
+                            : view === "reels"
+                              ? "reels"
+                              : view === "profile"
+                                ? "profile"
+                                : "dashboard"
           }
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed((current) => !current)}
@@ -93,6 +98,7 @@ export default function DashboardPage() {
           onCalendarClick={handleShowCalendar}
           onBankPromosClick={handleShowBankPromos}
           onProfileClick={handleShowProfile}
+          onReelsClick={handleShowReels}
         />
 
         <main className="dashboard-main">
@@ -115,6 +121,8 @@ export default function DashboardPage() {
             <AllPromotionsPage onCreateNew={handleShowPromotionsCreate} />
           ) : view === "bank-promotions" ? (
             <BankPromotionsPage />
+          ) : view === "reels" ? (
+            <ReelsSection />
           ) : view === "profile" ? (
             <ProfessionalProfileSection />
           ) : (
@@ -283,6 +291,15 @@ export default function DashboardPage() {
                           <Plus size={20} />
                         </div>
                         <span>Create New Proposal</span>
+                        <ChevronRight size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        className="action-btn"
+                        onClick={handleShowReels}
+                      >
+                        <Clapperboard size={18} />
+                        <span>Gestionar Reels</span>
                         <ChevronRight size={18} />
                       </button>
                       <button

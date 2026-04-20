@@ -498,6 +498,90 @@
   border-color: var(--accent-transparent);
 }
 
+.videos-scroll-container {
+  overflow-x: auto;
+  cursor: grab;
+  margin-bottom: 20px;
+  scrollbar-width: none;
+}
+.videos-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+.videos-scroll-container.dragging {
+  cursor: grabbing;
+}
+.videos-scroll {
+  display: flex;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.reel-card-profile {
+  position: relative;
+  min-width: 240px;
+  width: 240px;
+  aspect-ratio: 9 / 16;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.reel-card-profile:hover {
+  transform: translateY(-5px);
+  border-color: #000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.reel-card-profile__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reel-card-profile__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 40%);
+}
+
+.reel-card-profile__label {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  z-index: 2;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.reel-card-profile__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.reel-card-profile:hover .reel-card-profile__play {
+  opacity: 1;
+}
+
 /* ===== Tablet (≤1024px) ===== */
 @media (max-width: 1024px) {
   .profile-page__layout {
@@ -641,30 +725,9 @@
     border-radius: 18px 6px 18px 6px;
   }
 
-  .service-card-mini {
-    width: 260px;
-    padding: 18px;
-    border-radius: 16px;
-    gap: 10px;
-  }
-
-  .service-card-mini__header h3 {
-    font-size: 0.92rem;
-  }
-
-  .service-card-mini .price {
-    font-size: 0.72rem;
-    padding: 3px 8px;
-  }
-
-  .service-card-mini p {
-    font-size: 0.82rem;
-  }
-
-  .select-service-btn {
-    padding: 8px;
-    font-size: 0.78rem;
-    border-radius: 10px;
+  .reel-card-profile {
+    min-width: 180px;
+    width: 180px;
   }
 
   .testimonial-card {
