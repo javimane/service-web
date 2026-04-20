@@ -42,10 +42,6 @@ declare namespace gapi {
       function insert(params: Record<string, any>): Promise<{ result: any }>;
       function delete_(params: Record<string, any>): Promise<void>;
       function patch(params: Record<string, any>): Promise<{ result: any }>;
-
-        export function delete(arg0: { calendarId: string; eventId: string; }) {
-            throw new Error("Function not implemented.");
-        }
     }
   }
 }

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
+import BrandLogo from "../BrandLogo/BrandLogo";
 
 import "./Navbar.css";
 
@@ -165,8 +166,12 @@ export default function Navbar() {
           )}
         </div>
 
-        <Link to={ROUTES.home} className="navbar__logo">
-          Obsidiana Pro
+        <Link
+          to={ROUTES.home}
+          className="navbar__logo"
+          aria-label="Ir al inicio"
+        >
+          <BrandLogo className="navbar__brand-mark" />
         </Link>
 
         {/* Navigation Links */}

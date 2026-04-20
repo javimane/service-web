@@ -23,7 +23,7 @@ export default function ServicesPage() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    document.title = "Servicios Individuales | Obsidian Pro";
+    document.title = "Servicios Individuales | Sercio";
   }, []);
 
   useEffect(() => {

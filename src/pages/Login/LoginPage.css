@@ -43,14 +43,18 @@
 }
 
 .brand-title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  color: var(--accent-color);
-  margin-bottom: 1rem;
-  letter-spacing: -0.05em;
-  background: linear-gradient(to right, var(--accent-color), #d8b4fe);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.brand-title__logo .brand-lockup__icon {
+  width: 60px;
+  height: 60px;
+}
+
+.brand-title__logo .brand-lockup__wordmark {
+  height: 54px;
 }
 
 .brand-subtitle {

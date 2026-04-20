@@ -1,6 +1,6 @@
 :root {
   /* Nueva Paleta de Colores */
-  --bg-color: #ffffff;
+  --bg-color: #ded9d9c1;
   --bg-card: #f8f9fa;
   --surface-soft: #f1f3f5;
   --surface-contrast: #151821;
@@ -13,8 +13,11 @@
   --accent-color: #e94823;
   --accent-hover: #d13d1c;
   --accent-transparent: rgba(233, 72, 35, 0.08);
+  --brand-blue: #1d5fbf;
+  --brand-blue-soft: rgba(29, 95, 191, 0.1);
+  --brand-blue-border: rgba(29, 95, 191, 0.24);
   --border-color: #e9ecef;
-  --hover-border-color: #000000;
+  --hover-border-color: var(--brand-blue);
   --input-bg: #ffffff;
   --error-color: #fa5252;
   --success-color: #40c057;

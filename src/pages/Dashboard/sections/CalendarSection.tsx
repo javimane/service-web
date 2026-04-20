@@ -129,12 +129,12 @@ export default function CalendarSection() {
       const sxEvents = events.map((e) => ({
         id: e.id,
         title: e.title,
-        start: e.start,
-        end: e.end,
+        start: e.start as any,
+        end: e.end as any,
         description: e.description ?? "",
         location: e.location ?? "",
       }));
-      eventsService.set(sxEvents);
+      eventsService.set(sxEvents as any);
     } catch (err) {
       console.error("Error fetching calendar events:", err);
     } finally {
@@ -209,11 +209,11 @@ export default function CalendarSection() {
       eventsService.add({
         id: created.id,
         title: created.title,
-        start: created.start,
-        end: created.end,
+        start: created.start as any,
+        end: created.end as any,
         description: created.description ?? "",
         location: created.location ?? "",
-      });
+      } as any);
 
       setGcalEvents((prev) => [...prev, created]);
       setShowModal(false);

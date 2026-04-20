@@ -22,6 +22,7 @@ import DashboardProducts from "./sections/DashboardProducts";
 import SubscriptionSection from "./sections/SubscriptionSection";
 import CalendarSection from "./sections/CalendarSection";
 import BankPromotionsPage from "./sections/BankPromotionsPage";
+import ProfessionalProfileSection from "./sections/ProfessionalProfileSection";
 import "./DashboardPage.css";
 
 export default function DashboardPage() {
@@ -40,7 +41,7 @@ export default function DashboardPage() {
 
   const handleCreateProposal = () => setView("create-proposal");
   const handleGoBack = () => setView("overview");
-  const handleGoProfile = () => navigate(ROUTES.profile);
+  const handleGoProfile = () => setView("profile");
   const handleGoServices = () => navigate(ROUTES.services);
   const handleGoSettings = () => navigate(ROUTES.settings);
   const handleShowOverview = () => setView("overview");
@@ -52,6 +53,7 @@ export default function DashboardPage() {
   const handleShowSubscription = () => setView("subscription");
   const handleShowCalendar = () => setView("calendar");
   const handleShowBankPromos = () => setView("bank-promotions");
+  const handleShowProfile = () => setView("profile");
 
   return (
     <div className="dashboard-page-wrapper">
@@ -74,7 +76,9 @@ export default function DashboardPage() {
                           ? "calendar"
                           : view === "bank-promotions"
                             ? "bank-promotions"
-                            : "dashboard"
+                            : view === "profile"
+                              ? "profile"
+                              : "dashboard"
           }
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed((current) => !current)}
@@ -88,6 +92,7 @@ export default function DashboardPage() {
           onSubscriptionClick={handleShowSubscription}
           onCalendarClick={handleShowCalendar}
           onBankPromosClick={handleShowBankPromos}
+          onProfileClick={handleShowProfile}
         />
 
         <main className="dashboard-main">
@@ -110,13 +115,15 @@ export default function DashboardPage() {
             <AllPromotionsPage onCreateNew={handleShowPromotionsCreate} />
           ) : view === "bank-promotions" ? (
             <BankPromotionsPage />
+          ) : view === "profile" ? (
+            <ProfessionalProfileSection />
           ) : (
             <div className="dashboard-content">
               <div className="welcome-section">
                 <div className="welcome-copy">
                   <h1>Welcome back, Architect.</h1>
                   <p>
-                    Your Obsidian Pro performance is trending{" "}
+                    Your Sercio performance is trending{" "}
                     <span className="trending-up">+12.4%</span> this week.
                   </p>
                 </div>
@@ -208,8 +215,8 @@ export default function DashboardPage() {
                     <span className="card-label">CONVERSION METRIC</span>
                     <h2 className="mid-value">89% Accepted</h2>
                     <p>
-                      Your proposal acceptance rate is in the top 3% of all
-                      Obsidian kinetic architects.
+                      Tu tasa de aceptación está entre los perfiles con mejor
+                      rendimiento de Sercio.
                     </p>
                   </div>
                   <div className="circular-progress-container">
@@ -284,7 +291,7 @@ export default function DashboardPage() {
                         onClick={handleGoProfile}
                       >
                         <FileText size={18} />
-                        <span>Edit Profile</span>
+                        <span>Editar Perfil</span>
                         <ChevronRight size={18} />
                       </button>
                       <button

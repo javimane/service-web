@@ -1,3 +1,4 @@
+import BrandLogo from "../BrandLogo/BrandLogo";
 import "./Footer.css";
 
 export default function Footer() {
@@ -6,10 +7,10 @@ export default function Footer() {
       <div className="footer__inner">
         <div className="footer__brand">
           <div className="footer__brand-logo">
-            <span className="footer__logo-text">OBSIDIAN PRO</span>
+            <BrandLogo className="footer__brand-mark" />
           </div>
           <p className="footer__copy">
-            © 2026 Obsidian Pro. Architectural precision in every service.
+            © 2026 Sercio. Servicios, promociones y comercios en un solo lugar.
           </p>
         </div>
 

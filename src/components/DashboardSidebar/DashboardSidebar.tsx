@@ -17,10 +17,12 @@ import {
   CreditCard,
   CalendarDays,
   Landmark,
+  UserRound,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
 import { supabase } from "../../services/supabaseClient";
+import BrandLogo from "../BrandLogo/BrandLogo";
 
 type DashboardSidebarProps = {
   activeItem?: string;
@@ -36,6 +38,7 @@ type DashboardSidebarProps = {
   onSubscriptionClick?: () => void;
   onCalendarClick?: () => void;
   onBankPromosClick?: () => void;
+  onProfileClick?: () => void;
 };
 
 export default function DashboardSidebar({
@@ -52,6 +55,7 @@ export default function DashboardSidebar({
   onSubscriptionClick,
   onCalendarClick,
   onBankPromosClick,
+  onProfileClick,
 }: DashboardSidebarProps) {
   const navigate = useNavigate();
   const [promosOpen, setPromosOpen] = useState(
@@ -106,12 +110,22 @@ export default function DashboardSidebar({
         {
           key: "promotions-create",
           label: "Crear Promoción",
-          onClick: onPromotionsCreate ?? (() => navigate(ROUTES.dashboard, { state: { view: 'promotions-create' } })),
+          onClick:
+            onPromotionsCreate ??
+            (() =>
+              navigate(ROUTES.dashboard, {
+                state: { view: "promotions-create" },
+              })),
         },
         {
           key: "promotions-all",
           label: "Ver Todas",
-          onClick: onPromotionsViewAll ?? (() => navigate(ROUTES.dashboard, { state: { view: 'promotions-all' } })),
+          onClick:
+            onPromotionsViewAll ??
+            (() =>
+              navigate(ROUTES.dashboard, {
+                state: { view: "promotions-all" },
+              })),
         },
       ],
     },
@@ -119,19 +133,34 @@ export default function DashboardSidebar({
       key: "bank-promotions",
       label: "BANK PROMOTIONS",
       icon: Landmark,
-      onClick: onBankPromosClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'bank-promotions' } })),
+      onClick:
+        onBankPromosClick ??
+        (() =>
+          navigate(ROUTES.dashboard, { state: { view: "bank-promotions" } })),
     },
     {
       key: "products",
       label: "PRODUCTS",
       icon: Package,
-      onClick: onProductsClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'products' } })),
+      onClick:
+        onProductsClick ??
+        (() => navigate(ROUTES.dashboard, { state: { view: "products" } })),
     },
     {
       key: "calendar",
       label: "CALENDAR",
       icon: CalendarDays,
-      onClick: onCalendarClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'calendar' } })),
+      onClick:
+        onCalendarClick ??
+        (() => navigate(ROUTES.dashboard, { state: { view: "calendar" } })),
+    },
+    {
+      key: "profile",
+      label: "PERFIL",
+      icon: UserRound,
+      onClick:
+        onProfileClick ??
+        (() => navigate(ROUTES.dashboard, { state: { view: "profile" } })),
     },
     {
       key: "messages",
@@ -143,13 +172,18 @@ export default function DashboardSidebar({
       key: "notifications",
       label: "NOTIFICATIONS",
       icon: Bell,
-      onClick: onNotificationsClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'notifications' } })),
+      onClick:
+        onNotificationsClick ??
+        (() =>
+          navigate(ROUTES.dashboard, { state: { view: "notifications" } })),
     },
     {
       key: "subscription",
       label: "SUBSCRIPTION",
       icon: CreditCard,
-      onClick: onSubscriptionClick ?? (() => navigate(ROUTES.dashboard, { state: { view: 'subscription' } })),
+      onClick:
+        onSubscriptionClick ??
+        (() => navigate(ROUTES.dashboard, { state: { view: "subscription" } })),
     },
     {
       key: "settings",
@@ -173,7 +207,7 @@ export default function DashboardSidebar({
           onClick={() => navigate(ROUTES.home)}
           aria-label="Go to home"
         >
-          <span className="brand-logo">Obsidian Pro</span>
+          <BrandLogo className="brand-logo" compact={isCollapsed} />
         </button>
 
         <button

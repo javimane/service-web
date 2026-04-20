@@ -21,12 +21,20 @@
 }
 
 .navbar__logo {
-  font-size: 1.25rem;
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
   color: var(--text-primary);
   text-decoration: none;
-  letter-spacing: -0.02em;
   flex-shrink: 0;
+}
+
+.navbar__brand-mark .brand-lockup__icon {
+  width: 34px;
+  height: 34px;
+}
+
+.navbar__brand-mark .brand-lockup__wordmark {
+  height: 24px;
 }
 
 .navbar__nav {

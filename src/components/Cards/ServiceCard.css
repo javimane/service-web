@@ -45,8 +45,8 @@
   font-size: 0.65rem;
   font-weight: 900;
   letter-spacing: 0.05em;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--brand-blue-soft);
+  border: 1px solid var(--brand-blue-border);
 }
 
 .badge-premium {

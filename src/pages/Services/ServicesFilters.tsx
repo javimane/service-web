@@ -36,7 +36,9 @@ export default function ServicesFilters({
           >
             <option value="All">Todas las categorías</option>
             {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
             ))}
           </select>
           <ChevronDown size={14} className="select-arrow" />
@@ -50,16 +52,20 @@ export default function ServicesFilters({
           <div className="select-wrapper">
             <select
               value={filters.province}
-              onChange={(e) => onFilterChange({ province: e.target.value, city: "All" })}
+              onChange={(e) =>
+                onFilterChange({ province: e.target.value, city: "All" })
+              }
             >
               <option value="All">Provincia</option>
               {provinces.map((p) => (
-                <option key={p} value={p}>{p}</option>
+                <option key={p} value={p}>
+                  {p}
+                </option>
               ))}
             </select>
             <ChevronDown size={14} className="select-arrow" />
           </div>
-          
+
           <div className="select-wrapper">
             <select
               value={filters.city}
@@ -67,7 +73,9 @@ export default function ServicesFilters({
             >
               <option value="All">Ciudad</option>
               {cities.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
             </select>
             <ChevronDown size={14} className="select-arrow" />
@@ -99,7 +107,7 @@ export default function ServicesFilters({
           <CheckCircle size={20} fill="#B5FF24" color="#000" />
         </div>
         <div className="verification-text">
-          <p>Solo profesionales verificados con licencia activa en Obsidian Pro.</p>
+          <p>Solo profesionales verificados con licencia activa en Sercio.</p>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
 import { supabase } from "../../services/supabaseClient";
+import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import "./LoginPage.css";
 
 type LoginPageProps = {
@@ -184,10 +185,12 @@ export default function LoginPage({
     <div className="login-container">
       <div className="login-left">
         <div className="brand-content">
-          <h1 className="brand-title">Obsidian Pro</h1>
+          <div className="brand-title">
+            <BrandLogo className="brand-title__logo" />
+          </div>
           <p className="brand-subtitle">
-            Precision architected interfaces for the next generation of
-            professional services.
+            Encontrá servicios, promociones y productos cerca tuyo desde una
+            sola plataforma.
           </p>
 
           <div className="hero-graphic">
@@ -203,9 +206,7 @@ export default function LoginPage({
       <div className="login-right">{formCard}</div>
 
       <div className="footer-links">
-        <span>
-          © 2024 OBSIDIAN PRO. ARCHITECTURAL PRECISION IN EVERY SERVICE.
-        </span>
+        <span>© 2026 SERCIO. TU RED DE SERVICIOS Y COMERCIOS.</span>
         <div className="footer-right">
           <a href="#">PRIVACY POLICY</a>
           <a href="#">SUPPORT</a>

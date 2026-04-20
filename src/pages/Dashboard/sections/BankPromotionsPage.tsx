@@ -18,6 +18,7 @@ const MOCK_BANK_PROMOS = [
   {
     id: "1",
     bankName: "Santander",
+    type: "bank",
     discountPercent: 20,
     cartera: "General",
     reintegro: "Alta",
@@ -28,6 +29,7 @@ const MOCK_BANK_PROMOS = [
   {
     id: "2",
     bankName: "Galicia",
+    type: "bank",
     discountPercent: 15,
     cartera: "Éminent",
     reintegro: "Alta",
@@ -67,6 +69,7 @@ export default function BankPromotionsPage() {
       setEditingPromo(promo);
       setForm({
         bankName: promo.bankName,
+        type: promo.type ?? "bank",
         discountPercent: promo.discountPercent,
         cartera: promo.cartera,
         tope: promo.tope,
@@ -122,16 +125,14 @@ export default function BankPromotionsPage() {
       setError("Debe seleccionar al menos un día de aplicación.");
       return;
     }
-    
+
     setError("");
 
     if (editingPromo) {
       setPromos((prev) =>
         prev.map((p) =>
-          p.id === editingPromo.id
-            ? { ...p, ...form, id: editingPromo.id }
-            : p
-        )
+          p.id === editingPromo.id ? { ...p, ...form, id: editingPromo.id } : p,
+        ),
       );
     } else {
       setPromos((prev) => [
@@ -174,7 +175,11 @@ export default function BankPromotionsPage() {
             <div className="bank-promo-card__header">
               <div className="bank-promo-card__bank">
                 <div className="bank-promo-card__icon">
-                  {promo.type === "wallet" ? <Wallet size={24} /> : <Building2 size={24} />}
+                  {promo.type === "wallet" ? (
+                    <Wallet size={24} />
+                  ) : (
+                    <Building2 size={24} />
+                  )}
                 </div>
                 <div className="bank-promo-card__bank-info">
                   <h3>{promo.bankName}</h3>
@@ -218,7 +223,14 @@ export default function BankPromotionsPage() {
                   ${promo.tope.toLocaleString()}
                 </span>
               </div>
-              <div className="bank-promo-card__detail-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
+              <div
+                className="bank-promo-card__detail-row"
+                style={{
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                }}
+              >
                 <span className="bank-promo-card__detail-label">
                   <CalendarDays size={14} /> Días de vigencia
                 </span>
@@ -242,8 +254,14 @@ export default function BankPromotionsPage() {
               <Landmark size={48} />
             </div>
             <h3>Sin promociones activas</h3>
-            <p>Configura las promociones de bancos y billeteras virtuales para tus clientes.</p>
-            <button className="bank-promo-btn bank-promo-btn--primary" onClick={() => handleOpenModal()}>
+            <p>
+              Configura las promociones de bancos y billeteras virtuales para
+              tus clientes.
+            </p>
+            <button
+              className="bank-promo-btn bank-promo-btn--primary"
+              onClick={() => handleOpenModal()}
+            >
               <Plus size={18} /> Crear Primera Promoción
             </button>
           </div>
@@ -254,7 +272,9 @@ export default function BankPromotionsPage() {
         <div className="bank-promo-modal-overlay">
           <div className="bank-promo-modal">
             <div className="bank-promo-modal__header">
-              <h2>{editingPromo ? "Editar Promoción" : "Nueva Promoción Bancaria"}</h2>
+              <h2>
+                {editingPromo ? "Editar Promoción" : "Nueva Promoción Bancaria"}
+              </h2>
               <button
                 type="button"
                 className="bank-promo-modal__close"
@@ -264,11 +284,7 @@ export default function BankPromotionsPage() {
               </button>
             </div>
             <div className="bank-promo-modal__body">
-              {error && (
-                <div className="bank-promo-error-message">
-                  {error}
-                </div>
-              )}
+              {error && <div className="bank-promo-error-message">{error}</div>}
               <div className="bank-promo-form-grid">
                 <div className="bank-promo-field bank-promo-field--full">
                   <label>Banco o Entidad</label>
@@ -277,10 +293,15 @@ export default function BankPromotionsPage() {
                     <select
                       value={form.bankName}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, bankName: e.target.value }))
+                        setForm((prev) => ({
+                          ...prev,
+                          bankName: e.target.value,
+                        }))
                       }
                     >
-                      <option value="" disabled>Selecciona un banco o billetera...</option>
+                      <option value="" disabled>
+                        Selecciona un banco o billetera...
+                      </option>
                       <optgroup label="Bancos">
                         <option value="Santander">Santander</option>
                         <option value="Galicia">Galicia</option>
@@ -330,7 +351,10 @@ export default function BankPromotionsPage() {
                       placeholder="Ej. 5000"
                       value={form.tope || ""}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, tope: Number(e.target.value) }))
+                        setForm((prev) => ({
+                          ...prev,
+                          tope: Number(e.target.value),
+                        }))
                       }
                     />
                   </div>
@@ -357,13 +381,18 @@ export default function BankPromotionsPage() {
                     <select
                       value={form.cartera}
                       onChange={(e) =>
-                        setForm((prev) => ({ ...prev, cartera: e.target.value }))
+                        setForm((prev) => ({
+                          ...prev,
+                          cartera: e.target.value,
+                        }))
                       }
                     >
                       <option value="General">General</option>
                       <option value="Éminent">Éminent / Premium</option>
                       <option value="Select">Select</option>
-                      <option value="Black / Signature">Black / Signature</option>
+                      <option value="Black / Signature">
+                        Black / Signature
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -377,7 +406,9 @@ export default function BankPromotionsPage() {
                         className={`bank-promo-day-btn ${form.days.includes(day.id) ? "selected" : ""}`}
                         onClick={() => handleDayToggle(day.id)}
                       >
-                        <span className="bank-promo-day-label">{day.label}</span>
+                        <span className="bank-promo-day-label">
+                          {day.label}
+                        </span>
                         {form.days.includes(day.id) && (
                           <X size={12} className="day-remove-icon" />
                         )}
@@ -400,7 +431,8 @@ export default function BankPromotionsPage() {
                 className="bank-promo-btn bank-promo-btn--primary"
                 onClick={handleSave}
               >
-                <Save size={16} /> {editingPromo ? "Guardar Cambios" : "Crear Promoción"}
+                <Save size={16} />{" "}
+                {editingPromo ? "Guardar Cambios" : "Crear Promoción"}
               </button>
             </div>
           </div>

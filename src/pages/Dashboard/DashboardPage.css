@@ -60,14 +60,25 @@
   color: inherit;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   padding: 0;
   cursor: pointer;
   font-size: inherit;
   font-weight: inherit;
+  min-width: 0;
 }
 
 .brand-logo {
   white-space: nowrap;
+}
+
+.brand-logo .brand-lockup__icon {
+  width: 34px;
+  height: 34px;
+}
+
+.brand-logo .brand-lockup__wordmark {
+  height: 24px;
 }
 
 .sidebar-toggle {
@@ -305,7 +316,7 @@
   color: #fff;
 }
 
-.dashboard-sidebar--collapsed .brand-logo,
+.dashboard-sidebar--collapsed .brand-logo .brand-lockup__wordmark,
 .dashboard-sidebar--collapsed .nav-label,
 .dashboard-sidebar--collapsed .btn-label,
 .dashboard-sidebar--collapsed .footer-label {

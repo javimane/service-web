@@ -1,0 +1,25 @@
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.brand-lockup__icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 10px rgba(29, 95, 191, 0.18));
+}
+
+.brand-lockup__wordmark {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.brand-lockup--compact .brand-lockup__wordmark {
+  display: none;
+}
