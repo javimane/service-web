@@ -190,6 +190,43 @@
   font-weight: 700;
   font-size: 0.95rem;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  z-index: 2;
+}
+
+.reels-modal__topbar--profile {
+  justify-content: flex-start;
+}
+
+.reels-modal__profile-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 700;
+  transition: opacity 0.18s;
+}
+.reels-modal__profile-link:hover .reels-modal__profile-name {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+.reels-modal__profile-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--brand-blue-border, #3b82f6);
+  background: #fff;
+}
+.reels-modal__profile-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+  transition: opacity 0.18s;
 }
 
 .reels-modal__center-control {

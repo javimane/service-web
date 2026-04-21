@@ -26,7 +26,6 @@ import {
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
 import BrandLogo from "../BrandLogo/BrandLogo";
-import ReelsModal from "../ReelsModal/ReelsModal";
 
 import "./Navbar.css";
 

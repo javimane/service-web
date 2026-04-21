@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1033.0",
     "@react-google-maps/api": "^2.20.8",
     "@schedule-x/calendar": "^4.5.0",
     "@schedule-x/calendar-controls": "^4.5.0",
@@ -21,6 +22,7 @@
     "@supabase/supabase-js": "^2.102.1",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.8.0",
     "preact": "^10.29.1",
     "react": "^19.2.4",

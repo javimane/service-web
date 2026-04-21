@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { products as initialProducts } from "../../../data/products";
 import { supabase } from "../../../services/supabaseClient";
+import { uploadProductImage } from "../../../services/storageUploads";
 import "./DashboardProducts.css";
 
 const formatPrice = (n: number) =>
@@ -232,8 +233,20 @@ export default function DashboardProducts() {
   };
 
   // Add product
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!newProduct.title.trim() || !newProduct.price) return;
+
+    let uploadedProductImageUrl = imagePreview || newProduct.image || "";
+    if (imageFile) {
+      const uploaded = await uploadProductImage({
+        file: imageFile,
+        entityId: newProduct.ean || newProduct.title,
+        folder: "products",
+        fileName: imageFile.name,
+      });
+      uploadedProductImageUrl = uploaded.publicUrl;
+    }
+
     const id = Math.max(...productsList.map((p) => p.id), 0) + 1;
     setProductsList((prev) => [
       ...prev,
@@ -250,7 +263,7 @@ export default function DashboardProducts() {
         category: newProduct.category || "General",
         condition: "Nuevo",
         stock: parseInt(newProduct.stock, 10) || 0,
-        image: imagePreview || newProduct.image || "",
+        image: uploadedProductImageUrl,
         mercadoLibreUrl: newProduct.webUrl || "",
         description: newProduct.description || "",
         features: [],
@@ -298,8 +311,20 @@ export default function DashboardProducts() {
   };
 
   // Save edited product
-  const handleEditProduct = () => {
+  const handleEditProduct = async () => {
     if (!editProduct || !editProduct.title.trim() || !editProduct.price) return;
+
+    let uploadedProductImageUrl = editImagePreview || editProduct.image || "";
+    if (editImageFile) {
+      const uploaded = await uploadProductImage({
+        file: editImageFile,
+        entityId: editProduct.ean || editProduct.title,
+        folder: "products",
+        fileName: editImageFile.name,
+      });
+      uploadedProductImageUrl = uploaded.publicUrl;
+    }
+
     setProductsList((prev) =>
       prev.map((p) =>
         p.id === editProduct.id
@@ -309,7 +334,7 @@ export default function DashboardProducts() {
               price: parseInt(editProduct.price, 10) || 0,
               category: editProduct.category || p.category,
               stock: parseInt(editProduct.stock, 10) || 0,
-              image: editImagePreview || editProduct.image || "",
+              image: uploadedProductImageUrl,
               description: editProduct.description || "",
               mercadoLibreUrl: editProduct.webUrl || "",
               ean: editProduct.ean || "",

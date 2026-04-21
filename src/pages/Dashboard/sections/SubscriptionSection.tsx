@@ -11,7 +11,6 @@ import {
   Star,
   ChevronUp,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { plans, type Plan } from "../../../data/plans";
 import {
   mockSubscription,
@@ -44,11 +43,13 @@ const statusIcons: Record<Subscription["status"], typeof Check> = {
 };
 
 export default function SubscriptionSection() {
-  const navigate = useNavigate();
   const [subscription, setSubscription] = useState(mockSubscription);
   const [showPlans, setShowPlans] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const plansRef = useRef<HTMLDivElement>(null);
+
+  const basicCheckoutUrl = import.meta.env.VITE_MP_BASIC_CHECKOUT_URL;
+  const premiumCheckoutUrl = import.meta.env.VITE_MP_PREMIUM_CHECKOUT_URL;
 
   const currentPlan: Plan | undefined = plans.find(
     (p) => p.id === subscription.planId,
@@ -57,6 +58,22 @@ export default function SubscriptionSection() {
   const handleCancelSubscription = () => {
     setSubscription((prev) => ({ ...prev, status: "cancelled" }));
     setShowCancelConfirm(false);
+  };
+
+  const getCheckoutUrlByPlanId = (planId: string) => {
+    if (planId === "profesional-premium") return premiumCheckoutUrl;
+    if (planId === "profesional-basico") return basicCheckoutUrl;
+    return "";
+  };
+
+  const handleSelectPlan = (planId: string) => {
+    const checkoutUrl = getCheckoutUrlByPlanId(planId);
+    if (!checkoutUrl) {
+      console.error(`Checkout URL no configurada para el plan: ${planId}`);
+      return;
+    }
+
+    window.location.assign(checkoutUrl);
   };
 
   if (!currentPlan) return null;
@@ -317,7 +334,7 @@ export default function SubscriptionSection() {
                   type="button"
                   className={`subscription-plans__select-btn ${plan.id === subscription.planId ? "subscription-plans__select-btn--disabled" : plan.recommended ? "subscription-plans__select-btn--primary" : ""}`}
                   disabled={plan.id === subscription.planId}
-                  onClick={() => navigate(`/plan/${plan.id}`)}
+                  onClick={() => handleSelectPlan(plan.id)}
                 >
                   {plan.id === subscription.planId
                     ? "Plan actual"

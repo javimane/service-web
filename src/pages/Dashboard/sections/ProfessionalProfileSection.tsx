@@ -9,6 +9,10 @@ import {
 } from "lucide-react";
 import { showcasedSpecialist } from "../../../data/specialists";
 import Modal from "../../../components/Modal/Modal";
+import {
+  uploadProfileImage,
+  uploadProfileWorkImage,
+} from "../../../services/storageUploads";
 import "./ProfessionalProfileSection.css";
 
 type GalleryImage = {
@@ -71,13 +75,22 @@ export default function ProfessionalProfileSection() {
   const [newVideoDescription, setNewVideoDescription] = useState("");
   const newVideoInputRef = useRef<HTMLInputElement>(null);
 
-  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const previewUrl = URL.createObjectURL(file);
-    setProfilePhoto(previewUrl);
-    setSavedMessage("Foto de perfil actualizada.");
+    try {
+      const uploaded = await uploadProfileImage({
+        file,
+        entityId: displayName || "profile",
+        folder: "profile",
+        fileName: file.name,
+      });
+      setProfilePhoto(uploaded.publicUrl);
+      setSavedMessage("Foto de perfil actualizada.");
+    } catch {
+      setSavedMessage("No se pudo subir la foto de perfil.");
+    }
   };
 
   // No se edita más la imagen, solo se elimina
@@ -96,12 +109,26 @@ export default function ProfessionalProfileSection() {
     setNewImageFile(file);
   };
 
-  const handleAddImage = () => {
+  const handleAddImage = async () => {
     if (!newImageFile) return;
-    const url = URL.createObjectURL(newImageFile);
-    setImages((current) => [...current, { id: createId("img"), url }]);
-    setIsImageModalOpen(false);
-    setNewImageFile(null);
+
+    try {
+      const uploaded = await uploadProfileWorkImage({
+        file: newImageFile,
+        entityId: displayName || "profile-work",
+        folder: "portfolio",
+        fileName: newImageFile.name,
+      });
+      setImages((current) => [
+        ...current,
+        { id: createId("img"), url: uploaded.publicUrl },
+      ]);
+      setIsImageModalOpen(false);
+      setNewImageFile(null);
+      setSavedMessage("Imagen del perfil subida correctamente.");
+    } catch {
+      setSavedMessage("No se pudo subir la imagen del perfil.");
+    }
   };
 
   // Video: solo se edita título y descripción, no el archivo

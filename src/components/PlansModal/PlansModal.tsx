@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { X, Check, Crown, Star, Zap } from "lucide-react";
 import { useEffect } from "react";
 import { plans, type Plan } from "../../data/plans";
@@ -14,7 +13,8 @@ function formatPrice(n: number) {
 }
 
 export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
-  const navigate = useNavigate();
+  const basicCheckoutUrl = import.meta.env.VITE_MP_BASIC_CHECKOUT_URL;
+  const premiumCheckoutUrl = import.meta.env.VITE_MP_PREMIUM_CHECKOUT_URL;
 
   useEffect(() => {
     if (isOpen) {
@@ -30,8 +30,16 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
   if (!isOpen) return null;
 
   const handleSelectPlan = (plan: Plan) => {
-    navigate(`/plan/${plan.id}`);
+    const checkoutUrl =
+      plan.id === "profesional-premium" ? premiumCheckoutUrl : basicCheckoutUrl;
+
+    if (!checkoutUrl) {
+      console.error(`Checkout URL no configurada para el plan: ${plan.id}`);
+      return;
+    }
+
     onClose();
+    window.location.assign(checkoutUrl);
   };
 
   return (

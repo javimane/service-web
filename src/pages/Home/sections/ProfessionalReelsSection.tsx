@@ -12,11 +12,51 @@ import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./ProfessionalReelsSection.css";
 
 const reels = [
-  { id: 1, videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4" },
-  { id: 2, videoUrl: "https://www.w3schools.com/html/movie.mp4" },
-  { id: 3, videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4" },
-  { id: 4, videoUrl: "https://www.w3schools.com/html/movie.mp4" },
-  { id: 5, videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4" },
+  {
+    id: 1,
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    professional: {
+      id: "juanperez",
+      name: "Juan Pérez",
+      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+    },
+  },
+  {
+    id: 2,
+    videoUrl: "https://www.w3schools.com/html/movie.mp4",
+    professional: {
+      id: "mariagomez",
+      name: "María Gómez",
+      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
+    },
+  },
+  {
+    id: 3,
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    professional: {
+      id: "carlossosa",
+      name: "Carlos Sosa",
+      avatar: "https://randomuser.me/api/portraits/men/65.jpg",
+    },
+  },
+  {
+    id: 4,
+    videoUrl: "https://www.w3schools.com/html/movie.mp4",
+    professional: {
+      id: "lauradiaz",
+      name: "Laura Díaz",
+      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
+    },
+  },
+  {
+    id: 5,
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    professional: {
+      id: "robertolopez",
+      name: "Roberto López",
+      avatar: "https://randomuser.me/api/portraits/men/12.jpg",
+    },
+  },
 ];
 
 function ReelThumbnail({ src }: { src: string }) {
@@ -204,8 +244,25 @@ export default function ProfessionalReelsSection() {
                 playsInline
               />
 
-              <div className="reels-modal__topbar">
-                <span>Reel</span>
+              <div className="reels-modal__topbar reels-modal__topbar--profile">
+                <a
+                  className="reels-modal__profile-link"
+                  href={`/profile/${selectedReel.professional.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <img
+                    src={selectedReel.professional.avatar}
+                    alt={selectedReel.professional.name}
+                    className="reels-modal__profile-avatar"
+                  />
+                  <span className="reels-modal__profile-name">
+                    {selectedReel.professional.name}
+                  </span>
+                </a>
               </div>
 
               <button
