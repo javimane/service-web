@@ -12,4 +12,5 @@ export const ROUTES = {
   messages: "/messages",
   products: "/products",
   planPayment: "/plan/:planId",
+  favorites: "/favorites",
 };

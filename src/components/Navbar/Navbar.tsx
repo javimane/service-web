@@ -22,6 +22,7 @@ import {
   Menu,
   X,
   UploadCloud,
+  Heart,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
@@ -318,6 +319,14 @@ export default function Navbar() {
                     >
                       <LayoutDashboard size={18} />
                       <span>Dashboard</span>
+                    </Link>
+                    <Link
+                      to={ROUTES.favorites}
+                      className="dropdown__item"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Heart size={18} />
+                      <span>Favoritos</span>
                     </Link>
                     <Link
                       to={ROUTES.products}

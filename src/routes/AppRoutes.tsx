@@ -13,6 +13,7 @@ import SettingsPage from "../pages/Settings/SettingsPage";
 import MessagesPage from "../pages/Messages/MessagesPage";
 import ProductsPage from "../pages/Products/ProductsPage";
 import PlanPaymentPage from "../pages/PlanPayment/PlanPaymentPage";
+import FavoritesPage from "../pages/Favorites/FavoritesPage";
 import { ROUTES } from "./paths";
 
 function OpenAuthAndRedirect({ mode }) {
@@ -73,6 +74,15 @@ export default function AppRoutes() {
         element={
           <PrivateRoute>
             <MessagesPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.favorites}
+        element={
+          <PrivateRoute>
+            <FavoritesPage />
           </PrivateRoute>
         }
       />
