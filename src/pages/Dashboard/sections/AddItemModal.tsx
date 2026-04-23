@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Plus, Trash2, Search, Package, ShoppingCart } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
 import { products as localProducts } from "../../../data/products";
-import { supabase } from "../../../services/supabaseClient";
+import { productService } from "../../../services/productService";
 import "./AddItemModal.css";
 
 type Tab = "services" | "products";
@@ -53,12 +53,11 @@ export default function AddItemModal({ isOpen, onClose, onAdd }) {
     if (!q) return;
     setDbLoading(true);
     try {
-      const { data } = await supabase
-        .from("products")
-        .select("*")
-        .ilike("title", `%${q}%`)
-        .limit(20);
-      setDbProducts(data || []);
+      const data = await productService.list();
+      const filtered = data
+        .filter((p: any) => p.title.toLowerCase().includes(q.toLowerCase()))
+        .slice(0, 20);
+      setDbProducts(filtered);
     } catch {
       setDbProducts([]);
     }

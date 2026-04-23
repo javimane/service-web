@@ -5,6 +5,7 @@ export const API_ENDPOINTS = {
     register: `${API_BASE_URL}/api/auth/register`,
     login: `${API_BASE_URL}/api/auth/login`,
     googleLogin: `${API_BASE_URL}/api/auth/login/google`,
+    getSession: `${API_BASE_URL}/api/auth/session`,
   },
   users: {
     favorites: `${API_BASE_URL}/api/users/me/favorites`,

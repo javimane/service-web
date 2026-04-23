@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
-import { supabase } from "../../services/supabaseClient";
+import { authService } from "../../services/authService";
+import { useAuth } from "../../context/AuthContext";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import "./LoginPage.css";
 
@@ -21,6 +22,7 @@ export default function LoginPage({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const { refreshSession } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
@@ -61,23 +63,21 @@ export default function LoginPage({
     setAuthError("");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const response = await authService.login({
         email: formData.email,
         password: formData.password,
       });
 
-      if (error) {
-        setAuthError(error.message);
+      await refreshSession();
+
+      if (isModal) {
+        onClose?.();
       } else {
-        if (isModal) {
-          onClose?.();
-        } else {
-          navigate(ROUTES.home);
-        }
+        navigate(ROUTES.home);
       }
-    } catch (err) {
+    } catch (err: any) {
       setAuthError(
-        "Error inesperado al intentar iniciar sesión: " + err.message,
+        err.message || "Error inesperado al intentar iniciar sesión",
       );
     } finally {
       setIsLoading(false);

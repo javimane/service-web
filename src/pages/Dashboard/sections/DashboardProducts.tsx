@@ -19,7 +19,7 @@ import {
   Info,
 } from "lucide-react";
 import { products as initialProducts } from "../../../data/products";
-import { supabase } from "../../../services/supabaseClient";
+import { productService } from "../../../services/productService";
 import { uploadProductImage } from "../../../services/storageUploads";
 import "./DashboardProducts.css";
 
@@ -175,14 +175,12 @@ export default function DashboardProducts() {
     setEanLoading(true);
     setEanMatch(null);
     try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("ean", ean)
-        .maybeSingle();
+      // Assuming the API supports filtering by ean or we find it in the list
+      const data = await productService.list();
+      const match = data.find((p: any) => p.ean === ean);
 
-      if (!error && data) {
-        setEanMatch(data);
+      if (match) {
+        setEanMatch(match);
         setEanPriceMode("same");
         setEanCustomPrice("");
       }

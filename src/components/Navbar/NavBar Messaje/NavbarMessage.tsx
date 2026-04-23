@@ -18,7 +18,6 @@ import {
 import "./NavbarMessaje.css";
 import { useAuth } from "../../../context/AuthContext";
 import { ROUTES } from "../../../routes/paths";
-import { supabase } from "../../../services/supabaseClient";
 
 
 const notifications = [
@@ -71,7 +70,7 @@ const notifications = [
 
 export default function NavbarMessage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const menuRef = useRef(null);
@@ -104,7 +103,7 @@ export default function NavbarMessage() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await logout();
     setIsMenuOpen(false);
     navigate(ROUTES.home);
   };

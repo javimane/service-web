@@ -1,29 +1,37 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "../services/supabaseClient";
+import { authService } from "../services/authService";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext<any>(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+  const refreshSession = async () => {
+    try {
+      const session = await authService.getSession();
+      setUser(session?.user ?? session ?? null);
+    } catch (err) {
+      setUser(null);
+    } finally {
       setLoading(false);
-    });
+    }
+  };
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
+  useEffect(() => {
+    refreshSession();
   }, []);
 
+  const logout = async () => {
+    try {
+      // If there's an API logout endpoint, we'd call it here
+      // await apiClient('/api/auth/logout', { method: 'POST' });
+    } catch (e) {}
+    setUser(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, refreshSession, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );

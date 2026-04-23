@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
-import { supabase } from "../../services/supabaseClient";
+import { useAuth } from "../../context/AuthContext";
 import BrandLogo from "../BrandLogo/BrandLogo";
 
 type DashboardSidebarProps = {
@@ -61,6 +61,7 @@ export default function DashboardSidebar({
   onReelsClick,
 }: DashboardSidebarProps) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [promosOpen, setPromosOpen] = useState(
     activeItem === "promotions-create" || activeItem === "promotions-all",
   );
@@ -73,7 +74,7 @@ export default function DashboardSidebar({
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await logout();
     } catch (error) {
       console.error("Unable to sign out cleanly:", error);
     }

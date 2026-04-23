@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
-import { supabase } from "../../services/supabaseClient";
+import { authService } from "../../services/authService";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 
 import Modal from "../../components/Modal/Modal";
@@ -93,26 +93,18 @@ export default function RegisterPage({
     setAuthError("");
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      await authService.register({
+        name: formData.name,
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            full_name: formData.name,
-          },
-        },
       });
 
-      if (error) {
-        setAuthError(error.message);
-      } else {
-        setModalTitle("Registro exitoso");
-        setModalMessage(
-          "¡Cuenta creada exitosamente! Por favor revise su correo.",
-        );
-        setModalOpen(true);
-      }
-    } catch (err) {
+      setModalTitle("Registro exitoso");
+      setModalMessage(
+        "¡Cuenta creada exitosamente! Por favor revise su correo o inicie sesión.",
+      );
+      setModalOpen(true);
+    } catch (err: any) {
       setAuthError(
         "Error inesperado al intentar crear la cuenta: " + err.message,
       );
