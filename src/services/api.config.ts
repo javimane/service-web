@@ -71,4 +71,11 @@ export const API_ENDPOINTS = {
   subscriptions: {
     getPrice: `${API_BASE_URL}/api/subscription-price`,
   },
+  reels: {
+    base: `${API_BASE_URL}/api/professional-reels`,
+    detail: (id: string | number) => `${API_BASE_URL}/api/professional-reels/${id}`,
+    stats: (id: string | number) => `${API_BASE_URL}/api/professional-reels/${id}/stats`,
+    professionalStats: (professionalId: string | number) =>
+      `${API_BASE_URL}/api/professional-reels/professional/${professionalId}/stats`,
+  },
 };

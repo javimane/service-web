@@ -490,6 +490,14 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
+.chart-card {
+  grid-column: 1;
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 .card-label {
   display: block;
   font-size: 0.65rem;
@@ -576,7 +584,6 @@
 
 /* Compact Cards */
 .compact-card {
-  grid-column: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -952,10 +959,18 @@
     padding: 32px 24px;
   }
 
-  .stats-grid,
   .lower-grid,
   .videos-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .chart-card {
+    grid-column: 1 / -1;
+    grid-row: auto;
   }
 
   .conversion-card {
@@ -997,6 +1012,10 @@
 
   .dashboard-content {
     padding: 20px 14px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 
   .conversion-card,

@@ -18,6 +18,8 @@ import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import { ROUTES } from "../../routes/paths";
 import { professionalService } from "../../services/professionalService";
 import { proposalService } from "../../services/proposalService";
+import { reelsService } from "../../services/reelsService";
+import type { CountViewsReelsRow } from "../../types/database.types";
 import ProposalCreator from "./sections/ProposalCreator";
 import ProposalsView from "./sections/ProposalsView";
 import PromotionCreator from "./sections/PromotionCreator";
@@ -41,6 +43,7 @@ export default function DashboardPage() {
   const [acceptedProposalsCount, setAcceptedProposalsCount] = useState<
     number | null
   >(null);
+  const [reelsStats, setReelsStats] = useState<CountViewsReelsRow | null>(null);
 
   const openViewsForInactiveSubscription = new Set([
     "subscription",
@@ -66,6 +69,7 @@ export default function DashboardPage() {
     if (!professionalId) {
       setProfileViews(null);
       setAcceptedProposalsCount(null);
+      setReelsStats(null);
       return;
     }
 
@@ -106,8 +110,19 @@ export default function DashboardPage() {
       }
     };
 
+    const loadReelsStats = async () => {
+      try {
+        const result = await reelsService.getProfessionalStats(professionalId);
+        if (!isMounted) return;
+        setReelsStats(result);
+      } catch (error) {
+        if (isMounted) setReelsStats(null);
+      }
+    };
+
     loadProfileViews();
     loadAcceptedProposalsCount();
+    loadReelsStats();
 
     return () => {
       isMounted = false;
@@ -276,7 +291,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="stat-card summary-card">
+                  <div className="stat-card compact-card">
                     <div className="card-header">
                       <LayoutDashboard size={24} className="icon-purple" />
                     </div>
@@ -297,32 +312,30 @@ export default function DashboardPage() {
                       <div className="play-icon-bg">
                         <Play size={20} fill="currentColor" />
                       </div>
+                      <h3 className="mid-value">
+                        Reels
+                      </h3>
                     </div>
-                    <div className="stat-value-group">
-                      <span className="card-label">VIDEO CONTENT REACH</span>
-                      <h2 className="mid-value">12.8K</h2>
-                    </div>
-                    <div className="card-footer">
-                      <span className="live-badge">Live</span>
-                      <span>performance tracking</span>
-                    </div>
-                  </div>
-
-                  <div className="stat-card conversion-card">
-                    <div className="stat-value-group">
-                      <span className="card-label">CONVERSION METRIC</span>
-                      <h2 className="mid-value">89% Accepted</h2>
-                      <p>
-                        Tu tasa de aceptación está entre los perfiles con mejor
-                        rendimiento de Sercio.
-                      </p>
-                    </div>
-                    <div className="circular-progress-container">
-                      <div
-                        className="circular-progress"
-                        style={{ "--progress": "89%" } as any}
-                      >
-                        <div className="progress-inner">89%</div>
+                    <div style={{ display: "flex", gap: "32px", alignItems: "flex-start" }}>
+                      <div className="stat-value-group">
+                        <span className="card-label">CANTIDAD DE VISTAS</span>
+                        <h2 className="mid-value">
+                          {reelsStats?.total_views !== undefined
+                            ? reelsStats.total_views >= 1000
+                              ? `${(reelsStats.total_views / 1000).toFixed(1)}K`
+                              : reelsStats.total_views
+                            : "--"}
+                        </h2>
+                      </div>
+                      <div className="stat-value-group">
+                        <span className="card-label">CANTIDAD DE LIKES</span>
+                        <h2 className="mid-value">
+                          {reelsStats?.total_likes !== undefined
+                            ? reelsStats.total_likes >= 1000
+                              ? `${(reelsStats.total_likes / 1000).toFixed(1)}K`
+                              : reelsStats.total_likes
+                            : "--"}
+                        </h2>
                       </div>
                     </div>
                   </div>

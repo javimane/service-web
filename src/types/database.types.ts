@@ -251,6 +251,15 @@ export interface ProfessionalReelRow {
   readonly Professional?: ProfessionalRow;
 }
 
+export interface CountViewsReelsRow {
+  readonly total_views?: number;
+  readonly total_likes?: number;
+}
+
+export interface UpdateReelStatsRequest {
+  readonly action: 'view' | 'like' | 'unlike';
+}
+
 export interface ProfessionalVideoRow {
   readonly id: number;
   readonly professional_id: number;
