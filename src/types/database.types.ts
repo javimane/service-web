@@ -277,9 +277,10 @@ export interface ProfessionalRow {
   readonly updated_at: string;
   readonly deleted_at: string | null;
   readonly web_url: string | null;
-  readonly account_type: 'individual' | 'company' | null;
+  readonly account_type: "individual" | "company" | null;
   readonly is_matriculate: boolean | null;
   readonly emergency: boolean | null;
+  readonly profile_views: number | null;
   // Relationships
   readonly Profile?: ProfileRow;
 }
@@ -302,10 +303,9 @@ export interface ProvinceDepartmentRow {
 export type Product = ProductRow;
 export type ProfessionalProduct = ProfessionalProductRow;
 
-
 export interface HealthStatusResponse {
-  readonly status: 'ok';
-  readonly service: 'cercio-api';
+  readonly status: "ok";
+  readonly service: "cercio-api";
   readonly timestamp: string;
 }
 
@@ -367,38 +367,100 @@ export interface UserFavoriteRow {
   readonly Professional?: ProfessionalRow;
 }
 
+export interface SuscriptionPrice {
+  readonly id: number;
+  readonly amount: number;
+}
+
 export interface Database {
   public: {
     Tables: {
       address: { Row: AddressRow; Insert: any; Update: any };
       api_error_logs: { Row: ApiErrorLogRow; Insert: any; Update: any };
-      categories_products: { Row: CategoryProductRow; Insert: any; Update: any };
-      categories_services: { Row: CategoryServiceRow; Insert: any; Update: any };
+      categories_products: {
+        Row: CategoryProductRow;
+        Insert: any;
+        Update: any;
+      };
+      categories_services: {
+        Row: CategoryServiceRow;
+        Insert: any;
+        Update: any;
+      };
       companies: { Row: CompanyRow; Insert: any; Update: any };
       companies_arca: { Row: CompaniesArcaRow; Insert: any; Update: any };
       contact_requests: { Row: ContactRequestRow; Insert: any; Update: any };
       messages: { Row: MessageRow; Insert: any; Update: any };
       products: { Row: ProductRow; Insert: any; Update: any };
-      professional_availability: { Row: ProfessionalAvailabilityRow; Insert: any; Update: any };
-      professional_categories: { Row: ProfessionalCategoryRow; Insert: any; Update: any };
-      professional_credentials: { Row: ProfessionalCredentialRow; Insert: any; Update: any };
-      professional_images: { Row: ProfessionalImageRow; Insert: any; Update: any };
-      professional_products: { Row: ProfessionalProductRow; Insert: any; Update: any };
-      professional_promotions: { Row: ProfessionalPromotionRow; Insert: any; Update: any };
-      professional_proposals: { Row: ProfessionalProposalRow; Insert: any; Update: any };
-      professional_quotes: { Row: ProfessionalQuoteRow; Insert: any; Update: any };
-      professional_ranking: { Row: ProfessionalRankingRow; Insert: any; Update: any };
-      professional_reels: { Row: ProfessionalReelRow; Insert: any; Update: any };
-      professional_videos: { Row: ProfessionalVideoRow; Insert: any; Update: any };
+      professional_availability: {
+        Row: ProfessionalAvailabilityRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_categories: {
+        Row: ProfessionalCategoryRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_credentials: {
+        Row: ProfessionalCredentialRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_images: {
+        Row: ProfessionalImageRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_products: {
+        Row: ProfessionalProductRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_promotions: {
+        Row: ProfessionalPromotionRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_proposals: {
+        Row: ProfessionalProposalRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_quotes: {
+        Row: ProfessionalQuoteRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_ranking: {
+        Row: ProfessionalRankingRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_reels: {
+        Row: ProfessionalReelRow;
+        Insert: any;
+        Update: any;
+      };
+      professional_videos: {
+        Row: ProfessionalVideoRow;
+        Insert: any;
+        Update: any;
+      };
       professionals: { Row: ProfessionalRow; Insert: any; Update: any };
       profiles: { Row: ProfileRow; Insert: any; Update: any };
       provinces: { Row: ProvinceRow; Insert: any; Update: any };
-      provinces_department: { Row: ProvinceDepartmentRow; Insert: any; Update: any };
+      provinces_department: {
+        Row: ProvinceDepartmentRow;
+        Insert: any;
+        Update: any;
+      };
       reviews: { Row: ReviewRow; Insert: any; Update: any };
       roles: { Row: RoleRow; Insert: any; Update: any };
       services: { Row: ServiceRow; Insert: any; Update: any };
       subscriptions: { Row: SubscriptionRow; Insert: any; Update: any };
       user_favorites: { Row: UserFavoriteRow; Insert: any; Update: any };
+      suscription_price: { Row: SuscriptionPrice };
     };
   };
 }

@@ -109,6 +109,11 @@
   color: #d97706;
 }
 
+.subscription-card__status--none {
+  background: rgba(107, 114, 128, 0.14);
+  color: #6b7280;
+}
+
 /* ===== DETAILS GRID ===== */
 .subscription-card__details {
   display: grid;

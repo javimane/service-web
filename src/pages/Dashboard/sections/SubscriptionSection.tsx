@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Crown,
   Zap,
@@ -11,12 +11,20 @@ import {
   Star,
   ChevronUp,
 } from "lucide-react";
-import { plans, type Plan } from "../../../data/plans";
 import {
-  mockSubscription,
-  type Subscription,
-} from "../../../data/subscription";
+  getPlansWithApiPrices,
+  plans as staticPlans,
+  type Plan,
+} from "../../../data/plans";
+import { type Subscription } from "../../../data/subscription";
+import { useAuth } from "../../../context/AuthContext";
 import "./SubscriptionSection.css";
+
+// Mapeo de los nombres de plan del API a los IDs internos
+const planNameToId: Record<string, string> = {
+  standard: "profesional-basico",
+  premium: "profesional-premium",
+};
 
 function formatPrice(n: number) {
   return n.toLocaleString("es-AR");
@@ -30,30 +38,90 @@ function formatDate(dateStr: string) {
   });
 }
 
-const statusLabels: Record<Subscription["status"], string> = {
+type DisplaySubscriptionStatus = "active" | "cancelled" | "past_due" | "none";
+
+function normalizeSubscriptionStatus(
+  status?: string | null,
+): DisplaySubscriptionStatus {
+  if (!status) return "none";
+  if (status === "cancelled" || status === "canceled") return "cancelled";
+  if (status === "past_due") return "past_due";
+  return "active";
+}
+
+const statusLabels: Record<DisplaySubscriptionStatus, string> = {
   active: "Activa",
   cancelled: "Cancelada",
   past_due: "Pago pendiente",
+  none: "Sin suscripción",
 };
 
-const statusIcons: Record<Subscription["status"], typeof Check> = {
+const statusIcons: Record<DisplaySubscriptionStatus, typeof Check> = {
   active: Check,
   cancelled: XCircle,
   past_due: AlertTriangle,
+  none: AlertTriangle,
 };
 
 export default function SubscriptionSection() {
-  const [subscription, setSubscription] = useState(mockSubscription);
+  const { sessionStatus } = useAuth();
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [availablePlans, setAvailablePlans] = useState<Plan[]>(staticPlans);
   const [showPlans, setShowPlans] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const plansRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPlans = async () => {
+      const nextPlans = await getPlansWithApiPrices();
+      if (isMounted) setAvailablePlans(nextPlans);
+    };
+
+    loadPlans();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const currentStatus = normalizeSubscriptionStatus(
+    subscription?.status ?? sessionStatus?.subscription?.status,
+  );
+  const hasSubscription = Boolean(sessionStatus?.subscription);
+
+  const isActiveProPlan =
+    Boolean(sessionStatus?.is_professional) &&
+    Boolean(sessionStatus?.professional_active) &&
+    currentStatus === "active";
+
+  // Plan activo según el API (null si no hay suscripción)
+  const activePlanId: string | null = sessionStatus?.subscription?.plan
+    ? (planNameToId[sessionStatus.subscription.plan] ?? null)
+    : null;
+
+  // Fechas desde el API cuando estén disponibles
+  const displayStartDate: string =
+    sessionStatus?.subscription?.started_at ?? subscription?.startDate ?? "";
+  const displayNextPaymentDate: string =
+    sessionStatus?.subscription?.expires_at ??
+    subscription?.nextPaymentDate ??
+    "";
+
+  const displayAmount =
+    sessionStatus?.subscription?.amount_paid ?? subscription?.amount ?? 0;
+
   const basicCheckoutUrl = import.meta.env.VITE_MP_BASIC_CHECKOUT_URL;
   const premiumCheckoutUrl = import.meta.env.VITE_MP_PREMIUM_CHECKOUT_URL;
 
-  const currentPlan: Plan | undefined = plans.find(
-    (p) => p.id === subscription.planId,
-  );
+  const currentPlan: Plan | undefined =
+    (hasSubscription && activePlanId
+      ? availablePlans.find((p) => p.id === activePlanId)
+      : undefined) ??
+    (hasSubscription && subscription?.plan
+      ? availablePlans.find((p) => p.id === subscription.plan)
+      : undefined);
 
   const handleCancelSubscription = () => {
     setSubscription((prev) => ({ ...prev, status: "cancelled" }));
@@ -76,9 +144,7 @@ export default function SubscriptionSection() {
     window.location.assign(checkoutUrl);
   };
 
-  if (!currentPlan) return null;
-
-  const StatusIcon = statusIcons[subscription.status];
+  const StatusIcon = statusIcons[currentStatus];
 
   return (
     <div className="subscription-section">
@@ -93,95 +159,116 @@ export default function SubscriptionSection() {
 
       {/* Current plan card */}
       <div className="subscription-card">
-        <div className="subscription-card__top">
-          <div className="subscription-card__plan-info">
-            <div
-              className={`subscription-card__icon ${currentPlan.recommended ? "subscription-card__icon--premium" : ""}`}
-            >
-              {currentPlan.recommended ? (
-                <Zap size={24} />
-              ) : (
-                <Crown size={24} />
-              )}
-            </div>
-            <div>
-              <h2 className="subscription-card__plan-name">
-                {currentPlan.name}
-              </h2>
-              <p className="subscription-card__plan-desc">
-                {currentPlan.description}
-              </p>
-            </div>
-          </div>
+        {hasSubscription && currentPlan ? (
+          <>
+            <div className="subscription-card__top">
+              <div className="subscription-card__plan-info">
+                <div
+                  className={`subscription-card__icon ${currentPlan.recommended ? "subscription-card__icon--premium" : ""}`}
+                >
+                  {currentPlan.recommended ? (
+                    <Zap size={24} />
+                  ) : (
+                    <Crown size={24} />
+                  )}
+                </div>
+                <div>
+                  <h2 className="subscription-card__plan-name">
+                    {currentPlan.name}
+                  </h2>
+                  <p className="subscription-card__plan-desc">
+                    {currentPlan.description}
+                  </p>
+                </div>
+              </div>
 
-          <div
-            className={`subscription-card__status subscription-card__status--${subscription.status}`}
-          >
-            <StatusIcon size={14} />
-            <span>{statusLabels[subscription.status]}</span>
-          </div>
-        </div>
-
-        {/* Details grid */}
-        <div className="subscription-card__details">
-          <div className="subscription-detail">
-            <div className="subscription-detail__icon">
-              <CreditCard size={18} />
-            </div>
-            <div className="subscription-detail__info">
-              <span className="subscription-detail__label">Precio mensual</span>
-              <span className="subscription-detail__value">
-                ${formatPrice(subscription.amount)}/{currentPlan.period}
-              </span>
-            </div>
-          </div>
-
-          <div className="subscription-detail">
-            <div className="subscription-detail__icon">
-              <CalendarClock size={18} />
-            </div>
-            <div className="subscription-detail__info">
-              <span className="subscription-detail__label">Próximo pago</span>
-              <span className="subscription-detail__value">
-                {subscription.status === "cancelled"
-                  ? "—"
-                  : formatDate(subscription.nextPaymentDate)}
-              </span>
-            </div>
-          </div>
-
-          <div className="subscription-detail">
-            <div className="subscription-detail__icon">
-              <CalendarClock size={18} />
-            </div>
-            <div className="subscription-detail__info">
-              <span className="subscription-detail__label">
-                Suscripto desde
-              </span>
-              <span className="subscription-detail__value">
-                {formatDate(subscription.startDate)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="subscription-card__features">
-          <h3 className="subscription-card__features-title">Tu plan incluye</h3>
-          <ul className="subscription-card__features-list">
-            {currentPlan.features.map((feat, i) => (
-              <li
-                key={i}
-                className={
-                  feat.highlighted ? "subscription-feature--highlight" : ""
-                }
+              <div
+                className={`subscription-card__status subscription-card__status--${currentStatus}`}
               >
-                <Check size={16} />
-                <span>{feat.text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+                <StatusIcon size={14} />
+                <span>{statusLabels[currentStatus]}</span>
+              </div>
+            </div>
+
+            {/* Details grid */}
+            <div className="subscription-card__details">
+              <div className="subscription-detail">
+                <div className="subscription-detail__icon">
+                  <CreditCard size={18} />
+                </div>
+                <div className="subscription-detail__info">
+                  <span className="subscription-detail__label">Precio mensual</span>
+                  <span className="subscription-detail__value">
+                    ${formatPrice(displayAmount)}/{currentPlan.period}
+                  </span>
+                </div>
+              </div>
+
+              <div className="subscription-detail">
+                <div className="subscription-detail__icon">
+                  <CalendarClock size={18} />
+                </div>
+                <div className="subscription-detail__info">
+                  <span className="subscription-detail__label">Próximo pago</span>
+                  <span className="subscription-detail__value">
+                    {currentStatus === "cancelled" || !sessionStatus?.subscription
+                      ? "—"
+                      : formatDate(displayNextPaymentDate)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="subscription-detail">
+                <div className="subscription-detail__icon">
+                  <CalendarClock size={18} />
+                </div>
+                <div className="subscription-detail__info">
+                  <span className="subscription-detail__label">
+                    Suscripto desde
+                  </span>
+                  <span className="subscription-detail__value">
+                    {sessionStatus?.subscription
+                      ? formatDate(displayStartDate)
+                      : "—"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Features */}
+            <div className="subscription-card__features">
+              <h3 className="subscription-card__features-title">Tu plan incluye</h3>
+              <ul className="subscription-card__features-list">
+                {currentPlan.features.map((feat, i) => (
+                  <li
+                    key={i}
+                    className={
+                      feat.highlighted ? "subscription-feature--highlight" : ""
+                    }
+                  >
+                    <Check size={16} />
+                    <span>{feat.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        ) : (
+          <div className="subscription-card__top">
+            <div className="subscription-card__plan-info">
+              <div className="subscription-card__icon">
+                <Crown size={24} />
+              </div>
+              <div>
+                <h2 className="subscription-card__plan-name">Sin suscripción activa</h2>
+                <p className="subscription-card__plan-desc">
+                  Suscribite para activar tu perfil profesional y acceder a todos
+                  los beneficios.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="subscription-card__actions">
@@ -201,11 +288,17 @@ export default function SubscriptionSection() {
             }}
           >
             <ArrowRightLeft size={18} />
-            <span>{showPlans ? "Ocultar planes" : "Cambiar de plan"}</span>
+            <span>
+              {showPlans
+                ? "Ocultar planes"
+                : isActiveProPlan
+                  ? "Cambiar de plan"
+                  : "Suscribirse"}
+            </span>
             {showPlans && <ChevronUp size={16} />}
           </button>
 
-          {subscription.status === "active" && (
+          {hasSubscription && isActiveProPlan && (
             <button
               type="button"
               className="subscription-btn subscription-btn--cancel"
@@ -216,7 +309,7 @@ export default function SubscriptionSection() {
             </button>
           )}
 
-          {subscription.status === "cancelled" && (
+          {hasSubscription && currentStatus === "cancelled" && (
             <button
               type="button"
               className="subscription-btn subscription-btn--reactivate"
@@ -249,7 +342,7 @@ export default function SubscriptionSection() {
             </h3>
             <p className="subscription-confirm__desc">
               Perderás el acceso a las funcionalidades de tu plan{" "}
-              <strong>{currentPlan.name}</strong> al finalizar el período de
+              <strong>{currentPlan?.name}</strong> al finalizar el período de
               facturación actual.
             </p>
             <div className="subscription-confirm__actions">
@@ -277,10 +370,10 @@ export default function SubscriptionSection() {
         <div className="subscription-plans" ref={plansRef}>
           <h2 className="subscription-plans__title">Elegí tu nuevo plan</h2>
           <div className="subscription-plans__grid">
-            {plans.map((plan) => (
+            {availablePlans.map((plan) => (
               <div
                 key={plan.id}
-                className={`subscription-plans__card ${plan.id === subscription.planId ? "subscription-plans__card--current" : ""} ${plan.recommended ? "subscription-plans__card--recommended" : ""}`}
+                className={`subscription-plans__card ${activePlanId !== null && plan.id === activePlanId ? "subscription-plans__card--current" : ""} ${plan.recommended ? "subscription-plans__card--recommended" : ""}`}
               >
                 {plan.recommended && (
                   <div className="subscription-plans__badge">
@@ -288,11 +381,11 @@ export default function SubscriptionSection() {
                     Recomendado
                   </div>
                 )}
-                {plan.id === subscription.planId && (
+                {activePlanId !== null && plan.id === activePlanId ? (
                   <div className="subscription-plans__current-badge">
                     Plan actual
                   </div>
-                )}
+                ) : null}
 
                 <div className="subscription-plans__card-header">
                   <div
@@ -332,11 +425,11 @@ export default function SubscriptionSection() {
 
                 <button
                   type="button"
-                  className={`subscription-plans__select-btn ${plan.id === subscription.planId ? "subscription-plans__select-btn--disabled" : plan.recommended ? "subscription-plans__select-btn--primary" : ""}`}
-                  disabled={plan.id === subscription.planId}
+                  className={`subscription-plans__select-btn ${activePlanId !== null && plan.id === activePlanId ? "subscription-plans__select-btn--disabled" : plan.recommended ? "subscription-plans__select-btn--primary" : ""}`}
+                  disabled={activePlanId !== null && plan.id === activePlanId}
                   onClick={() => handleSelectPlan(plan.id)}
                 >
-                  {plan.id === subscription.planId
+                  {activePlanId !== null && plan.id === activePlanId
                     ? "Plan actual"
                     : "Elegir plan"}
                 </button>

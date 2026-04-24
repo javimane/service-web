@@ -13,10 +13,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "../../components/Footer/Footer";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import { useAuth } from "../../context/AuthContext";
-import { engagementData, activities, clips } from "../../data/dashboardData";
+import { activities, clips } from "../../data/dashboardData";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import { ROUTES } from "../../routes/paths";
+import { professionalService } from "../../services/professionalService";
+import { proposalService } from "../../services/proposalService";
 import ProposalCreator from "./sections/ProposalCreator";
+import ProposalsView from "./sections/ProposalsView";
 import PromotionCreator from "./sections/PromotionCreator";
 import AllPromotionsPage from "./sections/AllPromotionsPage";
 import NotificationsPage from "./sections/NotificationsPage";
@@ -31,14 +34,18 @@ import "./DashboardPage.css";
 export default function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { hasProfessionalSubscription } = useAuth();
+  const { hasProfessionalSubscription, sessionStatus } = useAuth();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
   const [view, setView] = useState("overview");
+  const [profileViews, setProfileViews] = useState<number | null>(null);
+  const [acceptedProposalsCount, setAcceptedProposalsCount] = useState<
+    number | null
+  >(null);
 
   const openViewsForInactiveSubscription = new Set([
     "subscription",
     "notifications",
-    "create-proposal",
+    "proposals-view",
   ]);
   const shouldLockDashboardView =
     !hasProfessionalSubscription && !openViewsForInactiveSubscription.has(view);
@@ -51,7 +58,64 @@ export default function DashboardPage() {
     }
   }, [location.state]);
 
-  const handleCreateProposal = () => setView("create-proposal");
+  useEffect(() => {
+    const professionalId =
+      sessionStatus?.subscription?.professional_id ??
+      sessionStatus?.professional_id;
+
+    if (!professionalId) {
+      setProfileViews(null);
+      setAcceptedProposalsCount(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadProfileViews = async () => {
+      try {
+        const credentials =
+          await professionalService.getCredentials(professionalId);
+        if (!isMounted) return;
+
+        const itemWithViews = credentials.find(
+          (item: any) =>
+            item?.Professional?.profile_views !== undefined ||
+            item?.profile_views !== undefined,
+        );
+
+        const nextViews =
+          itemWithViews?.Professional?.profile_views ??
+          (itemWithViews as any)?.profile_views ??
+          0;
+
+        setProfileViews(typeof nextViews === "number" ? nextViews : 0);
+      } catch (error) {
+        if (isMounted) setProfileViews(null);
+      }
+    };
+
+    const loadAcceptedProposalsCount = async () => {
+      try {
+        const result = await proposalService.getCount(professionalId);
+        if (!isMounted) return;
+        setAcceptedProposalsCount(
+          typeof result?.count === "number" ? result.count : 0,
+        );
+      } catch (error) {
+        if (isMounted) setAcceptedProposalsCount(null);
+      }
+    };
+
+    loadProfileViews();
+    loadAcceptedProposalsCount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionStatus]);
+
+  const handleShowProposalsCreate = () => setView("proposals-create");
+  const handleShowProposalsView = () => setView("proposals-view");
   const handleGoBack = () => setView("overview");
   const handleGoProfile = () => setView("profile");
   const handleGoServices = () => navigate(ROUTES.services);
@@ -68,36 +132,45 @@ export default function DashboardPage() {
   const handleShowProfile = () => setView("profile");
   const handleShowReels = () => setView("reels");
 
+  const totalProfileViews = profileViews ?? 0;
+  const chartHeight = Math.max(
+    10,
+    Math.min(100, Math.round((totalProfileViews / 1000) * 100)),
+  );
+
   return (
     <div className="dashboard-page-wrapper">
       <div className="dashboard-page">
         <DashboardSidebar
           activeItem={
-            view === "create-proposal"
-              ? "proposals"
-              : view === "notifications"
-                ? "notifications"
-                : view === "promotions-create"
-                  ? "promotions-create"
-                  : view === "promotions-all"
-                    ? "promotions-all"
-                    : view === "products"
-                      ? "products"
-                      : view === "subscription"
-                        ? "subscription"
-                        : view === "calendar"
-                          ? "calendar"
-                          : view === "bank-promotions"
-                            ? "bank-promotions"
-                            : view === "reels"
-                              ? "reels"
-                              : view === "profile"
-                                ? "profile"
-                                : "dashboard"
+            view === "proposals-create"
+              ? "proposals-create"
+              : view === "proposals-view"
+                ? "proposals-view"
+                : view === "notifications"
+                  ? "notifications"
+                  : view === "promotions-create"
+                    ? "promotions-create"
+                    : view === "promotions-all"
+                      ? "promotions-all"
+                      : view === "products"
+                        ? "products"
+                        : view === "subscription"
+                          ? "subscription"
+                          : view === "calendar"
+                            ? "calendar"
+                            : view === "bank-promotions"
+                              ? "bank-promotions"
+                              : view === "reels"
+                                ? "reels"
+                                : view === "profile"
+                                  ? "profile"
+                                  : "dashboard"
           }
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed((current) => !current)}
-          onCreateProposal={handleCreateProposal}
+          onProposalsCreate={handleShowProposalsCreate}
+          onProposalsView={handleShowProposalsView}
           onDashboardClick={handleShowOverview}
           onMessagesClick={handleShowMessages}
           onNotificationsClick={handleShowNotifications}
@@ -115,8 +188,10 @@ export default function DashboardPage() {
           <div
             className={`dashboard-main-panel ${shouldLockDashboardView ? "dashboard-main-panel--locked" : ""}`}
           >
-            {view === "create-proposal" ? (
+            {view === "proposals-create" ? (
               <ProposalCreator onBack={handleGoBack} />
+            ) : view === "proposals-view" ? (
+              <ProposalsView />
             ) : view === "calendar" ? (
               <CalendarSection />
             ) : view === "subscription" ? (
@@ -180,24 +255,24 @@ export default function DashboardPage() {
                       </div>
                       <div className="trend-badge">
                         <TrendingUp size={14} />
-                        <span>24% INCREASE</span>
+                        <span>
+                          {profileViews !== null
+                            ? `${profileViews.toLocaleString("es-AR")} VISTAS`
+                            : "SIN DATOS"}
+                        </span>
                       </div>
                     </div>
 
                     <div className="bar-chart">
-                      {engagementData.map((d, i) => (
-                        <div key={i} className="bar-container">
-                          <div
-                            className={`bar ${i === engagementData.length - 1 ? "highlight" : ""}`}
-                            style={{ height: `${d.value}%` }}
-                          >
-                            {i === engagementData.length - 1 && (
-                              <div className="stars">✨</div>
-                            )}
-                          </div>
-                          <span className="bar-day">{d.day}</span>
+                      <div className="bar-container">
+                        <div
+                          className="bar highlight"
+                          style={{ height: `${chartHeight}%` }}
+                        >
+                          <div className="stars">👁</div>
                         </div>
-                      ))}
+                        <span className="bar-day">Vistas</span>
+                      </div>
                     </div>
                   </div>
 
@@ -206,12 +281,14 @@ export default function DashboardPage() {
                       <LayoutDashboard size={24} className="icon-purple" />
                     </div>
                     <div className="stat-value-group">
-                      <span className="card-label">TOTAL PROPOSALS</span>
-                      <h2 className="big-value">142</h2>
-                    </div>
-                    <div className="trend-footer">
-                      <span className="trend-plus">+8</span>
-                      <span>new this month</span>
+                      <span className="card-label">
+                        TOTAL PRESUPUESTOS ACEPTADOS
+                      </span>
+                      <h2 className="big-value">
+                        {acceptedProposalsCount !== null
+                          ? acceptedProposalsCount.toLocaleString("es-AR")
+                          : "--"}
+                      </h2>
                     </div>
                   </div>
 
@@ -298,7 +375,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           className="action-btn-main"
-                          onClick={handleCreateProposal}
+                          onClick={handleShowProposalsCreate}
                         >
                           <div className="action-icon">
                             <Plus size={20} />

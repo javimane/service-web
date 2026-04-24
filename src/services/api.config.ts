@@ -1,4 +1,5 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://api.localcomercial.dev";
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://api.localcomercial.dev";
 
 export const API_ENDPOINTS = {
   auth: {
@@ -9,15 +10,20 @@ export const API_ENDPOINTS = {
   },
   users: {
     favorites: `${API_BASE_URL}/api/users/me/favorites`,
-    favoriteDetail: (professionalId: string) => `${API_BASE_URL}/api/users/me/favorites/${professionalId}`,
+    favoriteDetail: (professionalId: string) =>
+      `${API_BASE_URL}/api/users/me/favorites/${professionalId}`,
     roles: `${API_BASE_URL}/api/users/roles`,
-    benefits: (userId: string) => `${API_BASE_URL}/api/users/${userId}/benefits`,
+    benefits: (userId: string) =>
+      `${API_BASE_URL}/api/users/${userId}/benefits`,
   },
   professionals: {
     list: `${API_BASE_URL}/api/professionals`,
-    categories: (professionalId: string) => `${API_BASE_URL}/api/professional-details/${professionalId}/categories`,
-    credentials: (professionalId: string) => `${API_BASE_URL}/api/professional-details/${professionalId}/credentials`,
-    schedules: (professionalId: string) => `${API_BASE_URL}/api/professional-details/${professionalId}/schedules`,
+    categories: (professionalId: string) =>
+      `${API_BASE_URL}/api/professional-details/${professionalId}/categories`,
+    credentials: (professionalId: string) =>
+      `${API_BASE_URL}/api/professional-details/${professionalId}/credentials`,
+    schedules: (professionalId: string) =>
+      `${API_BASE_URL}/api/professional-details/${professionalId}/schedules`,
     ranking: `${API_BASE_URL}/api/professional-ranking`,
   },
   proposals: {
@@ -25,7 +31,10 @@ export const API_ENDPOINTS = {
     sent: `${API_BASE_URL}/api/professional-proposals/sent`,
     received: `${API_BASE_URL}/api/professional-proposals/received`,
     detail: (id: string) => `${API_BASE_URL}/api/professional-proposals/${id}`,
-    accept: (id: string) => `${API_BASE_URL}/api/professional-proposals/${id}/accept`,
+    accept: (id: string) =>
+      `${API_BASE_URL}/api/professional-proposals/${id}/accept`,
+    count: (professionalId: string | number) =>
+      `${API_BASE_URL}/api/professional-proposals/accepted/count/${professionalId}`,
   },
   companies: {
     base: `${API_BASE_URL}/api/companies`,
@@ -43,17 +52,23 @@ export const API_ENDPOINTS = {
   locations: {
     addresses: `${API_BASE_URL}/api/addresses`,
     provinces: `${API_BASE_URL}/api/provinces`,
-    departments: (provinceId: string) => `${API_BASE_URL}/api/province-departments/province/${provinceId}`,
+    departments: (provinceId: string) =>
+      `${API_BASE_URL}/api/province-departments/province/${provinceId}`,
   },
   communications: {
     base: `${API_BASE_URL}/api/communications`,
-    userRequests: (userId: string) => `${API_BASE_URL}/api/communications/requests/user/${userId}`,
-    professionalRequests: (professionalId: string) => `${API_BASE_URL}/api/communications/requests/professional/${professionalId}`,
+    userRequests: (userId: string) =>
+      `${API_BASE_URL}/api/communications/requests/user/${userId}`,
+    professionalRequests: (professionalId: string) =>
+      `${API_BASE_URL}/api/communications/requests/professional/${professionalId}`,
   },
   payments: {
     mercadopagoWebhook: `${API_BASE_URL}/api/webhooks/mercadopago`,
   },
   multimedia: {
     uploadUrl: `${API_BASE_URL}/api/videos/upload-url`,
+  },
+  subscriptions: {
+    getPrice: `${API_BASE_URL}/api/subscription-price`,
   },
 };

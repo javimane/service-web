@@ -41,6 +41,8 @@ type DashboardSidebarProps = {
   onBankPromosClick?: () => void;
   onProfileClick?: () => void;
   onReelsClick?: () => void;
+  onProposalsCreate?: () => void;
+  onProposalsView?: () => void;
 };
 
 export default function DashboardSidebar({
@@ -59,15 +61,23 @@ export default function DashboardSidebar({
   onBankPromosClick,
   onProfileClick,
   onReelsClick,
+  onProposalsCreate,
+  onProposalsView,
 }: DashboardSidebarProps) {
   const navigate = useNavigate();
   const { logout, hasProfessionalSubscription } = useAuth();
-  const [promosOpen, setPromosOpen] = useState(
-    activeItem === "promotions-create" || activeItem === "promotions-all",
-  );
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
+    promotions: activeItem === "promotions-create" || activeItem === "promotions-all",
+    proposals: activeItem === "proposals-create" || activeItem === "proposals-view",
+  });
+
+  const toggleMenu = (key: string) => {
+    setExpandedMenus((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const alwaysEnabledItems = new Set([
     "proposals",
+    "proposals-view",
     "messages",
     "notifications",
     "subscription",
@@ -96,10 +106,6 @@ export default function DashboardSidebar({
     navigate(ROUTES.login);
   };
 
-  const openProposalCreator =
-    onCreateProposal ??
-    (() => navigate(ROUTES.dashboard, { state: { view: "create-proposal" } }));
-
   const navItems = [
     {
       key: "dashboard",
@@ -117,7 +123,19 @@ export default function DashboardSidebar({
       key: "proposals",
       label: "PROPOSALS",
       icon: FileText,
-      onClick: openProposalCreator,
+      expandable: true,
+      subItems: [
+        {
+          key: "proposals-create",
+          label: "Crear Presupuesto",
+          onClick: onProposalsCreate ?? (() => navigate(ROUTES.dashboard, { state: { view: "proposals-create" } })),
+        },
+        {
+          key: "proposals-view",
+          label: "Ver Presupuestos",
+          onClick: onProposalsView ?? (() => navigate(ROUTES.dashboard, { state: { view: "proposals-view" } })),
+        },
+      ],
     },
     {
       key: "promotions",
@@ -219,9 +237,6 @@ export default function DashboardSidebar({
     },
   ];
 
-  const isPromosActive =
-    activeItem === "promotions-create" || activeItem === "promotions-all";
-
   return (
     <aside
       className={`dashboard-sidebar ${isCollapsed ? "dashboard-sidebar--collapsed" : ""}`}
@@ -260,10 +275,17 @@ export default function DashboardSidebar({
               <div key={key} className="nav-group">
                 <button
                   type="button"
-                  className={`nav-item ${isPromosActive ? "active" : ""} ${isParentLocked ? "is-locked" : ""}`}
+                  className={`nav-item ${expandedMenus[key] || subItems?.some(s => s.key === activeItem) ? "active" : ""} ${isParentLocked ? "is-locked" : ""}`}
                   onClick={() => {
                     if (isParentLocked) return;
-                    setPromosOpen((v) => !v);
+                    if (isCollapsed && onToggle) {
+                      onToggle();
+                      if (!expandedMenus[key]) {
+                        toggleMenu(key);
+                      }
+                    } else {
+                      toggleMenu(key);
+                    }
                   }}
                   title={getLockedTitle(label, isParentLocked)}
                   disabled={isParentLocked}
@@ -272,31 +294,31 @@ export default function DashboardSidebar({
                   <span className="nav-label">{label}</span>
                   <ChevronDown
                     size={14}
-                    className={`nav-chevron ${promosOpen ? "nav-chevron--open" : ""}`}
+                    className={`nav-chevron ${expandedMenus[key] ? "nav-chevron--open" : ""}`}
                   />
                 </button>
-                {promosOpen && (
+                {!isCollapsed && expandedMenus[key] && subItems && (
                   <div className="nav-sub-items">
                     {subItems.map((sub) =>
                       (() => {
                         const isSubItemLocked = isItemLocked(sub.key);
 
                         return (
-                          <button
-                            key={sub.key}
-                            type="button"
-                            className={`nav-sub-item ${activeItem === sub.key ? "active" : ""} ${isSubItemLocked ? "is-locked" : ""}`}
-                            onClick={() => {
-                              if (isSubItemLocked) return;
-                              sub.onClick();
-                              setPromosOpen(false);
-                            }}
-                            title={getLockedTitle(sub.label, isSubItemLocked)}
-                            disabled={isSubItemLocked}
-                          >
-                            <span className="nav-sub-dot" />
-                            <span className="nav-sub-label">{sub.label}</span>
-                          </button>
+                           <button
+                             key={sub.key}
+                             type="button"
+                             className={`nav-sub-item ${activeItem === sub.key ? "active" : ""} ${isSubItemLocked ? "is-locked" : ""}`}
+                             onClick={() => {
+                               if (isSubItemLocked) return;
+                               sub.onClick();
+                               toggleMenu(key);
+                             }}
+                             title={getLockedTitle(sub.label, isSubItemLocked)}
+                             disabled={isSubItemLocked}
+                           >
+                             <span className="nav-sub-dot" />
+                             <span className="nav-sub-label">{sub.label}</span>
+                           </button>
                         );
                       })(),
                     )}
@@ -310,7 +332,7 @@ export default function DashboardSidebar({
                 className={`nav-item ${activeItem === key ? "active" : ""} ${isItemLocked(key) ? "is-locked" : ""}`}
                 onClick={() => {
                   if (isItemLocked(key)) return;
-                  setPromosOpen(false);
+                  // Optional: collapse all when clicking a direct item
                   onClick();
                 }}
                 title={getLockedTitle(label, isItemLocked(key))}
