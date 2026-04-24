@@ -22,7 +22,7 @@ export default function LoginPage({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const { refreshSession } = useAuth();
+  const { refreshSession, setSessionStatus } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
@@ -67,6 +67,10 @@ export default function LoginPage({
         email: formData.email,
         password: formData.password,
       });
+
+      if (response?.sessionStatus) {
+        setSessionStatus(response.sessionStatus);
+      }
 
       await refreshSession();
 

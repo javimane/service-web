@@ -2,13 +2,13 @@ import { apiClient } from "./apiClient";
 import { API_BASE_URL } from "./api.config";
 
 export const CATEGORIES_API_ENDPOINTS = {
-  listCategories: `${API_BASE_URL}/v1/categories`,
-  listProfiles: `${API_BASE_URL}/v1/profiles`,
-  profileDetail: (profileId: string) => `${API_BASE_URL}/v1/profiles/${profileId}`,
-  profilesByCategory: (categorySlug: string) => `${API_BASE_URL}/v1/categories/${categorySlug}/profiles`,
-  provinces: `${API_BASE_URL}/v1/locations/provinces`,
-  citiesByProvince: (province: string) => `${API_BASE_URL}/v1/locations/cities?province=${encodeURIComponent(province)}`,
-  featuredProfiles: (categorySlug: string) => `${API_BASE_URL}/v1/profiles/featured?category=${encodeURIComponent(categorySlug)}`,
+  listCategories: `${API_BASE_URL}/categories`,
+  listProfiles: `${API_BASE_URL}/profiles`,
+  profileDetail: (profileId: string) => `${API_BASE_URL}/profiles/${profileId}`,
+  profilesByCategory: (categorySlug: string) => `${API_BASE_URL}/categories/${categorySlug}/profiles`,
+  provinces: `${API_BASE_URL}/locations/provinces`,
+  citiesByProvince: (province: string) => `${API_BASE_URL}/locations/cities?province=${encodeURIComponent(province)}`,
+  featuredProfiles: (categorySlug: string) => `${API_BASE_URL}/profiles/featured?category=${encodeURIComponent(categorySlug)}`,
 };
 
 export const categoriesService = {

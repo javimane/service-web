@@ -61,10 +61,24 @@ export default function DashboardSidebar({
   onReelsClick,
 }: DashboardSidebarProps) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, hasProfessionalSubscription } = useAuth();
   const [promosOpen, setPromosOpen] = useState(
     activeItem === "promotions-create" || activeItem === "promotions-all",
   );
+
+  const alwaysEnabledItems = new Set([
+    "proposals",
+    "messages",
+    "notifications",
+    "subscription",
+    "settings",
+  ]);
+
+  const isItemLocked = (key: string) =>
+    !hasProfessionalSubscription && !alwaysEnabledItems.has(key);
+
+  const getLockedTitle = (label: string, isLocked: boolean) =>
+    isLocked ? `${label} · Requiere suscripción profesional activa` : label;
 
   const handleSupport = () => {
     if (typeof window !== "undefined") {
@@ -239,14 +253,20 @@ export default function DashboardSidebar({
 
       <nav className="sidebar-nav">
         {navItems.map(
-          ({ key, label, icon: Icon, onClick, expandable, subItems }) =>
-            expandable ? (
+          ({ key, label, icon: Icon, onClick, expandable, subItems }) => {
+            const isParentLocked = isItemLocked(key);
+
+            return expandable ? (
               <div key={key} className="nav-group">
                 <button
                   type="button"
-                  className={`nav-item ${isPromosActive ? "active" : ""}`}
-                  onClick={() => setPromosOpen((v) => !v)}
-                  title={label}
+                  className={`nav-item ${isPromosActive ? "active" : ""} ${isParentLocked ? "is-locked" : ""}`}
+                  onClick={() => {
+                    if (isParentLocked) return;
+                    setPromosOpen((v) => !v);
+                  }}
+                  title={getLockedTitle(label, isParentLocked)}
+                  disabled={isParentLocked}
                 >
                   <Icon size={20} />
                   <span className="nav-label">{label}</span>
@@ -257,21 +277,29 @@ export default function DashboardSidebar({
                 </button>
                 {promosOpen && (
                   <div className="nav-sub-items">
-                    {subItems.map((sub) => (
-                      <button
-                        key={sub.key}
-                        type="button"
-                        className={`nav-sub-item ${activeItem === sub.key ? "active" : ""}`}
-                        onClick={() => {
-                          sub.onClick();
-                          setPromosOpen(false);
-                        }}
-                        title={sub.label}
-                      >
-                        <span className="nav-sub-dot" />
-                        <span className="nav-sub-label">{sub.label}</span>
-                      </button>
-                    ))}
+                    {subItems.map((sub) =>
+                      (() => {
+                        const isSubItemLocked = isItemLocked(sub.key);
+
+                        return (
+                          <button
+                            key={sub.key}
+                            type="button"
+                            className={`nav-sub-item ${activeItem === sub.key ? "active" : ""} ${isSubItemLocked ? "is-locked" : ""}`}
+                            onClick={() => {
+                              if (isSubItemLocked) return;
+                              sub.onClick();
+                              setPromosOpen(false);
+                            }}
+                            title={getLockedTitle(sub.label, isSubItemLocked)}
+                            disabled={isSubItemLocked}
+                          >
+                            <span className="nav-sub-dot" />
+                            <span className="nav-sub-label">{sub.label}</span>
+                          </button>
+                        );
+                      })(),
+                    )}
                   </div>
                 )}
               </div>
@@ -279,17 +307,20 @@ export default function DashboardSidebar({
               <button
                 key={key}
                 type="button"
-                className={`nav-item ${activeItem === key ? "active" : ""}`}
+                className={`nav-item ${activeItem === key ? "active" : ""} ${isItemLocked(key) ? "is-locked" : ""}`}
                 onClick={() => {
+                  if (isItemLocked(key)) return;
                   setPromosOpen(false);
                   onClick();
                 }}
-                title={label}
+                title={getLockedTitle(label, isItemLocked(key))}
+                disabled={isItemLocked(key)}
               >
                 <Icon size={20} />
                 <span className="nav-label">{label}</span>
               </button>
-            ),
+            );
+          },
         )}
       </nav>
 

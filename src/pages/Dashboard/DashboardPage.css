@@ -131,6 +131,18 @@
   box-shadow: inset 4px 0 0 var(--accent-color);
 }
 
+.nav-item.is-locked,
+.nav-sub-item.is-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.nav-item.is-locked:hover,
+.nav-sub-item.is-locked:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
 /* Nav Expandable Group */
 .nav-group {
   display: flex;
@@ -363,6 +375,54 @@
   flex-direction: column;
   min-width: 0;
   padding: 12px 12px 12px 0;
+}
+
+.dashboard-main-panel {
+  position: relative;
+  width: 100%;
+}
+
+.dashboard-main-panel--locked .dashboard-content {
+  filter: blur(1px);
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+}
+
+.subscription-lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(12, 16, 28, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 30;
+}
+
+.subscription-lock-card {
+  max-width: 520px;
+  width: 100%;
+  background: color-mix(in srgb, var(--bg-card) 88%, #101820 12%);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.subscription-lock-card h3 {
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.subscription-lock-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 /* Dashboard Grid */

@@ -80,7 +80,7 @@ const notifications = [
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, hasProfessionalSubscription } = useAuth();
   const { openAuth } = useAuthModal();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -195,17 +195,21 @@ export default function Navbar() {
         </div>
 
         {/* Plans button */}
-        <button
-          className="navbar__plans-btn"
-          onClick={() => setIsPlansOpen(true)}
-        >
-          <Crown size={16} />
-          <span>Planes</span>
-        </button>
-        <PlansModal
-          isOpen={isPlansOpen}
-          onClose={() => setIsPlansOpen(false)}
-        />
+        {!hasProfessionalSubscription && (
+          <>
+            <button
+              className="navbar__plans-btn"
+              onClick={() => setIsPlansOpen(true)}
+            >
+              <Crown size={16} />
+              <span>Planes</span>
+            </button>
+            <PlansModal
+              isOpen={isPlansOpen}
+              onClose={() => setIsPlansOpen(false)}
+            />
+          </>
+        )}
 
         {/* Right side — authenticated */}
         {user ? (
