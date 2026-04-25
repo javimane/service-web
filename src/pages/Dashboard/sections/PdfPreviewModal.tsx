@@ -2,18 +2,21 @@ import { useRef, useState } from "react";
 import { Download, Share2, X } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import "./PdfPreviewModal.css";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { uploadProposalPdf } from "../../../services/storageUploads";
-
-// Cambia la ruta del logo si es necesario
-const LOGO_URL = "/logo.png";
+import logoImage from "../../../images/Logo sin nombre y fondo.png";
 
 export default function PdfPreviewModal({
   isOpen,
   onClose,
-  professional = { name: "Juan Pérez" },
+  professional = { name: "Profesional", email: "hola@sitioincreible.com.ar", phone: "(55)1234-5678", address: "Calle Cualquiera 123, Cualquier Lugar" },
+  items = [],
+  totals = { subtotal: 0, tax: 0, total: 0 },
+  client = { name: "", phone: "", address: "", email: "" },
+  proposalNumber = "01234"
 }) {
   const navigate = useNavigate();
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -24,48 +27,143 @@ export default function PdfPreviewModal({
   // Genera el PDF y lo muestra en un objeto URL
   const generatePdf = async () => {
     setLoading(true);
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    // Logo
     try {
-      const img = new window.Image();
-      img.src = LOGO_URL;
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // 1. Top Right: Factura & Date
+      doc.setFontSize(10);
+      doc.setTextColor("#000000");
+      doc.text("Presupuesto", pageWidth - 40, 50, { align: "right" });
+      
+      doc.setFontSize(12);
+      doc.setTextColor("#ff4d4f"); // Red color for number
+      doc.text(`N° ${proposalNumber}`, pageWidth - 40, 65, { align: "right" });
+
+      // Date box
+      const today = new Date();
+      const day = String(today.getDate()).padStart(2, '0');
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const year = String(today.getFullYear()).slice(-2);
+      
+      doc.setDrawColor("#000000");
+      doc.rect(pageWidth - 160, 80, 120, 20); // main box
+      doc.line(pageWidth - 110, 80, pageWidth - 110, 100);
+      doc.line(pageWidth - 85, 80, pageWidth - 85, 100);
+      doc.line(pageWidth - 60, 80, pageWidth - 60, 100);
+      doc.setTextColor("#000000");
+      doc.setFontSize(9);
+      doc.text("FECHA", pageWidth - 155, 93);
+      doc.text(day, pageWidth - 100, 93);
+      doc.text(month, pageWidth - 75, 93);
+      doc.text(year, pageWidth - 50, 93);
+
+      // 2. Logo
+      try {
+        const img = new window.Image();
+        img.src = logoImage;
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+        doc.addImage(img, "PNG", 40, 40, 120, 60);
+      } catch (err) {
+        // Fallback if logo fails
+        doc.setFontSize(24);
+        doc.text("Tu logo aquí", 40, 70);
+      }
+
+      // 3. Client details
+      doc.setFontSize(10);
+      doc.setTextColor("#000000");
+      const startY = 180;
+      doc.text(`Cliente:     ${client.name || ""}`, 40, startY);
+      doc.line(80, startY + 2, 260, startY + 2); // line for client
+
+      doc.text(`Teléfono:  ${client.phone || ""}`, 300, startY);
+      doc.line(345, startY + 2, pageWidth - 40, startY + 2);
+
+      doc.text(`Dirección: ${client.address || ""}`, 40, startY + 30);
+      doc.line(90, startY + 32, 260, startY + 32);
+
+      doc.text(`Correo:    ${client.email || ""}`, 300, startY + 30);
+      doc.line(340, startY + 32, pageWidth - 40, startY + 32);
+
+      // 4. Table
+      const tableStartY = startY + 60;
+      
+      const tableBody = items.length > 0 ? items.map((item: any) => [
+        item.qty?.toString() || "1",
+        item.name || "Servicio",
+        `$${(item.rate || 0).toLocaleString()}`,
+        `$${(item.total || 0).toLocaleString()}`
+      ]) : [];
+
+      while(tableBody.length < 12) {
+        tableBody.push(["", "", "", ""]);
+      }
+
+      autoTable(doc, {
+        startY: tableStartY,
+        head: [["Cantidad", "Producto", "Precio", "Total"]],
+        body: tableBody,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [255, 255, 255],
+          textColor: [0, 0, 0],
+          lineColor: [180, 180, 180],
+          lineWidth: 1,
+          halign: 'center',
+          fontStyle: 'bold'
+        },
+        bodyStyles: {
+          lineColor: [180, 180, 180],
+          lineWidth: 1,
+          minCellHeight: 25,
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 70 },
+          1: { halign: 'left' },
+          2: { halign: 'center', cellWidth: 80 },
+          3: { halign: 'center', cellWidth: 80 }
+        },
+        margin: { left: 40, right: 40 }
       });
-      doc.addImage(img, "PNG", pageWidth - 120, 30, 80, 40);
-    } catch {
-      // Si falla el logo, sigue sin él
+
+      // 5. Total Block
+      const finalY = (doc as any).lastAutoTable.finalY + 20;
+      
+      doc.setFillColor(255, 204, 204); // light pink
+      doc.rect(pageWidth - 180, finalY, 140, 25, 'F');
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor("#000000");
+      doc.text(`Total`, pageWidth - 170, finalY + 17);
+      doc.text(`$${totals.total.toLocaleString()}`, pageWidth - 100, finalY + 17);
+      
+      // 6. Footer (Red block)
+      doc.setFillColor(255, 77, 79); // strong red
+      doc.rect(0, pageHeight - 80, pageWidth, 80, 'F');
+      doc.setTextColor("#ffffff");
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      
+      // Icons text approximations (since images might not be loaded)
+      doc.text(`📍 ${professional.address || "Calle Cualquiera 123, Cualquier Lugar"}`, 40, pageHeight - 40);
+      doc.text(`✉ ${professional.email || "hola@sitioincreible.com.ar"}`, pageWidth / 2 - 50, pageHeight - 40);
+      doc.text(`📞 ${professional.phone || "(55)1234-5678"}`, pageWidth - 140, pageHeight - 40);
+
+      // Preview
+      const pdfBlob = doc.output("blob");
+      setPdfBlob(pdfBlob);
+      setPdfUrl(URL.createObjectURL(pdfBlob));
+      setUploadedPdfUrl(null);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    } finally {
+      setLoading(false);
     }
-    // Nombre profesional
-    doc.setFontSize(16);
-    doc.text(professional.name, 40, 50);
-    // Título
-    doc.setFontSize(28);
-    doc.text("Presupuesto", pageWidth / 2, 120, { align: "center" });
-    // Leyenda Sercio
-    doc.setFontSize(12);
-    doc.text("Presupuesto elaborado en Sercio", pageWidth / 2, 150, {
-      align: "center",
-    });
-    // Advertencia
-    doc.setFontSize(10);
-    doc.setTextColor("#b91c1c");
-    doc.text(
-      "Los precios expresados en este presupuesto pueden variar por día, los valores expresados son informativos y no tienen carácter de factura.",
-      pageWidth / 2,
-      180,
-      { align: "center", maxWidth: pageWidth - 80 },
-    );
-    doc.setTextColor("#000");
-    // Aquí podrías agregar más contenido del presupuesto...
-    // Preview
-    const pdfBlob = doc.output("blob");
-    setPdfBlob(pdfBlob);
-    setPdfUrl(URL.createObjectURL(pdfBlob));
-    setUploadedPdfUrl(null);
-    setLoading(false);
   };
 
   const ensurePdfUploaded = async () => {

@@ -240,6 +240,9 @@ export default function ProposalCreator({ onBack }) {
       <PdfPreviewModal 
         isOpen={isPreviewOpen} 
         onClose={() => setIsPreviewOpen(false)} 
+        items={items}
+        totals={{ subtotal, tax, total }}
+        client={{ name: clientSearch, phone: "", address: "", email: "" }}
       />
     </div>
   );

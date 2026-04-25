@@ -19,15 +19,6 @@ import { toJpeg } from "html-to-image";
 import { uploadPromotionImage } from "../../../services/storageUploads";
 import "./PromotionCreator.css";
 
-function generateCouponCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `PROMO-${code}`;
-}
-
 const DISCOUNT_TYPES = [
   { value: "percentage", label: "Porcentaje" },
   { value: "fixed", label: "Monto fijo" },
@@ -53,7 +44,6 @@ export default function PromotionCreator({ onBack, onViewAll }) {
     imagePreview: null,
   });
 
-  const [promoCode] = useState(generateCouponCode());
   const [isDragging, setIsDragging] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [errors, setErrors] = useState<any>({});
@@ -155,11 +145,9 @@ export default function PromotionCreator({ onBack, onViewAll }) {
       formData.append("discountType", form.discountType);
       formData.append("discountValue", String(form.discountValue));
       formData.append("applicableTo", form.applicableTo);
-      formData.append("code", promoCode);
       if (form.image) {
         const uploaded = await uploadPromotionImage({
           file: form.image,
-          entityId: promoCode,
           folder: "promotions",
           fileName: form.image.name,
         });
@@ -501,10 +489,6 @@ export default function PromotionCreator({ onBack, onViewAll }) {
           <section className="promo-card promo-card--code">
             <div className="promo-code-display">
               <Ticket size={16} />
-              <span className="promo-code-display__label">CÓDIGO:</span>
-              <code className="promo-code-display__value">
-                {promoCode.slice(0, 8).toUpperCase()}
-              </code>
             </div>
           </section>
         </div>
@@ -597,11 +581,6 @@ export default function PromotionCreator({ onBack, onViewAll }) {
                         {form.validTo || "2026-05-15"}
                       </span>
                     </div>
-                  </div>
-
-                  <div className="coupon-card__verify-box">
-                    <span className="verify-label">CÓDIGO DE VERIFICACIÓN</span>
-                    <span className="verify-code">{promoCode}</span>
                   </div>
 
                   <button
