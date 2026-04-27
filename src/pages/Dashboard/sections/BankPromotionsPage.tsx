@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Landmark,
@@ -9,15 +10,14 @@ import {
   Edit2,
   X,
   Save,
-  Wallet,
   Building2,
   Loader2,
   FileText,
+  AlertTriangle,
 } from "lucide-react";
 import {
   bankPromotionService,
   bankService,
-  Bank,
   BankPromotion,
 } from "../../../services/bankPromotionService";
 import "./BankPromotionsPage.css";
@@ -33,13 +33,77 @@ const DAYS_OF_WEEK = [
 ];
 
 export default function BankPromotionsPage() {
-  const [promos, setPromos] = useState<BankPromotion[]>([]);
-  const [banks, setBanks] = useState<Bank[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Mutaciones
+  const createMutation = useMutation({
+    mutationFn: bankPromotionService.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
+      handleCloseModal();
+    },
+    onError: (err: any) => {
+      setFormError(err.message || "Error al crear la promoción");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      bankPromotionService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
+      handleCloseModal();
+    },
+    onError: (err: any) => {
+      setFormError(err.message || "Error al actualizar la promoción");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: bankPromotionService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
+      setIsDeleteModalOpen(false);
+      setPromoToDelete(null);
+    },
+    onError: (err: any) => {
+      alert(err.message || "Error al eliminar la promoción");
+      setIsDeleteModalOpen(false);
+    },
+  });
+
+  const submitting = createMutation.isPending || updateMutation.isPending;
+  const deleting = deleteMutation.isPending;
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingPromo, setEditingPromo] = useState<BankPromotion | null>(null);
-  const [error, setError] = useState("");
+  const [promoToDelete, setPromoToDelete] = useState<string | null>(null);
+  const [formError, setFormError] = useState("");
+
+  const {
+    data: promos = [],
+    isLoading: promosLoading,
+    error: fetchPromosError,
+  } = useQuery({
+    queryKey: ["bank-promotions"],
+    queryFn: async () => {
+      const data = await bankPromotionService.getMyPromotions();
+      console.log("DEBUG: Promociones cargadas:", data);
+      return data;
+    },
+  });
+
+  const { data: banks = [], isLoading: banksLoading } = useQuery({
+    queryKey: ["banks"],
+    queryFn: async () => {
+      const data = await bankService.findAll();
+      console.log("DEBUG: Bancos cargados:", data);
+      return data;
+    },
+  });
+
+  const loading = promosLoading || banksLoading;
+  const error = fetchPromosError ? "No se pudieron cargar las promociones." : formError;
 
   const [form, setForm] = useState({
     percentaje_discount: 0,
@@ -59,27 +123,9 @@ export default function BankPromotionsPage() {
     description: "",
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [promosData, banksData] = await Promise.all([
-        bankPromotionService.getMyPromotions(),
-        bankService.findAll(),
-      ]);
-      console.log("DEBUG: Promociones cargadas:", promosData);
-      console.log("DEBUG: Bancos cargados:", banksData);
-      setPromos(promosData);
-      setBanks(banksData);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setError("No se pudieron cargar las promociones.");
-    } finally {
-      setLoading(false);
-    }
+    queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
+    queryClient.invalidateQueries({ queryKey: ["banks"] });
   };
 
   const handleOpenModal = (promo: BankPromotion | null = null) => {
@@ -121,14 +167,14 @@ export default function BankPromotionsPage() {
       });
     }
     if (error !== "No se pudieron cargar las promociones.") {
-      setError("");
+      setFormError("");
     }
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setError("");
+    setFormError("");
   };
 
   const handleDayToggle = (dayId: string) => {
@@ -140,15 +186,15 @@ export default function BankPromotionsPage() {
 
   const handleSave = async () => {
     if (!form.bank_id) {
-      setError("Debe seleccionar un banco.");
+      setFormError("Debe seleccionar un banco.");
       return;
     }
     if (form.percentaje_discount <= 0) {
-      setError("El porcentaje de descuento debe ser mayor a 0.");
+      setFormError("El porcentaje de descuento debe ser mayor a 0.");
       return;
     }
     if (form.refund < 0) {
-      setError("El tope de reintegro no puede ser negativo.");
+      setFormError("El tope de reintegro no puede ser negativo.");
       return;
     }
     const hasDays = [
@@ -161,38 +207,33 @@ export default function BankPromotionsPage() {
       form.sunday,
     ].some((d) => d);
     if (!hasDays) {
-      setError("Debe seleccionar al menos un día de aplicación.");
+      setFormError("Debe seleccionar al menos un día de aplicación.");
       return;
     }
 
-    setSubmitting(true);
-    setError("");
-    try {
-      if (editingPromo) {
-        await bankPromotionService.update(editingPromo.id, form);
-      } else {
-        await bankPromotionService.create(form);
-      }
-      await fetchData();
-      setIsModalOpen(false);
-    } catch (err: any) {
-      setError(err.message || "Error al guardar la promoción.");
-    } finally {
-      setSubmitting(false);
+    setFormError("");
+
+    if (editingPromo) {
+      updateMutation.mutate({ id: editingPromo.id, data: form });
+    } else {
+      createMutation.mutate(form);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("¿Está seguro de que desea eliminar esta promoción?")) {
-      return;
+  const handleDelete = (id: string) => {
+    setPromoToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (promoToDelete) {
+      deleteMutation.mutate(promoToDelete);
     }
-    try {
-      await bankPromotionService.delete(id);
-      setPromos((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error("Error deleting promotion:", err);
-      alert("No se pudo eliminar la promoción.");
-    }
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setPromoToDelete(null);
   };
 
   const getActiveDays = (promo: BankPromotion) => {
@@ -510,6 +551,45 @@ export default function BankPromotionsPage() {
                   <Save size={16} />
                 )}
                 {editingPromo ? "Guardar Cambios" : "Crear Promoción"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isDeleteModalOpen && (
+        <div className="bank-promo-modal-overlay">
+          <div className="bank-promo-modal bank-promo-modal--confirm">
+            <div className="bank-promo-modal__confirm-icon">
+              <AlertTriangle size={48} />
+            </div>
+            <div className="bank-promo-modal__confirm-content">
+              <h2>¿Eliminar promoción?</h2>
+              <p>
+                Esta acción no se puede deshacer. La promoción dejará de estar
+                disponible para los clientes.
+              </p>
+            </div>
+            <div className="bank-promo-modal__footer">
+              <button
+                type="button"
+                className="bank-promo-btn"
+                onClick={closeDeleteModal}
+                disabled={deleting}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="bank-promo-btn bank-promo-btn--danger"
+                onClick={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <Trash2 size={16} />
+                )}
+                Eliminar Ahora
               </button>
             </div>
           </div>
