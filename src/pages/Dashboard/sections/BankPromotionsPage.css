@@ -4,6 +4,19 @@
   gap: 24px;
   animation: fade-in 0.3s ease-out;
 }
+.bank-promos__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 400px;
+  color: var(--obsidian-text-muted);
+}
+.bank-promos__loading p {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
 
 .bank-promos__header {
   display: flex;
@@ -387,6 +400,11 @@
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 16px;
+}
+
+.bank-promo-field input[type="date"] {
+  padding-right: 12px;
+  background-image: none;
 }
 
 .bank-promo-field input:focus,

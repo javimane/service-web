@@ -20,6 +20,7 @@
     "@schedule-x/react": "^4.1.0",
     "@schedule-x/theme-default": "^4.5.0",
     "@supabase/supabase-js": "^2.102.1",
+    "axios": "^1.15.2",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",

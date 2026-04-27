@@ -1,29 +1,69 @@
-export async function apiClient<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const headers = new Headers(options.headers || {});
-  
-  // Set default content type to JSON if not uploading a file (FormData)
-  if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
+import axios, { InternalAxiosRequestConfig } from "axios";
+
+// Create axios instance
+const axiosInstance = axios.create({
+  withCredentials: true,
+});
+
+// Request interceptor to add token
+axiosInstance.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem("access_token");
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle errors and automatically save tokens
+axiosInstance.interceptors.response.use(
+  (response) => {
+    // Automatically save token if present in response (standard Supabase/API structure)
+    const session = response.data?.data?.session || response.data?.session;
+    if (session?.access_token) {
+      localStorage.setItem("access_token", session.access_token);
+    }
+    if (session?.refresh_token) {
+      localStorage.setItem("refresh_token", session.refresh_token);
+    }
+    return response;
+  },
+  (error) => {
+    const message = error.response?.data?.message || error.message || "Error de red";
+    return Promise.reject(new Error(message));
+  }
+);
+
+/**
+ * Compatible wrapper for the previous fetch-based apiClient
+ * This allows keeping existing services without major changes
+ */
+export async function apiClient<T>(url: string, options: any = {}): Promise<T> {
+  const { method = "GET", body, headers, ...rest } = options;
+
+  let data = body;
+  // If body is a JSON string (as used in previous fetch-based implementation), parse it
+  if (typeof body === "string") {
+    try {
+      data = JSON.parse(body);
+    } catch (e) {
+      // Not a JSON string or already an object (axios handles both)
+    }
   }
 
-  // Include credentials (cookies) for all requests by default
-  const fetchOptions: RequestInit = {
-    ...options,
+  const response = await axiosInstance({
+    url,
+    method,
+    data,
     headers,
-    credentials: options.credentials || "include",
-  };
+    ...rest,
+  });
 
-  const response = await fetch(url, fetchOptions);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`);
-  }
-
-  // Handle empty responses
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return response.json();
+  return response.data;
 }
+
+export default axiosInstance;
