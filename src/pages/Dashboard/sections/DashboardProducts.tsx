@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -17,8 +18,9 @@ import {
   Link as LinkIcon,
   Barcode,
   Info,
+  Loader2,
 } from "lucide-react";
-import { products as initialProducts } from "../../../data/products";
+import { useAuth } from "../../../context/AuthContext";
 import { productService } from "../../../services/productService";
 import { uploadProductImage } from "../../../services/storageUploads";
 import "./DashboardProducts.css";
@@ -33,8 +35,13 @@ const formatPrice = (n: number) =>
 type ProductItem = (typeof initialProducts)[number];
 
 export default function DashboardProducts() {
-  const [productsList, setProductsList] =
-    useState<ProductItem[]>(initialProducts);
+  const queryClient = useQueryClient();
+  const { sessionStatus } = useAuth();
+  
+  const professionalId =
+    sessionStatus?.subscription?.professional_id ??
+    sessionStatus?.professional_id;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState("title");
   const [sortDir, setSortDir] = useState("asc");
@@ -76,6 +83,87 @@ export default function DashboardProducts() {
   } | null>(null);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState("");
+
+  // Queries & Mutations
+  const { data: productsData = [], isLoading: loadingProducts } = useQuery({
+    queryKey: ["professional-products", professionalId],
+    queryFn: () => productService.getByProfessional(professionalId),
+    enabled: !!professionalId,
+  });
+
+  // Map API data to component structure
+  const productsList = useMemo(() => {
+    return productsData.map((item: any) => ({
+      id: item.product_id,
+      title: item.product?.name || "Sin nombre",
+      price: item.price,
+      originalPrice: item.price, // Or some logic if you have discounts
+      category: item.product?.CategoryProduct?.name || "General",
+      stock: item.stock || 0,
+      image: item.product?.image_url || "",
+      description: item.product?.description || "",
+      ean: item.product?.ean || "",
+      sale_type: item.sale_type,
+      is_active: item.is_active,
+    }));
+  }, [productsData]);
+
+  const createMutation = useMutation({
+    mutationFn: productService.create,
+    onSuccess: (newProduct) => {
+      // After creating the product, assign it to the professional
+      assignMutation.mutate({
+        professional_id: professionalId,
+        product_id: String(newProduct.id),
+        price: Number(formPrice),
+        sale_type: "unit",
+        stock: Number(formStock),
+        is_active: true,
+      });
+    },
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: productService.assignToProfessional,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-products"] });
+      resetAddModal();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ productId, data }: { productId: string; data: any }) =>
+      productService.updateProfessionalProduct(professionalId, productId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-products"] });
+      resetEditModal();
+    },
+  });
+
+  const unassignMutation = useMutation({
+    mutationFn: (productId: string) =>
+      productService.unassignFromProfessional(productId, professionalId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-products"] });
+    },
+  });
+
+  const massUpdateMutation = useMutation({
+    mutationFn: productService.massUpdatePrice,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-products"] });
+      setBulkApplied(true);
+      setTimeout(() => {
+        setBulkApplied(false);
+        setBulkOpen(false);
+        setBulkValue("");
+      }, 1200);
+    },
+  });
+
+  // Modal helper states for values not in the "newProduct" object
+  const [formPrice, setFormPrice] = useState("");
+  const [formStock, setFormStock] = useState("");
 
   // EAN duplicate flow
   const [eanLoading, setEanLoading] = useState(false);
@@ -131,25 +219,12 @@ export default function DashboardProducts() {
     const val = parseFloat(bulkValue);
     if (isNaN(val) || val <= 0) return;
 
-    setProductsList((prev) =>
-      prev.map((p) => {
-        let newPrice = p.price;
-        if (bulkMode === "percent") {
-          const delta = p.price * (val / 100);
-          newPrice =
-            bulkAction === "increase" ? p.price + delta : p.price - delta;
-        } else {
-          newPrice = bulkAction === "increase" ? p.price + val : p.price - val;
-        }
-        return { ...p, price: Math.max(0, Math.round(newPrice)) };
-      }),
-    );
-    setBulkApplied(true);
-    setTimeout(() => {
-      setBulkApplied(false);
-      setBulkOpen(false);
-      setBulkValue("");
-    }, 1200);
+    massUpdateMutation.mutate({
+      professionalId,
+      type: bulkMode as any,
+      value: val,
+      operation: bulkAction === "increase" ? "add" : "subtract",
+    });
   };
 
   // Image file handler
@@ -175,17 +250,26 @@ export default function DashboardProducts() {
     setEanLoading(true);
     setEanMatch(null);
     try {
-      // Assuming the API supports filtering by ean or we find it in the list
-      const data = await productService.list();
-      const match = data.find((p: any) => p.ean === ean);
+      // Use the search by name/ean endpoint instead of fetching the whole list
+      const matches = await productService.getByName(ean);
+      const match = matches.find((p: any) => p.ean === ean);
 
       if (match) {
-        setEanMatch(match);
-        setEanPriceMode("same");
+        setEanMatch({
+          id: match.id,
+          title: match.name,
+          price: 0,
+          image: match.image_url,
+          category: match.CategoryProduct?.name,
+        });
+        setEanPriceMode("custom");
         setEanCustomPrice("");
+      } else {
+        // If no EAN match, maybe it's a new product
+        setEanMatch(null);
       }
-    } catch {
-      // silently fail — product not found
+    } catch (error) {
+      console.error("Error checking EAN:", error);
     }
     setEanLoading(false);
   };
@@ -193,21 +277,16 @@ export default function DashboardProducts() {
   // Add existing product from EAN match
   const handleAddFromEan = () => {
     if (!eanMatch) return;
-    const id = Math.max(...productsList.map((p) => p.id), 0) + 1;
-    const finalPrice =
-      eanPriceMode === "custom" && eanCustomPrice
-        ? parseInt(eanCustomPrice, 10)
-        : eanMatch.price;
-    setProductsList((prev) => [
-      ...prev,
-      {
-        ...eanMatch,
-        id,
-        price: finalPrice,
-        originalPrice: eanMatch.price,
-      },
-    ]);
-    resetAddModal();
+    const finalPrice = Number(eanCustomPrice) || 0;
+    
+    assignMutation.mutate({
+      professional_id: professionalId,
+      product_id: String(eanMatch.id),
+      price: finalPrice,
+      sale_type: "unit",
+      is_active: true,
+      stock: 0
+    });
   };
 
   // Reset add modal state
@@ -222,6 +301,8 @@ export default function DashboardProducts() {
       ean: "",
       webUrl: "",
     });
+    setFormPrice("");
+    setFormStock("");
     setImageFile(null);
     setImagePreview("");
     setEanMatch(null);
@@ -232,7 +313,7 @@ export default function DashboardProducts() {
 
   // Add product
   const handleAddProduct = async () => {
-    if (!newProduct.title.trim() || !newProduct.price) return;
+    if (!newProduct.title.trim() || !formPrice) return;
 
     let uploadedProductImageUrl = imagePreview || newProduct.image || "";
     if (imageFile) {
@@ -245,34 +326,18 @@ export default function DashboardProducts() {
       uploadedProductImageUrl = uploaded.publicUrl;
     }
 
-    const id = Math.max(...productsList.map((p) => p.id), 0) + 1;
-    setProductsList((prev) => [
-      ...prev,
-      {
-        id,
-        title: newProduct.title,
-        price: parseInt(newProduct.price, 10) || 0,
-        originalPrice: parseInt(newProduct.price, 10) || 0,
-        discount: 0,
-        rating: 0,
-        reviews: 0,
-        freeShipping: false,
-        seller: "Mi Tienda",
-        category: newProduct.category || "General",
-        condition: "Nuevo",
-        stock: parseInt(newProduct.stock, 10) || 0,
-        image: uploadedProductImageUrl,
-        mercadoLibreUrl: newProduct.webUrl || "",
-        description: newProduct.description || "",
-        features: [],
-        ean: newProduct.ean || "",
-      },
-    ]);
-    resetAddModal();
+    createMutation.mutate({
+      ean: newProduct.ean,
+      name: newProduct.title,
+      description: newProduct.description,
+      brand: "",
+      image_url: uploadedProductImageUrl,
+      categories_products_id: undefined // Backend should handle if null
+    });
   };
 
   // Open edit modal
-  const openEditModal = (product: ProductItem) => {
+  const openEditModal = (product: any) => {
     setEditProduct({
       id: product.id,
       title: product.title,
@@ -281,8 +346,8 @@ export default function DashboardProducts() {
       stock: String(product.stock || 0),
       image: product.image || "",
       description: product.description || "",
-      ean: (product as any).ean || "",
-      webUrl: (product as any).mercadoLibreUrl || "",
+      ean: product.ean || "",
+      webUrl: "",
     });
     setEditImagePreview(product.image || "");
     setEditImageFile(null);
@@ -312,35 +377,13 @@ export default function DashboardProducts() {
   const handleEditProduct = async () => {
     if (!editProduct || !editProduct.title.trim() || !editProduct.price) return;
 
-    let uploadedProductImageUrl = editImagePreview || editProduct.image || "";
-    if (editImageFile) {
-      const uploaded = await uploadProductImage({
-        file: editImageFile,
-        entityId: editProduct.ean || editProduct.title,
-        folder: "products",
-        fileName: editImageFile.name,
-      });
-      uploadedProductImageUrl = uploaded.publicUrl;
-    }
-
-    setProductsList((prev) =>
-      prev.map((p) =>
-        p.id === editProduct.id
-          ? {
-              ...p,
-              title: editProduct.title,
-              price: parseInt(editProduct.price, 10) || 0,
-              category: editProduct.category || p.category,
-              stock: parseInt(editProduct.stock, 10) || 0,
-              image: uploadedProductImageUrl,
-              description: editProduct.description || "",
-              mercadoLibreUrl: editProduct.webUrl || "",
-              ean: editProduct.ean || "",
-            }
-          : p,
-      ),
-    );
-    resetEditModal();
+    updateMutation.mutate({
+      productId: String(editProduct.id),
+      data: {
+        price: Number(editProduct.price),
+        stock: Number(editProduct.stock),
+      }
+    });
   };
 
   const resetEditModal = () => {
@@ -350,9 +393,11 @@ export default function DashboardProducts() {
     setEditOpen(false);
   };
 
-  // Delete product
-  const handleDelete = (id) => {
-    setProductsList((prev) => prev.filter((p) => p.id !== id));
+  // Delete product (Unassign)
+  const handleDelete = (id: string | number) => {
+    if (window.confirm("¿Estás seguro de que quieres quitar este producto de tu catálogo?")) {
+      unassignMutation.mutate(String(id));
+    }
   };
 
   return (
@@ -421,116 +466,113 @@ export default function DashboardProducts() {
 
       {/* Product list table */}
       <div className="dash-products__table-wrap">
-        <table className="dash-products__table">
-          <thead>
-            <tr>
-              <th className="dash-products__th-img"></th>
-              <th
-                onClick={() => toggleSort("title")}
-                className="dash-products__th-sort"
-              >
-                Producto <SortIcon field="title" />
-              </th>
-              <th
-                onClick={() => toggleSort("category")}
-                className="dash-products__th-sort"
-              >
-                Categoría <SortIcon field="category" />
-              </th>
-              <th
-                onClick={() => toggleSort("price")}
-                className="dash-products__th-sort dash-products__th-right"
-              >
-                Precio <SortIcon field="price" />
-              </th>
-              <th
-                onClick={() => toggleSort("stock")}
-                className="dash-products__th-sort dash-products__th-right"
-              >
-                Stock <SortIcon field="stock" />
-              </th>
-              <th className="dash-products__th-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((product) => (
-              <tr key={product.id} className="dash-products__row">
-                <td className="dash-products__cell-img">
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt=""
-                      className="dash-products__thumb"
-                    />
-                  ) : (
-                    <div className="dash-products__thumb-placeholder">
-                      <ImageIcon size={16} />
-                    </div>
-                  )}
-                </td>
-                <td>
-                  <span className="dash-products__product-name">
-                    {product.title}
-                  </span>
-                  {product.seller && (
-                    <span className="dash-products__product-seller">
-                      {product.seller}
-                    </span>
-                  )}
-                </td>
-                <td>
-                  <span className="dash-products__badge">
-                    {product.category}
-                  </span>
-                </td>
-                <td className="dash-products__cell-right">
-                  <span className="dash-products__price">
-                    {formatPrice(product.price)}
-                  </span>
-                  {product.originalPrice > product.price && (
-                    <span className="dash-products__price-original">
-                      {formatPrice(product.originalPrice)}
-                    </span>
-                  )}
-                </td>
-                <td className="dash-products__cell-right">
-                  <span
-                    className={`dash-products__stock ${product.stock <= 10 ? "dash-products__stock--low" : ""}`}
-                  >
-                    {product.stock}
-                  </span>
-                </td>
-                <td className="dash-products__cell-right">
-                  <div className="dash-products__actions">
-                    <button
-                      className="dash-products__action-btn"
-                      aria-label="Editar"
-                      title="Editar"
-                      onClick={() => openEditModal(product)}
-                    >
-                      <Edit3 size={15} />
-                    </button>
-                    <button
-                      className="dash-products__action-btn dash-products__action-btn--danger"
-                      aria-label="Eliminar"
-                      title="Eliminar"
-                      onClick={() => handleDelete(product.id)}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
+        {loadingProducts ? (
+          <div className="dash-products__loading-state">
+            <Loader2 className="animate-spin" size={32} />
+            <p>Cargando catálogo...</p>
+          </div>
+        ) : (
+          <table className="dash-products__table">
+            <thead>
               <tr>
-                <td colSpan={6} className="dash-products__empty">
-                  No se encontraron productos
-                </td>
+                <th className="dash-products__th-img"></th>
+                <th
+                  onClick={() => toggleSort("title")}
+                  className="dash-products__th-sort"
+                >
+                  Producto <SortIcon field="title" />
+                </th>
+                <th
+                  onClick={() => toggleSort("category")}
+                  className="dash-products__th-sort"
+                >
+                  Categoría <SortIcon field="category" />
+                </th>
+                <th
+                  onClick={() => toggleSort("price")}
+                  className="dash-products__th-sort dash-products__th-right"
+                >
+                  Precio <SortIcon field="price" />
+                </th>
+                <th
+                  onClick={() => toggleSort("stock")}
+                  className="dash-products__th-sort dash-products__th-right"
+                >
+                  Stock <SortIcon field="stock" />
+                </th>
+                <th className="dash-products__th-right">Acciones</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((product) => (
+                <tr key={product.id} className="dash-products__row">
+                  <td className="dash-products__cell-img">
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        alt=""
+                        className="dash-products__thumb"
+                      />
+                    ) : (
+                      <div className="dash-products__thumb-placeholder">
+                        <ImageIcon size={16} />
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <span className="dash-products__product-name">
+                      {product.title}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="dash-products__badge">
+                      {product.category}
+                    </span>
+                  </td>
+                  <td className="dash-products__cell-right">
+                    <span className="dash-products__price">
+                      {formatPrice(product.price)}
+                    </span>
+                  </td>
+                  <td className="dash-products__cell-right">
+                    <span
+                      className={`dash-products__stock ${product.stock <= 10 ? "dash-products__stock--low" : ""}`}
+                    >
+                      {product.stock}
+                    </span>
+                  </td>
+                  <td className="dash-products__cell-right">
+                    <div className="dash-products__actions">
+                      <button
+                        className="dash-products__action-btn"
+                        aria-label="Editar"
+                        title="Editar"
+                        onClick={() => openEditModal(product)}
+                      >
+                        <Edit3 size={15} />
+                      </button>
+                      <button
+                        className="dash-products__action-btn dash-products__action-btn--danger"
+                        aria-label="Quitar de mi lista"
+                        title="Quitar de mi lista"
+                        onClick={() => handleDelete(product.id)}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="dash-products__empty">
+                    No se encontraron productos en tu catálogo
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* ===== Bulk Price Modal ===== */}
@@ -803,10 +845,8 @@ export default function DashboardProducts() {
                       type="number"
                       min="0"
                       placeholder="0"
-                      value={newProduct.price}
-                      onChange={(e) =>
-                        setNewProduct({ ...newProduct, price: e.target.value })
-                      }
+                      value={formPrice}
+                      onChange={(e) => setFormPrice(e.target.value)}
                     />
                   </div>
 
@@ -831,10 +871,8 @@ export default function DashboardProducts() {
                       type="number"
                       min="0"
                       placeholder="0"
-                      value={newProduct.stock}
-                      onChange={(e) =>
-                        setNewProduct({ ...newProduct, stock: e.target.value })
-                      }
+                      value={formStock}
+                      onChange={(e) => setFormStock(e.target.value)}
                     />
                   </div>
 

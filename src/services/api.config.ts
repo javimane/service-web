@@ -43,6 +43,20 @@ export const API_ENDPOINTS = {
   products: {
     list: `${API_BASE_URL}/api/products`,
     detail: (id: string) => `${API_BASE_URL}/api/products/${id}`,
+    byName: (name: string) => `${API_BASE_URL}/api/products/name/${name}`,
+    byCategory: (categoryId: number) =>
+      `${API_BASE_URL}/api/products/category/${categoryId}`,
+    byProfessional: (professionalId: number) =>
+      `${API_BASE_URL}/api/products/professional/${professionalId}`,
+    onlyProductsByProfessional: (professionalId: number) =>
+      `${API_BASE_URL}/api/products/professional/${professionalId}/only-products`,
+    updateProfessionalProduct: (professionalId: number, productId: string) =>
+      `${API_BASE_URL}/api/products/professional/${professionalId}/product/${productId}`,
+    updatePrices: `${API_BASE_URL}/api/products/update-prices`,
+    massUpdatePrices: `${API_BASE_URL}/api/products/mass-update-prices`,
+    assignProfessional: `${API_BASE_URL}/api/products/assign-professional`,
+    unassignProfessional: (productId: string, professionalId: number) =>
+      `${API_BASE_URL}/api/products/${productId}/professional/${professionalId}`,
   },
   services: {
     list: `${API_BASE_URL}/api/services`,
