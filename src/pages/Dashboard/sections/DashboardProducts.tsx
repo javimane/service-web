@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { productService } from "../../../services/productService";
+import { categoriesProductService } from "../../../services/categoriesProduct";
 import { uploadProductImage } from "../../../services/storageUploads";
 import "./DashboardProducts.css";
 
@@ -56,9 +57,10 @@ export default function DashboardProducts() {
   // Add product modal
   const [addOpen, setAddOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
-    title: "",
+    name: "",
+    brand: "",
     price: "",
-    category: "",
+    categoryId: "",
     stock: "",
     image: "",
     description: "",
@@ -72,9 +74,10 @@ export default function DashboardProducts() {
   const [editOpen, setEditOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<{
     id: number;
-    title: string;
+    name: string;
+    brand: string;
     price: string;
-    category: string;
+    categoryId: string;
     stock: string;
     image: string;
     description: string;
@@ -91,13 +94,19 @@ export default function DashboardProducts() {
     enabled: !!professionalId,
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories-products"],
+    queryFn: categoriesProductService.listCategoriesProducts,
+  });
+
   // Map API data to component structure
   const productsList = useMemo(() => {
     return productsData.map((item: any) => ({
       id: item.product_id,
-      title: item.product?.name || "Sin nombre",
+      name: item.product?.name || "Sin nombre",
       price: item.price,
       originalPrice: item.price, // Or some logic if you have discounts
+      brand: item.product?.brand || "",
       category: item.product?.CategoryProduct?.name || "General",
       stock: item.stock || 0,
       image: item.product?.image_url || "",
@@ -192,7 +201,7 @@ export default function DashboardProducts() {
 
   const filtered = useMemo(() => {
     let list = productsList.filter((p) =>
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()),
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
     list.sort((a, b) => {
       let valA = a[sortField];
@@ -250,9 +259,8 @@ export default function DashboardProducts() {
     setEanLoading(true);
     setEanMatch(null);
     try {
-      // Use the search by name/ean endpoint instead of fetching the whole list
-      const matches = await productService.getByName(ean);
-      const match = matches.find((p: any) => p.ean === ean);
+      const response = await productService.list({ ean });
+      const match = response.data.find((p: any) => p.ean === ean);
 
       if (match) {
         setEanMatch({
@@ -265,11 +273,34 @@ export default function DashboardProducts() {
         setEanPriceMode("custom");
         setEanCustomPrice("");
       } else {
-        // If no EAN match, maybe it's a new product
         setEanMatch(null);
       }
     } catch (error) {
       console.error("Error checking EAN:", error);
+    }
+    setEanLoading(false);
+  };
+
+  const handleEditCheckEan = async () => {
+    if (!editProduct?.ean.trim()) return;
+    setEanLoading(true);
+    try {
+      const response = await productService.list({ ean: editProduct.ean.trim() });
+      const match = response.data[0];
+
+      if (match) {
+        setEditProduct({
+          ...editProduct,
+          name: match.name || editProduct.name,
+          brand: match.brand || editProduct.brand,
+          categoryId: match.categories_products_id ? String(match.categories_products_id) : editProduct.categoryId,
+          image: match.image_url || editProduct.image,
+          description: match.description || editProduct.description,
+        });
+        if (match.image_url) setEditImagePreview(match.image_url);
+      }
+    } catch (error) {
+      console.error("Error checking EAN in edit:", error);
     }
     setEanLoading(false);
   };
@@ -292,9 +323,10 @@ export default function DashboardProducts() {
   // Reset add modal state
   const resetAddModal = () => {
     setNewProduct({
-      title: "",
+      name: "",
+      brand: "",
       price: "",
-      category: "",
+      categoryId: "",
       stock: "",
       image: "",
       description: "",
@@ -313,13 +345,13 @@ export default function DashboardProducts() {
 
   // Add product
   const handleAddProduct = async () => {
-    if (!newProduct.title.trim() || !formPrice) return;
+    if (!newProduct.name.trim() || !formPrice) return;
 
     let uploadedProductImageUrl = imagePreview || newProduct.image || "";
     if (imageFile) {
       const uploaded = await uploadProductImage({
         file: imageFile,
-        entityId: newProduct.ean || newProduct.title,
+        entityId: newProduct.ean || newProduct.name,
         folder: "products",
         fileName: imageFile.name,
       });
@@ -328,21 +360,25 @@ export default function DashboardProducts() {
 
     createMutation.mutate({
       ean: newProduct.ean,
-      name: newProduct.title,
+      name: newProduct.name,
       description: newProduct.description,
-      brand: "",
+      brand: newProduct.brand,
       image_url: uploadedProductImageUrl,
-      categories_products_id: undefined // Backend should handle if null
+      categories_products_id: newProduct.categoryId ? Number(newProduct.categoryId) : undefined
     });
   };
 
   // Open edit modal
   const openEditModal = (product: any) => {
+    // Find category ID from category name if possible, or adjust based on API response
+    const categoryMatch = categories.find(c => c.name === product.category);
+    
     setEditProduct({
       id: product.id,
-      title: product.title,
+      name: product.name,
+      brand: product.brand || "",
       price: String(product.price),
-      category: product.category || "",
+      categoryId: categoryMatch ? String(categoryMatch.id) : "",
       stock: String(product.stock || 0),
       image: product.image || "",
       description: product.description || "",
@@ -375,7 +411,7 @@ export default function DashboardProducts() {
 
   // Save edited product
   const handleEditProduct = async () => {
-    if (!editProduct || !editProduct.title.trim() || !editProduct.price) return;
+    if (!editProduct || !editProduct.name.trim() || !editProduct.price) return;
 
     updateMutation.mutate({
       productId: String(editProduct.id),
@@ -521,7 +557,7 @@ export default function DashboardProducts() {
                   </td>
                   <td>
                     <span className="dash-products__product-name">
-                      {product.title}
+                      {product.name}
                     </span>
                   </td>
                   <td>
@@ -832,9 +868,21 @@ export default function DashboardProducts() {
                     <input
                       type="text"
                       placeholder="Ej: Taladro Bosch 550W"
-                      value={newProduct.title}
+                      value={newProduct.name}
                       onChange={(e) =>
-                        setNewProduct({ ...newProduct, title: e.target.value })
+                        setNewProduct({ ...newProduct, name: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="dash-products__modal-field">
+                    <label>Marca</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Bosch, Samsung..."
+                      value={newProduct.brand}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, brand: e.target.value })
                       }
                     />
                   </div>
@@ -852,17 +900,23 @@ export default function DashboardProducts() {
 
                   <div className="dash-products__modal-field">
                     <label>Categoría</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Herramientas"
-                      value={newProduct.category}
+                    <select
+                      value={newProduct.categoryId}
                       onChange={(e) =>
                         setNewProduct({
                           ...newProduct,
-                          category: e.target.value,
+                          categoryId: e.target.value,
                         })
                       }
-                    />
+                      className="dash-products__modal-select"
+                    >
+                      <option value="">Seleccionar categoría</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="dash-products__modal-field">
@@ -951,7 +1005,16 @@ export default function DashboardProducts() {
                   <button
                     className="dash-products__modal-apply"
                     onClick={handleAddProduct}
-                    disabled={!newProduct.title.trim() || !newProduct.price}
+                    disabled={
+                      !newProduct.name.trim() ||
+                      !newProduct.brand.trim() ||
+                      !newProduct.ean.trim() ||
+                      !newProduct.categoryId ||
+                      !formPrice ||
+                      !formStock ||
+                      !newProduct.description.trim() ||
+                      (!imageFile && !imagePreview)
+                    }
                   >
                     Agregar Producto
                   </button>
@@ -985,9 +1048,21 @@ export default function DashboardProducts() {
                 <input
                   type="text"
                   placeholder="Ej: Taladro Bosch 550W"
-                  value={editProduct.title}
+                  value={editProduct.name}
                   onChange={(e) =>
-                    setEditProduct({ ...editProduct, title: e.target.value })
+                    setEditProduct({ ...editProduct, name: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="dash-products__modal-field">
+                <label>Marca</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Bosch, Samsung..."
+                  value={editProduct.brand}
+                  onChange={(e) =>
+                    setEditProduct({ ...editProduct, brand: e.target.value })
                   }
                 />
               </div>
@@ -1007,17 +1082,23 @@ export default function DashboardProducts() {
 
               <div className="dash-products__modal-field">
                 <label>Categoría</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Herramientas"
-                  value={editProduct.category}
+                <select
+                  value={editProduct.categoryId}
                   onChange={(e) =>
                     setEditProduct({
                       ...editProduct,
-                      category: e.target.value,
+                      categoryId: e.target.value,
                     })
                   }
-                />
+                  className="dash-products__modal-select"
+                >
+                  <option value="">Seleccionar categoría</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="dash-products__modal-field">
@@ -1033,18 +1114,30 @@ export default function DashboardProducts() {
                 />
               </div>
 
-              <div className="dash-products__modal-field">
+              <div className="dash-products__modal-field dash-products__field--full">
                 <label>Código EAN / UPC</label>
-                <div className="dash-products__modal-input-wrap">
-                  <Barcode size={16} />
-                  <input
-                    type="text"
-                    placeholder="Ej: 7790001234567"
-                    value={editProduct.ean}
-                    onChange={(e) =>
-                      setEditProduct({ ...editProduct, ean: e.target.value })
-                    }
-                  />
+                <div className="dash-products__ean-row">
+                  <div
+                    className="dash-products__modal-input-wrap"
+                    style={{ flex: 1 }}
+                  >
+                    <Barcode size={16} />
+                    <input
+                      type="text"
+                      placeholder="Ej: 7790001234567"
+                      value={editProduct.ean}
+                      onChange={(e) =>
+                        setEditProduct({ ...editProduct, ean: e.target.value })
+                      }
+                    />
+                  </div>
+                  <button
+                    className="dash-products__ean-check-btn"
+                    onClick={handleEditCheckEan}
+                    disabled={!editProduct.ean.trim() || eanLoading}
+                  >
+                    {eanLoading ? "Buscando..." : "Verificar"}
+                  </button>
                 </div>
               </div>
 
@@ -1123,7 +1216,16 @@ export default function DashboardProducts() {
               <button
                 className="dash-products__modal-apply"
                 onClick={handleEditProduct}
-                disabled={!editProduct.title.trim() || !editProduct.price}
+                disabled={
+                  !editProduct.name.trim() ||
+                  !editProduct.brand.trim() ||
+                  !editProduct.ean.trim() ||
+                  !editProduct.categoryId ||
+                  !editProduct.price ||
+                  !editProduct.stock ||
+                  !editProduct.description.trim() ||
+                  (!editImageFile && !editImagePreview)
+                }
               >
                 Guardar Cambios
               </button>

@@ -7,12 +7,12 @@ export interface CategoriesProducts {
 }
 
 export const CATEGORIES_PRODUCT_API_ENDPOINTS = {
-  listCategoriesProducts: `${API_BASE_URL}/categories/products`,
+  listCategoriesProducts: `${API_BASE_URL}/api/categories/products`,
 };
 
 export const categoriesProductService = {
   /**
-   * @route GET /v1/categories/products
+   * @route GET /api/categories/products
    * @auth No
    * @returns {Promise<CategoriesProducts[]>}
    */

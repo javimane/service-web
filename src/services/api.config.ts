@@ -101,4 +101,10 @@ export const API_ENDPOINTS = {
     base: `${API_BASE_URL}/api/banks`,
     detail: (id: number) => `${API_BASE_URL}/api/banks/${id}`,
   },
+  storage: {
+    products: `${API_BASE_URL}/api/storage/products`,
+    promotions: `${API_BASE_URL}/api/storage/promotions`,
+    profile: `${API_BASE_URL}/api/storage/profile`,
+    portfolio: `${API_BASE_URL}/api/storage/portfolio`,
+  },
 };

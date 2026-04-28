@@ -46,15 +46,18 @@ export const productService = {
   /**
    * @route GET /api/products
    * @auth No
-   * @param {number} [page]
-   * @param {number} [limit]
+   * @param {Object} [params]
+   * @param {number} [params.page]
+   * @param {number} [params.limit]
+   * @param {string} [params.ean]
    * @returns {Promise<{ data: ProductRow[]; count: number; page: number; limit: number; totalPages: number }>}
    */
-  list: (page?: number, limit?: number) => {
-    const params = new URLSearchParams();
-    if (page) params.append("page", page.toString());
-    if (limit) params.append("limit", limit.toString());
-    const queryString = params.toString() ? `?${params.toString()}` : "";
+  list: (params?: { page?: number; limit?: number; ean?: string }) => {
+    const urlParams = new URLSearchParams();
+    if (params?.page) urlParams.append("page", params.page.toString());
+    if (params?.limit) urlParams.append("limit", params.limit.toString());
+    if (params?.ean) urlParams.append("ean", params.ean);
+    const queryString = urlParams.toString() ? `?${urlParams.toString()}` : "";
 
     return apiClient<{
       data: ProductRow[];

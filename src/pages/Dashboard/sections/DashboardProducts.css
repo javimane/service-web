@@ -465,8 +465,36 @@
 }
 
 .dash-products__modal-field input:focus,
+.dash-products__modal-field select:focus,
 .dash-products__modal-field textarea:focus {
   border-color: var(--accent-color);
+}
+
+.dash-products__modal-select {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: var(--font-family);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+  transition: all 0.2s;
+}
+
+.dash-products__modal-select:hover {
+  border-color: var(--text-secondary);
+}
+
+.dash-products__modal-select:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-transparent);
 }
 
 .dash-products__modal-field input::placeholder,

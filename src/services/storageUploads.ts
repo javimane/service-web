@@ -1,5 +1,7 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { supabase } from "./supabaseClient";
+import { API_ENDPOINTS } from "./api.config";
+import { apiClient } from "./apiClient";
 
 type UploadCategory =
   | "proposalPdf"
@@ -22,41 +24,22 @@ type UploadResult = {
   publicUrl: string;
 };
 
-const DEFAULT_BUCKETS: Record<UploadCategory, string> = {
-  proposalPdf: "proposal-pdfs",
-  promotionImage: "promotion-images",
-  profileImage: "profile-images",
-  workImage: "profile-work-images",
-  productImage: "product-images",
-};
+interface StorageConfig {
+  bucket: string;
+  path: string;
+  uuid: string;
+}
 
 function getProjectRef() {
-  const configuredProjectRef = import.meta.env.VITE_SUPABASE_PROJECT_REF;
+  const configuredProjectRef = import.meta.env.VITE_SUPABASE_STORAGE_S3_KEY;
 
   if (configuredProjectRef) return configuredProjectRef;
 
-  const hostname = new URL(import.meta.env.VITE_SUPABASE_URL).hostname;
+  const hostname = new URL(import.meta.env.VITE_SUPABASE_STORAGE_ENDPOINT).hostname;
   return hostname.split(".")[0] ?? "";
 }
 
-function getS3Endpoint(projectRef: string) {
-  return (
-    import.meta.env.VITE_SUPABASE_STORAGE_S3_ENDPOINT ||
-    `https://${projectRef}.storage.supabase.co/storage/v1/s3`
-  );
-}
-
-function getBucket(category: UploadCategory) {
-  const envBuckets: Partial<Record<UploadCategory, string>> = {
-    proposalPdf: import.meta.env.VITE_SUPABASE_BUCKET_PROPOSAL_PDFS,
-    promotionImage: import.meta.env.VITE_SUPABASE_BUCKET_PROMOTION_IMAGES,
-    profileImage: import.meta.env.VITE_SUPABASE_BUCKET_PROFILE_IMAGES,
-    workImage: import.meta.env.VITE_SUPABASE_BUCKET_PROFILE_WORK_IMAGES,
-    productImage: import.meta.env.VITE_SUPABASE_BUCKET_PRODUCT_IMAGES,
-  };
-
-  return envBuckets[category] || DEFAULT_BUCKETS[category];
-}
+// Dynamic bucket resolution is now handled via API endpoints in each upload function
 
 function sanitizePathSegment(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, "-");
@@ -78,15 +61,15 @@ function getFileExtension(file: Blob, fileName?: string) {
   return mimeMap[file.type] || "bin";
 }
 
-function buildObjectPath(category: UploadCategory, input: UploadInput) {
-  const folder = input.folder ? `${sanitizePathSegment(input.folder)}/` : "";
-  const entityId = input.entityId ? `${sanitizePathSegment(input.entityId)}/` : "";
+function buildObjectPath(config: StorageConfig, input: UploadInput) {
   const extension = getFileExtension(input.file, input.fileName);
-  const baseName = input.fileName
-    ? input.fileName.replace(/\.[^.]+$/, "")
-    : `${category}-${Date.now()}`;
+  
+  if (input.fileName) {
+    const baseName = input.fileName.replace(/\.[^.]+$/, "");
+    return `${config.path}/${config.uuid}-${sanitizePathSegment(baseName)}.${extension}`;
+  }
 
-  return `${folder}${entityId}${sanitizePathSegment(baseName)}.${extension}`;
+  return `${config.path}/${config.uuid}.${extension}`;
 }
 
 async function createStorageClient() {
@@ -98,28 +81,23 @@ async function createStorageClient() {
     throw new Error("No hay una sesión activa para subir archivos.");
   }
 
-  const projectRef = getProjectRef();
-
-  if (!projectRef) {
-    throw new Error("No se pudo resolver el project ref de Supabase.");
-  }
-
   return new S3Client({
     forcePathStyle: true,
-    region: import.meta.env.VITE_SUPABASE_PROJECT_REGION || "us-east-1",
-    endpoint: getS3Endpoint(projectRef),
+    region: "us-east-1",
+    endpoint: import.meta.env.VITE_SUPABASE_STORAGE_S3_ENDPOINT,
     credentials: {
-      accessKeyId: projectRef,
-      secretAccessKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      accessKeyId: import.meta.env.VITE_SUPABASE_STORAGE_S3_KEY,
+      secretAccessKey: import.meta.env.VITE_SUPABASE_STORAGE_S3_SECRET_KEY,
       sessionToken: session.access_token,
     },
   });
 }
 
-async function uploadFile(category: UploadCategory, input: UploadInput) {
+async function uploadFile(configEndpoint: string, input: UploadInput) {
+  const config = await apiClient<StorageConfig>(configEndpoint, { method: "GET" });
   const client = await createStorageClient();
-  const bucket = getBucket(category);
-  const path = buildObjectPath(category, input);
+  const bucket = config.bucket;
+  const path = buildObjectPath(config, input);
 
   await client.send(
     new PutObjectCommand({
@@ -142,21 +120,22 @@ async function uploadFile(category: UploadCategory, input: UploadInput) {
 }
 
 export async function uploadProposalPdf(input: UploadInput) {
-  return uploadFile("proposalPdf", input);
+  // Assuming a default or similar mechanism for PDFs if no endpoint yet
+  return uploadFile(API_ENDPOINTS.storage.products, input); 
 }
 
 export async function uploadPromotionImage(input: UploadInput) {
-  return uploadFile("promotionImage", input);
+  return uploadFile(API_ENDPOINTS.storage.promotions, input);
 }
 
 export async function uploadProfileImage(input: UploadInput) {
-  return uploadFile("profileImage", input);
+  return uploadFile(API_ENDPOINTS.storage.profile, input);
 }
 
 export async function uploadProfileWorkImage(input: UploadInput) {
-  return uploadFile("workImage", input);
+  return uploadFile(API_ENDPOINTS.storage.portfolio, input);
 }
 
 export async function uploadProductImage(input: UploadInput) {
-  return uploadFile("productImage", input);
+  return uploadFile(API_ENDPOINTS.storage.products, input);
 }
