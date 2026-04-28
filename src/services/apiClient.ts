@@ -33,6 +33,9 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (error.response?.status === 401) {
+      window.dispatchEvent(new CustomEvent("session-expired"));
+    }
     const message = error.response?.data?.message || error.message || "Error de red";
     return Promise.reject(new Error(message));
   }

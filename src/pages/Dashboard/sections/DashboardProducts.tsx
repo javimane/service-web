@@ -33,7 +33,6 @@ const formatPrice = (n: number) =>
     minimumFractionDigits: 0,
   });
 
-type ProductItem = (typeof initialProducts)[number];
 
 export default function DashboardProducts() {
   const queryClient = useQueryClient();
@@ -44,6 +43,7 @@ export default function DashboardProducts() {
     sessionStatus?.professional_id;
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [eanSearchQuery, setEanSearchQuery] = useState("");
   const [sortField, setSortField] = useState("title");
   const [sortDir, setSortDir] = useState("asc");
 
@@ -66,9 +66,15 @@ export default function DashboardProducts() {
     description: "",
     ean: "",
     webUrl: "",
+    offerPrice: "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Delete confirmation modal
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<{ id: string | number; name: string } | null>(null);
 
   // Edit product modal
   const [editOpen, setEditOpen] = useState(false);
@@ -83,6 +89,7 @@ export default function DashboardProducts() {
     description: string;
     ean: string;
     webUrl: string;
+    offerPrice: string;
   } | null>(null);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState("");
@@ -105,6 +112,7 @@ export default function DashboardProducts() {
       id: item.product_id,
       name: item.product?.name || "Sin nombre",
       price: item.price,
+      offer_price: item.offer_price || 0,
       originalPrice: item.price, // Or some logic if you have discounts
       brand: item.product?.brand || "",
       category: item.product?.CategoryProduct?.name || "General",
@@ -119,16 +127,10 @@ export default function DashboardProducts() {
 
   const createMutation = useMutation({
     mutationFn: productService.create,
-    onSuccess: (newProduct) => {
-      // After creating the product, assign it to the professional
-      assignMutation.mutate({
-        professional_id: professionalId,
-        product_id: String(newProduct.id),
-        price: Number(formPrice),
-        sale_type: "unit",
-        stock: Number(formStock),
-        is_active: true,
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-products"] });
+      setAddOpen(false);
+      setShowSuccessModal(true);
     },
   });
 
@@ -136,7 +138,8 @@ export default function DashboardProducts() {
     mutationFn: productService.assignToProfessional,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-products"] });
-      resetAddModal();
+      setAddOpen(false);
+      setShowSuccessModal(true);
     },
   });
 
@@ -179,6 +182,8 @@ export default function DashboardProducts() {
   const [eanMatch, setEanMatch] = useState<any>(null);
   const [eanPriceMode, setEanPriceMode] = useState<"same" | "custom">("same");
   const [eanCustomPrice, setEanCustomPrice] = useState("");
+  const [eanStock, setEanStock] = useState("");
+  const [eanOfferPrice, setEanOfferPrice] = useState("");
 
   // Sorting
   const toggleSort = (field) => {
@@ -200,9 +205,11 @@ export default function DashboardProducts() {
   };
 
   const filtered = useMemo(() => {
-    let list = productsList.filter((p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+    let list = productsList.filter((p) => {
+      const matchesName = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesEan = p.ean.toLowerCase().includes(eanSearchQuery.toLowerCase());
+      return matchesName && matchesEan;
+    });
     list.sort((a, b) => {
       let valA = a[sortField];
       let valB = b[sortField];
@@ -213,7 +220,7 @@ export default function DashboardProducts() {
       return 0;
     });
     return list;
-  }, [productsList, searchQuery, sortField, sortDir]);
+  }, [productsList, searchQuery, eanSearchQuery, sortField, sortDir]);
 
   // Stats
   const totalProducts = productsList.length;
@@ -259,19 +266,21 @@ export default function DashboardProducts() {
     setEanLoading(true);
     setEanMatch(null);
     try {
-      const response = await productService.list({ ean });
-      const match = response.data.find((p: any) => p.ean === ean);
+      const match = await productService.getByEan(ean, professionalId);
 
       if (match) {
         setEanMatch({
           id: match.id,
           title: match.name,
-          price: 0,
+          price: match.price || 0,
           image: match.image_url,
           category: match.CategoryProduct?.name,
+          isAlreadyAssigned: match.is_already_assigned,
         });
         setEanPriceMode("custom");
         setEanCustomPrice("");
+        setEanStock("");
+        setEanOfferPrice("");
       } else {
         setEanMatch(null);
       }
@@ -309,6 +318,8 @@ export default function DashboardProducts() {
   const handleAddFromEan = () => {
     if (!eanMatch) return;
     const finalPrice = Number(eanCustomPrice) || 0;
+    const finalOfferPrice = Number(eanOfferPrice) || 0;
+    const finalStock = Number(eanStock) || 0;
     
     assignMutation.mutate({
       professional_id: professionalId,
@@ -316,12 +327,13 @@ export default function DashboardProducts() {
       price: finalPrice,
       sale_type: "unit",
       is_active: true,
-      stock: 0
+      stock: finalStock,
+      offer_price: finalOfferPrice
     });
   };
 
   // Reset add modal state
-  const resetAddModal = () => {
+  const clearForm = () => {
     setNewProduct({
       name: "",
       brand: "",
@@ -332,6 +344,7 @@ export default function DashboardProducts() {
       description: "",
       ean: "",
       webUrl: "",
+      offerPrice: "",
     });
     setFormPrice("");
     setFormStock("");
@@ -340,6 +353,10 @@ export default function DashboardProducts() {
     setEanMatch(null);
     setEanLoading(false);
     setEanCustomPrice("");
+  };
+
+  const resetAddModal = () => {
+    clearForm();
     setAddOpen(false);
   };
 
@@ -351,9 +368,7 @@ export default function DashboardProducts() {
     if (imageFile) {
       const uploaded = await uploadProductImage({
         file: imageFile,
-        entityId: newProduct.ean || newProduct.name,
-        folder: "products",
-        fileName: imageFile.name,
+        entityId: newProduct.name,
       });
       uploadedProductImageUrl = uploaded.publicUrl;
     }
@@ -364,7 +379,14 @@ export default function DashboardProducts() {
       description: newProduct.description,
       brand: newProduct.brand,
       image_url: uploadedProductImageUrl,
-      categories_products_id: newProduct.categoryId ? Number(newProduct.categoryId) : undefined
+      categories_products_id: newProduct.categoryId ? Number(newProduct.categoryId) : undefined,
+      // Professional relationship data (sent in same request)
+      professional_id: professionalId,
+      price: Number(formPrice),
+      sale_type: "unit",
+      stock: Number(formStock),
+      is_active: true,
+      offer_price: Number(newProduct.offerPrice) || 0,
     });
   };
 
@@ -384,6 +406,7 @@ export default function DashboardProducts() {
       description: product.description || "",
       ean: product.ean || "",
       webUrl: "",
+      offerPrice: String(product.offer_price || ""),
     });
     setEditImagePreview(product.image || "");
     setEditImageFile(null);
@@ -418,6 +441,7 @@ export default function DashboardProducts() {
       data: {
         price: Number(editProduct.price),
         stock: Number(editProduct.stock),
+        offer_price: Number(editProduct.offerPrice) || 0,
       }
     });
   };
@@ -430,9 +454,16 @@ export default function DashboardProducts() {
   };
 
   // Delete product (Unassign)
-  const handleDelete = (id: string | number) => {
-    if (window.confirm("¿Estás seguro de que quieres quitar este producto de tu catálogo?")) {
-      unassignMutation.mutate(String(id));
+  const handleDelete = (product: any) => {
+    setProductToDelete({ id: product.id, name: product.name });
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (productToDelete) {
+      unassignMutation.mutate(String(productToDelete.id));
+      setDeleteConfirmOpen(false);
+      setProductToDelete(null);
     }
   };
 
@@ -486,9 +517,18 @@ export default function DashboardProducts() {
           <Search size={16} />
           <input
             type="text"
-            placeholder="Buscar producto..."
+            placeholder="Buscar por nombre..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="dash-products__search">
+          <Barcode size={16} />
+          <input
+            type="text"
+            placeholder="Buscar por EAN..."
+            value={eanSearchQuery}
+            onChange={(e) => setEanSearchQuery(e.target.value)}
           />
         </div>
         <button
@@ -591,7 +631,7 @@ export default function DashboardProducts() {
                         className="dash-products__action-btn dash-products__action-btn--danger"
                         aria-label="Quitar de mi lista"
                         title="Quitar de mi lista"
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => handleDelete(product)}
                       >
                         <Trash2 size={15} />
                       </button>
@@ -777,63 +817,77 @@ export default function DashboardProducts() {
             {/* EAN Match found */}
             {eanMatch && (
               <div className="dash-products__ean-match">
-                <div className="dash-products__ean-match-header">
-                  <Info size={16} />
-                  <span>Este producto ya existe en nuestra base de datos</span>
+                <div 
+                  className="dash-products__ean-match-header" 
+                  style={{ 
+                    backgroundColor: eanMatch.isAlreadyAssigned ? 'rgba(22, 163, 74, 0.1)' : 'rgba(59, 130, 246, 0.1)', 
+                    color: eanMatch.isAlreadyAssigned ? '#16a34a' : '#3b82f6', 
+                    marginBottom: '20px' 
+                  }}
+                >
+                  {eanMatch.isAlreadyAssigned ? <Check size={16} /> : <Info size={16} />}
+                  <span>
+                    {eanMatch.isAlreadyAssigned 
+                      ? "Este producto ya se encuentra en tu catálogo." 
+                      : "Este producto ya existe. Deberá asociarlo a su catálogo."}
+                  </span>
                 </div>
+                
                 <div className="dash-products__ean-match-card">
                   {eanMatch.image && (
-                    <img
-                      src={eanMatch.image}
-                      alt=""
-                      className="dash-products__ean-match-img"
-                    />
+                    <img src={eanMatch.image} alt="" className="dash-products__ean-match-img" />
                   )}
                   <div className="dash-products__ean-match-info">
-                    <span className="dash-products__ean-match-name">
-                      {eanMatch.title}
-                    </span>
-                    <span className="dash-products__ean-match-price">
-                      {formatPrice(eanMatch.price)}
-                    </span>
+                    <span className="dash-products__ean-match-name">{eanMatch.title}</span>
+                    <span className="dash-products__ean-match-price">{formatPrice(eanMatch.price)}</span>
                     {eanMatch.category && (
-                      <span className="dash-products__ean-match-cat">
-                        {eanMatch.category}
-                      </span>
+                      <span className="dash-products__ean-match-cat">{eanMatch.category}</span>
                     )}
                   </div>
                 </div>
 
-                <div className="dash-products__modal-field">
-                  <label>¿A qué precio querés agregarlo?</label>
-                  <div className="dash-products__modal-toggle">
-                    <button
-                      className={eanPriceMode === "same" ? "active" : ""}
-                      onClick={() => setEanPriceMode("same")}
-                    >
-                      Mismo precio ({formatPrice(eanMatch.price)})
-                    </button>
-                    <button
-                      className={eanPriceMode === "custom" ? "active" : ""}
-                      onClick={() => setEanPriceMode("custom")}
-                    >
-                      Precio personalizado
-                    </button>
-                  </div>
-                </div>
+                {!eanMatch.isAlreadyAssigned && (
+                  <div className="dash-products__form-grid" style={{ marginTop: '20px' }}>
+                    <div className="dash-products__modal-field">
+                      <label>Precio (ARS) *</label>
+                      <div className="dash-products__modal-input-wrap">
+                        <DollarSign size={16} />
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={eanCustomPrice}
+                          onChange={(e) => setEanCustomPrice(e.target.value)}
+                        />
+                      </div>
+                    </div>
 
-                {eanPriceMode === "custom" && (
-                  <div className="dash-products__modal-field">
-                    <label>Tu precio (ARS)</label>
-                    <div className="dash-products__modal-input-wrap">
-                      <DollarSign size={16} />
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="Ingresá tu precio"
-                        value={eanCustomPrice}
-                        onChange={(e) => setEanCustomPrice(e.target.value)}
-                      />
+                    <div className="dash-products__modal-field">
+                      <label>Precio Oferta (ARS)</label>
+                      <div className="dash-products__modal-input-wrap">
+                        <DollarSign size={16} />
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={eanOfferPrice}
+                          onChange={(e) => setEanOfferPrice(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="dash-products__modal-field">
+                      <label>Stock disponible</label>
+                      <div className="dash-products__modal-input-wrap">
+                        <Package size={16} />
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={eanStock}
+                          onChange={(e) => setEanStock(e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -843,18 +897,17 @@ export default function DashboardProducts() {
                     className="dash-products__modal-cancel"
                     onClick={() => setEanMatch(null)}
                   >
-                    Crear nuevo
+                    {eanMatch.isAlreadyAssigned ? "Cerrar" : "Crear nuevo"}
                   </button>
-                  <button
-                    className="dash-products__modal-apply"
-                    onClick={handleAddFromEan}
-                    disabled={
-                      eanPriceMode === "custom" &&
-                      (!eanCustomPrice || parseInt(eanCustomPrice) <= 0)
-                    }
-                  >
-                    Agregar a mi cuenta
-                  </button>
+                  {!eanMatch.isAlreadyAssigned && (
+                    <button
+                      className="dash-products__modal-apply"
+                      onClick={handleAddFromEan}
+                      disabled={!eanCustomPrice || parseInt(eanCustomPrice) <= 0}
+                    >
+                      Agregar a mi cuenta
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -895,6 +948,19 @@ export default function DashboardProducts() {
                       placeholder="0"
                       value={formPrice}
                       onChange={(e) => setFormPrice(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="dash-products__modal-field">
+                    <label>Precio de Oferta (ARS)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={newProduct.offerPrice}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, offerPrice: e.target.value })
+                      }
                     />
                   </div>
 
@@ -1081,6 +1147,19 @@ export default function DashboardProducts() {
               </div>
 
               <div className="dash-products__modal-field">
+                <label>Precio de Oferta (ARS)</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={editProduct.offerPrice}
+                  onChange={(e) =>
+                    setEditProduct({ ...editProduct, offerPrice: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="dash-products__modal-field">
                 <label>Categoría</label>
                 <select
                   value={editProduct.categoryId}
@@ -1216,18 +1295,75 @@ export default function DashboardProducts() {
               <button
                 className="dash-products__modal-apply"
                 onClick={handleEditProduct}
-                disabled={
-                  !editProduct.name.trim() ||
-                  !editProduct.brand.trim() ||
-                  !editProduct.ean.trim() ||
-                  !editProduct.categoryId ||
-                  !editProduct.price ||
-                  !editProduct.stock ||
-                  !editProduct.description.trim() ||
-                  (!editImageFile && !editImagePreview)
-                }
+                disabled={!editProduct.name.trim() || !editProduct.price}
               >
                 Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Floating Success Screen ===== */}
+      {showSuccessModal && (
+        <div className="dash-products__floating-overlay">
+          <div className="dash-products__floating-screen">
+            <div className="dash-products__floating-icon dash-products__floating-icon--success">
+              <Check size={28} />
+            </div>
+            <div className="dash-products__floating-content">
+              <span className="dash-products__floating-title">¡Producto Agregado!</span>
+              <p className="dash-products__floating-desc">Se guardó correctamente. ¿Deseas agregar otro?</p>
+            </div>
+            <div className="dash-products__floating-actions">
+              <button
+                className="dash-products__floating-btn dash-products__floating-btn--secondary"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  resetAddModal();
+                }}
+              >
+                Terminar
+              </button>
+              <button
+                className="dash-products__floating-btn dash-products__floating-btn--primary"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  clearForm();
+                  setAddOpen(true);
+                }}
+              >
+                Agregar otro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Floating Delete Screen ===== */}
+      {deleteConfirmOpen && (
+        <div className="dash-products__floating-overlay">
+          <div className="dash-products__floating-screen" style={{ borderColor: 'rgba(250, 82, 82, 0.3)' }}>
+            <div className="dash-products__floating-icon dash-products__floating-icon--danger">
+              <Trash2 size={28} />
+            </div>
+            <div className="dash-products__floating-content">
+              <span className="dash-products__floating-title">¿Eliminar producto?</span>
+              <p className="dash-products__floating-desc">Quitarás <strong>{productToDelete?.name}</strong> de tu catálogo.</p>
+            </div>
+            <div className="dash-products__floating-actions">
+              <button
+                className="dash-products__floating-btn dash-products__floating-btn--secondary"
+                onClick={() => setDeleteConfirmOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="dash-products__floating-btn dash-products__floating-btn--primary"
+                style={{ background: '#fa5252' }}
+                onClick={confirmDelete}
+              >
+                Eliminar
               </button>
             </div>
           </div>

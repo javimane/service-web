@@ -919,3 +919,114 @@
     justify-content: flex-start;
   }
 }
+
+/* ===== FLOATING SCREENS (SUCCESS & DELETE) ===== */
+.dash-products__floating-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 2.5rem;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(2px);
+  animation: fadeInOverlay 0.3s ease forwards;
+}
+
+@keyframes fadeInOverlay {
+  from { background: rgba(0, 0, 0, 0); backdrop-filter: blur(0); }
+  to { background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(2px); }
+}
+
+.dash-products__floating-screen {
+  pointer-events: auto;
+  background: var(--surface-contrast);
+  color: var(--surface-contrast-text);
+  border: 1px solid var(--surface-contrast-border);
+  border-radius: 24px;
+  padding: 1.5rem 2rem;
+  width: 100%;
+  max-width: 540px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  animation: slideUpFloating 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpFloating {
+  from { opacity: 0; transform: translateY(60px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.dash-products__floating-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-products__floating-icon--success {
+  background: rgba(64, 192, 87, 0.2);
+  color: #40c057;
+}
+
+.dash-products__floating-icon--danger {
+  background: rgba(250, 82, 82, 0.2);
+  color: #fa5252;
+}
+
+.dash-products__floating-content {
+  flex: 1;
+}
+
+.dash-products__floating-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.dash-products__floating-desc {
+  font-size: 0.85rem;
+  color: var(--surface-contrast-muted);
+  line-height: 1.4;
+}
+
+.dash-products__floating-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.dash-products__floating-btn {
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: all 0.2s;
+  border: none;
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+
+.dash-products__floating-btn--primary {
+  background: var(--accent-color);
+  color: #fff;
+}
+
+.dash-products__floating-btn--secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dash-products__floating-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+}

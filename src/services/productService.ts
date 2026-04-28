@@ -9,6 +9,13 @@ export interface CreateProductRequest {
   brand?: string;
   image_url?: string;
   categories_products_id?: number;
+  // Professional relationship fields (handled in same request by API)
+  professional_id?: number;
+  price?: number;
+  sale_type?: string;
+  is_active?: boolean;
+  stock?: number;
+  offer_price?: number;
 }
 
 export interface UpdateProductRequest {
@@ -33,6 +40,7 @@ export interface AssignProductToProfessionalRequest {
   sale_type: string;
   is_active?: boolean;
   stock?: number;
+  offer_price?: number;
 }
 
 export interface MassUpdatePriceRequest {
@@ -91,6 +99,20 @@ export const productService = {
     apiClient<ProductRow[]>(API_ENDPOINTS.products.byName(name), {
       method: "GET",
     }),
+
+  /**
+   * @route GET /api/products/ean/:ean
+   * @auth No
+   * @param {string} ean
+   * @param {number} [professionalId]
+   * @returns {Promise<any>}
+   */
+  getByEan: (ean: string, professionalId?: number) => {
+    const query = professionalId ? `?professionalId=${professionalId}` : "";
+    return apiClient<any>(`${API_ENDPOINTS.products.byEan(ean)}${query}`, {
+      method: "GET",
+    });
+  },
 
   /**
    * @route GET /api/products/category/:categoryId

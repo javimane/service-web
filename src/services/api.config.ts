@@ -57,6 +57,7 @@ export const API_ENDPOINTS = {
     assignProfessional: `${API_BASE_URL}/api/products/assign-professional`,
     unassignProfessional: (productId: string, professionalId: number) =>
       `${API_BASE_URL}/api/products/${productId}/professional/${professionalId}`,
+    byEan: (ean: string) => `${API_BASE_URL}/api/products/ean/${ean}`,
   },
   services: {
     list: `${API_BASE_URL}/api/services`,

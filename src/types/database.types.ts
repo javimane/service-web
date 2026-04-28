@@ -121,6 +121,11 @@ export interface ProductRow {
   readonly CategoryProduct?: CategoryProductRow;
 }
 
+export interface ProductWithAssociation extends ProductRow {
+  is_already_assigned?: boolean;
+  price?: number;
+}
+
 export interface ProfessionalAvailabilityRow {
   readonly id: number;
   readonly professional_id: number;
