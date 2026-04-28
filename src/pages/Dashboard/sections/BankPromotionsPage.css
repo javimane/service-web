@@ -82,6 +82,32 @@
   transition: all 0.3s ease;
 }
 
+.bank-promo-card--expired {
+  border-color: #ef4444 !important;
+  opacity: 0.8;
+}
+
+.bank-promo-card--expired::before {
+  background: #ef4444 !important;
+}
+
+.bank-promo-card__expired-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #ef4444;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+  animation: fadeIn 0.3s ease;
+}
+
 .bank-promo-card:hover {
   border-color: rgba(139, 92, 246, 0.4);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);

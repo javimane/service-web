@@ -20,6 +20,7 @@ import {
   bankService,
   BankPromotion,
 } from "../../../services/bankPromotionService";
+import { formatDateDisplay } from "../../../utils/utils";
 import "./BankPromotionsPage.css";
 
 const DAYS_OF_WEEK = [
@@ -273,37 +274,53 @@ export default function BankPromotionsPage() {
       )}
 
       <div className="bank-promos__grid">
-        {promos.map((promo) => (
-          <div key={promo.id} className="bank-promo-card">
-            <div className="bank-promo-card__header">
-              <div className="bank-promo-card__bank">
-                <div className="bank-promo-card__icon">
-                  <Building2 size={24} />
+        {promos.map((promo) => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          // Split YYYY-MM-DD to avoid timezone shifting
+          const [year, month, day] = promo.expiration_date.split("-").map(Number);
+          const expirationDate = new Date(year, month - 1, day);
+          
+          const isExpired = expirationDate < today;
+
+          return (
+            <div
+              key={promo.id}
+              className={`bank-promo-card ${isExpired ? "bank-promo-card--expired" : ""}`}
+            >
+              {isExpired && (
+                <div className="bank-promo-card__expired-badge">Expirado</div>
+              )}
+              <div className="bank-promo-card__header">
+                <div className="bank-promo-card__bank">
+                  <div className="bank-promo-card__icon">
+                    <Building2 size={24} />
+                  </div>
+                  <div className="bank-promo-card__bank-info">
+                    <h3>{promo.bank?.name || "Banco"}</h3>
+                    <p>{promo.description || "Sin descripción"}</p>
+                  </div>
                 </div>
-                <div className="bank-promo-card__bank-info">
-                  <h3>{promo.bank?.name || "Banco"}</h3>
-                  <p>{promo.description || "Sin descripción"}</p>
+                <div className="bank-promo-card__actions">
+                  <button
+                    type="button"
+                    className="bank-promo-card__action"
+                    onClick={() => handleOpenModal(promo)}
+                    title="Editar"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="bank-promo-card__action bank-promo-card__action--danger"
+                    onClick={() => handleDelete(promo.id)}
+                    title="Eliminar"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
-              <div className="bank-promo-card__actions">
-                <button
-                  type="button"
-                  className="bank-promo-card__action"
-                  onClick={() => handleOpenModal(promo)}
-                  title="Editar"
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="bank-promo-card__action bank-promo-card__action--danger"
-                  onClick={() => handleDelete(promo.id)}
-                  title="Eliminar"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
 
             <div className="bank-promo-card__details">
               <div className="bank-promo-card__detail-row">
@@ -327,8 +344,8 @@ export default function BankPromotionsPage() {
                   <CalendarDays size={14} /> Vigencia
                 </span>
                 <span className="bank-promo-card__detail-value">
-                  {new Date(promo.from_date).toLocaleDateString()} -{" "}
-                  {new Date(promo.expiration_date).toLocaleDateString()}
+                  {formatDateDisplay(promo.from_date)} -{" "}
+                  {formatDateDisplay(promo.expiration_date)}
                 </span>
               </div>
               <div
@@ -357,7 +374,8 @@ export default function BankPromotionsPage() {
               </div>
             </div>
           </div>
-        ))}
+        );
+      })}
         {promos.length === 0 && (
           <div className="bank-promos__empty">
             <div className="empty-icon-container">
