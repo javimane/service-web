@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from "./api.config";
 import { apiClient } from "./apiClient";
-import type { ProductRow } from "../types/database.types";
+import type { ProductRow, ProfessionalProductRow } from "../types/database.types";
 
 export interface CreateProductRequest {
   ean: string;
@@ -59,7 +59,7 @@ export const productService = {
    * @param {number} [params.page]
    * @param {number} [params.limit]
    * @param {string} [params.ean]
-   * @returns {Promise<{ data: ProductRow[]; count: number; page: number; limit: number; totalPages: number }>}
+   * @returns {Promise<{ data: ProfessionalProductRow[]; count: number; page: number; limit: number; totalPages: number }>}
    */
   list: (params?: { page?: number; limit?: number; ean?: string }) => {
     const urlParams = new URLSearchParams();
@@ -69,7 +69,7 @@ export const productService = {
     const queryString = urlParams.toString() ? `?${urlParams.toString()}` : "";
 
     return apiClient<{
-      data: ProductRow[];
+      data: ProfessionalProductRow[];
       count: number;
       page: number;
       limit: number;
@@ -83,10 +83,10 @@ export const productService = {
    * @route GET /api/products/:id
    * @auth No
    * @param {string | number} id
-   * @returns {Promise<ProductRow>}
+   * @returns {Promise<ProfessionalProductRow>}
    */
   getDetail: (id: string | number) =>
-    apiClient<ProductRow>(API_ENDPOINTS.products.detail(id.toString()), {
+    apiClient<ProfessionalProductRow>(API_ENDPOINTS.products.detail(id.toString()), {
       method: "GET",
     }),
 
@@ -94,10 +94,10 @@ export const productService = {
    * @route GET /api/products/name/:name
    * @auth No
    * @param {string} name
-   * @returns {Promise<ProductRow[]>}
+   * @returns {Promise<ProfessionalProductRow[]>}
    */
   getByName: (name: string) =>
-    apiClient<ProductRow[]>(API_ENDPOINTS.products.byName(name), {
+    apiClient<ProfessionalProductRow[]>(API_ENDPOINTS.products.byName(name), {
       method: "GET",
     }),
 
@@ -106,11 +106,11 @@ export const productService = {
    * @auth No
    * @param {string} ean
    * @param {number} [professionalId]
-   * @returns {Promise<any>}
+   * @returns {Promise<ProfessionalProductRow>}
    */
   getByEan: (ean: string, professionalId?: number) => {
     const query = professionalId ? `?professionalId=${professionalId}` : "";
-    return apiClient<any>(`${API_ENDPOINTS.products.byEan(ean)}${query}`, {
+    return apiClient<ProfessionalProductRow>(`${API_ENDPOINTS.products.byEan(ean)}${query}`, {
       method: "GET",
     });
   },
@@ -119,10 +119,10 @@ export const productService = {
    * @route GET /api/products/category/:categoryId
    * @auth No
    * @param {number} categoryId
-   * @returns {Promise<ProductRow[]>}
+   * @returns {Promise<ProfessionalProductRow[]>}
    */
   getByCategory: (categoryId: number) =>
-    apiClient<ProductRow[]>(API_ENDPOINTS.products.byCategory(categoryId), {
+    apiClient<ProfessionalProductRow[]>(API_ENDPOINTS.products.byCategory(categoryId), {
       method: "GET",
     }),
 
@@ -130,10 +130,10 @@ export const productService = {
    * @route GET /api/products/professional/:professionalId
    * @auth No
    * @param {number} professionalId
-   * @returns {Promise<any[]>}
+   * @returns {Promise<ProfessionalProductRow[]>}
    */
   getByProfessional: (professionalId: number) =>
-    apiClient<any[]>(API_ENDPOINTS.products.byProfessional(professionalId), {
+    apiClient<ProfessionalProductRow[]>(API_ENDPOINTS.products.byProfessional(professionalId), {
       method: "GET",
     }),
 
@@ -141,10 +141,10 @@ export const productService = {
    * @route GET /api/products/professional/:professionalId/only-products
    * @auth No
    * @param {number} professionalId
-   * @returns {Promise<ProductRow[]>}
+   * @returns {Promise<ProfessionalProductRow[]>}
    */
   getOnlyProductsByProfessional: (professionalId: number) =>
-    apiClient<ProductRow[]>(
+    apiClient<ProfessionalProductRow[]>(
       API_ENDPOINTS.products.onlyProductsByProfessional(professionalId),
       {
         method: "GET",
@@ -155,10 +155,10 @@ export const productService = {
    * @route POST /api/products
    * @auth Bearer
    * @param {CreateProductRequest} data
-   * @returns {Promise<ProductRow>}
+   * @returns {Promise<ProfessionalProductRow>}
    */
   create: (data: CreateProductRequest) =>
-    apiClient<ProductRow>(API_ENDPOINTS.products.list, {
+    apiClient<ProfessionalProductRow>(API_ENDPOINTS.products.list, {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -168,10 +168,10 @@ export const productService = {
    * @auth Bearer
    * @param {string} id
    * @param {UpdateProductRequest} data
-   * @returns {Promise<ProductRow>}
+   * @returns {Promise<ProfessionalProductRow>}
    */
   update: (id: string, data: UpdateProductRequest) =>
-    apiClient<ProductRow>(API_ENDPOINTS.products.detail(id), {
+    apiClient<ProfessionalProductRow>(API_ENDPOINTS.products.detail(id), {
       method: "PUT",
       body: JSON.stringify(data),
     }),
@@ -182,14 +182,14 @@ export const productService = {
    * @param {number} professionalId
    * @param {string} productId
    * @param {any} updates
-   * @returns {Promise<any>}
+   * @returns {Promise<ProfessionalProductRow>}
    */
   updateProfessionalProduct: (
     professionalId: number,
     productId: string,
     updates: any,
   ) =>
-    apiClient<any>(
+    apiClient<ProfessionalProductRow>(
       API_ENDPOINTS.products.updateProfessionalProduct(
         professionalId,
         productId,
@@ -204,10 +204,10 @@ export const productService = {
    * @route PUT /api/products/update-prices
    * @auth Bearer
    * @param {UpdatePriceToManyRequest} data
-   * @returns {Promise<any>}
+   * @returns {Promise<ProfessionalProductRow[]>}
    */
   updatePriceToMany: (data: UpdatePriceToManyRequest) =>
-    apiClient<any>(API_ENDPOINTS.products.updatePrices, {
+    apiClient<ProfessionalProductRow[]>(API_ENDPOINTS.products.updatePrices, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
@@ -216,10 +216,10 @@ export const productService = {
    * @route PUT /api/products/mass-update-prices
    * @auth Bearer
    * @param {MassUpdatePriceRequest} data
-   * @returns {Promise<any>}
+   * @returns {Promise<ProfessionalProductRow[]>}
    */
   massUpdatePrice: (data: MassUpdatePriceRequest) =>
-    apiClient<any>(API_ENDPOINTS.products.massUpdatePrices, {
+    apiClient<ProfessionalProductRow[]>(API_ENDPOINTS.products.massUpdatePrices, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
@@ -228,10 +228,10 @@ export const productService = {
    * @route POST /api/products/assign-professional
    * @auth Bearer
    * @param {AssignProductToProfessionalRequest} data
-   * @returns {Promise<any>}
+   * @returns {Promise<ProfessionalProductRow>}
    */
   assignToProfessional: (data: AssignProductToProfessionalRequest) =>
-    apiClient<any>(API_ENDPOINTS.products.assignProfessional, {
+    apiClient<ProfessionalProductRow>(API_ENDPOINTS.products.assignProfessional, {
       method: "POST",
       body: JSON.stringify(data),
     }),

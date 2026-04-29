@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toJpeg } from "html-to-image";
+import { useAuth } from "../../../context/AuthContext";
 import { uploadPromotionImage } from "../../../services/storageUploads";
 import { professionalPromotionService } from "../../../services/professionalPromotionService";
 import "./PromotionCreator.css";
@@ -30,11 +31,14 @@ const DISCOUNT_TYPES = [
 export default function PromotionCreator({ onBack, onViewAll }) {
   const fileInputRef = useRef(null);
   const couponRef = useRef<HTMLDivElement>(null);
+  const { sessionStatus, user } = useAuth();
+  const professionalId =
+    sessionStatus?.subscription?.professional_id ??
+    sessionStatus?.professional_id;
 
   const [form, setForm] = useState({
     title: "",
     description: "",
-    professionalName: "",
     validFrom: "",
     validTo: "",
     unlimitedStock: false,
@@ -92,8 +96,6 @@ export default function PromotionCreator({ onBack, onViewAll }) {
     if (!form.title.trim()) newErrors.title = "El título es obligatorio";
     if (!form.description.trim())
       newErrors.description = "La descripción es obligatoria";
-    if (!form.professionalName.trim())
-      newErrors.professionalName = "El nombre del profesional es obligatorio";
     if (!form.validFrom)
       newErrors.validFrom = "La fecha de inicio es obligatoria";
     if (!form.validTo) newErrors.validTo = "La fecha de fin es obligatoria";
@@ -131,6 +133,10 @@ export default function PromotionCreator({ onBack, onViewAll }) {
 
   const handleCreate = async () => {
     if (!validateForm()) return;
+    if (!professionalId) {
+      alert("No se encontró el ID del profesional. Por favor, reintenta iniciar sesión.");
+      return;
+    }
 
     setIsSubmitting(true);
     setSuccess(false);
@@ -145,16 +151,19 @@ export default function PromotionCreator({ onBack, onViewAll }) {
       }
 
       await professionalPromotionService.create({
+        professional_id: Number(professionalId),
         title: form.title,
         description: form.description,
-        professional_name: form.professionalName,
-        valid_from: form.validFrom,
-        valid_to: form.validTo,
+        from_date: form.validFrom || null,
+        expires_at: form.validTo || null,
         unlimited_stock: form.unlimitedStock,
         discount_type: form.discountType,
         discount_value: Number(form.discountValue),
-        applicable_to: form.applicableTo,
+        applicable_to: form.applicableTo || null,
         image_url: imageUrl,
+        state: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
 
       setSuccess(true);
@@ -221,28 +230,6 @@ export default function PromotionCreator({ onBack, onViewAll }) {
               />
               {errors.title && (
                 <span className="promo-field__error">{errors.title}</span>
-              )}
-            </div>
-
-            <div
-              className={`promo-field ${errors.professionalName ? "promo-field--error" : ""}`}
-            >
-              <label className="promo-field__label">
-                NOMBRE DEL PROFESIONAL
-              </label>
-              <input
-                type="text"
-                className="promo-field__input"
-                placeholder="Ej. Carlos Plomería"
-                value={form.professionalName}
-                onChange={(e) =>
-                  updateField("professionalName", e.target.value)
-                }
-              />
-              {errors.professionalName && (
-                <span className="promo-field__error">
-                  {errors.professionalName}
-                </span>
               )}
             </div>
 
@@ -566,7 +553,7 @@ export default function PromotionCreator({ onBack, onViewAll }) {
                       <Eye size={16} />
                       <span>
                         <strong>Profesional:</strong>{" "}
-                        {form.professionalName || "Carlos Plomería"}
+                        {user?.display_name || "Carlos Plomería"}
                       </span>
                     </div>
                     <div className="coupon-card__info-item">

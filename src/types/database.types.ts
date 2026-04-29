@@ -63,9 +63,28 @@ export interface CompanyRow {
   readonly address_id: number;
   readonly business_type: string | null;
   readonly public_trade: boolean | null;
+  readonly cash: boolean | null;
+  readonly transfer: boolean | null;
+  readonly credit: boolean | null;
+  readonly debit: boolean | null;
+  readonly cheque: boolean | null;
   // Relationships
   readonly Professional?: ProfessionalRow;
   readonly Address?: AddressRow;
+  readonly CompanyProvinces?: CompanyProvinceRow[];
+  readonly CompanyDepartments?: CompanyDepartmentRow[];
+}
+
+export interface CompanyProvinceRow {
+  readonly company_id: number;
+  readonly province_id: number;
+  readonly created_at: string;
+}
+
+export interface CompanyDepartmentRow {
+  readonly company_id: number;
+  readonly province_department_id: number;
+  readonly created_at: string;
 }
 
 export interface CompaniesArcaRow {
@@ -183,6 +202,9 @@ export interface ProfessionalProductRow {
   readonly stock: number | null;
   readonly created_at: string | null;
   readonly updated_at: string | null;
+  readonly currency_code: string | null;
+  readonly offer_price: number | null;
+
   // Relationships
   readonly Professional?: ProfessionalRow;
   readonly Product?: ProductRow;
@@ -386,95 +408,4 @@ export interface SuscriptionPrice {
   readonly amount: number;
 }
 
-export interface Database {
-  public: {
-    Tables: {
-      address: { Row: AddressRow; Insert: any; Update: any };
-      api_error_logs: { Row: ApiErrorLogRow; Insert: any; Update: any };
-      categories_products: {
-        Row: CategoryProductRow;
-        Insert: any;
-        Update: any;
-      };
-      categories_services: {
-        Row: CategoryServiceRow;
-        Insert: any;
-        Update: any;
-      };
-      companies: { Row: CompanyRow; Insert: any; Update: any };
-      companies_arca: { Row: CompaniesArcaRow; Insert: any; Update: any };
-      contact_requests: { Row: ContactRequestRow; Insert: any; Update: any };
-      messages: { Row: MessageRow; Insert: any; Update: any };
-      products: { Row: ProductRow; Insert: any; Update: any };
-      professional_availability: {
-        Row: ProfessionalAvailabilityRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_categories: {
-        Row: ProfessionalCategoryRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_credentials: {
-        Row: ProfessionalCredentialRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_images: {
-        Row: ProfessionalImageRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_products: {
-        Row: ProfessionalProductRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_promotions: {
-        Row: ProfessionalPromotionRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_proposals: {
-        Row: ProfessionalProposalRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_quotes: {
-        Row: ProfessionalQuoteRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_ranking: {
-        Row: ProfessionalRankingRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_reels: {
-        Row: ProfessionalReelRow;
-        Insert: any;
-        Update: any;
-      };
-      professional_videos: {
-        Row: ProfessionalVideoRow;
-        Insert: any;
-        Update: any;
-      };
-      professionals: { Row: ProfessionalRow; Insert: any; Update: any };
-      profiles: { Row: ProfileRow; Insert: any; Update: any };
-      provinces: { Row: ProvinceRow; Insert: any; Update: any };
-      provinces_department: {
-        Row: ProvinceDepartmentRow;
-        Insert: any;
-        Update: any;
-      };
-      reviews: { Row: ReviewRow; Insert: any; Update: any };
-      roles: { Row: RoleRow; Insert: any; Update: any };
-      services: { Row: ServiceRow; Insert: any; Update: any };
-      subscriptions: { Row: SubscriptionRow; Insert: any; Update: any };
-      user_favorites: { Row: UserFavoriteRow; Insert: any; Update: any };
-      suscription_price: { Row: SuscriptionPrice };
-    };
-  };
-}
+

@@ -113,16 +113,16 @@ export default function DashboardProducts() {
   const productsList = useMemo(() => {
     return productsData.map((item: any) => ({
       id: item.product_id,
-      name: item.product?.name || "Sin nombre",
+      name: item.Product?.name || "Sin nombre",
       price: item.price,
       offer_price: item.offer_price || 0,
-      originalPrice: item.price, // Or some logic if you have discounts
-      brand: item.product?.brand || "",
-      category: (item.product?.category?.name || "General").trim(),
+      originalPrice: item.price, 
+      brand: item.Product?.brand || "",
+      category: (item.Product?.CategoryProduct?.name || "General").trim(),
       stock: item.stock || 0,
-      image: item.product?.image_url || "",
-      description: item.product?.description || "",
-      ean: item.product?.ean || "",
+      image: item.Product?.image_url || "",
+      description: item.Product?.description || "",
+      ean: item.Product?.ean || "",
       sale_type: item.sale_type,
       is_active: item.is_active,
     }));
@@ -276,13 +276,13 @@ export default function DashboardProducts() {
 
       if (match) {
         setEanMatch({
-          id: match.id,
-          title: match.name,
+          id: match.Product?.id || match.product_id,
+          title: match.Product?.name || "Sin nombre",
           price: match.price || 0,
           offer_price: match.offer_price || 0,
-          image: match.image_url,
-          category: match.CategoryProduct?.name,
-          isAlreadyAssigned: match.is_already_assigned,
+          image: match.Product?.image_url || "",
+          category: match.Product?.CategoryProduct?.name || "General",
+          isAlreadyAssigned: (match as any).is_already_assigned,
         });
         setEanPriceMode("custom");
         setEanCustomPrice("");
@@ -307,13 +307,17 @@ export default function DashboardProducts() {
       if (match) {
         setEditProduct({
           ...editProduct,
-          name: match.name || editProduct.name,
-          brand: match.brand || editProduct.brand,
-          categoryId: match.categories_products_id ? String(match.categories_products_id) : editProduct.categoryId,
-          image: match.image_url || editProduct.image,
-          description: match.description || editProduct.description,
+          name: match.Product?.name || editProduct.name,
+          brand: match.Product?.brand || editProduct.brand,
+          categoryId: match.Product?.categories_products_id 
+            ? String(match.Product.categories_products_id) 
+            : editProduct.categoryId,
+          image: match.Product?.image_url || editProduct.image,
+          description: match.Product?.description || editProduct.description,
         });
-        if (match.image_url) setEditImagePreview(match.image_url);
+        if (match.Product?.image_url) {
+          setEditImagePreview(match.Product?.image_url);
+        }
       }
     } catch (error) {
       console.error("Error checking EAN in edit:", error);

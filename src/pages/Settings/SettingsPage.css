@@ -565,3 +565,94 @@
 [data-theme="light"] .social-field svg {
   color: #7b61ff;
 }
+
+.coordinates-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(123, 97, 255, 0.04);
+  border: 1px solid rgba(123, 97, 255, 0.1);
+  border-radius: 20px;
+  margin-top: 12px;
+}
+
+.coordinates-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #b8a9ff;
+  letter-spacing: 0.03em;
+}
+
+.coordinates-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #8d8da3;
+  line-height: 1.5;
+}
+
+.coordinates-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+[data-theme="light"] .coordinates-group {
+  background: rgba(123, 97, 255, 0.03);
+  border-color: rgba(123, 97, 255, 0.12);
+}
+
+[data-theme="light"] .coordinates-title {
+  color: #7b61ff;
+}
+
+[data-theme="light"] .coordinates-note {
+  color: #6b7280;
+}
+
+.coordinates-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.coordinates-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(123, 97, 255, 0.15);
+  border: 1px solid rgba(123, 97, 255, 0.25);
+  color: #b8a9ff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.map-open-btn:hover {
+  background: rgba(123, 97, 255, 0.25);
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+[data-theme="light"] .map-open-btn {
+  background: rgba(123, 97, 255, 0.1);
+  color: #7b61ff;
+  border-color: rgba(123, 97, 255, 0.2);
+}
+
+[data-theme="light"] .map-open-btn:hover {
+  background: #7b61ff;
+  color: #fff;
+}

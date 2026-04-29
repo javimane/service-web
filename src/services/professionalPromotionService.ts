@@ -5,30 +5,42 @@ export interface ProfessionalPromotion {
   id: string;
   title: string;
   description: string;
-  professional_name: string;
-  valid_from: string;
-  valid_to: string;
-  unlimited_stock: boolean;
-  discount_type: 'percentage' | 'fixed' | 'bogo' | 'free';
-  discount_value: number;
-  applicable_to: string;
-  image_url: string;
-  state: string;
+  from_date: string | null;
+  expires_at: string | null;
+  unlimited_stock: boolean | null;
+  discount_type: string | null;
+  discount_value: number | null;
+  applicable_to: string | null;
+  image_url: string | null;
+  state: string | null;
   professional_id: number;
   created_at: string;
+  updated_at: string;
+  Professional?: {
+    id: number;
+    Company?: { name: string };
+    Profile?: {
+      avatar_url: string | null;
+    };
+  };
 }
 
 export interface CreateProfessionalPromotionRequest {
+  id?: string;
+  professional_id: number;
   title: string;
   description: string;
-  professional_name: string;
-  valid_from: string;
-  valid_to: string;
-  unlimited_stock: boolean;
-  discount_type: string;
-  discount_value: number;
-  applicable_to: string;
-  image_url: string;
+  from_date: string | null;
+  expires_at: string | null;
+  unlimited_stock: boolean | null;
+  discount_type: string | null;
+  discount_value: number | null;
+  applicable_to: string | null;
+  image_url: string | null;
+  state: string | null;
+  discount_percentage?: number; // Keep as optional for backward compatibility or if backend needs it
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const professionalPromotionService = {

@@ -1,6 +1,6 @@
 import { Save } from "lucide-react";
 
-export default function ActionsSection() {
+export default function ActionsSection({ onSave }) {
   return (
     <section className="settings-actions-row">
       <div className="settings-card settings-actions-card">
@@ -11,7 +11,7 @@ export default function ActionsSection() {
           </h3>
           <p>Guardá los cambios del perfil comercial.</p>
         </div>
-        <button type="button" className="settings-save-btn">
+        <button type="button" className="settings-save-btn" onClick={onSave}>
           <Save size={18} />
           Guardar cambios
         </button>

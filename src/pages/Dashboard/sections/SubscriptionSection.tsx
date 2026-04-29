@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Crown,
   Zap,
@@ -65,63 +66,62 @@ const statusIcons: Record<DisplaySubscriptionStatus, typeof Check> = {
 
 export default function SubscriptionSection() {
   const { sessionStatus } = useAuth();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [availablePlans, setAvailablePlans] = useState<Plan[]>(staticPlans);
   const [showPlans, setShowPlans] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const plansRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const { data: availablePlans = staticPlans } = useQuery({
+    queryKey: ["subscription-plans"],
+    queryFn: getPlansWithApiPrices,
+    staleTime: 1000 * 60 * 60, // 1 hour cache
+  });
 
-    const loadPlans = async () => {
-      const nextPlans = await getPlansWithApiPrices();
-      if (isMounted) setAvailablePlans(nextPlans);
-    };
-
-    loadPlans();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const currentStatus = normalizeSubscriptionStatus(
+  const currentStatus = useMemo(() => normalizeSubscriptionStatus(
     subscription?.status ?? sessionStatus?.subscription?.status,
-  );
-  const hasSubscription = Boolean(sessionStatus?.subscription);
+  ), [subscription?.status, sessionStatus?.subscription?.status]);
 
-  const isActiveProPlan =
+  const hasSubscription = useMemo(() => Boolean(sessionStatus?.subscription), [sessionStatus?.subscription]);
+
+  const isActiveProPlan = useMemo(() => 
     Boolean(sessionStatus?.is_professional) &&
     Boolean(sessionStatus?.professional_active) &&
-    currentStatus === "active";
+    currentStatus === "active",
+  [sessionStatus?.is_professional, sessionStatus?.professional_active, currentStatus]);
 
   // Plan activo según el API (null si no hay suscripción)
-  const activePlanId: string | null = sessionStatus?.subscription?.plan
-    ? (planNameToId[sessionStatus.subscription.plan] ?? null)
-    : null;
+  const activePlanId = useMemo(() => 
+    sessionStatus?.subscription?.plan
+      ? (planNameToId[sessionStatus.subscription.plan] ?? null)
+      : null,
+  [sessionStatus?.subscription?.plan]);
 
   // Fechas desde el API cuando estén disponibles
-  const displayStartDate: string =
-    sessionStatus?.subscription?.started_at ?? subscription?.startDate ?? "";
-  const displayNextPaymentDate: string =
+  const displayStartDate = useMemo(() => 
+    sessionStatus?.subscription?.started_at ?? subscription?.startDate ?? "",
+  [sessionStatus?.subscription?.started_at, subscription?.startDate]);
+
+  const displayNextPaymentDate = useMemo(() => 
     sessionStatus?.subscription?.expires_at ??
     subscription?.nextPaymentDate ??
-    "";
+    "",
+  [sessionStatus?.subscription?.expires_at, subscription?.nextPaymentDate]);
 
-  const displayAmount =
-    sessionStatus?.subscription?.amount_paid ?? subscription?.amount ?? 0;
+  const displayAmount = useMemo(() => 
+    sessionStatus?.subscription?.amount_paid ?? subscription?.amount ?? 0,
+  [sessionStatus?.subscription?.amount_paid, subscription?.amount]);
 
   const basicCheckoutUrl = import.meta.env.VITE_MP_BASIC_CHECKOUT_URL;
   const premiumCheckoutUrl = import.meta.env.VITE_MP_PREMIUM_CHECKOUT_URL;
 
-  const currentPlan: Plan | undefined =
+  const currentPlan = useMemo(() => 
     (hasSubscription && activePlanId
       ? availablePlans.find((p) => p.id === activePlanId)
       : undefined) ??
     (hasSubscription && subscription?.plan
       ? availablePlans.find((p) => p.id === subscription.plan)
-      : undefined);
+      : undefined),
+  [hasSubscription, activePlanId, subscription?.plan, availablePlans]);
 
   const handleCancelSubscription = () => {
     setSubscription((prev) => ({ ...prev, status: "cancelled" }));

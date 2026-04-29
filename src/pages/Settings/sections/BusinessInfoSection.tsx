@@ -3,8 +3,8 @@ import ChoicePills from "./ChoicePills";
 export default function BusinessInfoSection({
   businessType,
   setBusinessType,
-  isRegistered,
-  setIsRegistered,
+  tradeName,
+  setTradeName,
 }) {
   return (
     <article className="settings-card settings-card--wide">
@@ -17,12 +17,13 @@ export default function BusinessInfoSection({
 
       <div className="settings-fields two-columns">
         <label className="settings-field">
-          <span>Nombre</span>
-          <input type="text" placeholder="Ingresá tu nombre" />
-        </label>
-        <label className="settings-field">
           <span>Nombre comercial</span>
-          <input type="text" placeholder="Ingresá el nombre comercial" />
+          <input
+            type="text"
+            placeholder="Ingresá el nombre comercial"
+            value={tradeName}
+            onChange={(e) => setTradeName(e.target.value)}
+          />
         </label>
       </div>
 
@@ -33,20 +34,8 @@ export default function BusinessInfoSection({
             value={businessType}
             onChange={setBusinessType}
             options={[
-              { value: "empresa", label: "Empresa" },
-              { value: "autonomo", label: "Autónomo" },
-            ]}
-          />
-        </div>
-
-        <div className="settings-field">
-          <span>¿Es matriculado?</span>
-          <ChoicePills
-            value={isRegistered}
-            onChange={setIsRegistered}
-            options={[
-              { value: "si", label: "Sí" },
-              { value: "no", label: "No" },
+              { value: "Empresa", label: "Empresa" },
+              { value: "Autónomo", label: "Autónomo" },
             ]}
           />
         </div>

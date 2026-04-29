@@ -387,3 +387,193 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== PROMO DETAIL MODAL (COUPON) ===== */
+.coupon-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.coupon-modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 95vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.coupon-modal-content::-webkit-scrollbar {
+  display: none;
+}
+
+.coupon-modal__close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.coupon-modal__close:hover {
+  transform: scale(1.1);
+}
+
+/* Coupon Card Design */
+.coupon-card {
+  background: white;
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.coupon-card__header {
+  background: #ffb703; /* Vibrant Orange */
+  padding: 30px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #000;
+}
+
+.coupon-ticket-icon {
+  opacity: 0.8;
+}
+
+.coupon-card__discount {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.coupon-card__image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #f1f5f9;
+}
+
+.coupon-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coupon-card__body {
+  padding: 40px;
+  padding-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: left;
+}
+
+.coupon-card__title {
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.coupon-card__description {
+  font-size: 1rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.coupon-card__info-box {
+  background: #f8fafc;
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.coupon-card__info-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.coupon-card__info-item svg {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.coupon-card__info-item strong {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.coupon-card__download-btn {
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 18px;
+  font-size: 1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.2s;
+  background: #10b981; /* Emerald Green */
+  cursor: pointer;
+}
+
+.coupon-card__download-btn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+}
+
+.coupon-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+/* Animation for modal */
+@keyframes modalSlide {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 640px) {
+  .coupon-card__header {
+    padding: 20px;
+  }
+  .coupon-card__discount {
+    font-size: 1.8rem;
+  }
+  .coupon-card__body {
+    padding: 20px;
+  }
+}

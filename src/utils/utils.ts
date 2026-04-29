@@ -4,7 +4,9 @@
  */
 export const formatDateDisplay = (dateStr: string) => {
   if (!dateStr) return "";
-  const [year, month, day] = dateStr.split("-").map(Number);
+  // Handle ISO strings by taking only the date part
+  const cleanDateStr = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+  const [year, month, day] = cleanDateStr.split("-").map(Number);
   const date = new Date(year, month - 1, day);
   return date.toLocaleDateString();
 };

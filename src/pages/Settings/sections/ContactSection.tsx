@@ -1,4 +1,4 @@
-import { Globe, Link, MessageCircle } from "lucide-react";
+import { Globe } from "lucide-react";
 
 export default function ContactSection() {
   return (
@@ -11,18 +11,6 @@ export default function ContactSection() {
       </div>
 
       <div className="settings-fields social-links-list">
-        <label className="settings-field social-field">
-          <span>
-            <Link size={16} /> Facebook
-          </span>
-          <input type="url" placeholder="https://facebook.com/tu-pagina" />
-        </label>
-        <label className="settings-field social-field">
-          <span>
-            <MessageCircle size={16} /> Instagram
-          </span>
-          <input type="url" placeholder="https://instagram.com/tu-perfil" />
-        </label>
         <label className="settings-field social-field">
           <span>
             <Globe size={16} /> Web

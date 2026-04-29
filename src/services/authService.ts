@@ -132,4 +132,28 @@ export const authService = {
     apiClient<any>(API_ENDPOINTS.auth.getSession, {
       method: "GET",
     }),
+
+  /**
+   * @route PUT /api/auth/update-email
+   * @auth Bearer
+   * @param {string} newEmail
+   * @returns {Promise<any>}
+   */
+  updateEmail: (newEmail: string) =>
+    apiClient(API_ENDPOINTS.auth.updateEmail, {
+      method: "PUT",
+      body: JSON.stringify({ email: newEmail }),
+    }),
+
+  /**
+   * @route PUT /api/auth/update-password
+   * @auth Bearer
+   * @param {string} newPassword
+   * @returns {Promise<any>}
+   */
+  updatePassword: (newPassword: string) =>
+    apiClient(API_ENDPOINTS.auth.updatePassword, {
+      method: "PUT",
+      body: JSON.stringify({ password: newPassword }),
+    }),
 };

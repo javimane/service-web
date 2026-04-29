@@ -1,0 +1,213 @@
+.personal-info-section {
+  margin-bottom: 2rem;
+}
+
+/* Fetching State */
+.personal-fetching {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 0;
+  gap: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.fetching-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Notifications */
+.personal-notification {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+.personal-notification--success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #10b98133;
+}
+
+.personal-notification--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #ef444433;
+}
+
+.personal-notification__close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: currentColor;
+  opacity: 0.6;
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+}
+
+.personal-notification__close:hover {
+  opacity: 1;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.personal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.personal-field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.personal-field-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.personal-field-row--column {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.personal-field-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  width: 100%;
+}
+
+.personal-field-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.personal-field-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.personal-input {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.personal-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-transparent);
+}
+
+.personal-field-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.personal-action-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.personal-action-btn:hover {
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.personal-action-btn--save {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+.personal-action-btn--save:hover {
+  background: var(--accent-dark);
+  color: white;
+}
+
+.personal-action-btn--cancel {
+  color: var(--danger-color);
+  border-color: var(--danger-color-transparent);
+}
+
+.personal-action-btn--cancel:hover {
+  background: var(--danger-color-transparent);
+  color: var(--danger-color);
+}
+
+.personal-password-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+}
+
+.personal-password-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .personal-field-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .personal-password-inputs {
+    grid-template-columns: 1fr;
+  }
+}

@@ -7,6 +7,8 @@ export const API_ENDPOINTS = {
     login: `${API_BASE_URL}/api/auth/login`,
     googleLogin: `${API_BASE_URL}/api/auth/login/google`,
     getSession: `${API_BASE_URL}/api/auth/session`,
+    updateEmail: `${API_BASE_URL}/api/auth/update-email`,
+    updatePassword: `${API_BASE_URL}/api/auth/update-password`,
   },
   users: {
     favorites: `${API_BASE_URL}/api/users/me/favorites`,
@@ -25,6 +27,7 @@ export const API_ENDPOINTS = {
     schedules: (professionalId: string) =>
       `${API_BASE_URL}/api/professional-details/${professionalId}/schedules`,
     ranking: `${API_BASE_URL}/api/professional-ranking`,
+    detail: (id: string) => `${API_BASE_URL}/api/professionals/${id}`,
   },
   proposals: {
     base: `${API_BASE_URL}/api/professional-proposals`,
@@ -113,5 +116,9 @@ export const API_ENDPOINTS = {
     promotions: `${API_BASE_URL}/api/storage/promotions`,
     profile: `${API_BASE_URL}/api/storage/profile`,
     portfolio: `${API_BASE_URL}/api/storage/portfolio`,
+  },
+  profiles: {
+    base: `${API_BASE_URL}/api/profiles`,
+    detail: (id: string) => `${API_BASE_URL}/api/profiles/${id}`,
   },
 };
