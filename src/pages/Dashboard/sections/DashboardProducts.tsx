@@ -19,6 +19,7 @@ import {
   Barcode,
   Info,
   Loader2,
+  Filter,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { productService } from "../../../services/productService";
@@ -44,6 +45,7 @@ export default function DashboardProducts() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [eanSearchQuery, setEanSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [sortField, setSortField] = useState("title");
   const [sortDir, setSortDir] = useState("asc");
 
@@ -52,6 +54,7 @@ export default function DashboardProducts() {
   const [bulkMode, setBulkMode] = useState("percent"); // "percent" | "fixed"
   const [bulkValue, setBulkValue] = useState("");
   const [bulkAction, setBulkAction] = useState("increase"); // "increase" | "decrease"
+  const [bulkDeleteOffers, setBulkDeleteOffers] = useState(false);
   const [bulkApplied, setBulkApplied] = useState(false);
 
   // Add product modal
@@ -115,7 +118,7 @@ export default function DashboardProducts() {
       offer_price: item.offer_price || 0,
       originalPrice: item.price, // Or some logic if you have discounts
       brand: item.product?.brand || "",
-      category: item.product?.CategoryProduct?.name || "General",
+      category: (item.product?.category?.name || "General").trim(),
       stock: item.stock || 0,
       image: item.product?.image_url || "",
       description: item.product?.description || "",
@@ -169,6 +172,7 @@ export default function DashboardProducts() {
         setBulkApplied(false);
         setBulkOpen(false);
         setBulkValue("");
+        setBulkDeleteOffers(false);
       }, 1200);
     },
   });
@@ -208,7 +212,8 @@ export default function DashboardProducts() {
     let list = productsList.filter((p) => {
       const matchesName = p.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesEan = p.ean.toLowerCase().includes(eanSearchQuery.toLowerCase());
-      return matchesName && matchesEan;
+      const matchesCategory = categoryFilter === "" || p.category.trim() === categoryFilter.trim();
+      return matchesName && matchesEan && matchesCategory;
     });
     list.sort((a, b) => {
       let valA = a[sortField];
@@ -220,26 +225,27 @@ export default function DashboardProducts() {
       return 0;
     });
     return list;
-  }, [productsList, searchQuery, eanSearchQuery, sortField, sortDir]);
+  }, [productsList, searchQuery, eanSearchQuery, categoryFilter, sortField, sortDir]);
 
   // Stats
   const totalProducts = productsList.length;
   const totalStock = productsList.reduce((s, p) => s + (p.stock || 0), 0);
   const avgPrice =
     productsList.length > 0
-      ? productsList.reduce((s, p) => s + p.price, 0) / productsList.length
+      ? productsList.reduce((s, p) => s + (p.offer_price > 0 ? p.offer_price : p.price), 0) / productsList.length
       : 0;
 
   // Bulk price apply
   const handleBulkApply = () => {
     const val = parseFloat(bulkValue);
-    if (isNaN(val) || val <= 0) return;
+    if ((isNaN(val) || val <= 0) && !bulkDeleteOffers) return;
 
     massUpdateMutation.mutate({
       professionalId,
       type: bulkMode as any,
-      value: val,
+      value: isNaN(val) ? 0 : val,
       operation: bulkAction === "increase" ? "add" : "subtract",
+      delete_offer_price: bulkDeleteOffers,
     });
   };
 
@@ -273,6 +279,7 @@ export default function DashboardProducts() {
           id: match.id,
           title: match.name,
           price: match.price || 0,
+          offer_price: match.offer_price || 0,
           image: match.image_url,
           category: match.CategoryProduct?.name,
           isAlreadyAssigned: match.is_already_assigned,
@@ -531,6 +538,42 @@ export default function DashboardProducts() {
             onChange={(e) => setEanSearchQuery(e.target.value)}
           />
         </div>
+        <div className="dash-products__search">
+          <Filter size={16} />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="dash-products__category-select"
+          >
+            <option value="">Todas las categorías</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.name.trim()}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          <button 
+            className="dash-products__search-btn"
+            onClick={() => {/* Reactive filtering is already active */}}
+            title="Aplicar filtro de categoría"
+          >
+            <Search size={14} />
+          </button>
+        </div>
+        {(searchQuery || eanSearchQuery || categoryFilter) && (
+          <button
+            className="dash-products__clear-filters"
+            onClick={() => {
+              setSearchQuery("");
+              setEanSearchQuery("");
+              setCategoryFilter("");
+            }}
+            title="Limpiar todos los filtros"
+          >
+            <X size={14} />
+            <span>Limpiar</span>
+          </button>
+        )}
         <button
           className="dash-products__bulk-btn"
           onClick={() => setBulkOpen(true)}
@@ -606,9 +649,16 @@ export default function DashboardProducts() {
                     </span>
                   </td>
                   <td className="dash-products__cell-right">
-                    <span className="dash-products__price">
-                      {formatPrice(product.price)}
-                    </span>
+                    <div className="dash-products__price-container">
+                      <span className={`dash-products__price ${product.offer_price > 0 ? "dash-products__price--offer" : ""}`}>
+                        {formatPrice(product.offer_price > 0 ? product.offer_price : product.price)}
+                      </span>
+                      {product.offer_price > 0 && (
+                        <span className="dash-products__price-original">
+                          {formatPrice(product.price)}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="dash-products__cell-right">
                     <span
@@ -738,16 +788,35 @@ export default function DashboardProducts() {
               </div>
             </div>
 
+            {/* Delete offers option */}
+            <div className="dash-products__modal-field" style={{ marginTop: '4px' }}>
+              <label className="dash-products__checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={bulkDeleteOffers}
+                  onChange={(e) => setBulkDeleteOffers(e.target.checked)}
+                />
+                <span>Eliminar todos los precios de oferta</span>
+              </label>
+            </div>
+
             {/* Preview */}
-            {bulkValue && parseFloat(bulkValue) > 0 && (
+            {(bulkDeleteOffers || (bulkValue && parseFloat(bulkValue) > 0)) && (
               <div className="dash-products__modal-preview">
                 <AlertTriangle size={14} />
                 <span>
-                  Esto {bulkAction === "increase" ? "aumentará" : "disminuirá"}{" "}
-                  el precio de <strong>{productsList.length} productos</strong>{" "}
-                  {bulkMode === "percent"
-                    ? `en un ${bulkValue}%`
-                    : `en ${formatPrice(parseFloat(bulkValue))}`}
+                  {bulkDeleteOffers && (!bulkValue || parseFloat(bulkValue) <= 0) ? (
+                    <>Se eliminará el <strong>precio de oferta</strong> de todos los productos.</>
+                  ) : (
+                    <>
+                      Esto {bulkAction === "increase" ? "aumentará" : "disminuirá"}{" "}
+                      el precio de <strong>{productsList.length} productos</strong>{" "}
+                      {bulkMode === "percent"
+                        ? `en un ${bulkValue}%`
+                        : `en ${formatPrice(parseFloat(bulkValue))}`}
+                      {bulkDeleteOffers && " y se eliminarán sus precios de oferta."}
+                    </>
+                  )}
                 </span>
               </div>
             )}
@@ -755,7 +824,7 @@ export default function DashboardProducts() {
             <button
               className={`dash-products__modal-apply ${bulkApplied ? "dash-products__modal-apply--done" : ""}`}
               onClick={handleBulkApply}
-              disabled={!bulkValue || parseFloat(bulkValue) <= 0 || bulkApplied}
+              disabled={(!bulkDeleteOffers && (!bulkValue || parseFloat(bulkValue) <= 0)) || bulkApplied}
             >
               {bulkApplied ? (
                 <>
@@ -839,7 +908,16 @@ export default function DashboardProducts() {
                   )}
                   <div className="dash-products__ean-match-info">
                     <span className="dash-products__ean-match-name">{eanMatch.title}</span>
-                    <span className="dash-products__ean-match-price">{formatPrice(eanMatch.price)}</span>
+                    <div className="dash-products__price-container" style={{ alignItems: 'flex-start' }}>
+                      <span className={`dash-products__ean-match-price ${eanMatch.offer_price > 0 ? "dash-products__price--offer" : ""}`}>
+                        {formatPrice(eanMatch.offer_price > 0 ? eanMatch.offer_price : eanMatch.price)}
+                      </span>
+                      {eanMatch.offer_price > 0 && (
+                        <span className="dash-products__price-original">
+                          {formatPrice(eanMatch.price)}
+                        </span>
+                      )}
+                    </div>
                     {eanMatch.category && (
                       <span className="dash-products__ean-match-cat">{eanMatch.category}</span>
                     )}

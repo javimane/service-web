@@ -102,6 +102,12 @@ export const API_ENDPOINTS = {
     base: `${API_BASE_URL}/api/banks`,
     detail: (id: number) => `${API_BASE_URL}/api/banks/${id}`,
   },
+  professionalPromotions: {
+    base: `${API_BASE_URL}/api/professional-promotions`,
+    byProfessional: (professionalId: string | number) =>
+      `${API_BASE_URL}/api/professional-promotions/professional/${professionalId}`,
+    detail: (id: string | number) => `${API_BASE_URL}/api/professional-promotions/${id}`,
+  },
   storage: {
     products: `${API_BASE_URL}/api/storage/products`,
     promotions: `${API_BASE_URL}/api/storage/promotions`,

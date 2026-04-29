@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toJpeg } from "html-to-image";
 import { uploadPromotionImage } from "../../../services/storageUploads";
+import { professionalPromotionService } from "../../../services/professionalPromotionService";
 import "./PromotionCreator.css";
 
 const DISCOUNT_TYPES = [
@@ -135,35 +136,30 @@ export default function PromotionCreator({ onBack, onViewAll }) {
     setSuccess(false);
 
     try {
-      const formData = new FormData();
-      formData.append("title", form.title);
-      formData.append("description", form.description);
-      formData.append("professionalName", form.professionalName);
-      formData.append("validFrom", form.validFrom);
-      formData.append("validTo", form.validTo);
-      formData.append("unlimitedStock", String(form.unlimitedStock));
-      formData.append("discountType", form.discountType);
-      formData.append("discountValue", String(form.discountValue));
-      formData.append("applicableTo", form.applicableTo);
+      let imageUrl = "";
       if (form.image) {
         const uploaded = await uploadPromotionImage({
           file: form.image,
-          folder: "promotions",
-          fileName: form.image.name,
         });
-        formData.append("imageUrl", uploaded.publicUrl);
+        imageUrl = uploaded.publicUrl;
       }
 
-      const response = await fetch("/api/promotions", {
-        method: "POST",
-        body: formData,
+      await professionalPromotionService.create({
+        title: form.title,
+        description: form.description,
+        professional_name: form.professionalName,
+        valid_from: form.validFrom,
+        valid_to: form.validTo,
+        unlimited_stock: form.unlimitedStock,
+        discount_type: form.discountType,
+        discount_value: Number(form.discountValue),
+        applicable_to: form.applicableTo,
+        image_url: imageUrl,
       });
-
-      if (!response.ok) throw new Error("Error al guardar la promoción");
 
       setSuccess(true);
       setTimeout(() => onViewAll(), 1500);
-    } catch (err) {
+    } catch (err: any) {
       alert("Error: " + err.message);
     } finally {
       setIsSubmitting(false);

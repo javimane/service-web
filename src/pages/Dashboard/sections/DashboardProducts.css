@@ -139,8 +139,44 @@
   font-family: var(--font-family);
 }
 
+.dash-products__search-btn {
+  background: var(--accent-color);
+  color: #fff;
+  border: none;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.dash-products__search-btn:hover {
+  background: var(--accent-hover);
+  transform: scale(1.05);
+}
+
 .dash-products__search input::placeholder {
   color: var(--text-secondary);
+}
+
+.dash-products__category-select {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  width: 100%;
+  font-family: var(--font-family);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0 center;
+  padding: 5px 24px 5px 0;
+  flex: 1;
 }
 
 .dash-products__bulk-btn {
@@ -158,6 +194,28 @@
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+}
+
+.dash-products__clear-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: fadeIn 0.2s ease;
+}
+
+.dash-products__clear-filters:hover {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .dash-products__bulk-btn:hover {
@@ -306,10 +364,21 @@
   text-align: right;
 }
 
+.dash-products__price-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
+
 .dash-products__price {
   font-weight: 800;
   color: var(--text-primary);
   display: block;
+}
+
+.dash-products__price--offer {
+  color: var(--highlight);
 }
 
 .dash-products__price-original {
@@ -317,7 +386,6 @@
   color: var(--text-secondary);
   text-decoration: line-through;
   display: block;
-  margin-top: 1px;
 }
 
 /* Stock */
@@ -1041,4 +1109,48 @@
 .dash-products__floating-btn:hover {
   transform: translateY(-2px);
   filter: brightness(1.2);
+}
+
+/* Checkbox */
+.dash-products__checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  padding: 8px 0;
+}
+
+.dash-products__checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  cursor: pointer;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.dash-products__checkbox-label input[type="checkbox"]:checked {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.dash-products__checkbox-label input[type="checkbox"]:checked::after {
+  content: "";
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  position: absolute;
+  top: 2px;
 }

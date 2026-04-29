@@ -48,6 +48,7 @@ export interface MassUpdatePriceRequest {
   type: "percentage" | "fixed";
   value: number;
   operation: "add" | "subtract";
+  delete_offer_price?: boolean;
 }
 
 export const productService = {

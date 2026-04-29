@@ -8,7 +8,8 @@ import {
   TrendingUp,
   Clapperboard,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import Footer from "../../components/Footer/Footer";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
@@ -38,96 +39,41 @@ export default function DashboardPage() {
   const location = useLocation();
   const { hasProfessionalSubscription, sessionStatus } = useAuth();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
+  const professionalId =
+    sessionStatus?.subscription?.professional_id ??
+    sessionStatus?.professional_id;
+
   const [view, setView] = useState("overview");
-  const [profileViews, setProfileViews] = useState<number | null>(null);
-  const [acceptedProposalsCount, setAcceptedProposalsCount] = useState<
-    number | null
-  >(null);
-  const [reelsStats, setReelsStats] = useState<CountViewsReelsRow | null>(null);
 
-  const openViewsForInactiveSubscription = new Set([
-    "subscription",
-    "notifications",
-    "proposals-view",
-  ]);
-  const shouldLockDashboardView =
-    !hasProfessionalSubscription && !openViewsForInactiveSubscription.has(view);
+  const { data: credentials = [] } = useQuery({
+    queryKey: ["professional-credentials", professionalId],
+    queryFn: () => professionalService.getCredentials(professionalId),
+    enabled: !!professionalId,
+  });
 
-  useEffect(() => {
-    if (location.state?.view) {
-      setView(location.state.view);
-    } else {
-      setView("overview");
-    }
-  }, [location.state]);
+  const { data: proposalsCountData } = useQuery({
+    queryKey: ["proposals-count", professionalId],
+    queryFn: () => proposalService.getCount(professionalId),
+    enabled: !!professionalId,
+  });
 
-  useEffect(() => {
-    const professionalId =
-      sessionStatus?.subscription?.professional_id ??
-      sessionStatus?.professional_id;
+  const { data: reelsStats } = useQuery({
+    queryKey: ["reels-stats", professionalId],
+    queryFn: () => reelsService.getProfessionalStats(professionalId),
+    enabled: !!professionalId,
+  });
 
-    if (!professionalId) {
-      setProfileViews(null);
-      setAcceptedProposalsCount(null);
-      setReelsStats(null);
-      return;
-    }
+  const profileViews = useMemo(() => {
+    const itemWithViews = credentials.find(
+      (item: any) =>
+        item?.Professional?.profile_views !== undefined ||
+        item?.profile_views !== undefined,
+    );
+    const views = itemWithViews?.Professional?.profile_views ?? (itemWithViews as any)?.profile_views ?? 0;
+    return typeof views === "number" ? views : 0;
+  }, [credentials]);
 
-    let isMounted = true;
-
-    const loadProfileViews = async () => {
-      try {
-        const credentials =
-          await professionalService.getCredentials(professionalId);
-        if (!isMounted) return;
-
-        const itemWithViews = credentials.find(
-          (item: any) =>
-            item?.Professional?.profile_views !== undefined ||
-            item?.profile_views !== undefined,
-        );
-
-        const nextViews =
-          itemWithViews?.Professional?.profile_views ??
-          (itemWithViews as any)?.profile_views ??
-          0;
-
-        setProfileViews(typeof nextViews === "number" ? nextViews : 0);
-      } catch (error) {
-        if (isMounted) setProfileViews(null);
-      }
-    };
-
-    const loadAcceptedProposalsCount = async () => {
-      try {
-        const result = await proposalService.getCount(professionalId);
-        if (!isMounted) return;
-        setAcceptedProposalsCount(
-          typeof result?.count === "number" ? result.count : 0,
-        );
-      } catch (error) {
-        if (isMounted) setAcceptedProposalsCount(null);
-      }
-    };
-
-    const loadReelsStats = async () => {
-      try {
-        const result = await reelsService.getProfessionalStats(professionalId);
-        if (!isMounted) return;
-        setReelsStats(result);
-      } catch (error) {
-        if (isMounted) setReelsStats(null);
-      }
-    };
-
-    loadProfileViews();
-    loadAcceptedProposalsCount();
-    loadReelsStats();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [sessionStatus]);
+  const acceptedProposalsCount = proposalsCountData?.count ?? 0;
 
   const handleShowProposalsCreate = () => setView("proposals-create");
   const handleShowProposalsView = () => setView("proposals-view");
@@ -146,6 +92,22 @@ export default function DashboardPage() {
   const handleShowBankPromos = () => setView("bank-promotions");
   const handleShowProfile = () => setView("profile");
   const handleShowReels = () => setView("reels");
+
+  const openViewsForInactiveSubscription = new Set([
+    "subscription",
+    "notifications",
+    "proposals-view",
+  ]);
+  const shouldLockDashboardView =
+    !hasProfessionalSubscription && !openViewsForInactiveSubscription.has(view);
+
+  useEffect(() => {
+    if (location.state?.view) {
+      setView(location.state.view);
+    } else {
+      setView("overview");
+    }
+  }, [location.state]);
 
   const totalProfileViews = profileViews ?? 0;
   const chartHeight = Math.max(

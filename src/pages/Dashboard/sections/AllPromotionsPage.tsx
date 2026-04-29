@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../../../context/AuthContext";
+import { professionalPromotionService } from "../../../services/professionalPromotionService";
 import {
   Plus,
   Search,
@@ -9,64 +12,9 @@ import {
   Eye,
   Trash2,
   Copy,
+  Loader2,
 } from "lucide-react";
 import "./AllPromotionsPage.css";
-
-const MOCK_PROMOTIONS = [
-  {
-    id: "a1b2c3d4",
-    title: "Gran Inauguración",
-    description: "Descuento especial en todos los servicios de plomería.",
-    offer: "30% OFF",
-    type: "DISCOUNT",
-    status: "active",
-    validFrom: "2026-04-15",
-    validTo: "2026-05-15",
-    code: "A1B2C3D4",
-    image:
-      "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "e5f6g7h8",
-    title: "Combo Limpieza",
-    description:
-      "Contrata limpieza de hogar y llévate la de oficina a mitad de precio.",
-    offer: "2x1",
-    type: "BOGO",
-    status: "active",
-    validFrom: "2026-04-10",
-    validTo: "2026-04-30",
-    code: "E5F6G7H8",
-    image:
-      "https://images.unsplash.com/photo-1581578731522-bc0edec9057b?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "i9j0k1l2",
-    title: "Mes de la Electricidad",
-    description: "Revisión de tablero eléctrico sin cargo.",
-    offer: "GRATIS",
-    type: "FREE",
-    status: "expired",
-    validFrom: "2026-03-01",
-    validTo: "2026-03-31",
-    code: "I9J0K1L2",
-    image:
-      "https://images.unsplash.com/photo-1621905252507-b354bc2d1d6c?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "m3n4o5p6",
-    title: "Promoción Pintura",
-    description: "Pinta 3 ambientes y el 4to es sin cargo de mano de obra.",
-    offer: "3x2",
-    type: "MULTIBUY",
-    status: "draft",
-    validFrom: "2026-05-01",
-    validTo: "2026-06-01",
-    code: "M3N4O5P6",
-    image:
-      "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80",
-  },
-];
 
 const STATUS_LABELS = {
   active: "Activa",
@@ -75,14 +23,41 @@ const STATUS_LABELS = {
 };
 
 export default function AllPromotionsPage({ onCreateNew }) {
+  const { sessionStatus } = useAuth();
+  const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
-  const filtered = MOCK_PROMOTIONS.filter((p) => {
-    const matchSearch = p.title.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === "all" || p.status === filter;
-    return matchSearch && matchFilter;
+  const { data: promotions = [], isLoading } = useQuery({
+    queryKey: ["professional-promotions", professionalId],
+    queryFn: () => professionalPromotionService.getByProfessional(professionalId),
+    enabled: !!professionalId,
   });
+
+  const promosList = useMemo(() => {
+    return promotions.map(p => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      offer: p.discount_type === 'percentage' ? `${p.discount_value}% OFF` : 
+             p.discount_type === 'fixed' ? `$${p.discount_value}` :
+             p.discount_type === 'bogo' ? '2x1' : 'GRATIS',
+      status: p.state || 'active',
+      validFrom: p.valid_from,
+      validTo: p.valid_to,
+      code: p.id.slice(0, 8).toUpperCase(),
+      image: p.image_url || "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
+    }));
+  }, [promotions]);
+
+  const filtered = useMemo(() => {
+    return promosList.filter((p) => {
+      const matchSearch = p.title.toLowerCase().includes(search.toLowerCase());
+      const matchFilter = filter === "all" || p.status === filter;
+      return matchSearch && matchFilter;
+    });
+  }, [promosList, search, filter]);
 
   return (
     <div className="all-promos">
@@ -133,25 +108,25 @@ export default function AllPromotionsPage({ onCreateNew }) {
       <div className="all-promos__stats">
         <div className="promo-stat-card">
           <span className="promo-stat-card__value">
-            {MOCK_PROMOTIONS.length}
+            {promosList.length}
           </span>
           <span className="promo-stat-card__label">Total</span>
         </div>
         <div className="promo-stat-card promo-stat-card--active">
           <span className="promo-stat-card__value">
-            {MOCK_PROMOTIONS.filter((p) => p.status === "active").length}
+            {promosList.filter((p) => p.status === "active").length}
           </span>
           <span className="promo-stat-card__label">Activas</span>
         </div>
         <div className="promo-stat-card promo-stat-card--expired">
           <span className="promo-stat-card__value">
-            {MOCK_PROMOTIONS.filter((p) => p.status === "expired").length}
+            {promosList.filter((p) => p.status === "expired").length}
           </span>
           <span className="promo-stat-card__label">Expiradas</span>
         </div>
         <div className="promo-stat-card promo-stat-card--draft">
           <span className="promo-stat-card__value">
-            {MOCK_PROMOTIONS.filter((p) => p.status === "draft").length}
+            {promosList.filter((p) => p.status === "draft").length}
           </span>
           <span className="promo-stat-card__label">Borradores</span>
         </div>
@@ -159,7 +134,12 @@ export default function AllPromotionsPage({ onCreateNew }) {
 
       {/* Promotions Grid */}
       <div className="all-promos__grid">
-        {filtered.map((promo) => (
+        {isLoading ? (
+          <div className="all-promos__loading">
+            <Loader2 className="animate-spin" size={32} />
+            <p>Cargando promociones...</p>
+          </div>
+        ) : filtered.map((promo) => (
           <article key={promo.id} className="promo-list-card">
             <div className="promo-list-card__image">
               <img src={promo.image} alt={promo.title} loading="lazy" />
