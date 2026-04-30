@@ -79,12 +79,14 @@ export interface CompanyProvinceRow {
   readonly company_id: number;
   readonly province_id: number;
   readonly created_at: string;
+  readonly Province?: ProvinceRow;
 }
 
 export interface CompanyDepartmentRow {
   readonly company_id: number;
   readonly province_department_id: number;
   readonly created_at: string;
+  readonly Department?: ProvinceDepartmentRow;
 }
 
 export interface CompaniesArcaRow {

@@ -23,6 +23,16 @@ export const companyService = {
     apiClient<CompanyRow>(API_ENDPOINTS.companies.detail(id.toString()), {
       method: "GET",
     }),
+
+  /**
+   * @route GET /api/companies/professional/:id
+   * @param {string | number} id
+   * @returns {Promise<CompanyRow>}
+   */
+  getByProfessional: (id: string | number) => 
+    apiClient<CompanyRow>(API_ENDPOINTS.companies.byProfessional(id), {
+      method: "GET",
+    }),
     
   /**
    * @route POST /api/companies

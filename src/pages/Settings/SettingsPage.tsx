@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PlusCircle, Building2 } from "lucide-react";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import BusinessInfoSection from "./sections/BusinessInfoSection";
@@ -9,6 +10,7 @@ import PaymentMethodsSection from "./sections/PaymentMethodsSection";
 import ArcaVerificationSection from "./sections/ArcaVerificationSection";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ActionsSection from "./sections/ActionsSection";
+import CompanyDisplaySection from "./sections/CompanyDisplaySection";
 import { useAuth } from "../../context/AuthContext";
 import { professionalService } from "../../services/professionalService";
 import { companyService } from "../../services/companyService";
@@ -23,10 +25,10 @@ export default function SettingsPage() {
   const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
   const isProfessional = Boolean(professionalId);
   
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [hasStorefront, setHasStorefront] = useState("no");
-  const [businessType, setBusinessType] = useState("autonomo");
+  const [businessType, setBusinessType] = useState("individual");
   const [tradeName, setTradeName] = useState("");
-  const [isRegistered, setIsRegistered] = useState("no");
   const [selectedProvinces, setSelectedProvinces] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
@@ -43,70 +45,79 @@ export default function SettingsPage() {
   const [storeLat, setStoreLat] = useState<number | null>(null);
   const [storeLng, setStoreLng] = useState<number | null>(null);
 
-  // 1. Fetch Provinces (Static-ish data)
+  // 1. Fetch Provinces
   const { data: provinceList = [] } = useQuery({
     queryKey: ["provinces"],
     queryFn: locationService.getProvinces,
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60,
   });
 
-  // 2. Fetch Professional Detail (Main data)
+  // 2. Fetch Professional Detail
   const { data: prof, isLoading: loadingProf } = useQuery({
     queryKey: ["professional-detail", professionalId],
     queryFn: () => professionalService.getDetail(professionalId!),
     enabled: !!professionalId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
-  // Sync state when professional data is loaded
+  // 2.1 Fetch Company Detail (Dedicated endpoint for better reliability)
+  const { data: company, isLoading: loadingCompany } = useQuery({
+    queryKey: ["company-detail", professionalId],
+    queryFn: () => companyService.getByProfessional(professionalId!),
+    enabled: !!professionalId,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Sync state when data is loaded
   useEffect(() => {
     if (prof) {
-      setBusinessType(prof.account_type || "autonomo");
-      setIsRegistered(prof.is_matriculate ? "si" : "no");
+      setBusinessType(prof.account_type || "individual");
+    }
+    
+    // Handle both single object and array responses
+    const actualCompany = Array.isArray(company) ? company[0] : company;
+
+    if (actualCompany) {
+      setCompanyId(actualCompany.id);
+      setTradeName(actualCompany.name || "");
+      setHasStorefront(actualCompany.public_trade ? "si" : "no");
       
-      if (prof.Company) {
-        const comp = prof.Company;
-        setCompanyId(comp.id);
-        setTradeName(comp.name || "");
-        setHasStorefront(comp.public_trade ? "si" : "no");
-        
-        // Payments
-        const payments: string[] = [];
-        if (comp.cash) payments.push("Efectivo");
-        if (comp.transfer) payments.push("Transferencias");
-        if (comp.credit) payments.push("Crédito");
-        if (comp.debit) payments.push("Débito");
-        if (comp.cheque) payments.push("Cheque");
-        setSelectedPayments(payments);
+      // Payments
+      const payments: string[] = [];
+      if (actualCompany.cash) payments.push("Efectivo");
+      if (actualCompany.transfer) payments.push("Transferencias");
+      if (actualCompany.credit) payments.push("Crédito");
+      if (actualCompany.debit) payments.push("Débito");
+      if (actualCompany.cheque) payments.push("Cheque");
+      setSelectedPayments(payments);
 
-        // Address
-        if (comp.Address) {
-          const addr = comp.Address;
-          setAddressId(addr.id);
-          setStoreStreet(addr.street_name || "");
-          setStoreNumber(addr.street_number || "");
-          setStoreFloor(addr.floor_apartment || "");
-          setStoreZip(addr.zip_code || "");
-          setStoreProvinceId(addr.province_id);
-          setStoreDepartmentId(addr.department_id);
-          setStoreLat(addr.latitude);
-          setStoreLng(addr.longitude);
-        }
+      // Address
+      if (actualCompany.Address) {
+        const addr = actualCompany.Address;
+        setAddressId(addr.id);
+        setStoreStreet(addr.street_name || "");
+        setStoreNumber(addr.street_number || "");
+        setStoreFloor(addr.floor_apartment || "");
+        setStoreZip(addr.zip_code || "");
+        setStoreProvinceId(addr.province_id);
+        setStoreDepartmentId(addr.department_id);
+        setStoreLat(addr.latitude);
+        setStoreLng(addr.longitude);
+      }
 
-        // Coverage
-        if (comp.CompanyProvinces) {
-          const pNames = comp.CompanyProvinces.map(cp => cp.Province?.name).filter(Boolean);
-          setSelectedProvinces(pNames as string[]);
-        }
-        if (comp.CompanyDepartments) {
-          const dNames = comp.CompanyDepartments.map(cd => cd.Department?.name).filter(Boolean);
-          setSelectedDepartments(dNames as string[]);
-        }
+      // Coverage
+      if (actualCompany.CompanyProvinces) {
+        const pNames = actualCompany.CompanyProvinces.map((cp: any) => cp.Province?.name).filter(Boolean);
+        setSelectedProvinces(pNames as string[]);
+      }
+      if (actualCompany.CompanyDepartments) {
+        const dNames = actualCompany.CompanyDepartments.map((cd: any) => cd.Department?.name).filter(Boolean);
+        setSelectedDepartments(dNames as string[]);
       }
     }
-  }, [prof]);
+  }, [prof, company]);
 
-  // 3. Fetch Departments for selected provinces (Coverage)
+  // 3. Fetch Departments for selected provinces
   const selectedProvIds = useMemo(() => {
     return provinceList
       .filter(p => selectedProvinces.includes(p.name))
@@ -121,7 +132,7 @@ export default function SettingsPage() {
       return allDeps.flat();
     },
     enabled: selectedProvIds.length > 0,
-    staleTime: 1000 * 60 * 30, // 30 mins
+    staleTime: 1000 * 60 * 30,
   });
 
   // 4. Fetch Departments for store province
@@ -129,24 +140,18 @@ export default function SettingsPage() {
     queryKey: ["departments-store", storeProvinceId],
     queryFn: () => locationService.getDepartments(storeProvinceId!),
     enabled: !!storeProvinceId,
-    staleTime: 1000 * 60 * 30, // 30 mins
+    staleTime: 1000 * 60 * 30,
   });
-
-  const provinceOptions = provinceList.map(p => p.name);
-  const departmentOptions = departmentList.map(d => d.name);
 
   // 5. Mutation for Saving
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!professionalId) return;
 
-      // Update Professional
       await professionalService.update(professionalId, {
         account_type: businessType,
-        is_matriculate: isRegistered === "si",
       });
 
-      // Integrated Company Data
       const companyData: any = {
         professional_id: professionalId,
         name: tradeName,
@@ -183,6 +188,8 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-detail", professionalId] });
+      queryClient.invalidateQueries({ queryKey: ["company-detail", professionalId] });
+      setIsEditingCompany(false);
       alert("Cambios guardados con éxito");
     },
     onError: (error) => {
@@ -193,13 +200,18 @@ export default function SettingsPage() {
 
   const handleSave = () => saveMutation.mutate();
 
-  const toggleSelection = (setter, option) => {
-    setter((currentValues) =>
+  const toggleSelection = (setter: any, option: string) => {
+    setter((currentValues: string[]) =>
       currentValues.includes(option)
         ? currentValues.filter((item) => item !== option)
         : [...currentValues, option],
     );
   };
+
+  const showCTA = isProfessional && !company && !isEditingCompany;
+  const actualCompany = Array.isArray(company) ? company[0] : company;
+  const showSummary = isProfessional && actualCompany && !isEditingCompany;
+  const showEditForms = isProfessional && isEditingCompany;
 
   return (
     <div className="dashboard-page-wrapper">
@@ -223,7 +235,7 @@ export default function SettingsPage() {
                 {isProfessional ? "Perfil comercial" : "Cuenta personal"}
               </div>
             </section>
-
+ 
             <section className="settings-grid">
               {/* Always show personal info */}
               <PersonalInfoSection 
@@ -234,8 +246,17 @@ export default function SettingsPage() {
                 }}
               />
 
-              {/* Show business info only if professional */}
-              {isProfessional && (
+              {/* Business Sections */}
+              {showSummary && (
+                <CompanyDisplaySection 
+                  prof={{ ...prof, Company: actualCompany }} 
+                  onEdit={() => setIsEditingCompany(true)} 
+                  provinceList={provinceList}
+                  departmentList={storeDepartmentList}
+                />
+              )}
+
+              {showEditForms && (
                 <>
                   <BusinessInfoSection
                     businessType={businessType}
@@ -246,19 +267,9 @@ export default function SettingsPage() {
 
                   <HeadquartersSection
                     selectedProvinces={selectedProvinces}
-                    onToggleProvince={(option) =>
-                      toggleSelection(
-                        setSelectedProvinces,
-                        option,
-                      )
-                    }
+                    onToggleProvince={(option) => toggleSelection(setSelectedProvinces, option)}
                     selectedDepartments={selectedDepartments}
-                    onToggleDepartment={(option) =>
-                      toggleSelection(
-                        setSelectedDepartments,
-                        option,
-                      )
-                    }
+                    onToggleDepartment={(option) => toggleSelection(setSelectedDepartments, option)}
                     provinceList={provinceList}
                     departmentList={departmentList}
                   />
@@ -288,17 +299,32 @@ export default function SettingsPage() {
 
                   <PaymentMethodsSection
                     selectedPayments={selectedPayments}
-                    onTogglePayment={(option) =>
-                      toggleSelection(setSelectedPayments, option)
-                    }
+                    onTogglePayment={(option) => toggleSelection(setSelectedPayments, option)}
                   />
 
                   <ArcaVerificationSection />
+                  
+                  <ActionsSection 
+                    onSave={handleSave} 
+                    onCancel={() => setIsEditingCompany(false)} 
+                  />
                 </>
               )}
-            </section>
 
-            {isProfessional && <ActionsSection onSave={handleSave} />}
+              {showCTA && (
+                <div className="register-company-cta">
+                    <div className="cta-icon">
+                        <Building2 size={40} />
+                    </div>
+                    <h3>Completar Perfil Comercial</h3>
+                    <p>Aún no has registrado los datos de tu comercio o actividad autónoma. Completalos para aparecer en las búsquedas.</p>
+                    <button className="cta-register-btn" onClick={() => setIsEditingCompany(true)}>
+                        <PlusCircle size={18} />
+                        Comenzar Registro
+                    </button>
+                </div>
+              )}
+            </section>
           </div>
         </main>
       </div>

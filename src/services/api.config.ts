@@ -42,6 +42,8 @@ export const API_ENDPOINTS = {
   companies: {
     base: `${API_BASE_URL}/api/companies`,
     detail: (id: string) => `${API_BASE_URL}/api/companies/${id}`,
+    byProfessional: (professionalId: string | number) => 
+      `${API_BASE_URL}/api/companies/professional/${professionalId}`,
   },
   products: {
     list: `${API_BASE_URL}/api/products`,

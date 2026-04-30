@@ -34,8 +34,8 @@ export default function BusinessInfoSection({
             value={businessType}
             onChange={setBusinessType}
             options={[
-              { value: "Empresa", label: "Empresa" },
-              { value: "Autónomo", label: "Autónomo" },
+              { value: "company", label: "Empresa" },
+              { value: "individual", label: "Autónomo" },
             ]}
           />
         </div>

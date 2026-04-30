@@ -1,0 +1,185 @@
+.company-display-container {
+  grid-column: span 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.company-display-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(123, 97, 255, 0.12), rgba(123, 97, 255, 0.02));
+  border: 1px solid rgba(123, 97, 255, 0.15);
+  border-radius: 28px;
+}
+
+.company-header-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.company-logo-placeholder {
+  width: 64px;
+  height: 64px;
+  background: rgba(123, 97, 255, 0.2);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b8a9ff;
+  box-shadow: inset 0 0 0 1px rgba(123, 97, 255, 0.3);
+}
+
+.company-header-info h2 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.company-type-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #9a8fff;
+}
+
+.company-edit-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  color: #000;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.company-edit-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+}
+
+.company-display-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.display-card {
+  background: #0c0c0f;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  gap: 18px;
+  transition: border-color 0.2s ease;
+}
+
+.display-card:hover {
+  border-color: rgba(123, 97, 255, 0.2);
+}
+
+.display-card-icon {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8d8da3;
+  flex-shrink: 0;
+}
+
+.display-card-content h3 {
+  margin: 0 0 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #7f7f92;
+  letter-spacing: 0.05em;
+}
+
+.display-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #fff;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.display-subtext {
+  display: block;
+  margin-top: 6px;
+  color: #6b6b7d;
+  font-size: 0.78rem;
+}
+
+.address-main {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.address-sub, .address-geo {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: #8d8da3;
+}
+
+.display-empty-text {
+  margin: 0;
+  color: #5b5b6b;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .company-display-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  
+  .company-edit-trigger {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Light Mode */
+[data-theme="light"] .display-card {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .company-header-info h2,
+[data-theme="light"] .display-text,
+[data-theme="light"] .address-main {
+  color: #1a1b1e;
+}
+
+[data-theme="light"] .company-display-header {
+  background: linear-gradient(135deg, rgba(123, 97, 255, 0.08), rgba(123, 97, 255, 0.02));
+  border-color: rgba(123, 97, 255, 0.15);
+}
+
+[data-theme="light"] .company-edit-trigger {
+  background: #000;
+  color: #fff;
+}
