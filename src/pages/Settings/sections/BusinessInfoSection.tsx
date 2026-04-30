@@ -5,6 +5,8 @@ export default function BusinessInfoSection({
   setBusinessType,
   tradeName,
   setTradeName,
+  cuit,
+  setCuit,
 }) {
   return (
     <article className="settings-card settings-card--wide">
@@ -23,6 +25,18 @@ export default function BusinessInfoSection({
             placeholder="Ingresá el nombre comercial"
             value={tradeName}
             onChange={(e) => setTradeName(e.target.value)}
+          />
+        </label>
+      </div>
+
+      <div className="settings-fields two-columns">
+        <label className="settings-field">
+          <span>Cuit</span>
+          <input
+            type="text"
+            placeholder="Ingresá el CUIT"
+            value={cuit}
+            onChange={(e) => setCuit(e.target.value)}
           />
         </label>
       </div>

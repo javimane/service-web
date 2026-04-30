@@ -24,9 +24,9 @@
 }
 
 .settings-hero-badge {
-  background: rgba(123, 97, 255, 0.18);
-  color: #b8a9ff;
-  border: 1px solid rgba(123, 97, 255, 0.35);
+  background: rgba(29, 95, 191, 0.18);
+  color: #4a8df3;
+  border: 1px solid rgba(29, 95, 191, 0.35);
   border-radius: 999px;
   padding: 10px 14px;
   font-size: 0.78rem;
@@ -44,7 +44,7 @@
   background:
     radial-gradient(
       circle at top left,
-      rgba(123, 97, 255, 0.14),
+      rgba(29, 95, 191, 0.14),
       transparent 35%
     ),
     #0c0c0f;
@@ -132,7 +132,7 @@
   -moz-appearance: none;
   padding-right: 42px;
   background: linear-gradient(180deg, #16161d 0%, #111117 100%);
-  border: 1px solid rgba(123, 97, 255, 0.14);
+  border: 1px solid rgba(29, 95, 191, 0.14);
   border-radius: 16px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
   transition:
@@ -143,13 +143,13 @@
 }
 
 .select-wrapper select:hover {
-  border-color: rgba(123, 97, 255, 0.28);
+  border-color: rgba(29, 95, 191, 0.28);
 }
 
 .select-wrapper select:focus {
   outline: none;
-  border-color: rgba(123, 97, 255, 0.55);
-  box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.14);
+  border-color: rgba(29, 95, 191, 0.55);
+  box-shadow: 0 0 0 3px rgba(29, 95, 191, 0.14);
 }
 
 .select-arrow {
@@ -157,7 +157,7 @@
   right: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9a8fff;
+  color: #4a8df3;
   pointer-events: none;
   font-size: 1rem;
   line-height: 1;
@@ -177,8 +177,8 @@
   align-items: center;
   justify-content: center;
   font-size: 0.78rem;
-  background: rgba(123, 97, 255, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(123, 97, 255, 0.28);
+  background: rgba(29, 95, 191, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(29, 95, 191, 0.28);
 }
 
 .section-emoji--small {
@@ -207,11 +207,11 @@
 .choice-pill.active {
   background: linear-gradient(
     135deg,
-    rgba(123, 97, 255, 0.9),
-    rgba(123, 97, 255, 0.55)
+    rgba(29, 95, 191, 0.9),
+    rgba(29, 95, 191, 0.55)
   );
   color: white;
-  box-shadow: 0 10px 22px rgba(123, 97, 255, 0.28);
+  box-shadow: 0 10px 22px rgba(29, 95, 191, 0.28);
 }
 
 .multi-chip-group {
@@ -249,7 +249,7 @@
 }
 
 .social-field svg {
-  color: #b8a9ff;
+  color: #4a8df3;
 }
 
 .settings-status-card {
@@ -285,12 +285,12 @@
 
 .upload-box {
   min-height: 220px;
-  border: 1px dashed rgba(123, 97, 255, 0.35);
+  border: 1px dashed rgba(29, 95, 191, 0.35);
   border-radius: 24px;
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.02),
-    rgba(123, 97, 255, 0.04)
+    rgba(29, 95, 191, 0.04)
   );
   display: flex;
   flex-direction: column;
@@ -322,6 +322,10 @@
   display: flex;
   gap: 10px;
   align-items: center;
+}
+
+.arca-actions {
+  margin-top: 8px;
 }
 
 .arca-verify-btn {
@@ -366,25 +370,121 @@
   color: #f87171;
 }
 
-.settings-actions-row {
+/* ARCA Badges and States */
+.arca-container {
+  margin-bottom: 24px;
+}
+
+.arca-badge {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-radius: 20px;
+  gap: 16px;
+}
+
+.arca-badge-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.arca-badge-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arca-badge-text strong {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.arca-badge-text span {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.arca-badge--verified {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.arca-badge--unverified {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.arca-toggle-form-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.arca-toggle-form-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.arca-form-card {
+  margin-top: 12px;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-actions-row {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-top: 32px;
+  padding-top: 16px;
 }
 
 .settings-actions-card {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  width: min(100%, 360px);
-  margin-left: auto;
-  padding: 18px 20px;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(29, 95, 191, 0.12), rgba(29, 95, 191, 0.05));
+  border: 1px solid rgba(29, 95, 191, 0.25);
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
 .settings-actions-copy h3 {
   margin: 0 0 6px;
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
 .settings-actions-copy p {
@@ -393,19 +493,54 @@
   font-size: 0.82rem;
 }
 
-.settings-save-btn {
-  display: inline-flex;
+.settings-actions-buttons {
+  display: flex;
+  gap: 16px;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border: none;
+}
+
+.settings-cancel-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #8d8da3;
+  padding: 14px 24px;
   border-radius: 16px;
-  padding: 14px 18px;
   font-weight: 800;
-  background: var(--highlight);
-  color: #000;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
-  min-width: 180px;
+  transition: all 0.2s ease;
+}
+
+.settings-cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  transform: translateY(-2px);
+}
+
+.settings-save-btn {
+  background: #1d5fbf;
+  color: #fff;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 20px rgba(29, 95, 191, 0.2);
+}
+
+.settings-save-btn:hover {
+  background: #1d5fbf;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(29, 95, 191, 0.3);
 }
 
 @media (max-width: 1200px) {
@@ -447,6 +582,20 @@
   }
 }
 
+.arca-loading-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  color: #8d8da3;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 /* ===== Light Mode ===== */
 [data-theme="light"] .settings-card {
   background:
@@ -461,9 +610,9 @@
 }
 
 [data-theme="light"] .settings-hero-badge {
-  background: rgba(123, 97, 255, 0.1);
-  color: #7b61ff;
-  border-color: rgba(123, 97, 255, 0.25);
+  background: rgba(29, 95, 191, 0.1);
+  color: #1d5fbf;
+  border-color: rgba(29, 95, 191, 0.25);
 }
 
 [data-theme="light"] .settings-field span,
@@ -489,7 +638,7 @@
 }
 
 [data-theme="light"] .select-arrow {
-  color: #7b61ff;
+  color: #1d5fbf;
 }
 
 [data-theme="light"] .choice-pill {
@@ -515,8 +664,8 @@
 }
 
 [data-theme="light"] .section-emoji {
-  background: rgba(123, 97, 255, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(123, 97, 255, 0.18);
+  background: rgba(29, 95, 191, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(29, 95, 191, 0.18);
 }
 
 [data-theme="light"] .status-line {
@@ -532,11 +681,11 @@
 }
 
 [data-theme="light"] .upload-box {
-  border-color: rgba(123, 97, 255, 0.25);
+  border-color: rgba(29, 95, 191, 0.25);
   background: linear-gradient(
     180deg,
-    rgba(123, 97, 255, 0.03),
-    rgba(123, 97, 255, 0.06)
+    rgba(29, 95, 191, 0.03),
+    rgba(29, 95, 191, 0.06)
   );
 }
 
@@ -566,16 +715,35 @@
   color: #991b1b;
 }
 
+/* Light mode for ARCA Badges */
+[data-theme="light"] .arca-badge--verified {
+  background: rgba(34, 197, 94, 0.1);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="light"] .arca-badge--unverified {
+  background: rgba(239, 68, 68, 0.08);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+[data-theme="light"] .arca-toggle-form-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1a1b1e;
+}
+
+[data-theme="light"] .arca-form-card {
+  background: #f9fafb;
+}
+
 [data-theme="light"] .settings-actions-copy p {
   color: #6b7280;
 }
 
-[data-theme="light"] .settings-save-btn {
-  background: var(--highlight);
-}
-
 [data-theme="light"] .social-field svg {
-  color: #7b61ff;
+  color: #1d5fbf;
 }
 
 .coordinates-group {
@@ -583,8 +751,8 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: rgba(123, 97, 255, 0.04);
-  border: 1px solid rgba(123, 97, 255, 0.1);
+  background: rgba(29, 95, 191, 0.04);
+  border: 1px solid rgba(29, 95, 191, 0.1);
   border-radius: 20px;
   margin-top: 12px;
 }
@@ -592,7 +760,7 @@
 .coordinates-title {
   font-size: 0.8rem;
   font-weight: 800;
-  color: #b8a9ff;
+  color: #4a8df3;
   letter-spacing: 0.03em;
 }
 
@@ -615,7 +783,7 @@
 }
 
 [data-theme="light"] .coordinates-title {
-  color: #7b61ff;
+  color: #1d5fbf;
 }
 
 [data-theme="light"] .coordinates-note {
@@ -640,9 +808,9 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(123, 97, 255, 0.15);
-  border: 1px solid rgba(123, 97, 255, 0.25);
-  color: #b8a9ff;
+  background: rgba(29, 95, 191, 0.15);
+  border: 1px solid rgba(29, 95, 191, 0.25);
+  color: #4a8df3;
   padding: 10px 16px;
   border-radius: 12px;
   font-size: 0.8rem;
@@ -653,27 +821,63 @@
 }
 
 .map-open-btn:hover {
-  background: rgba(123, 97, 255, 0.25);
+  background: rgba(29, 95, 191, 0.25);
   transform: translateY(-2px);
   color: #fff;
 }
 
 [data-theme="light"] .map-open-btn {
-  background: rgba(123, 97, 255, 0.1);
-  color: #7b61ff;
-  border-color: rgba(123, 97, 255, 0.2);
+  background: rgba(29, 95, 191, 0.1);
+  color: #1d5fbf;
+  border-color: rgba(29, 95, 191, 0.2);
 }
 
 [data-theme="light"] .map-open-btn:hover {
-  background: #7b61ff;
+  background: #1d5fbf;
   color: #fff;
+}
+
+.settings-status-banner {
+  margin-top: 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  animation: slideDown 0.3s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.settings-status-banner--success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #4ade80;
+}
+
+.settings-status-banner--error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Register CTA */
 .register-company-cta {
   grid-column: 1 / -1;
-  background: linear-gradient(135deg, rgba(123, 97, 255, 0.08), rgba(123, 97, 255, 0.02));
-  border: 1px solid rgba(123, 97, 255, 0.15);
+  background: linear-gradient(135deg, rgba(29, 95, 191, 0.08), rgba(29, 95, 191, 0.02));
+  border: 1px solid rgba(29, 95, 191, 0.15);
   border-radius: 32px;
   padding: 60px 40px;
   text-align: center;
@@ -692,21 +896,21 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(123, 97, 255, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(29, 95, 191, 0.05) 0%, transparent 70%);
   pointer-events: none;
 }
 
 .cta-icon {
   width: 84px;
   height: 84px;
-  background: #7b61ff;
+  background: #1d5fbf;
   border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   margin-bottom: 8px;
-  box-shadow: 0 12px 24px rgba(123, 97, 255, 0.3);
+  box-shadow: 0 12px 24px rgba(29, 95, 191, 0.3);
   z-index: 1;
 }
 
@@ -749,11 +953,11 @@
 .cta-register-btn:hover {
   transform: translateY(-4px) scale(1.02);
   background: #f8f8f8;
-  box-shadow: 0 15px 30px rgba(123, 97, 255, 0.2);
+  box-shadow: 0 15px 30px rgba(29, 95, 191, 0.2);
 }
 
 .cta-register-btn svg {
-  color: #7b61ff;
+  color: #1d5fbf;
 }
 
 [data-theme="light"] .register-company-cta h3 {
@@ -763,86 +967,6 @@
 [data-theme="light"] .cta-register-btn {
   background: #000;
   color: #fff;
-}
-
-.settings-actions-row {
-  grid-column: 1 / -1;
-  width: 100%;
-  margin-top: 32px;
-  padding-top: 16px;
-}
-
-.settings-actions-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  width: 100%;
-  background: linear-gradient(135deg, rgba(123, 97, 255, 0.12), rgba(123, 97, 255, 0.05));
-  border: 1px solid rgba(123, 97, 255, 0.25);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.settings-actions-buttons {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.settings-cancel-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #8d8da3;
-  padding: 14px 24px;
-  border-radius: 16px;
-  font-weight: 800;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.settings-cancel-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #f87171;
-  transform: translateY(-2px);
-}
-
-.settings-save-btn {
-  background: #7b61ff;
-  color: #fff;
-  border: none;
-  padding: 14px 28px;
-  border-radius: 16px;
-  font-weight: 800;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 8px 20px rgba(123, 97, 255, 0.2);
-}
-
-.settings-save-btn:hover {
-  background: #8e77ff;
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(123, 97, 255, 0.3);
-}
-
-[data-theme="light"] .settings-cancel-btn {
-  background: #f3f4f6;
-  border-color: rgba(0, 0, 0, 0.08);
-  color: #6b7280;
-}
-
-[data-theme="light"] .settings-cancel-btn:hover {
-  background: #fee2e2;
-  border-color: #fecaca;
-  color: #dc2626;
 }
 
 @media (max-width: 768px) {
@@ -861,4 +985,3 @@
     justify-content: center;
   }
 }
-

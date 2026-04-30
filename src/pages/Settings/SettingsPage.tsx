@@ -13,7 +13,7 @@ import ActionsSection from "./sections/ActionsSection";
 import CompanyDisplaySection from "./sections/CompanyDisplaySection";
 import { useAuth } from "../../context/AuthContext";
 import { professionalService } from "../../services/professionalService";
-import { companyService } from "../../services/companyService";
+import { companyArcaService, companyService } from "../../services/companyService";
 import { locationService } from "../../services/locationService";
 import "../Dashboard/DashboardPage.css";
 import "./SettingsPage.css";
@@ -44,6 +44,10 @@ export default function SettingsPage() {
   const [storeDepartmentId, setStoreDepartmentId] = useState<number | null>(null);
   const [storeLat, setStoreLat] = useState<number | null>(null);
   const [storeLng, setStoreLng] = useState<number | null>(null);
+  const [cuit, setCuit] = useState("");
+
+  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [saveMessage, setSaveMessage] = useState("");
 
   // 1. Fetch Provinces
   const { data: provinceList = [] } = useQuery({
@@ -60,12 +64,27 @@ export default function SettingsPage() {
     staleTime: 1000 * 60 * 5,
   });
 
-  // 2.1 Fetch Company Detail (Dedicated endpoint for better reliability)
+  // 2.1 Fetch Company Detail
   const { data: company, isLoading: loadingCompany } = useQuery({
-    queryKey: ["company-detail", professionalId],
+    queryKey: ["company", professionalId],
     queryFn: () => companyService.getByProfessional(professionalId!),
     enabled: !!professionalId,
-    staleTime: 1000 * 60 * 5,
+  });
+
+  // 2.2 Consolidate the actual company data (handling array or single object)
+  const companyData = Array.isArray(company) ? company[0] : company;
+  const actualCompany = companyData?.id ? companyData : (prof?.Company as any);
+
+  // Lifted ARCA status query for global caching in SettingsPage
+  const { data: arcaStatus, isLoading: loadingArca } = useQuery({
+    queryKey: ["arca-status", actualCompany?.id || "none"],
+    queryFn: () => companyArcaService.findByCompanyId(actualCompany!.id),
+    enabled: !!actualCompany?.id,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
   });
 
   // Sync state when data is loaded
@@ -74,12 +93,10 @@ export default function SettingsPage() {
       setBusinessType(prof.account_type || "individual");
     }
     
-    // Handle both single object and array responses
-    const actualCompany = Array.isArray(company) ? company[0] : company;
-
     if (actualCompany) {
       setCompanyId(actualCompany.id);
       setTradeName(actualCompany.name || "");
+      setCuit(actualCompany.cuit || "");
       setHasStorefront(actualCompany.public_trade ? "si" : "no");
       
       // Payments
@@ -155,6 +172,7 @@ export default function SettingsPage() {
       const companyData: any = {
         professional_id: professionalId,
         name: tradeName,
+        tax_code: cuit,
         business_type: businessType,
         public_trade: hasStorefront === "si",
         address_id: addressId,
@@ -186,15 +204,24 @@ export default function SettingsPage() {
         return companyService.create(companyData);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["professional-detail", professionalId] });
-      queryClient.invalidateQueries({ queryKey: ["company-detail", professionalId] });
-      setIsEditingCompany(false);
-      alert("Cambios guardados con éxito");
+      queryClient.invalidateQueries({ queryKey: ["company", professionalId] });
+      
+      setSaveStatus("success");
+      setSaveMessage("Registro guardado correctamente ✨");
+      
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setIsEditingCompany(false);
+      }, 2500);
     },
     onError: (error) => {
       console.error("Error saving settings:", error);
-      alert("Error al guardar los cambios");
+      setSaveStatus("error");
+      setSaveMessage("Error al guardar los cambios. Reintentá.");
+      
+      setTimeout(() => setSaveStatus("idle"), 4000);
     }
   });
 
@@ -209,7 +236,6 @@ export default function SettingsPage() {
   };
 
   const showCTA = isProfessional && !company && !isEditingCompany;
-  const actualCompany = Array.isArray(company) ? company[0] : company;
   const showSummary = isProfessional && actualCompany && !isEditingCompany;
   const showEditForms = isProfessional && isEditingCompany;
 
@@ -253,6 +279,8 @@ export default function SettingsPage() {
                   onEdit={() => setIsEditingCompany(true)} 
                   provinceList={provinceList}
                   departmentList={storeDepartmentList}
+                  arcaStatus={arcaStatus}
+                  loadingArca={loadingArca}
                 />
               )}
 
@@ -263,6 +291,8 @@ export default function SettingsPage() {
                     setBusinessType={setBusinessType}
                     tradeName={tradeName}
                     setTradeName={setTradeName}
+                    cuit={cuit}
+                    setCuit={setCuit}
                   />
 
                   <HeadquartersSection
@@ -302,11 +332,18 @@ export default function SettingsPage() {
                     onTogglePayment={(option) => toggleSelection(setSelectedPayments, option)}
                   />
 
-                  <ArcaVerificationSection />
                   
+                  
+                  {saveStatus !== "idle" && (
+                    <div className={`settings-status-banner settings-status-banner--${saveStatus}`}>
+                      {saveMessage}
+                    </div>
+                  )}
+
                   <ActionsSection 
                     onSave={handleSave} 
                     onCancel={() => setIsEditingCompany(false)} 
+                    isSaving={saveMutation.isPending}
                   />
                 </>
               )}

@@ -1,6 +1,6 @@
 import { Save, X } from "lucide-react";
 
-export default function ActionsSection({ onSave, onCancel }) {
+export default function ActionsSection({ onSave, onCancel, isSaving }) {
   return (
     <section className="settings-actions-row">
       <div className="settings-card settings-actions-card">
@@ -13,14 +13,24 @@ export default function ActionsSection({ onSave, onCancel }) {
         </div>
         <div className="settings-actions-buttons">
           {onCancel && (
-            <button type="button" className="settings-cancel-btn" onClick={onCancel}>
+            <button 
+              type="button" 
+              className="settings-cancel-btn" 
+              onClick={onCancel}
+              disabled={isSaving}
+            >
               <X size={18} />
               Cancelar
             </button>
           )}
-          <button type="button" className="settings-save-btn" onClick={onSave}>
+          <button 
+            type="button" 
+            className="settings-save-btn" 
+            onClick={onSave}
+            disabled={isSaving}
+          >
             <Save size={18} />
-            Guardar cambios
+            {isSaving ? "Guardando..." : "Guardar cambios"}
           </button>
         </div>
       </div>

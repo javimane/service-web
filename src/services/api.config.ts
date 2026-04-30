@@ -123,4 +123,9 @@ export const API_ENDPOINTS = {
     base: `${API_BASE_URL}/api/profiles`,
     detail: (id: string) => `${API_BASE_URL}/api/profiles/${id}`,
   },
+  arca: {
+    verify: (cuit: string, companyName: string, professionalId: string | number) => 
+      `${API_BASE_URL}/api/arca/verify/${cuit}/${encodeURIComponent(companyName)}/${professionalId}`,
+    findByCompanyId: (companyId: number) => `${API_BASE_URL}/api/arca/company/${companyId}`,
+  },
 };

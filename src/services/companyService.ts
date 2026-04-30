@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from "./api.config";
 import { apiClient } from "./apiClient";
-import type { CompanyRow } from "../types/database.types";
+import type { CompaniesArcaRow, CompanyRow } from "../types/database.types";
 
 export const companyService = {
   /**
@@ -59,3 +59,30 @@ export const companyService = {
       body: JSON.stringify(data),
     }),
 };
+
+export const companyArcaService = {
+  /**
+   * @route GET /api/arca/company/:id
+   * @auth No
+   * @param {number} id
+   * @returns {Promise<CompanyRow>}
+   */
+  findByCompanyId: (id: number) => 
+    apiClient<CompaniesArcaRow>(API_ENDPOINTS.arca.findByCompanyId(id), {
+      method: "GET",
+    }),
+
+  /**
+   * @route GET /api/arca/verify/:cuit/:companyName/:professionalId
+   * @auth No
+   * @param {string} cuit
+   * @param {string} companyName
+   * @param {string | number} professionalId
+   * @returns {Promise<CompaniesArcaRow>}
+   */
+  verify: (cuit: string, companyName: string, professionalId: string | number) => 
+    apiClient<CompaniesArcaRow>(API_ENDPOINTS.arca.verify(cuit, companyName, professionalId), {
+      method: "GET",
+    }),
+}
+
