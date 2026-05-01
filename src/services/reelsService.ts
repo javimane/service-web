@@ -16,13 +16,18 @@ export const reelsService = {
    */
   list: (provinceId?: number, departmentId?: number) => {
     const params = new URLSearchParams();
-    if (provinceId !== undefined) params.append("provinceId", provinceId.toString());
-    if (departmentId !== undefined) params.append("departmentId", departmentId.toString());
-    
+    if (provinceId !== undefined)
+      params.append("provinceId", provinceId.toString());
+    if (departmentId !== undefined)
+      params.append("departmentId", departmentId.toString());
+
     const queryString = params.toString() ? `?${params.toString()}` : "";
-    return apiClient<ProfessionalReelRow[]>(`${API_ENDPOINTS.reels.base}${queryString}`, {
-      method: "GET",
-    });
+    return apiClient<ProfessionalReelRow[]>(
+      `${API_ENDPOINTS.reels.base}${queryString}`,
+      {
+        method: "GET",
+      },
+    );
   },
 
   /**
@@ -43,9 +48,12 @@ export const reelsService = {
    * @returns {Promise<CountViewsReelsRow | null>}
    */
   getProfessionalStats: (professionalId: number) =>
-    apiClient<CountViewsReelsRow | null>(API_ENDPOINTS.reels.professionalStats(professionalId), {
-      method: "GET",
-    }),
+    apiClient<CountViewsReelsRow | null>(
+      API_ENDPOINTS.reels.professionalStats(professionalId),
+      {
+        method: "GET",
+      },
+    ),
 
   /**
    * @route PUT /api/professional-reels/:id/stats
@@ -57,6 +65,18 @@ export const reelsService = {
   updateStats: (id: number, data: UpdateReelStatsRequest) =>
     apiClient<ProfessionalReelRow>(API_ENDPOINTS.reels.stats(id), {
       method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * @route POST /api/professional-reels
+   * @auth Bearer
+   * @param {Partial<ProfessionalReelRow>} data
+   * @returns {Promise<ProfessionalReelRow>}
+   */
+  create: (data: Partial<ProfessionalReelRow>) =>
+    apiClient<ProfessionalReelRow>(API_ENDPOINTS.reels.base, {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 };

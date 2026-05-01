@@ -1,6 +1,5 @@
-import { type ChangeEvent, useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Clapperboard,
   Eye,
   Heart,
   Play,
@@ -9,6 +8,9 @@ import {
   UploadCloud,
   Video,
 } from "lucide-react";
+import { multimediaService } from "../../../services/multimediaService";
+import { reelsService } from "../../../services/reelsService";
+import { useAuth } from "../../../context/AuthContext";
 import "./ReelsSection.css";
 
 type ReelItem = {
@@ -16,29 +18,10 @@ type ReelItem = {
   title: string;
   description: string;
   url: string;
+  storageKey: string;
   views: number;
   likes: number;
 };
-
-const initialReels: ReelItem[] = [
-  {
-    id: "reel-1",
-    title: "Recorrido del local",
-    description: "Mostrá el espacio y la experiencia que vive cada cliente.",
-    url: "https://www.w3schools.com/html/mov_bbb.mp4",
-    views: 1240,
-    likes: 187,
-  },
-  {
-    id: "reel-2",
-    title: "Antes y después",
-    description:
-      "Contenido ideal para destacar resultados reales y generar confianza.",
-    url: "https://www.w3schools.com/html/movie.mp4",
-    views: 860,
-    likes: 94,
-  },
-];
 
 const createId = () => `reel-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -51,44 +34,115 @@ const formatCompact = (value: number) => {
 };
 
 export default function ReelsSection() {
-  const [reels, setReels] = useState<ReelItem[]>(initialReels);
+  const { sessionStatus } = useAuth();
+  const [reels, setReels] = useState<ReelItem[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [savedMessage, setSavedMessage] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const totalViews = reels.reduce((sum, reel) => sum + reel.views, 0);
-  const totalLikes = reels.reduce((sum, reel) => sum + reel.likes, 0);
+  const professionalId = sessionStatus?.subscription?.professional_id;
+  
+  const totalViews = useMemo(
+    () => reels.reduce((sum, reel) => sum + reel.views, 0),
+    [reels]
+  );
+
+  const totalLikes = useMemo(
+    () => reels.reduce((sum, reel) => sum + reel.likes, 0),
+    [reels]
+  );
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSelectedFile(event.target.files?.[0] ?? null);
   };
 
-  const handleSubmit = () => {
-    if (!selectedFile || !title.trim()) return;
+  const fetchReels = async () => {
+    if (!professionalId) return;
+    try {
+      setIsLoading(true);
+      // For now, using list and filtering locally or if the API supports it,
+      // but let's assume we might need a specific endpoint later.
+      // The current list endpoint in reelsService doesn't support professionalId yet,
+      // so we might just show what we have or the user might add it.
+      const data = await reelsService.list();
+      const filtered = data.filter(r => r.professional_id === professionalId);
+      
+      setReels(filtered.map(r => ({
+        id: r.id.toString(),
+        title: r.title || "",
+        description: r.description || "",
+        url: r.video_url,
+        storageKey: "", // Not returned by API usually
+        views: r.views_count || 0,
+        likes: r.likes || 0,
+      })));
+    } catch (error) {
+      console.error("Error fetching reels:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const url = URL.createObjectURL(selectedFile);
+  useEffect(() => {
+    fetchReels();
+  }, [professionalId]);
 
-    setReels((current) => [
-      {
-        id: createId(),
+  const handleSubmit = async () => {
+    if (!selectedFile || !title.trim() || !professionalId) return;
+
+    try {
+      setIsPublishing(true);
+      setSavedMessage("");
+
+      const { uploadUrl, key } = await multimediaService.getUploadUrl(
+        selectedFile.name,
+        selectedFile.type,
+        "REEL"
+      );
+
+      await multimediaService.uploadToPresignedUrl(uploadUrl, selectedFile);
+
+      // Now create the reel in the database
+      const newReel = await reelsService.create({
+        professional_id: professionalId,
         title: title.trim(),
         description: description.trim(),
-        url,
-        views: 0,
-        likes: 0,
-      },
-      ...current,
-    ]);
+        video_url: key, // Sending the key as the URL, backend might handle it
+      });
 
-    setTitle("");
-    setDescription("");
-    setSelectedFile(null);
-    setSavedMessage("El reel se agregó correctamente al panel.");
+      setReels((current) => [
+        {
+          id: newReel.id.toString(),
+          title: newReel.title || "",
+          description: newReel.description || "",
+          url: newReel.video_url,
+          storageKey: key,
+          views: newReel.views_count || 0,
+          likes: newReel.likes || 0,
+        },
+        ...current,
+      ]);
 
-    if (inputRef.current) {
-      inputRef.current.value = "";
+      setTitle("");
+      setDescription("");
+      setSelectedFile(null);
+      setSavedMessage("El reel se publicó y se guardó en AWS correctamente.");
+
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "No se pudo publicar el reel en este momento.";
+      setSavedMessage(errorMessage);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -120,16 +174,6 @@ export default function ReelsSection() {
       ) : null}
 
       <div className="reels-section__stats">
-        <article className="reels-section__stat-card">
-          <div className="reels-section__stat-icon">
-            <Clapperboard size={20} />
-          </div>
-          <div>
-            <span>Reels publicados</span>
-            <strong>{reels.length}</strong>
-          </div>
-        </article>
-
         <article className="reels-section__stat-card">
           <div className="reels-section__stat-icon reels-section__stat-icon--views">
             <Eye size={20} />
@@ -254,10 +298,10 @@ export default function ReelsSection() {
               type="button"
               className="reels-section__submit-btn"
               onClick={handleSubmit}
-              disabled={!selectedFile || !title.trim()}
+              disabled={!selectedFile || !title.trim() || isPublishing}
             >
               <Video size={18} />
-              <span>Publicar reel</span>
+              <span>{isPublishing ? "Publicando..." : "Publicar reel"}</span>
             </button>
           </div>
         </aside>

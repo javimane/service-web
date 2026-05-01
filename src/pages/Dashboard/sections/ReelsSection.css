@@ -317,6 +317,13 @@
   cursor: not-allowed;
 }
 
+@media (min-width: 1101px) {
+  .reels-section__stats {
+    grid-template-columns: repeat(3, minmax(220px, 280px));
+    justify-content: start;
+  }
+}
+
 @media (max-width: 1100px) {
   .reels-section__layout {
     grid-template-columns: 1fr;
