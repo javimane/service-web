@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://api.localcomercial.dev";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export const API_ENDPOINTS = {
   auth: {
@@ -42,7 +42,7 @@ export const API_ENDPOINTS = {
   companies: {
     base: `${API_BASE_URL}/api/companies`,
     detail: (id: string) => `${API_BASE_URL}/api/companies/${id}`,
-    byProfessional: (professionalId: string | number) => 
+    byProfessional: (professionalId: string | number) =>
       `${API_BASE_URL}/api/companies/professional/${professionalId}`,
   },
   products: {
@@ -93,8 +93,10 @@ export const API_ENDPOINTS = {
   },
   reels: {
     base: `${API_BASE_URL}/api/professional-reels`,
-    detail: (id: string | number) => `${API_BASE_URL}/api/professional-reels/${id}`,
-    stats: (id: string | number) => `${API_BASE_URL}/api/professional-reels/${id}/stats`,
+    detail: (id: string | number) =>
+      `${API_BASE_URL}/api/professional-reels/${id}`,
+    stats: (id: string | number) =>
+      `${API_BASE_URL}/api/professional-reels/${id}/stats`,
     professionalStats: (professionalId: string | number) =>
       `${API_BASE_URL}/api/professional-reels/professional/${professionalId}/stats`,
   },
@@ -111,7 +113,8 @@ export const API_ENDPOINTS = {
     base: `${API_BASE_URL}/api/professional-promotions`,
     byProfessional: (professionalId: string | number) =>
       `${API_BASE_URL}/api/professional-promotions/professional/${professionalId}`,
-    detail: (id: string | number) => `${API_BASE_URL}/api/professional-promotions/${id}`,
+    detail: (id: string | number) =>
+      `${API_BASE_URL}/api/professional-promotions/${id}`,
   },
   storage: {
     products: `${API_BASE_URL}/api/storage/products`,
@@ -124,8 +127,13 @@ export const API_ENDPOINTS = {
     detail: (id: string) => `${API_BASE_URL}/api/profiles/${id}`,
   },
   arca: {
-    verify: (cuit: string, companyName: string, professionalId: string | number) => 
+    verify: (
+      cuit: string,
+      companyName: string,
+      professionalId: string | number,
+    ) =>
       `${API_BASE_URL}/api/arca/verify/${cuit}/${encodeURIComponent(companyName)}/${professionalId}`,
-    findByCompanyId: (companyId: number) => `${API_BASE_URL}/api/arca/company/${companyId}`,
-  },
+    findByCompanyId: (companyId: number) =>
+      `${API_BASE_URL}/api/arca/company/${companyId}`,
+  }
 };

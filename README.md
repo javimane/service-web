@@ -1,3 +1,30 @@
+# service-web
+
+## Requisitos
+
+- Node.js 22.12+ (recomendado) o 20.19+
+
+Si usas `nvm`, el repositorio incluye `.nvmrc` para alinear version:
+
+```bash
+nvm install
+nvm use
+```
+
+## Scripts
+
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
+npm run test
+```
+
+## Notas
+
+- Si ejecutas con Node 18, Vite no inicia y veras errores como `CustomEvent is not defined`.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

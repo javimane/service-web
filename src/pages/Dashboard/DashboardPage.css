@@ -52,6 +52,7 @@
   font-weight: 800;
   margin-bottom: 32px;
   color: var(--highlight);
+  flex-shrink: 0;
 }
 
 .brand-logo-btn {
@@ -100,6 +101,34 @@
   flex-direction: column;
   gap: 8px;
   flex: 1;
+  min-height: 0;
+  transition: padding 0.25s ease;
+}
+
+/* Permitir scroll solo cuando no está colapsada para no cortar los popouts */
+.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  margin-right: -4px;
+}
+
+/* Estilo del scrollbar para la navegación */
+.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .nav-item {
@@ -252,6 +281,8 @@
   flex-direction: column;
   gap: 24px;
   margin-top: auto;
+  flex-shrink: 0;
+  padding-top: 16px;
 }
 
 .create-proposal-btn {
