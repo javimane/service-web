@@ -97,37 +97,41 @@
 }
 
 .sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   flex: 1;
   min-height: 0;
-  transition: padding 0.25s ease;
-}
-
-/* Permitir scroll solo cuando no está colapsada para no cortar los popouts */
-.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
   margin-right: -4px;
+  transition: padding 0.25s ease;
+}
+
+.sidebar-nav > * + * {
+  margin-top: 8px;
+}
+
+/* En colapsado mantenemos scroll vertical y permitimos popouts horizontales */
+.dashboard-sidebar--collapsed .sidebar-nav {
+  overflow-x: visible;
+  padding-right: 0;
+  margin-right: 0;
 }
 
 /* Estilo del scrollbar para la navegación */
-.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav::-webkit-scrollbar {
+.sidebar-nav::-webkit-scrollbar {
   width: 4px;
 }
 
-.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav::-webkit-scrollbar-track {
+.sidebar-nav::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav::-webkit-scrollbar-thumb {
+.sidebar-nav::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 10px;
 }
 
-.dashboard-sidebar:not(.dashboard-sidebar--collapsed) .sidebar-nav::-webkit-scrollbar-thumb:hover {
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
 }
 
@@ -276,15 +280,6 @@
   white-space: nowrap;
 }
 
-.sidebar-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  margin-top: auto;
-  flex-shrink: 0;
-  padding-top: 16px;
-}
-
 .create-proposal-btn {
   background: #7b61ff;
   color: white;
@@ -305,12 +300,6 @@
 .create-proposal-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 15px 30px rgba(123, 97, 255, 0.4);
-}
-
-.footer-links {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
 
 .footer-link {
@@ -352,6 +341,12 @@
   padding: 10px 16px;
   border-radius: 12px;
   transition: all 0.2s ease;
+}
+
+.footer-link--support,
+.footer-link--logout {
+  width: 140px;
+  align-self: flex-start;
 }
 
 .footer-link--logout:hover {
@@ -1060,5 +1055,43 @@
   .action-btn,
   .action-btn-main {
     width: 100%;
+  }
+}
+
+@media (max-height: 760px) {
+  .dashboard-sidebar {
+    padding: 20px 16px;
+  }
+
+  .dashboard-sidebar--collapsed {
+    padding: 16px 10px;
+  }
+
+  .sidebar-brand {
+    margin-bottom: 20px;
+  }
+
+  .sidebar-nav > * + * {
+    margin-top: 6px;
+  }
+
+  .nav-item {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+
+  .nav-sub-item {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .footer-link--support,
+  .footer-link--logout {
+    padding: 8px 12px;
+  }
+
+  .dashboard-sidebar--collapsed .footer-link--support,
+  .dashboard-sidebar--collapsed .footer-link--logout {
+    padding: 8px;
   }
 }

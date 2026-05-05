@@ -1,4 +1,5 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Eye,
   Heart,
@@ -7,6 +8,8 @@ import {
   Trash2,
   UploadCloud,
   Video,
+  X,
+  Plus
 } from "lucide-react";
 import { multimediaService } from "../../../services/multimediaService";
 import { reelsService } from "../../../services/reelsService";
@@ -23,8 +26,6 @@ type ReelItem = {
   likes: number;
 };
 
-const createId = () => `reel-${Math.random().toString(36).slice(2, 9)}`;
-
 const formatCompact = (value: number) => {
   if (value >= 1000) {
     return `${(value / 1000).toFixed(1)}k`;
@@ -35,102 +36,120 @@ const formatCompact = (value: number) => {
 
 export default function ReelsSection() {
   const { sessionStatus } = useAuth();
-  const [reels, setReels] = useState<ReelItem[]>([]);
+  const professionalId = sessionStatus?.subscription?.professional_id;
+  const queryClient = useQueryClient();
+
+  const { data: reels = [], isLoading } = useQuery({
+    queryKey: ['reels', professionalId],
+    queryFn: async () => {
+      if (!professionalId) return [];
+      const data = await reelsService.list();
+      const filtered = data.filter(
+        (r) => r.professional_id === professionalId && r.activate === true,
+      );
+
+      return filtered.map((r) => ({
+        id: r.id.toString(),
+        title: r.title || "",
+        description: r.description || "",
+        url: r.video_url,
+        storageKey: "",
+        views: r.views_count || 0,
+        likes: r.likes || 0,
+      }));
+    },
+    enabled: !!professionalId,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [savedMessage, setSavedMessage] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const professionalId = sessionStatus?.subscription?.professional_id;
-  
   const totalViews = useMemo(
     () => reels.reduce((sum, reel) => sum + reel.views, 0),
-    [reels]
+    [reels],
   );
 
   const totalLikes = useMemo(
     () => reels.reduce((sum, reel) => sum + reel.likes, 0),
-    [reels]
+    [reels],
   );
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSelectedFile(event.target.files?.[0] ?? null);
   };
 
-  const fetchReels = async () => {
-    if (!professionalId) return;
-    try {
-      setIsLoading(true);
-      // For now, using list and filtering locally or if the API supports it,
-      // but let's assume we might need a specific endpoint later.
-      // The current list endpoint in reelsService doesn't support professionalId yet,
-      // so we might just show what we have or the user might add it.
-      const data = await reelsService.list();
-      const filtered = data.filter(r => r.professional_id === professionalId);
-      
-      setReels(filtered.map(r => ({
-        id: r.id.toString(),
-        title: r.title || "",
-        description: r.description || "",
-        url: r.video_url,
-        storageKey: "", // Not returned by API usually
-        views: r.views_count || 0,
-        likes: r.likes || 0,
-      })));
-    } catch (error) {
-      console.error("Error fetching reels:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Clear saved message after 5 seconds
   useEffect(() => {
-    fetchReels();
-  }, [professionalId]);
+    if (savedMessage) {
+      const timer = setTimeout(() => {
+        setSavedMessage("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [savedMessage]);
 
   const handleSubmit = async () => {
     if (!selectedFile || !title.trim() || !professionalId) return;
 
     try {
       setIsPublishing(true);
-      setSavedMessage("");
+      setIsModalOpen(false); // Close modal immediately
+      setSavedMessage("Procesando, le notificaremos cuando esté subido."); // Show processing message
 
       const { uploadUrl, key } = await multimediaService.getUploadUrl(
+        professionalId,
         selectedFile.name,
         selectedFile.type,
-        "REEL"
+        "REEL",
       );
 
       await multimediaService.uploadToPresignedUrl(uploadUrl, selectedFile);
 
-      // Now create the reel in the database
       const newReel = await reelsService.create({
         professional_id: professionalId,
         title: title.trim(),
         description: description.trim(),
-        video_url: key, // Sending the key as the URL, backend might handle it
+        video_url: key,
       });
 
-      setReels((current) => [
-        {
-          id: newReel.id.toString(),
-          title: newReel.title || "",
-          description: newReel.description || "",
-          url: newReel.video_url,
-          storageKey: key,
-          views: newReel.views_count || 0,
-          likes: newReel.likes || 0,
-        },
-        ...current,
-      ]);
+      let activatedReel = newReel;
+      const MAX_ATTEMPTS = 10;
+      const POLL_INTERVAL_MS = 6000;
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        if (activatedReel.activate === true) break;
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+        activatedReel = await reelsService.getById(activatedReel.id.toString());
+      }
+
+      if (activatedReel.activate !== true) {
+        setSavedMessage(
+          "El reel se subió pero aún está siendo procesado. Revisá más tarde.",
+        );
+      } else {
+        queryClient.setQueryData(['reels', professionalId], (current: ReelItem[] = []) => [
+          {
+            id: activatedReel.id.toString(),
+            title: activatedReel.title || "",
+            description: activatedReel.description || "",
+            url: activatedReel.video_url,
+            storageKey: key,
+            views: activatedReel.views_count || 0,
+            likes: activatedReel.likes || 0,
+          },
+          ...current,
+        ]);
+        setSavedMessage("El reel se publicó y se guardó correctamente.");
+      }
 
       setTitle("");
       setDescription("");
       setSelectedFile(null);
-      setSavedMessage("El reel se publicó y se guardó en AWS correctamente.");
 
       if (inputRef.current) {
         inputRef.current.value = "";
@@ -146,9 +165,27 @@ export default function ReelsSection() {
     }
   };
 
-  const handleRemove = (id: string) => {
-    setReels((current) => current.filter((reel) => reel.id !== id));
-    setSavedMessage("El reel fue eliminado del panel.");
+  const handleRemove = async (id: string) => {
+    try {
+      await reelsService.delete(id);
+      queryClient.setQueryData(['reels', professionalId], (current: ReelItem[] = []) => 
+        current.filter((reel) => reel.id !== id)
+      );
+      setSavedMessage("El reel fue eliminado correctamente.");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "No se pudo eliminar el reel en este momento.";
+      setSavedMessage(errorMessage);
+    }
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setTitle("");
+    setDescription("");
+    setSelectedFile(null);
   };
 
   return (
@@ -163,9 +200,19 @@ export default function ReelsSection() {
           </p>
         </div>
 
-        <div className="reels-section__hero-badge">
-          <Sparkles size={18} />
-          <span>{reels.length} reels activos</span>
+        <div className="reels-section__hero-actions">
+          <div className="reels-section__hero-badge">
+            <Sparkles size={18} />
+            <span>{reels.length} reels activos</span>
+          </div>
+          <button 
+            type="button" 
+            className="reels-section__create-btn"
+            onClick={() => setIsModalOpen(true)}
+          >
+            <Plus size={18} />
+            <span>Crear Reel</span>
+          </button>
         </div>
       </div>
 
@@ -246,66 +293,83 @@ export default function ReelsSection() {
                 </div>
               </article>
             ))}
+            {reels.length === 0 && !isLoading && (
+               <div className="reels-section__empty-state">
+                  <Video size={48} className="reels-section__empty-icon" />
+                  <h3>No tenés reels todavía</h3>
+                  <p>Hacé clic en "Crear Reel" para subir tu primer video.</p>
+               </div>
+            )}
           </div>
         </div>
+      </div>
 
-        <aside className="reels-section__content-card reels-section__content-card--form">
-          <div className="reels-section__card-header">
-            <div>
-              <h2>Subir nuevo reel</h2>
-              <p>Cargá un video con título y descripción breve.</p>
+      {isModalOpen && (
+        <div className="reels-section__modal-overlay" onClick={closeModal}>
+          <aside 
+            className="reels-section__modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className="reels-section__modal-close" onClick={closeModal}>
+              <X size={20} />
+            </button>
+            <div className="reels-section__card-header">
+              <div>
+                <h2>Subir nuevo reel</h2>
+                <p>Cargá un video con título y descripción breve.</p>
+              </div>
             </div>
-          </div>
 
-          <div className="reels-section__form">
-            <label className="reels-section__field">
-              <span>Archivo de video</span>
-              <label className="reels-section__upload-field">
-                <UploadCloud size={18} />
-                <span>
-                  {selectedFile ? selectedFile.name : "Seleccionar archivo"}
-                </span>
+            <div className="reels-section__form">
+              <label className="reels-section__field">
+                <span>Archivo de video</span>
+                <label className="reels-section__upload-field">
+                  <UploadCloud size={18} />
+                  <span>
+                    {selectedFile ? selectedFile.name : "Seleccionar archivo"}
+                  </span>
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleFileChange}
+                  />
+                </label>
+              </label>
+
+              <label className="reels-section__field">
+                <span>Título</span>
                 <input
-                  ref={inputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={handleFileChange}
+                  type="text"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="Ej. Resultado final del proyecto"
                 />
               </label>
-            </label>
 
-            <label className="reels-section__field">
-              <span>Título</span>
-              <input
-                type="text"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="Ej. Resultado final del proyecto"
-              />
-            </label>
+              <label className="reels-section__field">
+                <span>Descripción</span>
+                <textarea
+                  rows={4}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Contá qué muestra este reel y por qué es importante."
+                />
+              </label>
 
-            <label className="reels-section__field">
-              <span>Descripción</span>
-              <textarea
-                rows={4}
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Contá qué muestra este reel y por qué es importante."
-              />
-            </label>
-
-            <button
-              type="button"
-              className="reels-section__submit-btn"
-              onClick={handleSubmit}
-              disabled={!selectedFile || !title.trim() || isPublishing}
-            >
-              <Video size={18} />
-              <span>{isPublishing ? "Publicando..." : "Publicar reel"}</span>
-            </button>
-          </div>
-        </aside>
-      </div>
+              <button
+                type="button"
+                className="reels-section__submit-btn"
+                onClick={handleSubmit}
+                disabled={!selectedFile || !title.trim() || isPublishing}
+              >
+                <Video size={18} />
+                <span>{isPublishing ? "Procesando..." : "Crear reel"}</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
     </section>
   );
 }

@@ -67,8 +67,10 @@ export default function DashboardSidebar({
   const navigate = useNavigate();
   const { logout, hasProfessionalSubscription } = useAuth();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
-    promotions: activeItem === "promotions-create" || activeItem === "promotions-all",
-    proposals: activeItem === "proposals-create" || activeItem === "proposals-view",
+    promotions:
+      activeItem === "promotions-create" || activeItem === "promotions-all",
+    proposals:
+      activeItem === "proposals-create" || activeItem === "proposals-view",
   });
 
   const toggleMenu = (key: string) => {
@@ -128,12 +130,22 @@ export default function DashboardSidebar({
         {
           key: "proposals-create",
           label: "Crear Presupuesto",
-          onClick: onProposalsCreate ?? (() => navigate(ROUTES.dashboard, { state: { view: "proposals-create" } })),
+          onClick:
+            onProposalsCreate ??
+            (() =>
+              navigate(ROUTES.dashboard, {
+                state: { view: "proposals-create" },
+              })),
         },
         {
           key: "proposals-view",
           label: "Ver Presupuestos",
-          onClick: onProposalsView ?? (() => navigate(ROUTES.dashboard, { state: { view: "proposals-view" } })),
+          onClick:
+            onProposalsView ??
+            (() =>
+              navigate(ROUTES.dashboard, {
+                state: { view: "proposals-view" },
+              })),
         },
       ],
     },
@@ -275,7 +287,7 @@ export default function DashboardSidebar({
               <div key={key} className="nav-group">
                 <button
                   type="button"
-                  className={`nav-item ${expandedMenus[key] || subItems?.some(s => s.key === activeItem) ? "active" : ""} ${isParentLocked ? "is-locked" : ""}`}
+                  className={`nav-item ${expandedMenus[key] || subItems?.some((s) => s.key === activeItem) ? "active" : ""} ${isParentLocked ? "is-locked" : ""}`}
                   onClick={() => {
                     if (isParentLocked) return;
                     if (isCollapsed && onToggle) {
@@ -304,21 +316,21 @@ export default function DashboardSidebar({
                         const isSubItemLocked = isItemLocked(sub.key);
 
                         return (
-                           <button
-                             key={sub.key}
-                             type="button"
-                             className={`nav-sub-item ${activeItem === sub.key ? "active" : ""} ${isSubItemLocked ? "is-locked" : ""}`}
-                             onClick={() => {
-                               if (isSubItemLocked) return;
-                               sub.onClick();
-                               toggleMenu(key);
-                             }}
-                             title={getLockedTitle(sub.label, isSubItemLocked)}
-                             disabled={isSubItemLocked}
-                           >
-                             <span className="nav-sub-dot" />
-                             <span className="nav-sub-label">{sub.label}</span>
-                           </button>
+                          <button
+                            key={sub.key}
+                            type="button"
+                            className={`nav-sub-item ${activeItem === sub.key ? "active" : ""} ${isSubItemLocked ? "is-locked" : ""}`}
+                            onClick={() => {
+                              if (isSubItemLocked) return;
+                              sub.onClick();
+                              toggleMenu(key);
+                            }}
+                            title={getLockedTitle(sub.label, isSubItemLocked)}
+                            disabled={isSubItemLocked}
+                          >
+                            <span className="nav-sub-dot" />
+                            <span className="nav-sub-label">{sub.label}</span>
+                          </button>
                         );
                       })(),
                     )}
@@ -344,30 +356,25 @@ export default function DashboardSidebar({
             );
           },
         )}
+        <button
+          type="button"
+          className="nav-item footer-link footer-link--support"
+          onClick={handleSupport}
+          title="Support"
+        >
+          <HelpCircle size={20} />
+          <span className="nav-label">SUPPORT</span>
+        </button>
+        <button
+          type="button"
+          className="nav-item footer-link footer-link--logout"
+          onClick={handleLogout}
+          title="Logout"
+        >
+          <LogOut size={20} />
+          <span className="nav-label">LOGOUT</span>
+        </button>
       </nav>
-
-      <div className="sidebar-footer">
-        <div className="footer-links">
-          <button
-            type="button"
-            className="footer-link footer-link--support"
-            onClick={handleSupport}
-            title="Support"
-          >
-            <HelpCircle size={18} />
-            <span className="footer-label">SUPPORT</span>
-          </button>
-          <button
-            type="button"
-            className="footer-link footer-link--logout"
-            onClick={handleLogout}
-            title="Logout"
-          >
-            <LogOut size={18} />
-            <span className="footer-label">LOGOUT</span>
-          </button>
-        </div>
-      </div>
     </aside>
   );
 }

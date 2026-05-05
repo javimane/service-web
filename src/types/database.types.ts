@@ -276,6 +276,7 @@ export interface ProfessionalReelRow {
   readonly created_at: string | null;
   readonly updated_at: string | null;
   readonly likes: number | null;
+  readonly activate: boolean | null;
   // Relationships
   readonly Professional?: ProfessionalRow;
 }
@@ -286,7 +287,7 @@ export interface CountViewsReelsRow {
 }
 
 export interface UpdateReelStatsRequest {
-  readonly action: 'view' | 'like' | 'unlike';
+  readonly action: "view" | "like" | "unlike";
 }
 
 export interface ProfessionalVideoRow {
@@ -409,5 +410,3 @@ export interface SuscriptionPrice {
   readonly id: number;
   readonly amount: number;
 }
-
-

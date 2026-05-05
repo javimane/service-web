@@ -33,10 +33,10 @@ export const reelsService = {
   /**
    * @route GET /api/professional-reels/:id
    * @auth No
-   * @param {number} id
+   * @param {string} id
    * @returns {Promise<ProfessionalReelRow>}
    */
-  getById: (id: number) =>
+  getById: (id: string) =>
     apiClient<ProfessionalReelRow>(API_ENDPOINTS.reels.detail(id), {
       method: "GET",
     }),
@@ -58,11 +58,11 @@ export const reelsService = {
   /**
    * @route PUT /api/professional-reels/:id/stats
    * @auth No
-   * @param {number} id
+   * @param {string} id
    * @param {UpdateReelStatsRequest} data
    * @returns {Promise<ProfessionalReelRow>}
    */
-  updateStats: (id: number, data: UpdateReelStatsRequest) =>
+  updateStats: (id: string, data: UpdateReelStatsRequest) =>
     apiClient<ProfessionalReelRow>(API_ENDPOINTS.reels.stats(id), {
       method: "PUT",
       body: JSON.stringify(data),
@@ -78,5 +78,10 @@ export const reelsService = {
     apiClient<ProfessionalReelRow>(API_ENDPOINTS.reels.base, {
       method: "POST",
       body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    apiClient<void>(API_ENDPOINTS.reels.detail(id), {
+      method: "DELETE",
     }),
 };
