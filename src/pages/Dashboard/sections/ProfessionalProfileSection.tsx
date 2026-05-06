@@ -10,6 +10,7 @@ import {
   Loader2,
   X,
   Upload,
+  AlertTriangle,
 } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
 import {
@@ -45,7 +46,10 @@ const DEFAULT_AVATAR =
 export default function ProfessionalProfileSection() {
   const { sessionStatus } = useAuth();
   const userId = sessionStatus?.user?.id;
-  const professionalId = sessionStatus?.subscription?.professional_id;
+  const professionalId = Number(
+    sessionStatus?.subscription?.professional_id ??
+    sessionStatus?.professional_id
+  );
   const queryClient = useQueryClient();
 
   // Profile Query
@@ -59,8 +63,8 @@ export default function ProfessionalProfileSection() {
   // Professional Query
   const { data: professional, isLoading: isProfessionalLoading } = useQuery({
     queryKey: ["professional-detail", professionalId],
-    queryFn: () => professionalService.getDetail(professionalId!),
-    enabled: !!professionalId,
+    queryFn: () => professionalService.getDetail(professionalId),
+    enabled: !isNaN(professionalId),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -110,6 +114,9 @@ export default function ProfessionalProfileSection() {
   const [webUrl, setWebUrl] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
   const [isPublishingVideo, setIsPublishingVideo] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [imageModalError, setImageModalError] = useState("");
+  const [videoModalError, setVideoModalError] = useState("");
 
   useEffect(() => {
     if (profile) {
@@ -206,7 +213,7 @@ export default function ProfessionalProfileSection() {
       setProfilePhoto(uploaded.publicUrl);
 
       await profileService.updateProfile(userId, {
-        portfolio_image_url: uploaded.publicUrl,
+        avatar_url: uploaded.publicUrl,
       });
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
 
@@ -217,27 +224,31 @@ export default function ProfessionalProfileSection() {
   };
 
   const handleAddImage = async () => {
-    if (newImageFiles.length === 0 || !userId || !professionalId) return;
+    if (newImageFiles.length === 0) return;
+    setImageModalError("");
+    
+    if (!professionalId) {
+      setImageModalError("No se pudo identificar al profesional para subir imágenes.");
+      return;
+    }
 
     try {
+      setIsUploadingImages(true);
       const uploadedImages = await Promise.all(
-        newImageFiles.map(async (file) => {
+        newImageFiles.map(async (file, i) => {
+          const currentOrder = images.length + i + 1;
           const uploaded = await uploadProfileWorkImage({
             file,
-            entityId: displayName || "profile-work",
-            fileName: file.name,
           });
           const newImage = await professionalImagesService.create({
+            professional_id: professionalId,
             image_url: uploaded.publicUrl,
+            display_order: currentOrder,
           });
           return { id: newImage.id.toString(), url: newImage.image_url };
         }),
       );
-
-      const lastUrl = uploadedImages[uploadedImages.length - 1].url;
-      await profileService.updateProfile(userId, {
-        portfolio_image_url: lastUrl,
-      });
+      
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
 
       queryClient.setQueryData(
@@ -251,7 +262,9 @@ export default function ProfessionalProfileSection() {
         `${uploadedImages.length} imagen${uploadedImages.length > 1 ? "es" : ""} subida${uploadedImages.length > 1 ? "s" : ""} correctamente.`,
       );
     } catch {
-      setSavedMessage("No se pudo subir alguna de las imágenes.");
+      setImageModalError("No se pudo subir alguna de las imágenes. Por favor, reintentá.");
+    } finally {
+      setIsUploadingImages(false);
     }
   };
 
@@ -271,6 +284,7 @@ export default function ProfessionalProfileSection() {
 
   const openImageModal = () => {
     setNewImageFiles([]);
+    setImageModalError("");
     setIsImageModalOpen(true);
     if (newImageInputRef.current) newImageInputRef.current.value = "";
   };
@@ -302,6 +316,7 @@ export default function ProfessionalProfileSection() {
     setNewVideoFile(null);
     setNewVideoTitle("");
     setNewVideoDescription("");
+    setVideoModalError("");
     setIsVideoModalOpen(true);
     if (newVideoInputRef.current) newVideoInputRef.current.value = "";
   };
@@ -312,23 +327,30 @@ export default function ProfessionalProfileSection() {
   };
 
   const handleAddVideo = async () => {
-    if (!newVideoFile || !newVideoTitle.trim() || !professionalId) return;
+    if (!newVideoFile || !newVideoTitle.trim()) return;
+    setVideoModalError("");
+
+    if (isNaN(professionalId)) {
+      setVideoModalError("No se pudo identificar al profesional para subir el video.");
+      return;
+    }
 
     try {
       setIsPublishingVideo(true);
-      setIsVideoModalOpen(false); // Close immediately
-      setSavedMessage(
-        "Procesando, le notificaremos cuando esté disponible el video.",
-      ); // Cartel de aviso
-
       const { uploadUrl, key } = await multimediaService.getUploadUrl(
         professionalId,
         newVideoFile.name,
         newVideoFile.type,
-        "PROFILE", // O "REEL", pero usamos PROFILE para videos del portfolio
+        "PROFILE",
       );
 
       await multimediaService.uploadToPresignedUrl(uploadUrl, newVideoFile);
+
+      // Once S3 upload is done, we can close and continue with DB record & polling
+      setIsVideoModalOpen(false); 
+      setSavedMessage(
+        "Procesando, le notificaremos cuando esté disponible el video.",
+      );
 
       const newVideo = await videosService.create({
         professional_id: professionalId,
@@ -381,7 +403,13 @@ export default function ProfessionalProfileSection() {
         error instanceof Error
           ? error.message
           : "No se pudo publicar el video en este momento.";
-      setSavedMessage(errorMessage);
+      
+      // If modal was already closed, show in main notice, else show in modal error
+      if (isVideoModalOpen) {
+        setVideoModalError(errorMessage);
+      } else {
+        setSavedMessage(errorMessage);
+      }
     } finally {
       setIsPublishingVideo(false);
     }
@@ -686,7 +714,13 @@ export default function ProfessionalProfileSection() {
         onClose={() => setIsImageModalOpen(false)}
         title="Subir imágenes de presentación"
       >
-        <div className="professional-profile__modal-content">
+        <form
+          className="professional-profile__modal-content"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleAddImage();
+          }}
+        >
           <label className="professional-profile__dropzone">
             <input
               type="file"
@@ -706,6 +740,13 @@ export default function ProfessionalProfileSection() {
               </div>
             </div>
           </label>
+
+          {imageModalError && (
+            <div className="professional-profile__modal-error">
+              <AlertTriangle size={16} />
+              <span>{imageModalError}</span>
+            </div>
+          )}
 
           {imagePreviewUrls.length > 0 && (
             <div className="professional-profile__modal-preview-container">
@@ -744,17 +785,22 @@ export default function ProfessionalProfileSection() {
               Cancelar
             </button>
             <button
-              type="button"
+              type="submit"
               className="professional-profile__save-btn"
-              onClick={handleAddImage}
-              disabled={newImageFiles.length === 0}
+              disabled={newImageFiles.length === 0 || isUploadingImages}
             >
-              {newImageFiles.length > 1
-                ? `Subir ${newImageFiles.length} imágenes`
-                : "Subir imagen"}
+              {isUploadingImages ? (
+                <>
+                  <Loader2 size={18} className="professional-profile__spin" /> Subiendo...
+                </>
+              ) : newImageFiles.length > 1 ? (
+                `Subir ${newImageFiles.length} imágenes`
+              ) : (
+                "Subir imagen"
+              )}
             </button>
           </div>
-        </div>
+        </form>
       </Modal>
 
       {/* Modal para subir video */}
@@ -763,7 +809,13 @@ export default function ProfessionalProfileSection() {
         onClose={() => setIsVideoModalOpen(false)}
         title="Subir video de presentación"
       >
-        <div className="professional-profile__modal-content">
+        <form
+          className="professional-profile__modal-content"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleAddVideo();
+          }}
+        >
           {!newVideoFile ? (
             <label className="professional-profile__dropzone">
               <input
@@ -779,12 +831,18 @@ export default function ProfessionalProfileSection() {
                 </div>
                 <div className="professional-profile__dropzone-text">
                   <p>Haz clic para seleccionar un video</p>
-                  <span>Formatos recomendados: MP4, MOV (Máx. 50MB)</span>
+                  <span>Formatos recomendados: MP4, MOV</span>
                 </div>
               </div>
             </label>
           ) : (
             <div className="professional-profile__video-preview-container">
+              {videoModalError && (
+                <div className="professional-profile__modal-error">
+                  <AlertTriangle size={16} />
+                  <span>{videoModalError}</span>
+                </div>
+              )}
               <div className="professional-profile__video-preview-wrapper">
                 <video
                   src={URL.createObjectURL(newVideoFile)}
@@ -834,9 +892,8 @@ export default function ProfessionalProfileSection() {
               Cancelar
             </button>
             <button
-              type="button"
+              type="submit"
               className="professional-profile__save-btn"
-              onClick={handleAddVideo}
               disabled={!newVideoFile || !newVideoTitle.trim() || isPublishingVideo}
             >
               {isPublishingVideo ? (
@@ -848,7 +905,7 @@ export default function ProfessionalProfileSection() {
               )}
             </button>
           </div>
-        </div>
+        </form>
       </Modal>
     </section>
   );

@@ -85,6 +85,19 @@
   font-weight: 600;
 }
 
+.professional-profile__modal-error {
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .professional-profile__layout {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);

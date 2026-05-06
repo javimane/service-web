@@ -12,7 +12,6 @@
   gap: 0;
   background-color: var(--bg-color);
   color: var(--text-primary);
-  transition: all 0.3s ease;
   align-items: stretch;
 }
 
@@ -37,6 +36,20 @@
   transition:
     width 0.25s ease,
     padding 0.25s ease;
+}
+ 
+.dashboard-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(2px);
+  z-index: 199;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .dashboard-sidebar--collapsed {
@@ -402,8 +415,7 @@
   flex-direction: column;
   min-width: 0;
   padding: 12px 12px 12px 0;
-  margin-left: 280px;
-  transition: margin-left 0.25s ease;
+  margin-left: 96px;
 }
 
 .dashboard-main--collapsed {

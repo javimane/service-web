@@ -3,6 +3,7 @@ import { apiClient } from "./apiClient";
 import type { ProfessionalImageRow } from "../types/database.types";
 
 export type CreateProfessionalImageRequest = {
+  professional_id: number;
   image_url: string;
   caption?: string;
   display_order?: number;

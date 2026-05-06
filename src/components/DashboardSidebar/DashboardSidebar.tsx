@@ -250,9 +250,13 @@ export default function DashboardSidebar({
   ];
 
   return (
-    <aside
-      className={`dashboard-sidebar ${isCollapsed ? "dashboard-sidebar--collapsed" : ""}`}
-    >
+    <>
+      {!isCollapsed && onToggle && (
+        <div className="dashboard-sidebar-overlay" onClick={onToggle} />
+      )}
+      <aside
+        className={`dashboard-sidebar ${isCollapsed ? "dashboard-sidebar--collapsed" : ""}`}
+      >
       <div className="sidebar-brand">
         <button
           type="button"
@@ -376,5 +380,6 @@ export default function DashboardSidebar({
         </button>
       </nav>
     </aside>
+    </>
   );
 }
