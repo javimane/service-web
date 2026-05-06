@@ -3,6 +3,7 @@ export interface ProfileRow {
   readonly email: string | null;
   readonly display_name: string | null;
   readonly avatar_url: string | null;
+  readonly portfolio_image_url?: string | null;
   readonly updated_at: string | null;
 }
 
@@ -302,6 +303,7 @@ export interface ProfessionalVideoRow {
   readonly updated_at: string | null;
   readonly likes: number | null;
   readonly views_count: number | null;
+  readonly activate?: boolean | null;
   // Relationships
   readonly Professional?: ProfessionalRow;
 }

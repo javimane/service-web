@@ -100,6 +100,18 @@ export const API_ENDPOINTS = {
     professionalStats: (professionalId: string | number) =>
       `${API_BASE_URL}/api/professional-reels/professional/${professionalId}/stats`,
   },
+  videos: {
+    base: `${API_BASE_URL}/api/professional-videos`,
+    detail: (id: string | number) =>
+      `${API_BASE_URL}/api/professional-videos/${id}`,
+  },
+  professionalImages: {
+    base: `${API_BASE_URL}/api/professional-images`,
+    detail: (id: string | number) =>
+      `${API_BASE_URL}/api/professional-images/${id}`,
+    byProfessional: (professionalId: string | number) =>
+      `${API_BASE_URL}/api/professional-images/professional/${professionalId}`,
+  },
   bankPromotions: {
     base: `${API_BASE_URL}/api/bank-promotions`,
     my: `${API_BASE_URL}/api/bank-promotions/my-promotions`,

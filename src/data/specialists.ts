@@ -201,18 +201,7 @@ export const showcasedSpecialist = {
   whatsapp: "+14155550123",
   licensed: true,
   website: "https://julianvargasdesign.com",
-  socials: [
-    {
-      id: "instagram",
-      label: "Instagram",
-      url: "https://instagram.com/julianvargas",
-    },
-    {
-      id: "linkedin",
-      label: "LinkedIn",
-      url: "https://linkedin.com/in/julianvargas",
-    },
-  ],
+  socials: [],
   rating: 4.9,
   reviews: 128,
   yearsOfExperience: 8,
@@ -220,164 +209,10 @@ export const showcasedSpecialist = {
     "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80",
   portfolio: [
     "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=400&q=80",
-    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&q=80",
-    "https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=400&q=80",
-    "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80",
-    "https://images.unsplash.com/photo-1615873968403-89e068628260?w=400&q=80",
-    "https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=400&q=80",
-    "https://images.unsplash.com/photo-1616137422495-1e902b72174c?w=400&q=80",
-    "https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?w=400&q=80",
-    "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=400&q=80",
-    "https://images.unsplash.com/photo-1615874959474-d609969a20ed?w=400&q=80",
   ],
-  services: [
-    {
-      id: 1,
-      title: "Consultoría de Espacios",
-      price: "$120",
-      description: "Propuesta personalizada para optimizar cada ambiente.",
-    },
-    {
-      id: 2,
-      title: "Proyecto Integral",
-      price: "$2,400",
-      description:
-        "Diseño completo con renders, planos y acompañamiento técnico.",
-    },
-    {
-      id: 3,
-      title: "Home Staging",
-      price: "$300",
-      description:
-        "Mejoras rápidas para venta o alquiler con alto impacto visual.",
-    },
-    {
-      id: 4,
-      title: "Diseño de Iluminación",
-      price: "$450",
-      description: "Esquema luminotécnico para ambientes residenciales.",
-    },
-    {
-      id: 5,
-      title: "Selección de Mobiliario",
-      price: "$200",
-      description: "Asesoría en compra y disposición de muebles premium.",
-    },
-    {
-      id: 6,
-      title: "Renders 3D Realistas",
-      price: "$150/imagen",
-      description: "Visualización fotorrealista de tus proyectos.",
-    },
-    {
-      id: 7,
-      title: "Planos Técnicos",
-      price: "$500",
-      description: "Documentación necesaria para obra y construcción.",
-    },
-    {
-      id: 8,
-      title: "Gestión de Estilismo",
-      price: "$180",
-      description: "Decoración final y detalles para sesiones de fotos.",
-    },
-    {
-      id: 9,
-      title: "Remodelación de Cocinas",
-      price: "$1,200",
-      description: "Diseño funcional y estético del corazón del hogar.",
-    },
-    {
-      id: 10,
-      title: "Diseño de Terrazas",
-      price: "$850",
-      description: "Optimización de espacios exteriores y paisajismo.",
-    },
-  ],
-
-  testimonials: [
-    {
-      id: 1,
-      author: "Elena Rossi",
-      photo:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80",
-      rating: 5,
-      text: "Julian transformó nuestro loft en una obra maestra. Su ojo para el detalle y la forma en que maneja la luz es simplemente incomparable.",
-    },
-    {
-      id: 2,
-      author: "Marco Chen",
-      photo:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&q=80",
-      rating: 5,
-      text: "Altamente profesional y con una visión futurista. Recomendación 10/10 para cualquier proyecto de diseño de alta gama.",
-    },
-    {
-      id: 3,
-      author: "Sophie Dupont",
-      photo:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
-      rating: 5,
-      text: "Un placer trabajar con alguien que realmente entiende la armonía de los espacios modernos.",
-    },
-  ],
-  paymentMethods: [
-    { id: "visa", label: "Visa", type: "credit" },
-    { id: "mastercard", label: "Mastercard", type: "credit" },
-    { id: "amex", label: "Amex", type: "credit" },
-    { id: "cash", label: "Efectivo", type: "cash" },
-    { id: "transfer", label: "Transferencia", type: "bank" },
-  ],
-  bankPromotions: [
-    {
-      day: "Lunes",
-      bank: "Banco Galicia",
-      discount: "15%",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Banco_Galicia_logo.svg/2560px-Banco_Galicia_logo.svg.png",
-    },
-    {
-      day: "Martes",
-      bank: "Santander",
-      discount: "20%",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Santander_Logotipo.svg/2560px-Santander_Logotipo.svg.png",
-    },
-    {
-      day: "Miércoles",
-      bank: "BBVA",
-      discount: "25%",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/BBVA_2019.svg/2560px-BBVA_2019.svg.png",
-    },
-    {
-      day: "Jueves",
-      bank: "Banco Nación",
-      discount: "10%",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Logo_Banco_Naci%C3%B3n.svg/1200px-Logo_Banco_Naci%C3%B3n.svg.png",
-    },
-    {
-      day: "Viernes",
-      bank: "Macro",
-      discount: "30%",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Banco_Macro_logo.svg/2560px-Banco_Macro_logo.svg.png",
-    },
-  ],
-  videos: [
-    {
-      id: 1,
-      title: "Diseño Minimalista",
-      description: "Recorrido por mi último proyecto de salón minimalista.",
-      url: "https://assets.mixkit.co/videos/preview/mixkit-curvy-road-along-the-beach-at-sunset-40291-large.mp4",
-    },
-    {
-      id: 2,
-      title: "Iluminación Cinética",
-      description: "Demostración de cómo la luz cambia el espacio.",
-      url: "https://assets.mixkit.co/videos/preview/mixkit-stars-in-the-night-sky-over-a-calm-lake-40292-large.mp4",
-    },
-    {
-      id: 3,
-      title: "Proceso Creativo",
-      description: "Desde el boceto hasta la realidad.",
-      url: "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-morning-sunlight-40293-large.mp4",
-    },
-  ],
+  services: [],
+  testimonials: [],
+  paymentMethods: [],
+  bankPromotions: [],
+  videos: [],
 };
