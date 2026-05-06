@@ -26,6 +26,9 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/api/professional-details/${professionalId}/credentials`,
     schedules: (professionalId: string) =>
       `${API_BASE_URL}/api/professional-details/${professionalId}/schedules`,
+    schedulesBulk: `${API_BASE_URL}/api/professional-details/schedules/bulk`,
+    scheduleDetail: (id: string) =>
+      `${API_BASE_URL}/api/professional-details/schedules/${id}`,
     ranking: `${API_BASE_URL}/api/professional-ranking`,
     detail: (id: string) => `${API_BASE_URL}/api/professionals/${id}`,
   },
@@ -147,5 +150,5 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/api/arca/verify/${cuit}/${encodeURIComponent(companyName)}/${professionalId}`,
     findByCompanyId: (companyId: number) =>
       `${API_BASE_URL}/api/arca/company/${companyId}`,
-  }
+  },
 };

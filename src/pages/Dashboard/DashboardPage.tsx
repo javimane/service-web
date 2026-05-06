@@ -69,7 +69,10 @@ export default function DashboardPage() {
         item?.Professional?.profile_views !== undefined ||
         item?.profile_views !== undefined,
     );
-    const views = itemWithViews?.Professional?.profile_views ?? (itemWithViews as any)?.profile_views ?? 0;
+    const views =
+      itemWithViews?.Professional?.profile_views ??
+      (itemWithViews as any)?.profile_views ??
+      0;
     return typeof views === "number" ? views : 0;
   }, [credentials]);
 
@@ -161,7 +164,9 @@ export default function DashboardPage() {
           onReelsClick={handleShowReels}
         />
 
-        <main className="dashboard-main">
+        <main
+          className={`dashboard-main ${isSidebarCollapsed ? "dashboard-main--collapsed" : ""}`}
+        >
           <div
             className={`dashboard-main-panel ${shouldLockDashboardView ? "dashboard-main-panel--locked" : ""}`}
           >
@@ -274,11 +279,15 @@ export default function DashboardPage() {
                       <div className="play-icon-bg">
                         <Play size={20} fill="currentColor" />
                       </div>
-                      <h3 className="mid-value">
-                        Reels
-                      </h3>
+                      <h3 className="mid-value">Reels</h3>
                     </div>
-                    <div style={{ display: "flex", gap: "32px", alignItems: "flex-start" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "32px",
+                        alignItems: "flex-start",
+                      }}
+                    >
                       <div className="stat-value-group">
                         <span className="card-label">CANTIDAD DE VISTAS</span>
                         <h2 className="mid-value">

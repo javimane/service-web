@@ -8,6 +8,8 @@ import {
   UserRound,
   Video,
   Loader2,
+  X,
+  Upload,
 } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
 import {
@@ -18,6 +20,7 @@ import { multimediaService } from "../../../services/multimediaService";
 import { videosService } from "../../../services/videosService";
 import { professionalImagesService } from "../../../services/professionalImagesService";
 import { profileService } from "../../../services/profileService";
+import { professionalService } from "../../../services/professionalService";
 import { useAuth } from "../../../context/AuthContext";
 import "./ProfessionalProfileSection.css";
 
@@ -36,7 +39,8 @@ type VideoItem = {
 const createId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80";
+const DEFAULT_AVATAR =
+  "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80";
 
 export default function ProfessionalProfileSection() {
   const { sessionStatus } = useAuth();
@@ -49,6 +53,14 @@ export default function ProfessionalProfileSection() {
     queryKey: ["profile", userId],
     queryFn: () => profileService.getProfile(userId!),
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Professional Query
+  const { data: professional, isLoading: isProfessionalLoading } = useQuery({
+    queryKey: ["professional-detail", professionalId],
+    queryFn: () => professionalService.getDetail(professionalId!),
+    enabled: !!professionalId,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -77,7 +89,8 @@ export default function ProfessionalProfileSection() {
     queryKey: ["professionalImages", professionalId],
     queryFn: async () => {
       if (!professionalId) return [];
-      const data = await professionalImagesService.findAllByProfessionalId(professionalId);
+      const data =
+        await professionalImagesService.findAllByProfessionalId(professionalId);
       return data.map((img) => ({
         id: img.id.toString(),
         url: img.image_url,
@@ -88,9 +101,13 @@ export default function ProfessionalProfileSection() {
   });
 
   const [profilePhoto, setProfilePhoto] = useState("");
+  const [profilePhotoFileName, setProfilePhotoFileName] = useState("");
   const [commercialName, setCommercialName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [description, setDescription] = useState("");
+  const [isMatriculate, setIsMatriculate] = useState(false);
+  const [attendsEmergency, setAttendsEmergency] = useState(false);
+  const [webUrl, setWebUrl] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
   const [isPublishingVideo, setIsPublishingVideo] = useState(false);
 
@@ -103,6 +120,15 @@ export default function ProfessionalProfileSection() {
       }
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (professional) {
+      setDescription(professional.bio || "");
+      setIsMatriculate(Boolean(professional.is_matriculate));
+      setAttendsEmergency(Boolean(professional.emergency));
+      setWebUrl(professional.web_url || "");
+    }
+  }, [professional]);
 
   useEffect(() => {
     if (savedMessage) {
@@ -118,19 +144,28 @@ export default function ProfessionalProfileSection() {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   // Estado para imagen temporal
-  const [newImageFile, setNewImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  const profilePhotoObjectUrlRef = useRef<string | null>(null);
   const newImageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!newImageFile) {
-      setImagePreviewUrl(null);
+    if (newImageFiles.length === 0) {
+      setImagePreviewUrls([]);
       return;
     }
-    const objectUrl = URL.createObjectURL(newImageFile);
-    setImagePreviewUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [newImageFile]);
+    const urls = newImageFiles.map((f) => URL.createObjectURL(f));
+    setImagePreviewUrls(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [newImageFiles]);
+
+  useEffect(() => {
+    return () => {
+      if (profilePhotoObjectUrlRef.current) {
+        URL.revokeObjectURL(profilePhotoObjectUrlRef.current);
+      }
+    };
+  }, []);
 
   // Estado para video temporal
   const [newVideoFile, setNewVideoFile] = useState<File | null>(null);
@@ -140,10 +175,21 @@ export default function ProfessionalProfileSection() {
 
   const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !userId) return;
+    if (!file) return;
+
+    // Actualizar nombre y preview de forma inmediata, sin esperar el upload
+    setProfilePhotoFileName(file.name);
+
+    if (profilePhotoObjectUrlRef.current) {
+      URL.revokeObjectURL(profilePhotoObjectUrlRef.current);
+      profilePhotoObjectUrlRef.current = null;
+    }
 
     const objectUrl = URL.createObjectURL(file);
+    profilePhotoObjectUrlRef.current = objectUrl;
     setProfilePhoto(objectUrl);
+
+    if (!userId) return;
 
     try {
       const uploaded = await uploadProfileImage({
@@ -151,10 +197,17 @@ export default function ProfessionalProfileSection() {
         entityId: displayName || "profile",
         fileName: file.name,
       });
+
+      if (profilePhotoObjectUrlRef.current) {
+        URL.revokeObjectURL(profilePhotoObjectUrlRef.current);
+        profilePhotoObjectUrlRef.current = null;
+      }
+
       setProfilePhoto(uploaded.publicUrl);
-      
-      // Update profile with the new image
-      await profileService.updateProfile(userId, { portfolio_image_url: uploaded.publicUrl });
+
+      await profileService.updateProfile(userId, {
+        portfolio_image_url: uploaded.publicUrl,
+      });
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
 
       setSavedMessage("Foto de perfil actualizada.");
@@ -164,33 +217,41 @@ export default function ProfessionalProfileSection() {
   };
 
   const handleAddImage = async () => {
-    if (!newImageFile || !userId || !professionalId) return;
+    if (newImageFiles.length === 0 || !userId || !professionalId) return;
 
     try {
-      const uploaded = await uploadProfileWorkImage({
-        file: newImageFile,
-        entityId: displayName || "profile-work",
-        fileName: newImageFile.name,
+      const uploadedImages = await Promise.all(
+        newImageFiles.map(async (file) => {
+          const uploaded = await uploadProfileWorkImage({
+            file,
+            entityId: displayName || "profile-work",
+            fileName: file.name,
+          });
+          const newImage = await professionalImagesService.create({
+            image_url: uploaded.publicUrl,
+          });
+          return { id: newImage.id.toString(), url: newImage.image_url };
+        }),
+      );
+
+      const lastUrl = uploadedImages[uploadedImages.length - 1].url;
+      await profileService.updateProfile(userId, {
+        portfolio_image_url: lastUrl,
       });
-      
-      const newImage = await professionalImagesService.create({
-        image_url: uploaded.publicUrl,
-      });
-      
-      // Once the image is uploaded to imagePortfolio, update profile's portfolio_image_url
-      await profileService.updateProfile(userId, { portfolio_image_url: uploaded.publicUrl });
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
 
-      queryClient.setQueryData(["professionalImages", professionalId], (current: GalleryImage[] = []) => [
-        ...current,
-        { id: newImage.id.toString(), url: newImage.image_url },
-      ]);
-      
+      queryClient.setQueryData(
+        ["professionalImages", professionalId],
+        (current: GalleryImage[] = []) => [...current, ...uploadedImages],
+      );
+
       setIsImageModalOpen(false);
-      setNewImageFile(null);
-      setSavedMessage("Imagen del perfil subida correctamente.");
+      setNewImageFiles([]);
+      setSavedMessage(
+        `${uploadedImages.length} imagen${uploadedImages.length > 1 ? "es" : ""} subida${uploadedImages.length > 1 ? "s" : ""} correctamente.`,
+      );
     } catch {
-      setSavedMessage("No se pudo subir la imagen del perfil.");
+      setSavedMessage("No se pudo subir alguna de las imágenes.");
     }
   };
 
@@ -198,8 +259,10 @@ export default function ProfessionalProfileSection() {
   const removeImage = async (id: string) => {
     try {
       await professionalImagesService.delete(id);
-      queryClient.setQueryData(["professionalImages", professionalId], (current: GalleryImage[] = []) => 
-        current.filter((image) => image.id !== id)
+      queryClient.setQueryData(
+        ["professionalImages", professionalId],
+        (current: GalleryImage[] = []) =>
+          current.filter((image) => image.id !== id),
       );
     } catch {
       setSavedMessage("No se pudo eliminar la imagen.");
@@ -207,22 +270,28 @@ export default function ProfessionalProfileSection() {
   };
 
   const openImageModal = () => {
-    setNewImageFile(null);
+    setNewImageFiles([]);
     setIsImageModalOpen(true);
     if (newImageInputRef.current) newImageInputRef.current.value = "";
   };
 
   const handleImageFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setNewImageFile(file);
+    const files = Array.from(e.target.files || []);
+    setNewImageFiles((prev) => [...prev, ...files]);
+  };
+
+  const removeImageFromPreview = (index: number) => {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Video: solo se edita título y descripción, no el archivo
   const removeVideo = async (id: string) => {
     try {
       await videosService.delete(id);
-      queryClient.setQueryData(["videos", professionalId], (current: VideoItem[] = []) => 
-        current.filter((video) => video.id !== id)
+      queryClient.setQueryData(
+        ["videos", professionalId],
+        (current: VideoItem[] = []) =>
+          current.filter((video) => video.id !== id),
       );
     } catch {
       setSavedMessage("No se pudo eliminar el video.");
@@ -248,7 +317,9 @@ export default function ProfessionalProfileSection() {
     try {
       setIsPublishingVideo(true);
       setIsVideoModalOpen(false); // Close immediately
-      setSavedMessage("Procesando, le notificaremos cuando esté disponible el video."); // Cartel de aviso
+      setSavedMessage(
+        "Procesando, le notificaremos cuando esté disponible el video.",
+      ); // Cartel de aviso
 
       const { uploadUrl, key } = await multimediaService.getUploadUrl(
         professionalId,
@@ -273,7 +344,9 @@ export default function ProfessionalProfileSection() {
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         if (activatedVideo.activate === true) break;
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-        activatedVideo = await videosService.getById(activatedVideo.id.toString());
+        activatedVideo = await videosService.getById(
+          activatedVideo.id.toString(),
+        );
       }
 
       if (activatedVideo.activate !== true) {
@@ -281,15 +354,18 @@ export default function ProfessionalProfileSection() {
           "El video se subió pero aún está siendo procesado. Revisá más tarde.",
         );
       } else {
-        queryClient.setQueryData(["videos", professionalId], (current: VideoItem[] = []) => [
-          {
-            id: activatedVideo.id.toString(),
-            title: activatedVideo.title || "",
-            url: activatedVideo.video_url,
-            description: activatedVideo.description || "",
-          },
-          ...current,
-        ]);
+        queryClient.setQueryData(
+          ["videos", professionalId],
+          (current: VideoItem[] = []) => [
+            {
+              id: activatedVideo.id.toString(),
+              title: activatedVideo.title || "",
+              url: activatedVideo.video_url,
+              description: activatedVideo.description || "",
+            },
+            ...current,
+          ],
+        );
         setSavedMessage("El video se publicó y se guardó correctamente.");
       }
 
@@ -311,8 +387,37 @@ export default function ProfessionalProfileSection() {
     }
   };
 
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!userId) return;
+
+      await profileService.updateProfile(userId, {
+        display_name: displayName || null,
+      });
+
+      if (professionalId) {
+        await professionalService.update(professionalId, {
+          bio: description || null,
+          is_matriculate: isMatriculate,
+          emergency: attendsEmergency,
+          web_url: webUrl || null,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      queryClient.invalidateQueries({
+        queryKey: ["professional-detail", professionalId],
+      });
+      setSavedMessage("Los cambios del perfil se guardaron correctamente.");
+    },
+    onError: () => {
+      setSavedMessage("No se pudieron guardar los cambios del perfil.");
+    },
+  });
+
   const handleSave = () => {
-    setSavedMessage("Los cambios del perfil se guardaron correctamente.");
+    saveMutation.mutate();
   };
 
   return (
@@ -331,8 +436,20 @@ export default function ProfessionalProfileSection() {
           type="button"
           className="professional-profile__save-btn"
           onClick={handleSave}
+          disabled={
+            saveMutation.isPending || isProfileLoading || isProfessionalLoading
+          }
         >
-          <Save size={18} /> Guardar cambios
+          {saveMutation.isPending ? (
+            <>
+              <Loader2 size={18} className="professional-profile__spin" />
+              Guardando...
+            </>
+          ) : (
+            <>
+              <Save size={18} /> Guardar cambios
+            </>
+          )}
         </button>
       </div>
 
@@ -343,7 +460,10 @@ export default function ProfessionalProfileSection() {
       <div className="professional-profile__layout">
         <aside className="professional-profile__preview-card">
           <div className="professional-profile__avatar-wrap">
-            <img src={imagePreviewUrl || profilePhoto || DEFAULT_AVATAR} alt={displayName || "Tu nombre"} />
+            <img
+              src={profilePhoto || DEFAULT_AVATAR}
+              alt={displayName || "Tu nombre"}
+            />
           </div>
           <h2>{commercialName || "Tu nombre comercial"}</h2>
           <p className="professional-profile__preview-name">
@@ -385,27 +505,15 @@ export default function ProfessionalProfileSection() {
                       onChange={handlePhotoChange}
                     />
                   </label>
+                  <span className="professional-profile__file-name">
+                    {profilePhotoFileName || "Ningún archivo seleccionado"}
+                  </span>
                 </div>
-              </label>
-
-              <label className="professional-profile__field">
-                <span>Nombre comercial</span>
-                <input
-                  type="text"
-                  value={commercialName}
-                  onChange={(event) => setCommercialName(event.target.value)}
-                  placeholder="Ej. Estudio Norte"
-                />
-              </label>
-
-              <label className="professional-profile__field">
-                <span>Nombre de pila / profesional</span>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  placeholder="Ej. Juan Pérez"
-                />
+                {profilePhoto ? (
+                  <div className="professional-profile__photo-preview">
+                    <img src={profilePhoto} alt="Vista previa foto de perfil" />
+                  </div>
+                ) : null}
               </label>
 
               <label className="professional-profile__field professional-profile__field--full">
@@ -417,6 +525,42 @@ export default function ProfessionalProfileSection() {
                   placeholder="Contá qué hacés, tu experiencia y qué te diferencia."
                 />
               </label>
+
+              <label className="professional-profile__field professional-profile__field--full">
+                <span>Sitio Web / Portfolio (URL)</span>
+                <input
+                  type="url"
+                  value={webUrl}
+                  onChange={(e) => setWebUrl(e.target.value)}
+                  placeholder="https://tusitio.com"
+                />
+              </label>
+
+              <label className="professional-profile__field">
+                <span>¿Sos matriculado?</span>
+                <select
+                  value={isMatriculate ? "si" : "no"}
+                  onChange={(event) =>
+                    setIsMatriculate(event.target.value === "si")
+                  }
+                >
+                  <option value="si">Sí</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
+
+              <label className="professional-profile__field">
+                <span>¿Atendés urgencias?</span>
+                <select
+                  value={attendsEmergency ? "si" : "no"}
+                  onChange={(event) =>
+                    setAttendsEmergency(event.target.value === "si")
+                  }
+                >
+                  <option value="si">Sí</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
             </div>
           </div>
 
@@ -424,7 +568,7 @@ export default function ProfessionalProfileSection() {
             <div className="professional-profile__card-header professional-profile__card-header--between">
               <div className="professional-profile__card-title">
                 <ImagePlus size={18} />
-                <h3>Imágenes del perfil</h3>
+                <h3>Imágenes de presentación</h3>
               </div>
               <button
                 type="button"
@@ -443,7 +587,7 @@ export default function ProfessionalProfileSection() {
                 >
                   <div className="professional-profile__image-preview">
                     {image.url ? (
-                      <img src={image.url} alt="Imagen del perfil" />
+                      <img src={image.url} alt="Imagen de presentación" />
                     ) : (
                       <div className="professional-profile__placeholder">
                         Sin vista previa
@@ -466,7 +610,7 @@ export default function ProfessionalProfileSection() {
             <div className="professional-profile__card-header professional-profile__card-header--between">
               <div className="professional-profile__card-title">
                 <Video size={18} />
-                <h3>Videos destacados</h3>
+                <h3>Videos de presentación</h3>
               </div>
               <button
                 type="button"
@@ -485,7 +629,9 @@ export default function ProfessionalProfileSection() {
                 >
                   <div className="professional-profile__video-preview">
                     <Video size={22} />
-                    <span>{video.title || "Video sin título"}</span>
+                    <span>
+                      {video.title || "Video de presentación sin título"}
+                    </span>
                   </div>
 
                   <div className="professional-profile__field-grid professional-profile__field-grid--stacked">
@@ -515,7 +661,7 @@ export default function ProfessionalProfileSection() {
                         rows={3}
                         value={video.description}
                         readOnly
-                        placeholder="Contá de qué se trata este video."
+                        placeholder="Contá de qué se trata este video de presentación."
                       />
                     </label>
                   </div>
@@ -538,103 +684,171 @@ export default function ProfessionalProfileSection() {
       <Modal
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
-        title="Subir imagen de perfil"
+        title="Subir imágenes de presentación"
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAddImage();
-          }}
-          style={{ display: "flex", flexDirection: "column", gap: 20 }}
-        >
-          <input
-            type="file"
-            accept="image/*"
-            ref={newImageInputRef}
-            onChange={handleImageFileChange}
-            required
-          />
-          {newImageFile && imagePreviewUrl && (
-            <img
-              src={imagePreviewUrl}
-              alt="Vista previa"
-              style={{
-                maxWidth: 320,
-                maxHeight: 180,
-                borderRadius: 12,
-                alignSelf: "center",
-              }}
+        <div className="professional-profile__modal-content">
+          <label className="professional-profile__dropzone">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              ref={newImageInputRef}
+              onChange={handleImageFileChange}
+              style={{ display: "none" }}
             />
+            <div className="professional-profile__dropzone-inner">
+              <div className="professional-profile__dropzone-icon">
+                <Upload size={32} />
+              </div>
+              <div className="professional-profile__dropzone-text">
+                <p>Haz clic para seleccionar imágenes</p>
+                <span>Podés subir varias fotos al mismo tiempo</span>
+              </div>
+            </div>
+          </label>
+
+          {imagePreviewUrls.length > 0 && (
+            <div className="professional-profile__modal-preview-container">
+              <p className="professional-profile__preview-count">
+                {imagePreviewUrls.length}{" "}
+                {imagePreviewUrls.length === 1 ? "imagen seleccionada" : "imágenes seleccionadas"}
+              </p>
+              <div className="professional-profile__modal-preview-grid">
+                {imagePreviewUrls.map((url, i) => (
+                  <div key={`${url}-${i}`} className="professional-profile__modal-preview-item">
+                    <img
+                      src={url}
+                      alt={`Vista previa ${i + 1}`}
+                      className="professional-profile__modal-preview-img"
+                    />
+                    <button
+                      type="button"
+                      className="professional-profile__modal-preview-remove"
+                      onClick={() => removeImageFromPreview(i)}
+                      title="Quitar imagen"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
-          <button
-            type="submit"
-            className="professional-profile__save-btn"
-            disabled={!newImageFile}
-          >
-            Subir imagen
-          </button>
-        </form>
+
+          <div className="professional-profile__modal-actions">
+            <button
+              type="button"
+              className="professional-profile__cancel-btn"
+              onClick={() => setIsImageModalOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="professional-profile__save-btn"
+              onClick={handleAddImage}
+              disabled={newImageFiles.length === 0}
+            >
+              {newImageFiles.length > 1
+                ? `Subir ${newImageFiles.length} imágenes`
+                : "Subir imagen"}
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* Modal para subir video */}
       <Modal
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}
-        title="Subir video destacado"
+        title="Subir video de presentación"
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleAddVideo();
-          }}
-          style={{ display: "flex", flexDirection: "column", gap: 20 }}
-        >
-          <input
-            type="file"
-            accept="video/*"
-            ref={newVideoInputRef}
-            onChange={handleVideoFileChange}
-            required
-          />
-          {newVideoFile && (
-            <video
-              src={URL.createObjectURL(newVideoFile)}
-              controls
-              style={{
-                maxWidth: 320,
-                maxHeight: 180,
-                borderRadius: 12,
-                alignSelf: "center",
-              }}
-            />
+        <div className="professional-profile__modal-content">
+          {!newVideoFile ? (
+            <label className="professional-profile__dropzone">
+              <input
+                type="file"
+                accept="video/*"
+                ref={newVideoInputRef}
+                onChange={handleVideoFileChange}
+                style={{ display: "none" }}
+              />
+              <div className="professional-profile__dropzone-inner">
+                <div className="professional-profile__dropzone-icon">
+                  <Upload size={32} />
+                </div>
+                <div className="professional-profile__dropzone-text">
+                  <p>Haz clic para seleccionar un video</p>
+                  <span>Formatos recomendados: MP4, MOV (Máx. 50MB)</span>
+                </div>
+              </div>
+            </label>
+          ) : (
+            <div className="professional-profile__video-preview-container">
+              <div className="professional-profile__video-preview-wrapper">
+                <video
+                  src={URL.createObjectURL(newVideoFile)}
+                  controls
+                  className="professional-profile__video-preview-element"
+                />
+                <button
+                  type="button"
+                  className="professional-profile__video-remove"
+                  onClick={() => setNewVideoFile(null)}
+                  title="Quitar video"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              
+              <div className="professional-profile__field-grid professional-profile__field-grid--stacked">
+                <label className="professional-profile__field">
+                  <span>Título del video</span>
+                  <input
+                    type="text"
+                    placeholder="Ej. Recorrido del local"
+                    value={newVideoTitle}
+                    onChange={(e) => setNewVideoTitle(e.target.value)}
+                    required
+                  />
+                </label>
+                <label className="professional-profile__field">
+                  <span>Descripción</span>
+                  <textarea
+                    placeholder="Contá de qué se trata este video de presentación."
+                    value={newVideoDescription}
+                    onChange={(e) => setNewVideoDescription(e.target.value)}
+                    rows={3}
+                  />
+                </label>
+              </div>
+            </div>
           )}
-          <input
-            type="text"
-            placeholder="Título del video"
-            value={newVideoTitle}
-            onChange={(e) => setNewVideoTitle(e.target.value)}
-            required
-          />
-          <textarea
-            placeholder="Descripción del video"
-            value={newVideoDescription}
-            onChange={(e) => setNewVideoDescription(e.target.value)}
-            rows={3}
-          />
-          <button
-            type="submit"
-            className="professional-profile__save-btn"
-            disabled={!newVideoFile || !newVideoTitle.trim() || isPublishingVideo}
-          >
-            {isPublishingVideo ? (
-              <>
-                <Loader2 size={18} className="animate-spin" /> Procesando...
-              </>
-            ) : (
-              "Subir video"
-            )}
-          </button>
-        </form>
+
+          <div className="professional-profile__modal-actions">
+            <button
+              type="button"
+              className="professional-profile__cancel-btn"
+              onClick={() => setIsVideoModalOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="professional-profile__save-btn"
+              onClick={handleAddVideo}
+              disabled={!newVideoFile || !newVideoTitle.trim() || isPublishingVideo}
+            >
+              {isPublishingVideo ? (
+                <>
+                  <Loader2 size={18} className="professional-profile__spin" /> Procesando...
+                </>
+              ) : (
+                "Subir video"
+              )}
+            </button>
+          </div>
+        </div>
       </Modal>
     </section>
   );

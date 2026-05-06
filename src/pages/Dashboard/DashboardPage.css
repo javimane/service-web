@@ -9,7 +9,7 @@
   display: flex;
   flex: 1;
   min-height: 100vh;
-  gap: 20px;
+  gap: 0;
   background-color: var(--bg-color);
   color: var(--text-primary);
   transition: all 0.3s ease;
@@ -25,10 +25,11 @@
   padding: 32px 24px;
   display: flex;
   flex-direction: column;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
   height: 100vh;
-  z-index: 10;
+  z-index: 200;
   flex-shrink: 0;
   overflow: visible;
   border-radius: 0 30px 30px 0;
@@ -346,7 +347,7 @@
 .footer-link--support,
 .footer-link--logout {
   width: 140px;
-  align-self: flex-start;
+  margin: 0 auto;
 }
 
 .footer-link--logout:hover {
@@ -401,6 +402,12 @@
   flex-direction: column;
   min-width: 0;
   padding: 12px 12px 12px 0;
+  margin-left: 280px;
+  transition: margin-left 0.25s ease;
+}
+
+.dashboard-main--collapsed {
+  margin-left: 96px;
 }
 
 .dashboard-main-panel {
@@ -1023,7 +1030,7 @@
 
 @media (max-width: 768px) {
   .dashboard-page {
-    gap: 10px;
+    gap: 0;
   }
 
   .dashboard-sidebar {
@@ -1034,6 +1041,11 @@
 
   .dashboard-main {
     padding: 10px 10px 10px 0;
+    margin-left: 84px;
+  }
+
+  .dashboard-main--collapsed {
+    margin-left: 84px;
   }
 
   .dashboard-content {
