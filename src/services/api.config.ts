@@ -20,17 +20,20 @@ export const API_ENDPOINTS = {
   },
   professionals: {
     list: `${API_BASE_URL}/api/professionals`,
+    me: `${API_BASE_URL}/api/professionals/me`,
+    ranking: `${API_BASE_URL}/api/professional-ranking`,
     categories: (professionalId: string) =>
       `${API_BASE_URL}/api/professional-details/${professionalId}/categories`,
     credentials: (professionalId: string) =>
       `${API_BASE_URL}/api/professional-details/${professionalId}/credentials`,
-    schedules: (professionalId: string) =>
-      `${API_BASE_URL}/api/professional-details/${professionalId}/schedules`,
-    schedulesBulk: `${API_BASE_URL}/api/professional-details/schedules/bulk`,
-    scheduleDetail: (id: string) =>
-      `${API_BASE_URL}/api/professional-details/schedules/${id}`,
-    ranking: `${API_BASE_URL}/api/professional-ranking`,
     detail: (id: string) => `${API_BASE_URL}/api/professionals/${id}`,
+  },
+  availability: {
+    byProfessional: (professionalId: string | number) =>
+      `${API_BASE_URL}/api/professional/availability/professional/${professionalId}`,
+    bulk: `${API_BASE_URL}/api/professional/availability/bulk`,
+    detail: (id: string | number) =>
+      `${API_BASE_URL}/api/professional/availability/${id}`,
   },
   proposals: {
     base: `${API_BASE_URL}/api/professional-proposals`,
@@ -107,6 +110,8 @@ export const API_ENDPOINTS = {
     base: `${API_BASE_URL}/api/professional-videos`,
     detail: (id: string | number) =>
       `${API_BASE_URL}/api/professional-videos/${id}`,
+    byProfessional: (professionalId: string | number) =>
+      `${API_BASE_URL}/api/professional-videos/professional/${professionalId}`,
   },
   professionalImages: {
     base: `${API_BASE_URL}/api/professional-images`,

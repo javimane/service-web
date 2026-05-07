@@ -8,6 +8,12 @@ export const videosService = {
       method: "GET",
     });
   },
+  
+  findByProfessionalId: (professionalId: number) =>
+    apiClient<ProfessionalVideoRow[]>(
+      API_ENDPOINTS.videos.byProfessional(professionalId),
+      { method: "GET" }
+    ),
 
   getById: (id: string) =>
     apiClient<ProfessionalVideoRow>(API_ENDPOINTS.videos.detail(id), {

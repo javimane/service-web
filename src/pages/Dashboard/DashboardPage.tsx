@@ -45,10 +45,10 @@ export default function DashboardPage() {
 
   const [view, setView] = useState("overview");
 
-  const { data: credentials = [] } = useQuery({
-    queryKey: ["professional-credentials", professionalId],
-    queryFn: () => professionalService.getCredentials(professionalId),
-    enabled: !!professionalId,
+  const { data: myProfessional } = useQuery({
+    queryKey: ["professional-me"],
+    queryFn: () => professionalService.getMe(),
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: proposalsCountData } = useQuery({
@@ -63,18 +63,7 @@ export default function DashboardPage() {
     enabled: !!professionalId,
   });
 
-  const profileViews = useMemo(() => {
-    const itemWithViews = credentials.find(
-      (item: any) =>
-        item?.Professional?.profile_views !== undefined ||
-        item?.profile_views !== undefined,
-    );
-    const views =
-      itemWithViews?.Professional?.profile_views ??
-      (itemWithViews as any)?.profile_views ??
-      0;
-    return typeof views === "number" ? views : 0;
-  }, [credentials]);
+  const profileViews = myProfessional?.profile_views ?? 0;
 
   const acceptedProposalsCount = proposalsCountData?.count ?? 0;
 
@@ -238,9 +227,9 @@ export default function DashboardPage() {
                       <div className="trend-badge">
                         <TrendingUp size={14} />
                         <span>
-                          {profileViews !== null
+                          {/* {profileViews !== null
                             ? `${profileViews.toLocaleString("es-AR")} VISTAS`
-                            : "SIN DATOS"}
+                            : "SIN DATOS"} */}
                         </span>
                       </div>
                     </div>

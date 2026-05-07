@@ -2,9 +2,8 @@ import { API_ENDPOINTS } from "./api.config";
 import { apiClient } from "./apiClient";
 import type {
   ProfessionalCategoryRow,
-  ProfessionalCredentialRow,
-  ProfessionalAvailabilityRow,
   ProfessionalRankingRow,
+  ProfessionalRow,
 } from "../types/database.types";
 
 export const professionalService = {
@@ -38,70 +37,6 @@ export const professionalService = {
     ),
 
   /**
-   * @route GET /api/professional-details/:professionalId/credentials
-   * @auth No
-   * @param {string | number} professionalId
-   * @returns {Promise<ProfessionalCredentialRow[]>}
-   */
-  getCredentials: (professionalId: string | number) =>
-    apiClient<ProfessionalCredentialRow[]>(
-      API_ENDPOINTS.professionals.credentials(professionalId.toString()),
-      {
-        method: "GET",
-      },
-    ),
-
-  /**
-   * @route GET /api/professional-details/:professionalId/schedules
-   * @auth No
-   * @param {string | number} professionalId
-   * @returns {Promise<ProfessionalAvailabilityRow[]>}
-   */
-  getSchedules: (professionalId: string | number) =>
-    apiClient<ProfessionalAvailabilityRow[]>(
-      API_ENDPOINTS.professionals.schedules(professionalId.toString()),
-      {
-        method: "GET",
-      },
-    ),
-
-  /**
-   * @route POST /api/professional-details/schedules/bulk
-   * @auth Bearer
-   * @param {any} bulkRequest
-   * @returns {Promise<any>}
-   */
-  upsertSchedules: (bulkRequest: any) =>
-    apiClient<any>(API_ENDPOINTS.professionals.schedulesBulk, {
-      method: "POST",
-      body: JSON.stringify(bulkRequest),
-    }),
-
-  /**
-   * @route PUT /api/professional-details/schedules/:id
-   * @auth Bearer
-   * @param {string | number} id
-   * @param {any} updateRequest
-   * @returns {Promise<any>}
-   */
-  updateSchedule: (id: string | number, updateRequest: any) =>
-    apiClient<any>(API_ENDPOINTS.professionals.scheduleDetail(id.toString()), {
-      method: "PUT",
-      body: JSON.stringify(updateRequest),
-    }),
-
-  /**
-   * @route DELETE /api/professional-details/schedules/:id
-   * @auth Bearer
-   * @param {string | number} id
-   * @returns {Promise<void>}
-   */
-  deleteSchedule: (id: string | number) =>
-    apiClient<void>(API_ENDPOINTS.professionals.scheduleDetail(id.toString()), {
-      method: "DELETE",
-    }),
-
-  /**
    * @route GET /api/professional-ranking
    * @auth No
    * @param {string} [categoryId]
@@ -121,6 +56,16 @@ export const professionalService = {
       },
     );
   },
+
+  /**
+   * @route GET /api/professionals/me
+   * @auth Bearer
+   * @returns {Promise<ProfessionalRow | null>}
+   */
+  getMe: () =>
+    apiClient<ProfessionalRow | null>(API_ENDPOINTS.professionals.me, {
+      method: "GET",
+    }),
 
   /**
    * @route GET /api/professionals/:id

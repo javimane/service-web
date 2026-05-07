@@ -151,7 +151,7 @@ export interface ProductWithAssociation extends ProductRow {
 export interface ProfessionalAvailabilityRow {
   readonly id: number;
   readonly professional_id: number;
-  readonly day_of_week: number | null;
+  readonly day_of_week: number;
   readonly start_time: string;
   readonly end_time: string;
   // Relationships

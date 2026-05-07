@@ -28,8 +28,6 @@ async function uploadFile(configEndpoint: string, input: UploadInput) {
     method: "GET",
   });
 
-  const bucket = config.bucket;
-
   await uploadToPresignedUrl(config.signedUrl, input.file);
 
   return {

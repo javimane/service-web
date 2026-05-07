@@ -2,6 +2,7 @@ import { type ChangeEvent, useRef, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Camera,
+  Clock,
   ImagePlus,
   Save,
   Trash2,
@@ -22,6 +23,10 @@ import { videosService } from "../../../services/videosService";
 import { professionalImagesService } from "../../../services/professionalImagesService";
 import { profileService } from "../../../services/profileService";
 import { professionalService } from "../../../services/professionalService";
+import {
+  availabilityService,
+  type AvailabilityUpsertItem,
+} from "../../../services/availabilityService";
 import { useAuth } from "../../../context/AuthContext";
 import "./ProfessionalProfileSection.css";
 
@@ -29,6 +34,28 @@ type GalleryImage = {
   id: string;
   url: string;
 };
+
+enum DayOfWeek {
+  DOMINGO = 0,
+  LUNES = 1,
+  MARTES = 2,
+  MIERCOLES = 3,
+  JUEVES = 4,
+  VIERNES = 5,
+  SABADO = 6,
+}
+
+const DAY_LABELS: Record<DayOfWeek, string> = {
+  [DayOfWeek.DOMINGO]: "DOMINGO",
+  [DayOfWeek.LUNES]: "LUNES",
+  [DayOfWeek.MARTES]: "MARTES",
+  [DayOfWeek.MIERCOLES]: "MIÉRCOLES",
+  [DayOfWeek.JUEVES]: "JUEVES",
+  [DayOfWeek.VIERNES]: "VIERNES",
+  [DayOfWeek.SABADO]: "SÁBADO",
+};
+
+type AvailabilitySlot = AvailabilityUpsertItem & { tempId: string };
 
 type VideoItem = {
   id: string;
@@ -48,7 +75,7 @@ export default function ProfessionalProfileSection() {
   const userId = sessionStatus?.user?.id;
   const professionalId = Number(
     sessionStatus?.subscription?.professional_id ??
-    sessionStatus?.professional_id
+      sessionStatus?.professional_id,
   );
   const queryClient = useQueryClient();
 
@@ -73,10 +100,8 @@ export default function ProfessionalProfileSection() {
     queryKey: ["videos", professionalId],
     queryFn: async () => {
       if (!professionalId) return [];
-      const data = await videosService.list();
-      const filtered = data.filter(
-        (v) => v.professional_id === professionalId && v.activate === true,
-      );
+      const data = await videosService.findByProfessionalId(professionalId);
+      const filtered = data.filter((v) => v.activate === true);
       return filtered.map((v) => ({
         id: v.id.toString(),
         title: v.title || "",
@@ -85,6 +110,14 @@ export default function ProfessionalProfileSection() {
       }));
     },
     enabled: !!professionalId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Availability Query
+  const { data: availabilityData = [] } = useQuery({
+    queryKey: ["availability", professionalId],
+    queryFn: () => availabilityService.findByProfessionalId(professionalId),
+    enabled: !isNaN(professionalId),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -117,6 +150,11 @@ export default function ProfessionalProfileSection() {
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [imageModalError, setImageModalError] = useState("");
   const [videoModalError, setVideoModalError] = useState("");
+  const [videoModalInfo, setVideoModalInfo] = useState("");
+
+  // Availability state
+  const [localSlots, setLocalSlots] = useState<AvailabilitySlot[]>([]);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -136,6 +174,20 @@ export default function ProfessionalProfileSection() {
       setWebUrl(professional.web_url || "");
     }
   }, [professional]);
+
+  useEffect(() => {
+    if (availabilityData.length > 0) {
+      setLocalSlots(
+        availabilityData.map((s) => ({
+          tempId: `srv-${s.id}`,
+          id: s.id,
+          day_of_week: s.day_of_week ?? DayOfWeek.LUNES,
+          start_time: s.start_time,
+          end_time: s.end_time,
+        })),
+      );
+    }
+  }, [availabilityData]);
 
   useEffect(() => {
     if (savedMessage) {
@@ -226,9 +278,11 @@ export default function ProfessionalProfileSection() {
   const handleAddImage = async () => {
     if (newImageFiles.length === 0) return;
     setImageModalError("");
-    
+
     if (!professionalId) {
-      setImageModalError("No se pudo identificar al profesional para subir imágenes.");
+      setImageModalError(
+        "No se pudo identificar al profesional para subir imágenes.",
+      );
       return;
     }
 
@@ -248,7 +302,7 @@ export default function ProfessionalProfileSection() {
           return { id: newImage.id.toString(), url: newImage.image_url };
         }),
       );
-      
+
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
 
       queryClient.setQueryData(
@@ -262,7 +316,9 @@ export default function ProfessionalProfileSection() {
         `${uploadedImages.length} imagen${uploadedImages.length > 1 ? "es" : ""} subida${uploadedImages.length > 1 ? "s" : ""} correctamente.`,
       );
     } catch {
-      setImageModalError("No se pudo subir alguna de las imágenes. Por favor, reintentá.");
+      setImageModalError(
+        "No se pudo subir alguna de las imágenes. Por favor, reintentá.",
+      );
     } finally {
       setIsUploadingImages(false);
     }
@@ -329,14 +385,19 @@ export default function ProfessionalProfileSection() {
   const handleAddVideo = async () => {
     if (!newVideoFile || !newVideoTitle.trim()) return;
     setVideoModalError("");
+    setVideoModalInfo("");
 
     if (isNaN(professionalId)) {
-      setVideoModalError("No se pudo identificar al profesional para subir el video.");
+      setVideoModalError(
+        "No se pudo identificar al profesional para subir el video.",
+      );
       return;
     }
 
     try {
       setIsPublishingVideo(true);
+      setVideoModalInfo("Subiendo video... esto puede tardar unos minutos.");
+
       const { uploadUrl, key } = await multimediaService.getUploadUrl(
         professionalId,
         newVideoFile.name,
@@ -346,11 +407,7 @@ export default function ProfessionalProfileSection() {
 
       await multimediaService.uploadToPresignedUrl(uploadUrl, newVideoFile);
 
-      // Once S3 upload is done, we can close and continue with DB record & polling
-      setIsVideoModalOpen(false); 
-      setSavedMessage(
-        "Procesando, le notificaremos cuando esté disponible el video.",
-      );
+      setVideoModalInfo("Video subido. Procesando en servidores...");
 
       const newVideo = await videosService.create({
         professional_id: professionalId,
@@ -359,10 +416,11 @@ export default function ProfessionalProfileSection() {
         video_url: key,
       });
 
-      // Poll until activated (like ReelsSection)
+      // Poll until activated
       let activatedVideo = newVideo;
       const MAX_ATTEMPTS = 10;
       const POLL_INTERVAL_MS = 6000;
+
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         if (activatedVideo.activate === true) break;
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
@@ -371,45 +429,41 @@ export default function ProfessionalProfileSection() {
         );
       }
 
-      if (activatedVideo.activate !== true) {
-        setSavedMessage(
-          "El video se subió pero aún está siendo procesado. Revisá más tarde.",
-        );
+      queryClient.setQueryData(
+        ["videos", professionalId],
+        (current: VideoItem[] = []) => [
+          {
+            id: activatedVideo.id.toString(),
+            title: activatedVideo.title || "",
+            url: activatedVideo.video_url,
+            description: activatedVideo.description || "",
+          },
+          ...current,
+        ],
+      );
+
+      if (activatedVideo.activate === true) {
+        setSavedMessage("¡Video publicado con éxito!");
       } else {
-        queryClient.setQueryData(
-          ["videos", professionalId],
-          (current: VideoItem[] = []) => [
-            {
-              id: activatedVideo.id.toString(),
-              title: activatedVideo.title || "",
-              url: activatedVideo.video_url,
-              description: activatedVideo.description || "",
-            },
-            ...current,
-          ],
+        setSavedMessage(
+          "El video se subió correctamente y se activará en breve.",
         );
-        setSavedMessage("El video se publicó y se guardó correctamente.");
       }
 
+      setIsVideoModalOpen(false);
       setNewVideoFile(null);
       setNewVideoTitle("");
       setNewVideoDescription("");
+      setVideoModalInfo("");
 
       if (newVideoInputRef.current) {
         newVideoInputRef.current.value = "";
       }
     } catch (error) {
+      console.error("Error publishing video:", error);
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "No se pudo publicar el video en este momento.";
-      
-      // If modal was already closed, show in main notice, else show in modal error
-      if (isVideoModalOpen) {
-        setVideoModalError(errorMessage);
-      } else {
-        setSavedMessage(errorMessage);
-      }
+        error instanceof Error ? error.message : "Error al procesar el video.";
+      setVideoModalError(errorMessage);
     } finally {
       setIsPublishingVideo(false);
     }
@@ -446,6 +500,81 @@ export default function ProfessionalProfileSection() {
 
   const handleSave = () => {
     saveMutation.mutate();
+  };
+
+  // Availability handlers
+  const addSlot = () => {
+    setLocalSlots((prev) => [
+      ...prev,
+      {
+        tempId: `new-${Math.random().toString(36).slice(2, 9)}`,
+        day_of_week: DayOfWeek.LUNES,
+        start_time: "09:00",
+        end_time: "18:00",
+      },
+    ]);
+  };
+
+  const removeSlot = async (index: number) => {
+    const slot = localSlots[index];
+    if (!slot) return;
+
+    if (slot.id !== undefined) {
+      try {
+        await availabilityService.delete(slot.id);
+        queryClient.invalidateQueries({
+          queryKey: ["availability", professionalId],
+        });
+        setSavedMessage("Horario eliminado correctamente.");
+      } catch {
+        setSavedMessage("No se pudo eliminar el horario.");
+        return;
+      }
+    }
+
+    setLocalSlots((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateSlot = (
+    index: number,
+    field: keyof AvailabilityUpsertItem,
+    value: string | number,
+  ) => {
+    setLocalSlots((prev) =>
+      prev.map((slot, i) => (i === index ? { ...slot, [field]: value } : slot)),
+    );
+  };
+
+  const saveSchedule = async () => {
+    if (!professionalId) return;
+    try {
+      setIsSavingSchedule(true);
+      // Upsert remaining slots
+      const items: AvailabilityUpsertItem[] = localSlots.map((s) => ({
+        ...(s.id !== undefined ? { id: s.id } : {}),
+        day_of_week: s.day_of_week,
+        start_time: s.start_time,
+        end_time: s.end_time,
+      }));
+      const saved = await availabilityService.upsertBulk(items);
+      setLocalSlots(
+        saved.map((s) => ({
+          tempId: `srv-${s.id}`,
+          id: s.id,
+          day_of_week: s.day_of_week ?? DayOfWeek.LUNES,
+          start_time: s.start_time,
+          end_time: s.end_time,
+        })),
+      );
+      queryClient.invalidateQueries({
+        queryKey: ["availability", professionalId],
+      });
+      setSavedMessage("Horarios guardados correctamente.");
+    } catch {
+      setSavedMessage("No se pudieron guardar los horarios.");
+    } finally {
+      setIsSavingSchedule(false);
+    }
   };
 
   return (
@@ -591,7 +720,104 @@ export default function ProfessionalProfileSection() {
               </label>
             </div>
           </div>
+          {/* Horarios de atención */}
+          <div className="professional-profile__card">
+            <div className="professional-profile__card-header professional-profile__card-header--between">
+              <div className="professional-profile__card-title">
+                <Clock size={18} />
+                <h3>Horarios de atención</h3>
+              </div>
+              <button
+                type="button"
+                className="professional-profile__save-btn"
+                onClick={saveSchedule}
+                disabled={isSavingSchedule}
+              >
+                {isSavingSchedule ? (
+                  <>
+                    <Loader2 size={16} className="professional-profile__spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} /> Guardar horarios
+                  </>
+                )}
+              </button>
+            </div>
 
+            <div className="professional-profile__schedule-list">
+              {localSlots.map((slot, index) => (
+                <div
+                  key={slot.tempId}
+                  className="professional-profile__schedule-row"
+                >
+                  <select
+                    className="professional-profile__schedule-day"
+                    value={slot.day_of_week}
+                    onChange={(e) =>
+                      updateSlot(index, "day_of_week", Number(e.target.value))
+                    }
+                  >
+                    {(Object.keys(DAY_LABELS) as unknown as DayOfWeek[]).map(
+                      (day) => (
+                        <option key={day} value={day}>
+                          {DAY_LABELS[day]}
+                        </option>
+                      ),
+                    )}
+                  </select>
+
+                  <div className="professional-profile__schedule-times">
+                    <label className="professional-profile__schedule-time-label">
+                      <span>Desde</span>
+                      <input
+                        type="time"
+                        value={slot.start_time}
+                        onChange={(e) =>
+                          updateSlot(index, "start_time", e.target.value)
+                        }
+                      />
+                    </label>
+                    <label className="professional-profile__schedule-time-label">
+                      <span>Hasta</span>
+                      <input
+                        type="time"
+                        value={slot.end_time}
+                        onChange={(e) =>
+                          updateSlot(index, "end_time", e.target.value)
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="professional-profile__remove-btn professional-profile__schedule-remove"
+                    onClick={() => removeSlot(index)}
+                    title="Eliminar horario"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+
+              {localSlots.length === 0 && (
+                <p className="professional-profile__empty-text">
+                  No tenés horarios configurados. Agregá uno para que tus
+                  clientes sepan cuándo podés atenderlos.
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="professional-profile__add-btn"
+              onClick={addSlot}
+            >
+              + Agregar horario
+            </button>
+          </div>
           <div className="professional-profile__card">
             <div className="professional-profile__card-header professional-profile__card-header--between">
               <div className="professional-profile__card-title">
@@ -656,51 +882,39 @@ export default function ProfessionalProfileSection() {
                   className="professional-profile__video-card"
                 >
                   <div className="professional-profile__video-preview">
-                    <Video size={22} />
-                    <span>
-                      {video.title || "Video de presentación sin título"}
-                    </span>
+                    <video
+                      src={video.url}
+                      className="professional-profile__video-element"
+                      controls
+                    />
                   </div>
 
-                  <div className="professional-profile__field-grid professional-profile__field-grid--stacked">
-                    <label className="professional-profile__field">
-                      <span>Título</span>
-                      <input
-                        type="text"
-                        value={video.title}
-                        readOnly
-                        placeholder="Ej. Recorrido del local"
-                      />
-                    </label>
+                  <div className="professional-profile__video-details">
+                    <div className="professional-profile__field-grid professional-profile__field-grid--stacked">
+                      <label className="professional-profile__field">
+                        <span>Título</span>
+                        <input
+                          type="text"
+                          value={video.title}
+                          readOnly
+                          placeholder="Ej. Recorrido del local"
+                        />
+                      </label>
 
-                    <label className="professional-profile__field">
-                      <span>URL del video</span>
-                      <input
-                        type="text"
-                        value={video.url}
-                        readOnly
-                        placeholder="https://..."
-                      />
-                    </label>
+                      <label className="professional-profile__field professional-profile__field--full">
+                        <span>Descripción del video</span>
+                        <textarea rows={3} value={video.description} readOnly />
+                      </label>
+                    </div>
 
-                    <label className="professional-profile__field professional-profile__field--full">
-                      <span>Descripción del video</span>
-                      <textarea
-                        rows={3}
-                        value={video.description}
-                        readOnly
-                        placeholder="Contá de qué se trata este video de presentación."
-                      />
-                    </label>
+                    <button
+                      type="button"
+                      className="professional-profile__remove-btn"
+                      onClick={() => removeVideo(video.id)}
+                    >
+                      <Trash2 size={16} /> Eliminar
+                    </button>
                   </div>
-
-                  <button
-                    type="button"
-                    className="professional-profile__remove-btn"
-                    onClick={() => removeVideo(video.id)}
-                  >
-                    <Trash2 size={16} /> Eliminar
-                  </button>
                 </article>
               ))}
             </div>
@@ -752,11 +966,16 @@ export default function ProfessionalProfileSection() {
             <div className="professional-profile__modal-preview-container">
               <p className="professional-profile__preview-count">
                 {imagePreviewUrls.length}{" "}
-                {imagePreviewUrls.length === 1 ? "imagen seleccionada" : "imágenes seleccionadas"}
+                {imagePreviewUrls.length === 1
+                  ? "imagen seleccionada"
+                  : "imágenes seleccionadas"}
               </p>
               <div className="professional-profile__modal-preview-grid">
                 {imagePreviewUrls.map((url, i) => (
-                  <div key={`${url}-${i}`} className="professional-profile__modal-preview-item">
+                  <div
+                    key={`${url}-${i}`}
+                    className="professional-profile__modal-preview-item"
+                  >
                     <img
                       src={url}
                       alt={`Vista previa ${i + 1}`}
@@ -791,7 +1010,8 @@ export default function ProfessionalProfileSection() {
             >
               {isUploadingImages ? (
                 <>
-                  <Loader2 size={18} className="professional-profile__spin" /> Subiendo...
+                  <Loader2 size={18} className="professional-profile__spin" />{" "}
+                  Subiendo...
                 </>
               ) : newImageFiles.length > 1 ? (
                 `Subir ${newImageFiles.length} imágenes`
@@ -843,6 +1063,12 @@ export default function ProfessionalProfileSection() {
                   <span>{videoModalError}</span>
                 </div>
               )}
+              {videoModalInfo && (
+                <div className="professional-profile__modal-info">
+                  <Loader2 size={16} className="professional-profile__spin" />
+                  <span>{videoModalInfo}</span>
+                </div>
+              )}
               <div className="professional-profile__video-preview-wrapper">
                 <video
                   src={URL.createObjectURL(newVideoFile)}
@@ -858,7 +1084,7 @@ export default function ProfessionalProfileSection() {
                   <X size={16} />
                 </button>
               </div>
-              
+
               <div className="professional-profile__field-grid professional-profile__field-grid--stacked">
                 <label className="professional-profile__field">
                   <span>Título del video</span>
@@ -894,11 +1120,14 @@ export default function ProfessionalProfileSection() {
             <button
               type="submit"
               className="professional-profile__save-btn"
-              disabled={!newVideoFile || !newVideoTitle.trim() || isPublishingVideo}
+              disabled={
+                !newVideoFile || !newVideoTitle.trim() || isPublishingVideo
+              }
             >
               {isPublishingVideo ? (
                 <>
-                  <Loader2 size={18} className="professional-profile__spin" /> Procesando...
+                  <Loader2 size={18} className="professional-profile__spin" />{" "}
+                  Procesando...
                 </>
               ) : (
                 "Subir video"
