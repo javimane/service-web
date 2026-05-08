@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toJpeg } from "html-to-image";
 import { formatDateDisplay } from "../../../utils/utils";
+import { useRef } from "react";
 import "./AllPromotionsPage.css";
 
 const STATUS_LABELS = {
@@ -30,13 +31,14 @@ const STATUS_LABELS = {
   draft: "Borrador",
 };
 
-export default function AllPromotionsPage({ onCreateNew }) {
+export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   const { sessionStatus } = useAuth();
   const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selectedPromo, setSelectedPromo] = useState<any>(null);
+  const couponRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   const { data: promotions = [], isLoading } = useQuery({
@@ -89,7 +91,7 @@ export default function AllPromotionsPage({ onCreateNew }) {
   };
 
   const handleView = (promoId: string) => {
-    const promo = promotions.find(p => p.id === promoId);
+    const promo = promosList.find(p => p.id === promoId);
     setSelectedPromo(promo);
   };
 
@@ -135,6 +137,7 @@ export default function AllPromotionsPage({ onCreateNew }) {
       validFrom: formatDateDisplay(p.from_date || ""),
       validTo: formatDateDisplay(p.expires_at || ""),
       image: p.image_url || "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
+      _original: p,
     }));
   }, [promotions]);
 
@@ -263,8 +266,7 @@ export default function AllPromotionsPage({ onCreateNew }) {
                 type="button"
                 className="promo-list-card__action"
                 title="Modificar"
-                onClick={() => handleDuplicate(promo)}
-                disabled={duplicateMutation.isPending}
+                onClick={() => onEdit(promo._original)}
               >
                 <Edit2 size={16} />
               </button>
@@ -309,62 +311,59 @@ export default function AllPromotionsPage({ onCreateNew }) {
               <X size={24} />
             </button>
             
-            <div className="coupon-card-container">
-              <div className="coupon-card" ref={couponRef}>
-                <div className="coupon-card__header">
-                  <Ticket size={28} className="coupon-ticket-icon" />
-                  <div className="coupon-card__discount">
-                    {selectedPromo.discount_type === 'percentage' ? `${selectedPromo.discount_value}% OFF` : 
-                     selectedPromo.discount_type === 'fixed' ? `$${selectedPromo.discount_value} OFF` :
-                     selectedPromo.discount_type === 'bogo' ? '2x1' : 'GRATIS'}
-                  </div>
+            <div className="public-promo-preview" ref={couponRef}>
+              <div className="public-promo-preview__hero">
+                <img src={selectedPromo.image} alt="Promo" className="public-promo-preview__image" />
+                <div className="public-promo-preview__badge">
+                  {selectedPromo.offer}
                 </div>
-                <div className="coupon-card__image">
-                  <img src={selectedPromo.image_url} alt="Promo" />
-                </div>
-                <div className="coupon-card__body">
-                  <h2 className="coupon-card__title">{selectedPromo.title}</h2>
-                  <p className="coupon-card__description">{selectedPromo.description}</p>
-
-                  <div className="coupon-card__info-box">
-                    <div className="coupon-card__info-item">
-                      <Ticket size={16} />
-                      <span>
-                        <strong>Estado:</strong> {STATUS_LABELS[selectedPromo.state || 'active']}
-                      </span>
-                    </div>
-                    <div className="coupon-card__info-item">
-                      <Calendar size={16} />
-                      <span>
-                        <strong>Validez:</strong> {formatDateDisplay(selectedPromo.from_date)} al {formatDateDisplay(selectedPromo.expires_at)}
-                      </span>
-                    </div>
-                    <div className="coupon-card__info-item">
+              </div>
+              
+              <div className="public-promo-preview__content">
+                <div className="public-promo-preview__header">
+                  <div className="public-promo-preview__professional">
+                    <div className="professional-avatar-mini">
                       <Sparkles size={16} />
-                      <span>
-                        <strong>Aplicable a:</strong> {selectedPromo.applicable_to || "Todo el catálogo"}
-                      </span>
                     </div>
-                    <div className="coupon-card__info-item">
-                      <Edit2 size={16} />
-                      <span>
-                        <strong>Profesional:</strong> {user?.display_name || "Tu Studio"}
-                      </span>
+                    <div className="professional-info">
+                      <span className="professional-name">{sessionStatus?.user?.display_name || "Tu Studio"}</span>
+                      <span className="professional-label">PROFESIONAL VERIFICADO</span>
                     </div>
                   </div>
+                  <h2 className="public-promo-preview__title">{selectedPromo.title}</h2>
+                  <code className="public-promo-preview__code">PROMO-{selectedPromo.id.slice(0, 8).toUpperCase()}</code>
+                </div>
 
+                <p className="public-promo-preview__description">{selectedPromo.description}</p>
+
+                <div className="public-promo-preview__details-grid">
+                  <div className="detail-item">
+                    <Calendar size={18} />
+                    <div className="detail-text">
+                      <label>VALIDEZ</label>
+                      <span>{selectedPromo.validFrom} - {selectedPromo.validTo}</span>
+                    </div>
+                  </div>
+                  <div className="detail-item">
+                    <Sparkles size={18} />
+                    <div className="detail-text">
+                      <label>APLICA A</label>
+                      <span>{selectedPromo.applicableTo || "Todo el catálogo"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="public-promo-preview__footer">
                   <button
-                    className="coupon-card__download-btn coupon-card__download-btn--success"
+                    className="public-promo-preview__cta"
                     onClick={() => handleDownloadCoupon(selectedPromo.title)}
                   >
-                    <Download size={18} />
-                    Descargar Cupón (JPG)
+                    <Ticket size={20} />
+                    OBTENER ESTE CUPÓN
                   </button>
-
-                  <div className="coupon-card__footer">
-                    <CheckCircle2 size={14} />
-                    <span>Presenta este cupón al momento del servicio</span>
-                  </div>
+                  <p className="public-promo-preview__hint">
+                    Presenta este cupón digital al momento de contratar el servicio.
+                  </p>
                 </div>
               </div>
             </div>

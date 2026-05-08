@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Info,
   Calendar,
@@ -28,7 +29,7 @@ const DISCOUNT_TYPES = [
   { value: "free", label: "Gratis" },
 ];
 
-export default function PromotionCreator({ onBack, onViewAll }) {
+export default function PromotionCreator({ onBack, onViewAll, promotionToEdit = null }) {
   const fileInputRef = useRef(null);
   const couponRef = useRef<HTMLDivElement>(null);
   const { sessionStatus, user } = useAuth();
@@ -37,23 +38,77 @@ export default function PromotionCreator({ onBack, onViewAll }) {
     sessionStatus?.professional_id;
 
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    validFrom: "",
-    validTo: "",
-    unlimitedStock: false,
-    discountType: "percentage",
-    discountValue: 0,
-    applicableTo: "",
+    title: promotionToEdit?.title || "",
+    description: promotionToEdit?.description || "",
+    validFrom: promotionToEdit?.from_date ? promotionToEdit.from_date.split("T")[0] : "",
+    validTo: promotionToEdit?.expires_at ? promotionToEdit.expires_at.split("T")[0] : "",
+    unlimitedStock: promotionToEdit?.unlimited_stock ?? false,
+    discountType: promotionToEdit?.discount_type || "percentage",
+    discountValue: promotionToEdit?.discount_value || 0,
+    applicableTo: promotionToEdit?.applicable_to || "",
     image: null,
-    imagePreview: null,
+    imagePreview: promotionToEdit?.image_url || null,
   });
+
+  // Sync form when promotionToEdit changes
+  useEffect(() => {
+    if (promotionToEdit) {
+      setForm({
+        title: promotionToEdit.title || "",
+        description: promotionToEdit.description || "",
+        validFrom: promotionToEdit.from_date ? promotionToEdit.from_date.split("T")[0] : "",
+        validTo: promotionToEdit.expires_at ? promotionToEdit.expires_at.split("T")[0] : "",
+        unlimitedStock: promotionToEdit.unlimited_stock ?? false,
+        discountType: promotionToEdit.discount_type || "percentage",
+        discountValue: promotionToEdit.discount_value || 0,
+        applicableTo: promotionToEdit.applicable_to || "",
+        image: null,
+        imagePreview: promotionToEdit.image_url || null,
+      });
+      setSuccess(false);
+      setErrors({});
+    } else {
+      // Reset to default for new creation
+      setForm({
+        title: "",
+        description: "",
+        validFrom: "",
+        validTo: "",
+        unlimitedStock: false,
+        discountType: "percentage",
+        discountValue: 0,
+        applicableTo: "",
+        image: null,
+        imagePreview: null,
+      });
+      setSuccess(false);
+      setErrors({});
+    }
+  }, [promotionToEdit]);
 
   const [isDragging, setIsDragging] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [errors, setErrors] = useState<any>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (promotionToEdit?.id) {
+        return professionalPromotionService.update(promotionToEdit.id, data);
+      }
+      return professionalPromotionService.create(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-promotions"] });
+      setSuccess(true);
+      setTimeout(() => onViewAll(), 1500);
+    },
+    onError: (err: any) => {
+      alert("Error: " + err.message);
+    },
+  });
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -105,7 +160,7 @@ export default function PromotionCreator({ onBack, onViewAll }) {
     if (!form.discountValue || form.discountValue <= 0) {
       newErrors.discountValue = "El valor debe ser mayor a 0";
     }
-    if (!form.image)
+    if (!form.imagePreview)
       newErrors.image = "Debes subir una imagen para la promoción";
 
     setErrors(newErrors);
@@ -131,18 +186,19 @@ export default function PromotionCreator({ onBack, onViewAll }) {
     }
   };
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     if (!validateForm()) return;
     if (!professionalId) {
-      alert("No se encontró el ID del profesional. Por favor, reintenta iniciar sesión.");
+      alert(
+        "No se encontró el ID del profesional. Por favor, reintenta iniciar sesión.",
+      );
       return;
     }
 
-    setIsSubmitting(true);
     setSuccess(false);
 
     try {
-      let imageUrl = "";
+      let imageUrl = form.imagePreview;
       if (form.image) {
         const uploaded = await uploadPromotionImage({
           file: form.image,
@@ -150,7 +206,7 @@ export default function PromotionCreator({ onBack, onViewAll }) {
         imageUrl = uploaded.publicUrl;
       }
 
-      await professionalPromotionService.create({
+      saveMutation.mutate({
         professional_id: Number(professionalId),
         title: form.title,
         description: form.description,
@@ -161,17 +217,12 @@ export default function PromotionCreator({ onBack, onViewAll }) {
         discount_value: Number(form.discountValue),
         applicable_to: form.applicableTo || null,
         image_url: imageUrl,
-        state: 'active',
-        created_at: new Date().toISOString(),
+        state: promotionToEdit?.state || "active",
         updated_at: new Date().toISOString(),
+        ...(promotionToEdit ? {} : { created_at: new Date().toISOString() }),
       });
-
-      setSuccess(true);
-      setTimeout(() => onViewAll(), 1500);
     } catch (err: any) {
       alert("Error: " + err.message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -197,11 +248,13 @@ export default function PromotionCreator({ onBack, onViewAll }) {
       <div className="promo-creator__header">
         <div>
           <span className="promo-creator__label">CAMPAIGN MANAGER</span>
-          <h1 className="promo-creator__title">Crear Nueva Promoción</h1>
+          <h1 className="promo-creator__title">
+            {promotionToEdit ? "Editar Promoción" : "Crear Nueva Promoción"}
+          </h1>
         </div>
         <div className="promo-creator__status-badge">
           <span className="status-dot" />
-          STATUS: DRAFT
+          STATUS: {promotionToEdit?.state?.toUpperCase() || "DRAFT"}
         </div>
       </div>
 
@@ -486,6 +539,14 @@ export default function PromotionCreator({ onBack, onViewAll }) {
         <div className="promo-creator__footer-actions">
           <button
             type="button"
+            className="promo-btn promo-btn--outline"
+            onClick={onViewAll}
+          >
+            <X size={16} />
+            CANCELAR
+          </button>
+          <button
+            type="button"
             className="promo-btn promo-btn--preview"
             onClick={() => setIsPreviewOpen(true)}
           >
@@ -499,10 +560,14 @@ export default function PromotionCreator({ onBack, onViewAll }) {
           <button
             type="button"
             className="promo-btn promo-btn--primary"
-            onClick={handleCreate}
-            disabled={isSubmitting}
+            onClick={handleSave}
+            disabled={saveMutation.isPending}
           >
-            {isSubmitting ? "GUARDANDO..." : "CREAR PROMOCIÓN"}
+            {saveMutation.isPending
+              ? "GUARDANDO..."
+              : promotionToEdit
+                ? "GUARDAR CAMBIOS"
+                : "CREAR PROMOCIÓN"}
             {success ? <CheckCircle2 size={16} /> : <Send size={16} />}
           </button>
         </div>
@@ -524,74 +589,69 @@ export default function PromotionCreator({ onBack, onViewAll }) {
             >
               <X size={24} />
             </button>
-            <div className="coupon-card-container">
-              <div className="coupon-card" ref={couponRef}>
-                <div className="coupon-card__header">
-                  <Ticket size={28} className="coupon-ticket-icon" />
-                  <div className="coupon-card__discount">{offerLabel} OFF</div>
+            <div className="public-promo-preview" ref={couponRef}>
+              <div className="public-promo-preview__hero">
+                {form.imagePreview ? (
+                  <img src={form.imagePreview} alt="Promo" className="public-promo-preview__image" />
+                ) : (
+                  <div className="public-promo-preview__placeholder">
+                    <ImageIcon size={64} />
+                  </div>
+                )}
+                <div className="public-promo-preview__badge">
+                  {offerLabel}
                 </div>
-                <div className="coupon-card__image">
-                  {form.imagePreview ? (
-                    <img src={form.imagePreview} alt="Promo" />
-                  ) : (
-                    <div className="coupon-card__placeholder">
-                      <ImageIcon size={64} />
+              </div>
+              
+              <div className="public-promo-preview__content">
+                <div className="public-promo-preview__header">
+                  <div className="public-promo-preview__professional">
+                    <div className="professional-avatar-mini">
+                      <Sparkles size={16} />
                     </div>
+                    <div className="professional-info">
+                      <span className="professional-name">{user?.display_name || "Tu Studio"}</span>
+                      <span className="professional-label">PROFESIONAL VERIFICADO</span>
+                    </div>
+                  </div>
+                  <h2 className="public-promo-preview__title">{form.title || "Título de la Promoción"}</h2>
+                  {promotionToEdit?.id && (
+                    <code className="public-promo-preview__code">
+                      PROMO-{promotionToEdit.id.slice(0, 8).toUpperCase()}
+                    </code>
                   )}
                 </div>
-                <div className="coupon-card__body">
-                  <h2 className="coupon-card__title">
-                    {form.title || "Gran Inauguración"}
-                  </h2>
-                  <p className="coupon-card__description">
-                    {form.description ||
-                      "Descuento especial en todos los servicios de plomería."}
-                  </p>
 
-                  <div className="coupon-card__info-box">
-                    <div className="coupon-card__info-item">
-                      <Eye size={16} />
-                      <span>
-                        <strong>Profesional:</strong>{" "}
-                        {user?.display_name || "Carlos Plomería"}
-                      </span>
-                    </div>
-                    <div className="coupon-card__info-item">
-                      <Calendar size={16} />
-                      <span>
-                        <strong>Validez:</strong>{" "}
-                        {form.validFrom || "2026-04-15"} al{" "}
-                        {form.validTo || "2026-05-15"}
-                      </span>
+                <p className="public-promo-preview__description">{form.description || "Aquí aparecerá la descripción de tu promoción para los clientes."}</p>
+
+                <div className="public-promo-preview__details-grid">
+                  <div className="detail-item">
+                    <Calendar size={18} />
+                    <div className="detail-text">
+                      <label>VALIDEZ</label>
+                      <span>{form.validFrom || "Fecha Inicio"} - {form.validTo || "Fecha Fin"}</span>
                     </div>
                   </div>
+                  <div className="detail-item">
+                    <Sparkles size={18} />
+                    <div className="detail-text">
+                      <label>APLICA A</label>
+                      <span>{form.applicableTo || "Todo el catálogo"}</span>
+                    </div>
+                  </div>
+                </div>
 
+                <div className="public-promo-preview__footer">
                   <button
-                    className={`coupon-card__download-btn ${success ? "coupon-card__download-btn--success" : "coupon-card__download-btn--locked"}`}
+                    className={`public-promo-preview__cta ${!success ? "public-promo-preview__cta--disabled" : ""}`}
                     onClick={success ? handleDownloadCoupon : undefined}
-                    title={
-                      !success
-                        ? "Debes crear la promoción para descargar el cupón"
-                        : ""
-                    }
                   >
-                    {success ? (
-                      <>
-                        <Download size={18} />
-                        Descargar Cupón (JPG)
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle size={18} />
-                        Crea la promo para descargar
-                      </>
-                    )}
+                    <Ticket size={20} />
+                    {success ? "OBTENER ESTE CUPÓN" : "CREA LA PROMO PARA DESCARGAR"}
                   </button>
-
-                  <div className="coupon-card__footer">
-                    <CheckCircle2 size={14} />
-                    <span>Presenta este cupón al momento del servicio</span>
-                  </div>
+                  <p className="public-promo-preview__hint">
+                    Vista previa de cómo verán los clientes tu promoción.
+                  </p>
                 </div>
               </div>
             </div>

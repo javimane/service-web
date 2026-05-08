@@ -44,6 +44,7 @@ export default function DashboardPage() {
     sessionStatus?.professional_id;
 
   const [view, setView] = useState("overview");
+  const [editingPromotion, setEditingPromotion] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileSidebarMode, setIsMobileSidebarMode] = useState(false);
 
@@ -78,7 +79,10 @@ export default function DashboardPage() {
   const handleShowOverview = () => setView("overview");
   const handleShowMessages = () => navigate(ROUTES.messages);
   const handleShowNotifications = () => setView("notifications");
-  const handleShowPromotionsCreate = () => setView("promotions-create");
+  const handleShowPromotionsCreate = (promo?: any) => {
+    setEditingPromotion(promo || null);
+    setView("promotions-create");
+  };
   const handleShowPromotionsAll = () => setView("promotions-all");
   const handleShowProducts = () => setView("products");
   const handleShowSubscription = () => setView("subscription");
@@ -218,9 +222,13 @@ export default function DashboardPage() {
               <PromotionCreator
                 onBack={handleGoBack}
                 onViewAll={handleShowPromotionsAll}
+                promotionToEdit={editingPromotion}
               />
             ) : view === "promotions-all" ? (
-              <AllPromotionsPage onCreateNew={handleShowPromotionsCreate} />
+              <AllPromotionsPage
+                onCreateNew={() => handleShowPromotionsCreate()}
+                onEdit={handleShowPromotionsCreate}
+              />
             ) : view === "bank-promotions" ? (
               <BankPromotionsPage />
             ) : view === "reels" ? (

@@ -764,6 +764,8 @@ export default function DashboardSidebar({
   return (
     <aside
       className={`dashboard-sidebar ${isCollapsed ? "dashboard-sidebar--collapsed" : ""}`}
+      onMouseEnter={() => isCollapsed && onToggle?.()}
+      onMouseLeave={() => !isCollapsed && onToggle?.()}
     >
       <div className="sidebar-brand">
         <button
@@ -775,19 +777,6 @@ export default function DashboardSidebar({
           <BrandLogo className="brand-logo" compact={isCollapsed} />
         </button>
 
-        <button
-          type="button"
-          className="sidebar-toggle"
-          onClick={onToggle}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isCollapsed ? (
-            <PanelLeftOpen size={18} />
-          ) : (
-            <PanelLeftClose size={18} />
-          )}
-        </button>
       </div>
 
       <nav className="sidebar-nav">

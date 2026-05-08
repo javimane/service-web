@@ -366,6 +366,7 @@
   padding: 10px 16px;
   border-radius: 12px;
   transition: all 0.2s ease;
+  margin-top: 16px !important;
 }
 
 .footer-link--support,
