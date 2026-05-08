@@ -588,26 +588,6 @@ export default function ProfessionalProfileSection() {
             que verán tus clientes.
           </p>
         </div>
-
-        <button
-          type="button"
-          className="professional-profile__save-btn"
-          onClick={handleSave}
-          disabled={
-            saveMutation.isPending || isProfileLoading || isProfessionalLoading
-          }
-        >
-          {saveMutation.isPending ? (
-            <>
-              <Loader2 size={18} className="professional-profile__spin" />
-              Guardando...
-            </>
-          ) : (
-            <>
-              <Save size={18} /> Guardar cambios
-            </>
-          )}
-        </button>
       </div>
 
       {savedMessage ? (
@@ -645,9 +625,32 @@ export default function ProfessionalProfileSection() {
 
         <div className="professional-profile__editor">
           <div className="professional-profile__card">
-            <div className="professional-profile__card-header">
-              <UserRound size={18} />
-              <h3>Datos principales</h3>
+            <div className="professional-profile__card-header professional-profile__card-header--between">
+              <div className="professional-profile__card-title">
+                <UserRound size={18} />
+                <h3>Datos principales</h3>
+              </div>
+              <button
+                type="button"
+                className="professional-profile__save-btn"
+                onClick={handleSave}
+                disabled={
+                  saveMutation.isPending ||
+                  isProfileLoading ||
+                  isProfessionalLoading
+                }
+              >
+                {saveMutation.isPending ? (
+                  <>
+                    <Loader2 size={18} className="professional-profile__spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} /> Guardar cambios
+                  </>
+                )}
+              </button>
             </div>
 
             <div className="professional-profile__field-grid">

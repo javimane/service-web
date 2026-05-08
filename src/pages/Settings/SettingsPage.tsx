@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusCircle, Building2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import BusinessInfoSection from "./sections/BusinessInfoSection";
@@ -13,18 +14,27 @@ import ActionsSection from "./sections/ActionsSection";
 import CompanyDisplaySection from "./sections/CompanyDisplaySection";
 import { useAuth } from "../../context/AuthContext";
 import { professionalService } from "../../services/professionalService";
-import { companyArcaService, companyService } from "../../services/companyService";
+import {
+  companyArcaService,
+  companyService,
+} from "../../services/companyService";
 import { locationService } from "../../services/locationService";
+import { ROUTES } from "../../routes/paths";
 import "../Dashboard/DashboardPage.css";
 import "./SettingsPage.css";
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
   const { user, sessionStatus } = useAuth();
-  const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobileSidebarMode, setIsMobileSidebarMode] = useState(false);
+  const professionalId =
+    sessionStatus?.subscription?.professional_id ??
+    sessionStatus?.professional_id;
   const isProfessional = Boolean(professionalId);
-  
+
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [hasStorefront, setHasStorefront] = useState("no");
   const [businessType, setBusinessType] = useState("individual");
@@ -41,12 +51,16 @@ export default function SettingsPage() {
   const [storeFloor, setStoreFloor] = useState("");
   const [storeZip, setStoreZip] = useState("");
   const [storeProvinceId, setStoreProvinceId] = useState<number | null>(null);
-  const [storeDepartmentId, setStoreDepartmentId] = useState<number | null>(null);
+  const [storeDepartmentId, setStoreDepartmentId] = useState<number | null>(
+    null,
+  );
   const [storeLat, setStoreLat] = useState<number | null>(null);
   const [storeLng, setStoreLng] = useState<number | null>(null);
   const [cuit, setCuit] = useState("");
 
-  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">(
+    "idle",
+  );
   const [saveMessage, setSaveMessage] = useState("");
 
   // 1. Fetch Provinces
@@ -92,13 +106,13 @@ export default function SettingsPage() {
     if (prof) {
       setBusinessType(prof.account_type || "individual");
     }
-    
+
     if (actualCompany) {
       setCompanyId(actualCompany.id);
       setTradeName(actualCompany.name || "");
       setCuit(actualCompany.cuit || "");
       setHasStorefront(actualCompany.public_trade ? "si" : "no");
-      
+
       // Payments
       const payments: string[] = [];
       if (actualCompany.cash) payments.push("Efectivo");
@@ -124,28 +138,66 @@ export default function SettingsPage() {
 
       // Coverage
       if (actualCompany.CompanyProvinces) {
-        const pNames = actualCompany.CompanyProvinces.map((cp: any) => cp.Province?.name).filter(Boolean);
+        const pNames = actualCompany.CompanyProvinces.map(
+          (cp: any) => cp.Province?.name,
+        ).filter(Boolean);
         setSelectedProvinces(pNames as string[]);
       }
       if (actualCompany.CompanyDepartments) {
-        const dNames = actualCompany.CompanyDepartments.map((cd: any) => cd.Department?.name).filter(Boolean);
+        const dNames = actualCompany.CompanyDepartments.map(
+          (cd: any) => cd.Department?.name,
+        ).filter(Boolean);
         setSelectedDepartments(dNames as string[]);
       }
     }
   }, [prof, company]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const mediaQuery = window.matchMedia("(max-width: 600px)");
+
+    const syncMobileSidebarMode = (event?: MediaQueryListEvent) => {
+      const matches = event?.matches ?? mediaQuery.matches;
+      setIsMobileSidebarMode(matches);
+      setIsMobileSidebarOpen(false);
+    };
+
+    syncMobileSidebarMode();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncMobileSidebarMode);
+      return () =>
+        mediaQuery.removeEventListener("change", syncMobileSidebarMode);
+    }
+
+    mediaQuery.addListener(syncMobileSidebarMode);
+    return () => mediaQuery.removeListener(syncMobileSidebarMode);
+  }, []);
+
+  const handleSidebarToggle = () => {
+    if (isMobileSidebarMode) {
+      setIsMobileSidebarOpen((current) => !current);
+      return;
+    }
+
+    setIsSidebarCollapsed((current) => !current);
+  };
+
   // 3. Fetch Departments for selected provinces
   const selectedProvIds = useMemo(() => {
     return provinceList
-      .filter(p => selectedProvinces.includes(p.name))
-      .map(p => p.id);
+      .filter((p) => selectedProvinces.includes(p.name))
+      .map((p) => p.id);
   }, [selectedProvinces, provinceList]);
 
   const { data: departmentList = [] } = useQuery({
     queryKey: ["departments-coverage", selectedProvIds],
     queryFn: async () => {
       if (selectedProvIds.length === 0) return [];
-      const allDeps = await Promise.all(selectedProvIds.map(id => locationService.getDepartments(id)));
+      const allDeps = await Promise.all(
+        selectedProvIds.map((id) => locationService.getDepartments(id)),
+      );
       return allDeps.flat();
     },
     enabled: selectedProvIds.length > 0,
@@ -191,11 +243,11 @@ export default function SettingsPage() {
         debit: selectedPayments.includes("Débito"),
         cheque: selectedPayments.includes("Cheque"),
         province_ids: provinceList
-          .filter(p => selectedProvinces.includes(p.name))
-          .map(p => p.id),
+          .filter((p) => selectedProvinces.includes(p.name))
+          .map((p) => p.id),
         department_ids: departmentList
-          .filter(d => selectedDepartments.includes(d.name))
-          .map(d => d.id)
+          .filter((d) => selectedDepartments.includes(d.name))
+          .map((d) => d.id),
       };
 
       if (companyId) {
@@ -205,12 +257,14 @@ export default function SettingsPage() {
       }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["professional-detail", professionalId] });
+      queryClient.invalidateQueries({
+        queryKey: ["professional-detail", professionalId],
+      });
       queryClient.invalidateQueries({ queryKey: ["company", professionalId] });
-      
+
       setSaveStatus("success");
       setSaveMessage("Registro guardado correctamente ✨");
-      
+
       setTimeout(() => {
         setSaveStatus("idle");
         setIsEditingCompany(false);
@@ -220,9 +274,9 @@ export default function SettingsPage() {
       console.error("Error saving settings:", error);
       setSaveStatus("error");
       setSaveMessage("Error al guardar los cambios. Reintentá.");
-      
+
       setTimeout(() => setSaveStatus("idle"), 4000);
-    }
+    },
   });
 
   const handleSave = () => saveMutation.mutate();
@@ -244,39 +298,55 @@ export default function SettingsPage() {
       <div className="dashboard-page settings-page-layout">
         <DashboardSidebar
           activeItem="settings"
-          isCollapsed={isSidebarCollapsed}
-          onToggle={() => setIsSidebarCollapsed((current) => !current)}
+          isCollapsed={isMobileSidebarMode ? false : isSidebarCollapsed}
+          isMobile={isMobileSidebarMode}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          onToggle={handleSidebarToggle}
+          onDashboardClick={() => navigate(ROUTES.dashboard)}
+          onMessagesClick={() => navigate(ROUTES.messages)}
+          onNotificationsClick={() =>
+            navigate(ROUTES.dashboard, { state: { view: "notifications" } })
+          }
+          onProfileClick={() =>
+            navigate(ROUTES.dashboard, { state: { view: "profile" } })
+          }
         />
 
-        <main className="dashboard-main">
+        <main
+          className={`dashboard-main ${isMobileSidebarMode ? "dashboard-main--mobile" : ""}`}
+        >
           <div className="dashboard-content settings-content">
             <section className="settings-hero">
               <div className="welcome-copy">
                 <h1>Configuración de la cuenta</h1>
                 <p>
-                  Gestioná tus datos personales {isProfessional ? "y perfil comercial" : ""} para mejorar tu visibilidad.
+                  Gestioná tus datos personales{" "}
+                  {isProfessional ? "y perfil comercial" : ""} para mejorar tu
+                  visibilidad.
                 </p>
               </div>
               <div className="settings-hero-badge">
                 {isProfessional ? "Perfil comercial" : "Cuenta personal"}
               </div>
             </section>
- 
+
             <section className="settings-grid">
               {/* Always show personal info */}
-              <PersonalInfoSection 
+              <PersonalInfoSection
                 userId={user?.id}
                 initialData={{
-                  displayName: user?.user_metadata?.full_name || user?.display_name || "",
-                  email: user?.email || ""
+                  displayName:
+                    user?.user_metadata?.full_name || user?.display_name || "",
+                  email: user?.email || "",
                 }}
               />
 
               {/* Business Sections */}
               {showSummary && (
-                <CompanyDisplaySection 
-                  prof={{ ...prof, Company: actualCompany }} 
-                  onEdit={() => setIsEditingCompany(true)} 
+                <CompanyDisplaySection
+                  prof={{ ...prof, Company: actualCompany }}
+                  onEdit={() => setIsEditingCompany(true)}
                   provinceList={provinceList}
                   departmentList={storeDepartmentList}
                   arcaStatus={arcaStatus}
@@ -297,14 +367,18 @@ export default function SettingsPage() {
 
                   <HeadquartersSection
                     selectedProvinces={selectedProvinces}
-                    onToggleProvince={(option) => toggleSelection(setSelectedProvinces, option)}
+                    onToggleProvince={(option) =>
+                      toggleSelection(setSelectedProvinces, option)
+                    }
                     selectedDepartments={selectedDepartments}
-                    onToggleDepartment={(option) => toggleSelection(setSelectedDepartments, option)}
+                    onToggleDepartment={(option) =>
+                      toggleSelection(setSelectedDepartments, option)
+                    }
                     provinceList={provinceList}
                     departmentList={departmentList}
                   />
 
-                  <OperationsSection 
+                  <OperationsSection
                     hasStorefront={hasStorefront}
                     setHasStorefront={setHasStorefront}
                     provinceList={provinceList}
@@ -329,20 +403,22 @@ export default function SettingsPage() {
 
                   <PaymentMethodsSection
                     selectedPayments={selectedPayments}
-                    onTogglePayment={(option) => toggleSelection(setSelectedPayments, option)}
+                    onTogglePayment={(option) =>
+                      toggleSelection(setSelectedPayments, option)
+                    }
                   />
 
-                  
-                  
                   {saveStatus !== "idle" && (
-                    <div className={`settings-status-banner settings-status-banner--${saveStatus}`}>
+                    <div
+                      className={`settings-status-banner settings-status-banner--${saveStatus}`}
+                    >
                       {saveMessage}
                     </div>
                   )}
 
-                  <ActionsSection 
-                    onSave={handleSave} 
-                    onCancel={() => setIsEditingCompany(false)} 
+                  <ActionsSection
+                    onSave={handleSave}
+                    onCancel={() => setIsEditingCompany(false)}
                     isSaving={saveMutation.isPending}
                   />
                 </>
@@ -350,15 +426,21 @@ export default function SettingsPage() {
 
               {showCTA && (
                 <div className="register-company-cta">
-                    <div className="cta-icon">
-                        <Building2 size={40} />
-                    </div>
-                    <h3>Completar Perfil Comercial</h3>
-                    <p>Aún no has registrado los datos de tu comercio o actividad autónoma. Completalos para aparecer en las búsquedas.</p>
-                    <button className="cta-register-btn" onClick={() => setIsEditingCompany(true)}>
-                        <PlusCircle size={18} />
-                        Comenzar Registro
-                    </button>
+                  <div className="cta-icon">
+                    <Building2 size={40} />
+                  </div>
+                  <h3>Completar Perfil Comercial</h3>
+                  <p>
+                    Aún no has registrado los datos de tu comercio o actividad
+                    autónoma. Completalos para aparecer en las búsquedas.
+                  </p>
+                  <button
+                    className="cta-register-btn"
+                    onClick={() => setIsEditingCompany(true)}
+                  >
+                    <PlusCircle size={18} />
+                    Comenzar Registro
+                  </button>
                 </div>
               )}
             </section>

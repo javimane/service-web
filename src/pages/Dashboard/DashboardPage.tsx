@@ -44,6 +44,8 @@ export default function DashboardPage() {
     sessionStatus?.professional_id;
 
   const [view, setView] = useState("overview");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobileSidebarMode, setIsMobileSidebarMode] = useState(false);
 
   const { data: myProfessional } = useQuery({
     queryKey: ["professional-me"],
@@ -101,6 +103,44 @@ export default function DashboardPage() {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const mediaQuery = window.matchMedia("(max-width: 600px)");
+
+    const syncMobileSidebarMode = (event?: MediaQueryListEvent) => {
+      const matches = event?.matches ?? mediaQuery.matches;
+      setIsMobileSidebarMode(matches);
+      setIsMobileSidebarOpen(false);
+    };
+
+    syncMobileSidebarMode();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncMobileSidebarMode);
+      return () =>
+        mediaQuery.removeEventListener("change", syncMobileSidebarMode);
+    }
+
+    mediaQuery.addListener(syncMobileSidebarMode);
+    return () => mediaQuery.removeListener(syncMobileSidebarMode);
+  }, []);
+
+  useEffect(() => {
+    if (isMobileSidebarMode) {
+      setIsMobileSidebarOpen(false);
+    }
+  }, [view, isMobileSidebarMode]);
+
+  const handleSidebarToggle = () => {
+    if (isMobileSidebarMode) {
+      setIsMobileSidebarOpen((current) => !current);
+      return;
+    }
+
+    setIsSidebarCollapsed((current) => !current);
+  };
+
   const totalProfileViews = profileViews ?? 0;
   const chartHeight = Math.max(
     10,
@@ -136,8 +176,11 @@ export default function DashboardPage() {
                                   ? "profile"
                                   : "dashboard"
           }
-          isCollapsed={isSidebarCollapsed}
-          onToggle={() => setIsSidebarCollapsed((current) => !current)}
+          isCollapsed={isMobileSidebarMode ? false : isSidebarCollapsed}
+          isMobile={isMobileSidebarMode}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          onToggle={handleSidebarToggle}
           onProposalsCreate={handleShowProposalsCreate}
           onProposalsView={handleShowProposalsView}
           onDashboardClick={handleShowOverview}
@@ -154,7 +197,7 @@ export default function DashboardPage() {
         />
 
         <main
-          className={`dashboard-main ${isSidebarCollapsed ? "dashboard-main--collapsed" : ""}`}
+          className={`dashboard-main ${isSidebarCollapsed ? "dashboard-main--collapsed" : ""} ${isMobileSidebarMode ? "dashboard-main--mobile" : ""}`}
         >
           <div
             className={`dashboard-main-panel ${shouldLockDashboardView ? "dashboard-main-panel--locked" : ""}`}

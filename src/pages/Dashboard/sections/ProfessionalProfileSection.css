@@ -3,9 +3,15 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 40px;
+  box-sizing: border-box;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.professional-profile * {
+  box-sizing: border-box;
 }
 
 .professional-profile__hero {
@@ -49,17 +55,41 @@
   gap: 8px;
   border-radius: 12px;
   font-weight: 700;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.professional-profile__save-btn:focus-visible,
+.professional-profile__add-btn:focus-visible,
+.professional-profile__remove-btn:focus-visible,
+.professional-profile__upload-btn:focus-visible,
+.professional-profile__cancel-btn:focus-visible {
+  outline: 2px solid rgba(22, 163, 74, 0.35);
+  outline-offset: 2px;
 }
 
 .professional-profile__save-btn {
-  padding: 12px 18px;
-  background: var(--brand-blue);
+  background: #16a34a;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(29, 95, 191, 0.2);
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.24);
+}
+
+.professional-profile__save-btn:hover:not(:disabled) {
+  background: #15803d;
+  transform: translateY(-1px);
 }
 
 .professional-profile__save-btn:disabled {
   opacity: 0.75;
+  transform: none;
   cursor: not-allowed;
 }
 
@@ -199,6 +229,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .professional-profile__card-header {
@@ -267,11 +298,15 @@
 
 .professional-profile__upload-btn {
   position: relative;
-  padding: 12px 16px;
-  background: var(--brand-blue-soft);
-  color: var(--brand-blue);
-  cursor: pointer;
+  background: #ecfdf3;
+  border-color: rgba(22, 163, 74, 0.28);
+  color: #166534;
   overflow: hidden;
+}
+
+.professional-profile__upload-btn:hover {
+  background: #dcfce7;
+  border-color: rgba(22, 163, 74, 0.4);
 }
 
 .professional-profile__upload-btn input {
@@ -306,10 +341,14 @@
 }
 
 .professional-profile__add-btn {
-  padding: 10px 14px;
-  background: transparent;
-  border: 1px solid var(--brand-blue-border);
-  color: var(--brand-blue);
+  background: #ecfdf3;
+  border-color: rgba(22, 163, 74, 0.28);
+  color: #166534;
+}
+
+.professional-profile__add-btn:hover {
+  background: #dcfce7;
+  border-color: rgba(22, 163, 74, 0.4);
 }
 
 /* ── Schedule / Horarios ── */
@@ -500,18 +539,25 @@
 }
 
 .professional-profile__cancel-btn {
-  padding: 12px 20px;
+  min-height: 42px;
+  padding: 10px 16px;
   border-radius: 12px;
   font-weight: 700;
   background: var(--surface-soft);
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .professional-profile__cancel-btn:hover {
   background: var(--border-color);
   color: var(--text-primary);
+  transform: translateY(-1px);
 }
 
 .professional-profile__media-grid {
@@ -595,20 +641,84 @@
   border: 1px solid var(--brand-blue-border);
 }
 
+.professional-profile__video-element {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .professional-profile__remove-btn {
   align-self: flex-start;
-  padding: 10px 14px;
-  background: rgba(239, 68, 68, 0.08);
-  color: #dc2626;
+  background: #fef2f2;
+  border-color: rgba(220, 38, 38, 0.24);
+  color: #b91c1c;
+}
+
+.professional-profile__remove-btn:hover {
+  background: #fee2e2;
+  border-color: rgba(220, 38, 38, 0.36);
 }
 
 @media (max-width: 980px) {
+  .professional-profile {
+    padding: 24px;
+    gap: 20px;
+  }
+
+  .professional-profile__hero h1 {
+    font-size: clamp(1.6rem, 4vw, 2rem);
+  }
+
   .professional-profile__layout {
     grid-template-columns: 1fr;
   }
 
   .professional-profile__preview-card {
     position: static;
+  }
+
+  .professional-profile__card {
+    padding: 18px;
+  }
+
+  .professional-profile__card-header--between {
+    align-items: stretch;
+  }
+
+  .professional-profile__field-grid,
+  .professional-profile__media-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .professional-profile__schedule-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .professional-profile__schedule-day {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .professional-profile__schedule-times {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .professional-profile__schedule-time-label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .professional-profile__schedule-time-label input[type="time"] {
+    width: 100%;
+  }
+
+  .professional-profile__schedule-remove {
+    margin-left: 0;
+    align-self: flex-end;
   }
 }
 
@@ -660,11 +770,173 @@
 
 @media (max-width: 720px) {
   .professional-profile {
-    padding: 20px;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .professional-profile__hero {
+    gap: 12px;
+  }
+
+  .professional-profile__hero h1 {
+    font-size: 1.45rem;
+  }
+
+  .professional-profile__subtitle {
+    font-size: 0.95rem;
+  }
+
+  .professional-profile__card {
+    padding: 14px;
   }
 
   .professional-profile__field-grid,
   .professional-profile__media-grid {
     grid-template-columns: 1fr;
+  }
+
+  .professional-profile__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .professional-profile__modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .professional-profile__save-btn,
+  .professional-profile__add-btn,
+  .professional-profile__cancel-btn {
+    width: 100%;
+  }
+
+  .professional-profile__card-header--between .professional-profile__save-btn,
+  .professional-profile__card-header--between .professional-profile__add-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .professional-profile {
+    padding: 12px;
+    gap: 14px;
+  }
+
+  .professional-profile__eyebrow {
+    font-size: 0.72rem;
+    padding: 5px 10px;
+  }
+
+  .professional-profile__hero h1 {
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+
+  .professional-profile__subtitle {
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .professional-profile__preview-card,
+  .professional-profile__card {
+    border-radius: 18px;
+  }
+
+  .professional-profile__preview-card {
+    padding: 16px;
+  }
+
+  .professional-profile__card {
+    padding: 12px;
+  }
+
+  .professional-profile__avatar-wrap {
+    width: 108px;
+    height: 108px;
+    border-radius: 22px;
+  }
+
+  .professional-profile__preview-card h2 {
+    font-size: 1.08rem;
+  }
+
+  .professional-profile__preview-name,
+  .professional-profile__preview-description {
+    font-size: 0.92rem;
+  }
+
+  .professional-profile__metrics div {
+    padding: 12px 8px;
+  }
+
+  .professional-profile__save-btn,
+  .professional-profile__add-btn,
+  .professional-profile__remove-btn,
+  .professional-profile__upload-btn,
+  .professional-profile__cancel-btn {
+    min-height: 40px;
+    padding: 9px 12px;
+    font-size: 0.88rem;
+    gap: 6px;
+  }
+
+  .professional-profile__field span,
+  .professional-profile__schedule-time-label {
+    font-size: 0.78rem;
+  }
+
+  .professional-profile__field input,
+  .professional-profile__field select,
+  .professional-profile__field textarea {
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 0.92rem;
+  }
+
+  .professional-profile__modal-actions {
+    gap: 10px;
+    padding-top: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .professional-profile {
+    padding: 10px;
+  }
+
+  .professional-profile__hero h1 {
+    font-size: 1.14rem;
+  }
+
+  .professional-profile__card,
+  .professional-profile__preview-card {
+    border-radius: 16px;
+  }
+
+  .professional-profile__save-btn,
+  .professional-profile__add-btn,
+  .professional-profile__remove-btn,
+  .professional-profile__upload-btn,
+  .professional-profile__cancel-btn {
+    min-height: 38px;
+    font-size: 0.84rem;
+    padding: 8px 10px;
+  }
+
+  .professional-profile__dropzone-inner {
+    padding: 28px 12px;
+  }
+
+  .professional-profile__dropzone-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .professional-profile__dropzone-text p {
+    font-size: 0.98rem;
+  }
+
+  .professional-profile__dropzone-text span {
+    font-size: 0.82rem;
   }
 }

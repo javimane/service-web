@@ -9,6 +9,8 @@ import {
   Edit3,
   Trash2,
   X,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
   ChevronUp,
   Image as ImageIcon,
@@ -27,6 +29,8 @@ import { categoriesProductService } from "../../../services/categoriesProduct";
 import { uploadProductImage } from "../../../services/storageUploads";
 import "./DashboardProducts.css";
 
+const MAX_PRODUCT_IMAGES = 4;
+
 const formatPrice = (n: number) =>
   n.toLocaleString("es-AR", {
     style: "currency",
@@ -34,11 +38,118 @@ const formatPrice = (n: number) =>
     minimumFractionDigits: 0,
   });
 
+const normalizeImageUrls = (imageUrls: unknown, fallback?: string) => {
+  if (Array.isArray(imageUrls)) {
+    const clean = imageUrls
+      .map((url) => String(url || "").trim())
+      .filter(Boolean);
+    if (clean.length > 0) return clean;
+  }
+
+  if (typeof imageUrls === "string" && imageUrls.trim()) {
+    const raw = imageUrls.trim();
+    if (raw.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const clean = parsed
+            .map((url) => String(url || "").trim())
+            .filter(Boolean);
+          if (clean.length > 0) return clean;
+        }
+      } catch {
+        // ignore invalid JSON and fallback to plain string handling
+      }
+    }
+
+    if (raw.includes(",")) {
+      const split = raw
+        .split(",")
+        .map((url) => url.trim())
+        .filter(Boolean);
+      if (split.length > 0) return split;
+    }
+
+    return [raw];
+  }
+
+  if (fallback?.trim()) return [fallback.trim()];
+  return [];
+};
+
+const normalizeDisplayOrder = (displayOrder: unknown) => {
+  if (Array.isArray(displayOrder)) {
+    const clean = displayOrder
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value) && value >= 0);
+    if (clean.length > 0) return clean;
+  }
+
+  if (typeof displayOrder === "string" && displayOrder.trim()) {
+    const raw = displayOrder.trim();
+    if (raw.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const clean = parsed
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value) && value >= 0);
+          if (clean.length > 0) return clean;
+        }
+      } catch {
+        // ignore invalid JSON and fallback to plain string handling
+      }
+    }
+
+    if (raw.includes(",")) {
+      const split = raw
+        .split(",")
+        .map((value) => Number(value.trim()))
+        .filter((value) => Number.isFinite(value) && value >= 0);
+      if (split.length > 0) return split;
+    }
+  }
+
+  return [];
+};
+
+const getOrderedProductImages = (
+  imageUrls: unknown,
+  displayOrder: unknown,
+  fallback?: string,
+) => {
+  const images = normalizeImageUrls(imageUrls, fallback);
+  if (images.length <= 1) return images;
+
+  const order = normalizeDisplayOrder(displayOrder);
+  if (order.length !== images.length) return images;
+
+  return images
+    .map((url, index) => ({
+      url,
+      order: order[index] ?? index + 1,
+      originalIndex: index,
+    }))
+    .sort((a, b) => a.order - b.order || a.originalIndex - b.originalIndex)
+    .map((item) => item.url);
+};
+
+const moveArrayItem = <T,>(arr: T[], from: number, to: number) => {
+  if (to < 0 || to >= arr.length || from === to) return arr;
+  const next = [...arr];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+};
+
+type EditImageItem =
+  | { type: "existing"; url: string }
+  | { type: "new"; file: File; preview: string };
 
 export default function DashboardProducts() {
   const queryClient = useQueryClient();
   const { sessionStatus } = useAuth();
-  
+
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
     sessionStatus?.professional_id;
@@ -71,13 +182,19 @@ export default function DashboardProducts() {
     webUrl: "",
     offerPrice: "",
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [draggingNewImageIndex, setDraggingNewImageIndex] = useState<
+    number | null
+  >(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Delete confirmation modal
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<{ id: string | number; name: string } | null>(null);
+  const [productToDelete, setProductToDelete] = useState<{
+    id: string | number;
+    name: string;
+  } | null>(null);
 
   // Edit product modal
   const [editOpen, setEditOpen] = useState(false);
@@ -93,9 +210,15 @@ export default function DashboardProducts() {
     ean: string;
     webUrl: string;
     offerPrice: string;
+    images: string[];
   } | null>(null);
-  const [editImageFile, setEditImageFile] = useState<File | null>(null);
-  const [editImagePreview, setEditImagePreview] = useState("");
+  const [editImageItems, setEditImageItems] = useState<EditImageItem[]>([]);
+  const [editOriginalImageUrls, setEditOriginalImageUrls] = useState<string[]>(
+    [],
+  );
+  const [draggingEditImageIndex, setDraggingEditImageIndex] = useState<
+    number | null
+  >(null);
 
   // Queries & Mutations
   const { data: productsData = [], isLoading: loadingProducts } = useQuery({
@@ -112,15 +235,44 @@ export default function DashboardProducts() {
   // Map API data to component structure
   const productsList = useMemo(() => {
     return productsData.map((item: any) => ({
+      images: Array.isArray(item.Product?.Images)
+        ? [...item.Product.Images]
+            .sort(
+              (a: any, b: any) =>
+                Number(a?.display_order ?? 0) - Number(b?.display_order ?? 0),
+            )
+            .map((img: any) => String(img?.image_url || "").trim())
+            .filter(Boolean)
+        : getOrderedProductImages(
+            item.Product?.image_urls,
+            item.Product?.display_order ?? item.display_order,
+            item.Product?.image_url,
+          ),
       id: item.product_id,
       name: item.Product?.name || "Sin nombre",
       price: item.price,
       offer_price: item.offer_price || 0,
-      originalPrice: item.price, 
+      originalPrice: item.price,
       brand: item.Product?.brand || "",
-      category: (item.Product?.CategoryProduct?.name || "General").trim(),
+      category: (
+        item.Product?.CategoryProduct?.name ||
+        item.Product?.category?.name ||
+        "General"
+      ).trim(),
       stock: item.stock || 0,
-      image: item.Product?.image_url || "",
+      image: Array.isArray(item.Product?.Images)
+        ? [...item.Product.Images]
+            .sort(
+              (a: any, b: any) =>
+                Number(a?.display_order ?? 0) - Number(b?.display_order ?? 0),
+            )
+            .map((img: any) => String(img?.image_url || "").trim())
+            .find(Boolean) || ""
+        : getOrderedProductImages(
+            item.Product?.image_urls,
+            item.Product?.display_order ?? item.display_order,
+            item.Product?.image_url,
+          )[0] || "",
       description: item.Product?.description || "",
       ean: item.Product?.ean || "",
       sale_type: item.sale_type,
@@ -210,9 +362,14 @@ export default function DashboardProducts() {
 
   const filtered = useMemo(() => {
     let list = productsList.filter((p) => {
-      const matchesName = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesEan = p.ean.toLowerCase().includes(eanSearchQuery.toLowerCase());
-      const matchesCategory = categoryFilter === "" || p.category.trim() === categoryFilter.trim();
+      const matchesName = p.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesEan = p.ean
+        .toLowerCase()
+        .includes(eanSearchQuery.toLowerCase());
+      const matchesCategory =
+        categoryFilter === "" || p.category.trim() === categoryFilter.trim();
       return matchesName && matchesEan && matchesCategory;
     });
     list.sort((a, b) => {
@@ -225,14 +382,24 @@ export default function DashboardProducts() {
       return 0;
     });
     return list;
-  }, [productsList, searchQuery, eanSearchQuery, categoryFilter, sortField, sortDir]);
+  }, [
+    productsList,
+    searchQuery,
+    eanSearchQuery,
+    categoryFilter,
+    sortField,
+    sortDir,
+  ]);
 
   // Stats
   const totalProducts = productsList.length;
   const totalStock = productsList.reduce((s, p) => s + (p.stock || 0), 0);
   const avgPrice =
     productsList.length > 0
-      ? productsList.reduce((s, p) => s + (p.offer_price > 0 ? p.offer_price : p.price), 0) / productsList.length
+      ? productsList.reduce(
+          (s, p) => s + (p.offer_price > 0 ? p.offer_price : p.price),
+          0,
+        ) / productsList.length
       : 0;
 
   // Bulk price apply
@@ -251,18 +418,47 @@ export default function DashboardProducts() {
 
   // Image file handler
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
+    const incomingFiles = Array.from(e.target.files || []);
+    if (incomingFiles.length === 0) return;
+
+    const availableSlots = MAX_PRODUCT_IMAGES - imageFiles.length;
+    if (availableSlots <= 0) return;
+
+    const filesToAdd = incomingFiles.slice(0, availableSlots);
+    setImageFiles((prev) => [...prev, ...filesToAdd]);
+
+    const readers = filesToAdd.map(
+      (file) =>
+        new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string) || "");
+          reader.readAsDataURL(file);
+        }),
+    );
+
+    Promise.all(readers).then((results) => {
+      setImagePreviews((prev) => [...prev, ...results.filter(Boolean)]);
+    });
+
+    e.target.value = "";
   };
 
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview("");
+  const removeImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const moveNewImage = (from: number, to: number) => {
+    setImageFiles((prev) => moveArrayItem(prev, from, to));
+    setImagePreviews((prev) => moveArrayItem(prev, from, to));
+  };
+
+  const handleNewImageDrop = (targetIndex: number) => {
+    if (draggingNewImageIndex === null) return;
+    if (draggingNewImageIndex !== targetIndex) {
+      moveNewImage(draggingNewImageIndex, targetIndex);
+    }
+    setDraggingNewImageIndex(null);
   };
 
   // EAN check against DB
@@ -281,7 +477,10 @@ export default function DashboardProducts() {
           price: match.price || 0,
           offer_price: match.offer_price || 0,
           image: match.Product?.image_url || "",
-          category: match.Product?.CategoryProduct?.name || "General",
+          category:
+            match.Product?.CategoryProduct?.name ||
+            (match.Product as any)?.category?.name ||
+            "General",
           isAlreadyAssigned: (match as any).is_already_assigned,
         });
         setEanPriceMode("custom");
@@ -301,23 +500,41 @@ export default function DashboardProducts() {
     if (!editProduct?.ean.trim()) return;
     setEanLoading(true);
     try {
-      const response = await productService.list({ ean: editProduct.ean.trim() });
+      const response = await productService.list({
+        ean: editProduct.ean.trim(),
+      });
       const match = response.data[0];
 
       if (match) {
+        const matchedImages = Array.isArray((match.Product as any)?.Images)
+          ? [...(match.Product as any).Images]
+              .sort(
+                (a: any, b: any) =>
+                  Number(a?.display_order ?? 0) - Number(b?.display_order ?? 0),
+              )
+              .map((img: any) => String(img?.image_url || "").trim())
+              .filter(Boolean)
+          : getOrderedProductImages(
+              (match.Product as any)?.image_urls,
+              (match.Product as any)?.display_order,
+              match.Product?.image_url,
+            );
+
         setEditProduct({
           ...editProduct,
           name: match.Product?.name || editProduct.name,
           brand: match.Product?.brand || editProduct.brand,
-          categoryId: match.Product?.categories_products_id 
-            ? String(match.Product.categories_products_id) 
+          categoryId: match.Product?.categories_products_id
+            ? String(match.Product.categories_products_id)
             : editProduct.categoryId,
           image: match.Product?.image_url || editProduct.image,
           description: match.Product?.description || editProduct.description,
+          images: matchedImages.length > 0 ? matchedImages : editProduct.images,
         });
-        if (match.Product?.image_url) {
-          setEditImagePreview(match.Product?.image_url);
-        }
+        const nextImages =
+          matchedImages.length > 0 ? matchedImages : editProduct.images;
+        setEditImageItems(nextImages.map((url) => ({ type: "existing", url })));
+        setEditOriginalImageUrls(nextImages);
       }
     } catch (error) {
       console.error("Error checking EAN in edit:", error);
@@ -331,7 +548,7 @@ export default function DashboardProducts() {
     const finalPrice = Number(eanCustomPrice) || 0;
     const finalOfferPrice = Number(eanOfferPrice) || 0;
     const finalStock = Number(eanStock) || 0;
-    
+
     assignMutation.mutate({
       professional_id: professionalId,
       product_id: String(eanMatch.id),
@@ -339,7 +556,7 @@ export default function DashboardProducts() {
       sale_type: "unit",
       is_active: true,
       stock: finalStock,
-      offer_price: finalOfferPrice
+      offer_price: finalOfferPrice,
     });
   };
 
@@ -359,8 +576,8 @@ export default function DashboardProducts() {
     });
     setFormPrice("");
     setFormStock("");
-    setImageFile(null);
-    setImagePreview("");
+    setImageFiles([]);
+    setImagePreviews([]);
     setEanMatch(null);
     setEanLoading(false);
     setEanCustomPrice("");
@@ -375,22 +592,33 @@ export default function DashboardProducts() {
   const handleAddProduct = async () => {
     if (!newProduct.name.trim() || !formPrice) return;
 
-    let uploadedProductImageUrl = imagePreview || newProduct.image || "";
-    if (imageFile) {
+    const uploadedImageUrls: string[] = [];
+
+    for (const file of imageFiles) {
       const uploaded = await uploadProductImage({
-        file: imageFile,
+        file,
         entityId: newProduct.name,
       });
-      uploadedProductImageUrl = uploaded.publicUrl;
+      uploadedImageUrls.push(uploaded.publicUrl);
     }
+
+    const fallbackImages =
+      uploadedImageUrls.length > 0
+        ? uploadedImageUrls
+        : newProduct.image
+          ? [newProduct.image]
+          : [];
 
     createMutation.mutate({
       ean: newProduct.ean,
       name: newProduct.name,
       description: newProduct.description,
       brand: newProduct.brand,
-      image_url: uploadedProductImageUrl,
-      categories_products_id: newProduct.categoryId ? Number(newProduct.categoryId) : undefined,
+      image_url: fallbackImages,
+      display_order: fallbackImages.map((_, index) => index + 1),
+      categories_products_id: newProduct.categoryId
+        ? Number(newProduct.categoryId)
+        : undefined,
       // Professional relationship data (sent in same request)
       professional_id: professionalId,
       price: Number(formPrice),
@@ -404,8 +632,8 @@ export default function DashboardProducts() {
   // Open edit modal
   const openEditModal = (product: any) => {
     // Find category ID from category name if possible, or adjust based on API response
-    const categoryMatch = categories.find(c => c.name === product.category);
-    
+    const categoryMatch = categories.find((c) => c.name === product.category);
+
     setEditProduct({
       id: product.id,
       name: product.name,
@@ -418,34 +646,90 @@ export default function DashboardProducts() {
       ean: product.ean || "",
       webUrl: "",
       offerPrice: String(product.offer_price || ""),
+      images: product.images || (product.image ? [product.image] : []),
     });
-    setEditImagePreview(product.image || "");
-    setEditImageFile(null);
+    const initialImages: string[] = getOrderedProductImages(
+      product.images,
+      product.display_order,
+      product.image,
+    );
+    setEditImageItems(initialImages.map((url) => ({ type: "existing", url })));
+    setEditOriginalImageUrls(initialImages);
     setEditOpen(true);
   };
 
   // Edit image handler
   const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setEditImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setEditImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
+    if (!editProduct) return;
+
+    const incomingFiles = Array.from(e.target.files || []);
+    if (incomingFiles.length === 0) return;
+
+    const usedSlots = editImageItems.length;
+    const availableSlots = MAX_PRODUCT_IMAGES - usedSlots;
+    if (availableSlots <= 0) return;
+
+    const filesToAdd = incomingFiles.slice(0, availableSlots);
+
+    const readers = filesToAdd.map(
+      (file) =>
+        new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string) || "");
+          reader.readAsDataURL(file);
+        }),
+    );
+
+    Promise.all(readers).then((results) => {
+      const newItems: EditImageItem[] = filesToAdd.map((file, index) => ({
+        type: "new",
+        file,
+        preview: results[index] || "",
+      }));
+      setEditImageItems((prev) => [...prev, ...newItems]);
+    });
+
+    e.target.value = "";
   };
 
-  const removeEditImage = () => {
-    setEditImageFile(null);
-    setEditImagePreview("");
-    if (editProduct) {
-      setEditProduct({ ...editProduct, image: "" });
+  const removeEditImageItem = (index: number) => {
+    setEditImageItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const moveEditImageItem = (from: number, to: number) => {
+    setEditImageItems((prev) => moveArrayItem(prev, from, to));
+  };
+
+  const handleEditImageDrop = (targetIndex: number) => {
+    if (draggingEditImageIndex === null) return;
+    if (draggingEditImageIndex !== targetIndex) {
+      moveEditImageItem(draggingEditImageIndex, targetIndex);
     }
+    setDraggingEditImageIndex(null);
   };
 
   // Save edited product
   const handleEditProduct = async () => {
     if (!editProduct || !editProduct.name.trim() || !editProduct.price) return;
+
+    const finalImages: string[] = [];
+
+    for (const item of editImageItems.slice(0, MAX_PRODUCT_IMAGES)) {
+      if (item.type === "existing") {
+        finalImages.push(item.url);
+        continue;
+      }
+
+      const uploaded = await uploadProductImage({
+        file: item.file,
+        entityId: editProduct.name,
+      });
+      finalImages.push(uploaded.publicUrl);
+    }
+
+    const imagesToDelete = editOriginalImageUrls.filter(
+      (url) => !finalImages.includes(url),
+    );
 
     updateMutation.mutate({
       productId: String(editProduct.id),
@@ -453,14 +737,18 @@ export default function DashboardProducts() {
         price: Number(editProduct.price),
         stock: Number(editProduct.stock),
         offer_price: Number(editProduct.offerPrice) || 0,
-      }
+        image_url: finalImages,
+        images_to_save: finalImages,
+        images_to_delete: imagesToDelete,
+        display_order: finalImages.map((_, index) => index + 1),
+      },
     });
   };
 
   const resetEditModal = () => {
     setEditProduct(null);
-    setEditImageFile(null);
-    setEditImagePreview("");
+    setEditImageItems([]);
+    setEditOriginalImageUrls([]);
     setEditOpen(false);
   };
 
@@ -556,9 +844,11 @@ export default function DashboardProducts() {
               </option>
             ))}
           </select>
-          <button 
+          <button
             className="dash-products__search-btn"
-            onClick={() => {/* Reactive filtering is already active */}}
+            onClick={() => {
+              /* Reactive filtering is already active */
+            }}
             title="Aplicar filtro de categoría"
           >
             <Search size={14} />
@@ -631,11 +921,18 @@ export default function DashboardProducts() {
                 <tr key={product.id} className="dash-products__row">
                   <td className="dash-products__cell-img">
                     {product.image ? (
-                      <img
-                        src={product.image}
-                        alt=""
-                        className="dash-products__thumb"
-                      />
+                      <div className="dash-products__thumb-stack">
+                        <img
+                          src={product.image}
+                          alt=""
+                          className="dash-products__thumb"
+                        />
+                        {(product.images?.length || 0) > 1 && (
+                          <span className="dash-products__thumb-count">
+                            +{product.images.length - 1}
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       <div className="dash-products__thumb-placeholder">
                         <ImageIcon size={16} />
@@ -654,8 +951,14 @@ export default function DashboardProducts() {
                   </td>
                   <td className="dash-products__cell-right">
                     <div className="dash-products__price-container">
-                      <span className={`dash-products__price ${product.offer_price > 0 ? "dash-products__price--offer" : ""}`}>
-                        {formatPrice(product.offer_price > 0 ? product.offer_price : product.price)}
+                      <span
+                        className={`dash-products__price ${product.offer_price > 0 ? "dash-products__price--offer" : ""}`}
+                      >
+                        {formatPrice(
+                          product.offer_price > 0
+                            ? product.offer_price
+                            : product.price,
+                        )}
                       </span>
                       {product.offer_price > 0 && (
                         <span className="dash-products__price-original">
@@ -793,7 +1096,10 @@ export default function DashboardProducts() {
             </div>
 
             {/* Delete offers option */}
-            <div className="dash-products__modal-field" style={{ marginTop: '4px' }}>
+            <div
+              className="dash-products__modal-field"
+              style={{ marginTop: "4px" }}
+            >
               <label className="dash-products__checkbox-label">
                 <input
                   type="checkbox"
@@ -809,16 +1115,23 @@ export default function DashboardProducts() {
               <div className="dash-products__modal-preview">
                 <AlertTriangle size={14} />
                 <span>
-                  {bulkDeleteOffers && (!bulkValue || parseFloat(bulkValue) <= 0) ? (
-                    <>Se eliminará el <strong>precio de oferta</strong> de todos los productos.</>
+                  {bulkDeleteOffers &&
+                  (!bulkValue || parseFloat(bulkValue) <= 0) ? (
+                    <>
+                      Se eliminará el <strong>precio de oferta</strong> de todos
+                      los productos.
+                    </>
                   ) : (
                     <>
-                      Esto {bulkAction === "increase" ? "aumentará" : "disminuirá"}{" "}
-                      el precio de <strong>{productsList.length} productos</strong>{" "}
+                      Esto{" "}
+                      {bulkAction === "increase" ? "aumentará" : "disminuirá"}{" "}
+                      el precio de{" "}
+                      <strong>{productsList.length} productos</strong>{" "}
                       {bulkMode === "percent"
                         ? `en un ${bulkValue}%`
                         : `en ${formatPrice(parseFloat(bulkValue))}`}
-                      {bulkDeleteOffers && " y se eliminarán sus precios de oferta."}
+                      {bulkDeleteOffers &&
+                        " y se eliminarán sus precios de oferta."}
                     </>
                   )}
                 </span>
@@ -828,7 +1141,11 @@ export default function DashboardProducts() {
             <button
               className={`dash-products__modal-apply ${bulkApplied ? "dash-products__modal-apply--done" : ""}`}
               onClick={handleBulkApply}
-              disabled={(!bulkDeleteOffers && (!bulkValue || parseFloat(bulkValue) <= 0)) || bulkApplied}
+              disabled={
+                (!bulkDeleteOffers &&
+                  (!bulkValue || parseFloat(bulkValue) <= 0)) ||
+                bulkApplied
+              }
             >
               {bulkApplied ? (
                 <>
@@ -890,31 +1207,52 @@ export default function DashboardProducts() {
             {/* EAN Match found */}
             {eanMatch && (
               <div className="dash-products__ean-match">
-                <div 
-                  className="dash-products__ean-match-header" 
-                  style={{ 
-                    backgroundColor: eanMatch.isAlreadyAssigned ? 'rgba(22, 163, 74, 0.1)' : 'rgba(59, 130, 246, 0.1)', 
-                    color: eanMatch.isAlreadyAssigned ? '#16a34a' : '#3b82f6', 
-                    marginBottom: '20px' 
+                <div
+                  className="dash-products__ean-match-header"
+                  style={{
+                    backgroundColor: eanMatch.isAlreadyAssigned
+                      ? "rgba(22, 163, 74, 0.1)"
+                      : "rgba(59, 130, 246, 0.1)",
+                    color: eanMatch.isAlreadyAssigned ? "#16a34a" : "#3b82f6",
+                    marginBottom: "20px",
                   }}
                 >
-                  {eanMatch.isAlreadyAssigned ? <Check size={16} /> : <Info size={16} />}
+                  {eanMatch.isAlreadyAssigned ? (
+                    <Check size={16} />
+                  ) : (
+                    <Info size={16} />
+                  )}
                   <span>
-                    {eanMatch.isAlreadyAssigned 
-                      ? "Este producto ya se encuentra en tu catálogo." 
+                    {eanMatch.isAlreadyAssigned
+                      ? "Este producto ya se encuentra en tu catálogo."
                       : "Este producto ya existe. Deberá asociarlo a su catálogo."}
                   </span>
                 </div>
-                
+
                 <div className="dash-products__ean-match-card">
                   {eanMatch.image && (
-                    <img src={eanMatch.image} alt="" className="dash-products__ean-match-img" />
+                    <img
+                      src={eanMatch.image}
+                      alt=""
+                      className="dash-products__ean-match-img"
+                    />
                   )}
                   <div className="dash-products__ean-match-info">
-                    <span className="dash-products__ean-match-name">{eanMatch.title}</span>
-                    <div className="dash-products__price-container" style={{ alignItems: 'flex-start' }}>
-                      <span className={`dash-products__ean-match-price ${eanMatch.offer_price > 0 ? "dash-products__price--offer" : ""}`}>
-                        {formatPrice(eanMatch.offer_price > 0 ? eanMatch.offer_price : eanMatch.price)}
+                    <span className="dash-products__ean-match-name">
+                      {eanMatch.title}
+                    </span>
+                    <div
+                      className="dash-products__price-container"
+                      style={{ alignItems: "flex-start" }}
+                    >
+                      <span
+                        className={`dash-products__ean-match-price ${eanMatch.offer_price > 0 ? "dash-products__price--offer" : ""}`}
+                      >
+                        {formatPrice(
+                          eanMatch.offer_price > 0
+                            ? eanMatch.offer_price
+                            : eanMatch.price,
+                        )}
                       </span>
                       {eanMatch.offer_price > 0 && (
                         <span className="dash-products__price-original">
@@ -923,13 +1261,18 @@ export default function DashboardProducts() {
                       )}
                     </div>
                     {eanMatch.category && (
-                      <span className="dash-products__ean-match-cat">{eanMatch.category}</span>
+                      <span className="dash-products__ean-match-cat">
+                        {eanMatch.category}
+                      </span>
                     )}
                   </div>
                 </div>
 
                 {!eanMatch.isAlreadyAssigned && (
-                  <div className="dash-products__form-grid" style={{ marginTop: '20px' }}>
+                  <div
+                    className="dash-products__form-grid"
+                    style={{ marginTop: "20px" }}
+                  >
                     <div className="dash-products__modal-field">
                       <label>Precio (ARS) *</label>
                       <div className="dash-products__modal-input-wrap">
@@ -985,7 +1328,9 @@ export default function DashboardProducts() {
                     <button
                       className="dash-products__modal-apply"
                       onClick={handleAddFromEan}
-                      disabled={!eanCustomPrice || parseInt(eanCustomPrice) <= 0}
+                      disabled={
+                        !eanCustomPrice || parseInt(eanCustomPrice) <= 0
+                      }
                     >
                       Agregar a mi cuenta
                     </button>
@@ -1041,7 +1386,10 @@ export default function DashboardProducts() {
                       placeholder="0"
                       value={newProduct.offerPrice}
                       onChange={(e) =>
-                        setNewProduct({ ...newProduct, offerPrice: e.target.value })
+                        setNewProduct({
+                          ...newProduct,
+                          offerPrice: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -1099,31 +1447,80 @@ export default function DashboardProducts() {
                   {/* Image upload */}
                   <div className="dash-products__modal-field dash-products__field--full">
                     <label>Imagen del producto</label>
-                    {imagePreview ? (
-                      <div className="dash-products__image-preview">
-                        <img src={imagePreview} alt="Preview" />
-                        <button
-                          className="dash-products__image-remove"
-                          onClick={removeImage}
-                          type="button"
-                        >
-                          <X size={14} />
-                        </button>
+                    {imagePreviews.length > 0 && (
+                      <p className="dash-products__images-order-hint">
+                        Ordená las imágenes arrastrando o con las flechas. La
+                        primera será la principal.
+                      </p>
+                    )}
+                    <label className="dash-products__image-upload">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageChange}
+                        hidden
+                        disabled={imageFiles.length >= MAX_PRODUCT_IMAGES}
+                      />
+                      <Upload size={20} />
+                      <span>
+                        {imageFiles.length >= MAX_PRODUCT_IMAGES
+                          ? "Límite alcanzado"
+                          : "Subir imágenes"}
+                      </span>
+                      <span className="dash-products__image-upload-hint">
+                        JPG, PNG o WebP (máx. 5MB c/u). Hasta 4 imágenes.
+                      </span>
+                    </label>
+
+                    {imagePreviews.length > 0 && (
+                      <div className="dash-products__image-preview-grid">
+                        {imagePreviews.map((preview, index) => (
+                          <div
+                            key={`${preview}-${index}`}
+                            className={`dash-products__image-preview ${draggingNewImageIndex === index ? "dash-products__image-preview--dragging" : ""}`}
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.effectAllowed = "move";
+                              setDraggingNewImageIndex(index);
+                            }}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={() => handleNewImageDrop(index)}
+                            onDragEnd={() => setDraggingNewImageIndex(null)}
+                          >
+                            <img src={preview} alt={`Preview ${index + 1}`} />
+                            <button
+                              className="dash-products__image-remove"
+                              onClick={() => removeImage(index)}
+                              type="button"
+                            >
+                              <X size={14} />
+                            </button>
+                            <div className="dash-products__image-order-controls">
+                              <button
+                                className="dash-products__image-order-btn"
+                                onClick={() => moveNewImage(index, index - 1)}
+                                type="button"
+                                disabled={index === 0}
+                                aria-label="Mover imagen a la izquierda"
+                                title="Mover a la izquierda"
+                              >
+                                <ChevronLeft size={14} />
+                              </button>
+                              <button
+                                className="dash-products__image-order-btn"
+                                onClick={() => moveNewImage(index, index + 1)}
+                                type="button"
+                                disabled={index === imagePreviews.length - 1}
+                                aria-label="Mover imagen a la derecha"
+                                title="Mover a la derecha"
+                              >
+                                <ChevronRight size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ) : (
-                      <label className="dash-products__image-upload">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          hidden
-                        />
-                        <Upload size={20} />
-                        <span>Subir imagen</span>
-                        <span className="dash-products__image-upload-hint">
-                          JPG, PNG o WebP (máx. 5MB)
-                        </span>
-                      </label>
                     )}
                   </div>
 
@@ -1161,7 +1558,7 @@ export default function DashboardProducts() {
                       !formPrice ||
                       !formStock ||
                       !newProduct.description.trim() ||
-                      (!imageFile && !imagePreview)
+                      imageFiles.length === 0
                     }
                   >
                     Agregar Producto
@@ -1236,7 +1633,10 @@ export default function DashboardProducts() {
                   placeholder="0"
                   value={editProduct.offerPrice}
                   onChange={(e) =>
-                    setEditProduct({ ...editProduct, offerPrice: e.target.value })
+                    setEditProduct({
+                      ...editProduct,
+                      offerPrice: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -1322,33 +1722,91 @@ export default function DashboardProducts() {
 
               {/* Image upload */}
               <div className="dash-products__modal-field dash-products__field--full">
-                <label>Imagen del producto</label>
-                {editImagePreview ? (
-                  <div className="dash-products__image-preview">
-                    <img src={editImagePreview} alt="Preview" />
-                    <button
-                      className="dash-products__image-remove"
-                      onClick={removeEditImage}
-                      type="button"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="dash-products__image-upload">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleEditImageChange}
-                      hidden
-                    />
-                    <Upload size={20} />
-                    <span>Subir imagen</span>
-                    <span className="dash-products__image-upload-hint">
-                      JPG, PNG o WebP (máx. 5MB)
-                    </span>
-                  </label>
+                <label>Imágenes del producto</label>
+                {editImageItems.length > 0 && (
+                  <p className="dash-products__images-order-hint">
+                    Ordená las imágenes arrastrando o con las flechas. La
+                    primera será la principal.
+                  </p>
                 )}
+                {editImageItems.length > 0 && (
+                  <div className="dash-products__image-preview-grid">
+                    {editImageItems.map((item, index) => (
+                      <div
+                        key={
+                          item.type === "existing"
+                            ? `${item.url}-${index}`
+                            : `${item.preview}-${index}`
+                        }
+                        className={`dash-products__image-preview ${item.type === "new" ? "dash-products__image-preview--selected" : ""} ${draggingEditImageIndex === index ? "dash-products__image-preview--dragging" : ""}`}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = "move";
+                          setDraggingEditImageIndex(index);
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => handleEditImageDrop(index)}
+                        onDragEnd={() => setDraggingEditImageIndex(null)}
+                      >
+                        <img
+                          src={
+                            item.type === "existing" ? item.url : item.preview
+                          }
+                          alt={`Imagen ${index + 1}`}
+                        />
+                        <button
+                          className="dash-products__image-remove"
+                          onClick={() => removeEditImageItem(index)}
+                          type="button"
+                        >
+                          <X size={14} />
+                        </button>
+                        <div className="dash-products__image-order-controls">
+                          <button
+                            className="dash-products__image-order-btn"
+                            onClick={() => moveEditImageItem(index, index - 1)}
+                            type="button"
+                            disabled={index === 0}
+                            aria-label="Mover imagen a la izquierda"
+                            title="Mover a la izquierda"
+                          >
+                            <ChevronLeft size={14} />
+                          </button>
+                          <button
+                            className="dash-products__image-order-btn"
+                            onClick={() => moveEditImageItem(index, index + 1)}
+                            type="button"
+                            disabled={index === editImageItems.length - 1}
+                            aria-label="Mover imagen a la derecha"
+                            title="Mover a la derecha"
+                          >
+                            <ChevronRight size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <label className="dash-products__image-upload">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleEditImageChange}
+                    hidden
+                    disabled={editImageItems.length >= MAX_PRODUCT_IMAGES}
+                  />
+                  <Upload size={20} />
+                  <span>
+                    {editImageItems.length >= MAX_PRODUCT_IMAGES
+                      ? "Límite alcanzado"
+                      : "Agregar imágenes"}
+                  </span>
+                  <span className="dash-products__image-upload-hint">
+                    JPG, PNG o WebP (máx. 5MB c/u). Hasta 4 imágenes.
+                  </span>
+                </label>
               </div>
 
               <div className="dash-products__modal-field dash-products__field--full">
@@ -1394,8 +1852,12 @@ export default function DashboardProducts() {
               <Check size={28} />
             </div>
             <div className="dash-products__floating-content">
-              <span className="dash-products__floating-title">¡Producto Agregado!</span>
-              <p className="dash-products__floating-desc">Se guardó correctamente. ¿Deseas agregar otro?</p>
+              <span className="dash-products__floating-title">
+                ¡Producto Agregado!
+              </span>
+              <p className="dash-products__floating-desc">
+                Se guardó correctamente. ¿Deseas agregar otro?
+              </p>
             </div>
             <div className="dash-products__floating-actions">
               <button
@@ -1425,13 +1887,21 @@ export default function DashboardProducts() {
       {/* ===== Floating Delete Screen ===== */}
       {deleteConfirmOpen && (
         <div className="dash-products__floating-overlay">
-          <div className="dash-products__floating-screen" style={{ borderColor: 'rgba(250, 82, 82, 0.3)' }}>
+          <div
+            className="dash-products__floating-screen"
+            style={{ borderColor: "rgba(250, 82, 82, 0.3)" }}
+          >
             <div className="dash-products__floating-icon dash-products__floating-icon--danger">
               <Trash2 size={28} />
             </div>
             <div className="dash-products__floating-content">
-              <span className="dash-products__floating-title">¿Eliminar producto?</span>
-              <p className="dash-products__floating-desc">Quitarás <strong>{productToDelete?.name}</strong> de tu catálogo.</p>
+              <span className="dash-products__floating-title">
+                ¿Eliminar producto?
+              </span>
+              <p className="dash-products__floating-desc">
+                Quitarás <strong>{productToDelete?.name}</strong> de tu
+                catálogo.
+              </p>
             </div>
             <div className="dash-products__floating-actions">
               <button
@@ -1442,7 +1912,7 @@ export default function DashboardProducts() {
               </button>
               <button
                 className="dash-products__floating-btn dash-products__floating-btn--primary"
-                style={{ background: '#fa5252' }}
+                style={{ background: "#fa5252" }}
                 onClick={confirmDelete}
               >
                 Eliminar

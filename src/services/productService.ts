@@ -1,13 +1,17 @@
 import { API_ENDPOINTS } from "./api.config";
 import { apiClient } from "./apiClient";
-import type { ProductRow, ProfessionalProductRow } from "../types/database.types";
+import type {
+  ProductRow,
+  ProfessionalProductRow,
+} from "../types/database.types";
 
 export interface CreateProductRequest {
   ean: string;
   name: string;
   description?: string;
   brand?: string;
-  image_url?: string;
+  image_url?: string[];
+  display_order?: number[];
   categories_products_id?: number;
   // Professional relationship fields (handled in same request by API)
   professional_id?: number;
@@ -23,7 +27,10 @@ export interface UpdateProductRequest {
   name?: string;
   description?: string;
   brand?: string;
-  image_url?: string;
+  image_url?: string[];
+  images_to_save?: string[];
+  images_to_delete?: string[];
+  display_order?: number[];
   categories_products_id?: number;
 }
 
@@ -86,9 +93,12 @@ export const productService = {
    * @returns {Promise<ProfessionalProductRow>}
    */
   getDetail: (id: string | number) =>
-    apiClient<ProfessionalProductRow>(API_ENDPOINTS.products.detail(id.toString()), {
-      method: "GET",
-    }),
+    apiClient<ProfessionalProductRow>(
+      API_ENDPOINTS.products.detail(id.toString()),
+      {
+        method: "GET",
+      },
+    ),
 
   /**
    * @route GET /api/products/name/:name
@@ -110,9 +120,12 @@ export const productService = {
    */
   getByEan: (ean: string, professionalId?: number) => {
     const query = professionalId ? `?professionalId=${professionalId}` : "";
-    return apiClient<ProfessionalProductRow>(`${API_ENDPOINTS.products.byEan(ean)}${query}`, {
-      method: "GET",
-    });
+    return apiClient<ProfessionalProductRow>(
+      `${API_ENDPOINTS.products.byEan(ean)}${query}`,
+      {
+        method: "GET",
+      },
+    );
   },
 
   /**
@@ -122,9 +135,12 @@ export const productService = {
    * @returns {Promise<ProfessionalProductRow[]>}
    */
   getByCategory: (categoryId: number) =>
-    apiClient<ProfessionalProductRow[]>(API_ENDPOINTS.products.byCategory(categoryId), {
-      method: "GET",
-    }),
+    apiClient<ProfessionalProductRow[]>(
+      API_ENDPOINTS.products.byCategory(categoryId),
+      {
+        method: "GET",
+      },
+    ),
 
   /**
    * @route GET /api/products/professional/:professionalId
@@ -133,9 +149,12 @@ export const productService = {
    * @returns {Promise<ProfessionalProductRow[]>}
    */
   getByProfessional: (professionalId: number) =>
-    apiClient<ProfessionalProductRow[]>(API_ENDPOINTS.products.byProfessional(professionalId), {
-      method: "GET",
-    }),
+    apiClient<ProfessionalProductRow[]>(
+      API_ENDPOINTS.products.byProfessional(professionalId),
+      {
+        method: "GET",
+      },
+    ),
 
   /**
    * @route GET /api/products/professional/:professionalId/only-products
@@ -219,10 +238,13 @@ export const productService = {
    * @returns {Promise<ProfessionalProductRow[]>}
    */
   massUpdatePrice: (data: MassUpdatePriceRequest) =>
-    apiClient<ProfessionalProductRow[]>(API_ENDPOINTS.products.massUpdatePrices, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
+    apiClient<ProfessionalProductRow[]>(
+      API_ENDPOINTS.products.massUpdatePrices,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      },
+    ),
 
   /**
    * @route POST /api/products/assign-professional
@@ -231,10 +253,13 @@ export const productService = {
    * @returns {Promise<ProfessionalProductRow>}
    */
   assignToProfessional: (data: AssignProductToProfessionalRequest) =>
-    apiClient<ProfessionalProductRow>(API_ENDPOINTS.products.assignProfessional, {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+    apiClient<ProfessionalProductRow>(
+      API_ENDPOINTS.products.assignProfessional,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    ),
 
   /**
    * @route DELETE /api/products/:productId/professional/:professionalId
