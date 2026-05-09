@@ -1,87 +1,99 @@
 import { useState } from 'react';
-import { Search, ChevronDown } from 'lucide-react';
-import { categories } from '../../data/categories';
-import { professionals } from '../../data/specialists';
+import { Search, Loader2, Filter } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { categoriesService } from '../../services/categoriesApi';
 import './MapSidebar.css';
 
-export default function MapSidebar({ onFilterChange, specialistsCount }) {
+export default function MapSidebar({ onFilterChange, specialistsCount, isLoading }) {
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Architecture');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const handleSearch = (e) => {
-    const term = e.target.value;
-    setSearch(term);
-    filterResults(term, selectedCategory);
-  };
+  const { data: categories = [], isLoading: isLoadingCats } = useQuery({
+    queryKey: ['service-categories'],
+    queryFn: () => categoriesService.listCategories()
+  });
 
-  const handleCategoryClick = (catName) => {
-    setSelectedCategory(catName);
-    filterResults(search, catName);
-  };
-
-  const filterResults = (searchTerm, category) => {
-    const filtered = professionals.filter(prof => {
-      const matchesSearch = prof.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          prof.specialty.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = category === 'All' || prof.category === category || (category === 'Architecture' && prof.category === 'Design');
-      return matchesSearch && matchesCategory;
+  const handleApply = () => {
+    onFilterChange({ 
+      search, 
+      categoryId: selectedCategory === 'all' ? undefined : selectedCategory 
     });
-    onFilterChange(filtered);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') handleApply();
   };
 
   return (
     <aside className="map-sidebar">
       <div className="map-sidebar__header">
-        <h2>Refine Specialists</h2>
-        <p>Architectural Precision Search</p>
+        <h2 className="map-sidebar__title">Explorar Profesionales</h2>
+        <p className="map-sidebar__subtitle">Encuentra expertos cerca de ti</p>
       </div>
 
       <div className="map-sidebar__section">
-        <label className="map-sidebar__label">QUICK SEARCH</label>
+        <label className="map-sidebar__label">BÚSQUEDA RÁPIDA</label>
         <div className="search-input">
           <Search size={18} className="search-icon" />
           <input 
             type="text" 
-            placeholder="Specialist name..." 
+            placeholder="Nombre o especialidad..." 
             value={search}
-            onChange={handleSearch}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyPress={handleKeyPress}
           />
         </div>
       </div>
 
       <div className="map-sidebar__section">
-        <label className="map-sidebar__label">CATEGORIES</label>
+        <label className="map-sidebar__label">CATEGORÍAS</label>
         <div className="category-pills">
-          {['Architecture', 'Engineering', 'Interior Design', 'Urban Planning', 'Landscaping'].map((cat) => (
+          <button 
+            type="button"
+            className={`pill ${selectedCategory === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedCategory('all')}
+          >
+            Todas
+          </button>
+          {isLoadingCats ? (
+            <div className="pills-loading">
+              <Loader2 className="animate-spin" size={14} />
+            </div>
+          ) : categories.map((cat) => (
             <button 
-              key={cat} 
-              className={`pill ${selectedCategory === cat ? 'active' : ''}`}
-              onClick={() => handleCategoryClick(cat)}
+              key={cat.id} 
+              type="button"
+              className={`pill ${selectedCategory === cat.id ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(cat.id)}
             >
-              {cat}
+              {cat.name}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="map-sidebar__section">
-        <label className="map-sidebar__label">LOCATION</label>
-        <div className="map-dropdown">
-          <span>New York State</span>
-          <ChevronDown size={16} />
-        </div>
-        <div className="map-dropdown">
-          <span>New York City</span>
-          <ChevronDown size={16} />
-        </div>
-      </div>
-
       <div className="map-sidebar__footer">
         <div className="stats">
-          <span>Specialists found:</span>
-          <span className="count">{specialistsCount}</span>
+          <span>Encontrados:</span>
+          <span className="count">{isLoading ? "..." : specialistsCount}</span>
         </div>
-        <button className="apply-btn">APPLY FILTER</button>
+        <button 
+          className="apply-btn" 
+          onClick={handleApply}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin" size={16} />
+              BUSCANDO...
+            </>
+          ) : (
+            <>
+              <Filter size={16} />
+              APLICAR FILTROS
+            </>
+          )}
+        </button>
       </div>
     </aside>
   );

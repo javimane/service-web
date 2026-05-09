@@ -12,12 +12,59 @@
   padding: 0 40px;
 }
 
+.professional-reels__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .professional-reels__title {
   font-size: 2rem;
   font-weight: 900;
   color: var(--text-primary);
   margin: 0;
   letter-spacing: -0.03em;
+}
+
+.professional-reels__location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--highlight);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.reels-loading, .reels-empty {
+  width: 100%;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-card);
+}
+
+.premium-badge-mini {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  background: var(--highlight);
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .professional-reels__carousel-wrapper {

@@ -67,6 +67,10 @@
   flex: 1;
 }
 
+.modal-content.no-padding {
+  padding: 0;
+}
+
 /* Scrollbar styling for modal */
 .modal-content::-webkit-scrollbar {
   width: 6px;

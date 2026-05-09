@@ -8,9 +8,13 @@ import {
   ChevronRight,
   MessageCircle,
   User,
+  ChevronLeft,
+  Loader2
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { productService } from "../../../services/productService";
 import "./NearbyProductDetailModal.css";
 
 function formatPrice(n: number) {
@@ -19,10 +23,21 @@ function formatPrice(n: number) {
 
 export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
   const navigate = useNavigate();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const { data: sellersData, isLoading: isLoadingSellers } = useQuery({
+    queryKey: ["product-sellers", product?.Product?.id],
+    queryFn: () => productService.list({ product_id: product?.Product?.id }),
+    enabled: !!product?.Product?.id && isOpen
+  });
+
+  const allSellers = sellersData?.data || [];
+  const images = product?.Product?.image_url || ["https://via.placeholder.com/600"];
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      setCurrentImageIndex(0);
     } else {
       document.body.style.overflow = "unset";
     }
@@ -33,18 +48,13 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
 
   if (!isOpen || !product) return null;
 
-  const whatsappMessage = encodeURIComponent(
-    `Hola ${product.seller}, estoy interesado en: ${product.title} ($${formatPrice(product.price)}). ¿Está disponible?`,
-  );
-  const whatsappUrl = `https://wa.me/${product.sellerPhone}?text=${whatsappMessage}`;
-
-  const handleDirectMessage = () => {
-    navigate(`/messages?to=${product.sellerId}&product=${product.id}`);
+  const handleDirectMessage = (professionalId) => {
+    navigate(`/messages?to=${professionalId}&product=${product.Product?.id}`);
     onClose();
   };
 
-  const handleViewProfile = () => {
-    navigate(`/profile/${product.sellerId}`);
+  const handleViewProfile = (professionalId) => {
+    navigate(`/profile/${professionalId}`);
     onClose();
   };
 
@@ -59,109 +69,102 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
           {/* Image section */}
           <div className="np-modal__image-section">
             <div className="np-modal__image-container">
-              <img src={product.image} alt={product.title} />
-              {product.discount > 0 && (
-                <span className="np-modal__discount-badge">
-                  -{product.discount}%
-                </span>
+              <img src={images[currentImageIndex]} alt={product.Product?.name} />
+              
+              {images.length > 1 && (
+                <div className="np-modal__image-nav">
+                  <button onClick={() => setCurrentImageIndex(prev => (prev - 1 + images.length) % images.length)}>
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button onClick={() => setCurrentImageIndex(prev => (prev + 1) % images.length)}>
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
               )}
+
+              <div className="np-modal__image-dots">
+                {images.map((_, i) => (
+                  <span 
+                    key={i} 
+                    className={`dot ${i === currentImageIndex ? 'active' : ''}`}
+                    onClick={() => setCurrentImageIndex(i)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Info section */}
           <div className="np-modal__info-section">
-            {/* Seller header */}
-            <div className="np-modal__seller-header">
-              <img
-                src={product.sellerAvatar}
-                alt={product.seller}
-                className="np-modal__seller-avatar"
-              />
-              <div className="np-modal__seller-info">
-                <span className="np-modal__seller-name">{product.seller}</span>
-                <span className="np-modal__seller-distance">
-                  <MapPin size={12} /> {product.distance}
-                </span>
-              </div>
-            </div>
-
             <span className="np-modal__condition">
-              {product.condition} | {product.category}
+              Producto | {product.Product?.brand || "Genérico"}
             </span>
 
-            <h2 className="np-modal__title">{product.title}</h2>
-
-            <div className="np-modal__rating">
-              <div className="np-modal__stars">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    size={16}
-                    fill={
-                      i < Math.round(product.rating) ? "currentColor" : "none"
-                    }
-                    className={
-                      i < Math.round(product.rating)
-                        ? "star-filled"
-                        : "star-empty"
-                    }
-                  />
-                ))}
-              </div>
-              <span className="np-modal__rating-text">
-                {product.rating} ({product.reviews} opiniones)
-              </span>
-            </div>
-
-            <div className="np-modal__pricing">
-              {product.originalPrice && (
-                <span className="np-modal__original-price">
-                  ${formatPrice(product.originalPrice)}
-                </span>
-              )}
-              <div className="np-modal__price-row">
-                <span className="np-modal__price">
-                  ${formatPrice(product.price)}
-                </span>
-                {product.discount > 0 && (
-                  <span className="np-modal__discount-text">
-                    {product.discount}% OFF
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {product.freeShipping && (
-              <div className="np-modal__shipping">
-                <Truck size={16} />
-                <span>Envío gratis</span>
-              </div>
-            )}
-
-            <div className="np-modal__stock">
-              <Package size={16} />
-              <span>
-                Stock disponible: <strong>{product.stock} unidades</strong>
-              </span>
-            </div>
-
-            <div className="np-modal__seller-badge">
-              <ShieldCheck size={16} />
-              <span>
-                Vendido por <strong>{product.seller}</strong>
-              </span>
-            </div>
+            <h2 className="np-modal__title">{product.Product?.name}</h2>
 
             <div className="np-modal__description">
-              <h4>Descripción</h4>
-              <p>{product.description}</p>
+              <p>{product.Product?.description}</p>
             </div>
 
-            {product.features && (
+            <div className="np-modal__sellers-section">
+              <h4>Vendedores Cercanos</h4>
+              {isLoadingSellers ? (
+                <div className="sellers-loading">
+                  <Loader2 className="animate-spin" size={24} />
+                  <span>Buscando mejores precios...</span>
+                </div>
+              ) : (
+                <div className="sellers-list">
+                  {allSellers.map((sellerRel) => (
+                    <div key={sellerRel.id} className="seller-item">
+                      <div 
+                        className="seller-item__main"
+                        onClick={() => handleViewProfile(sellerRel.Professional?.id)}
+                      >
+                        <img 
+                          src={sellerRel.Professional?.Profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(sellerRel.Professional?.Profile?.display_name || "P")}`} 
+                          alt="Seller" 
+                        />
+                        <div className="seller-item__info">
+                          <span className="seller-item__name">{sellerRel.Professional?.Profile?.display_name || sellerRel.Professional?.Company?.name}</span>
+                          <span className="seller-item__rating">
+                            <Star size={10} fill="currentColor" /> {sellerRel.Professional?.rating_avg || "5.0"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="seller-item__price-block">
+                        {sellerRel.offer_price && (
+                          <span className="seller-item__original">${formatPrice(sellerRel.price)}</span>
+                        )}
+                        <span className="seller-item__current">${formatPrice(sellerRel.offer_price || sellerRel.price)}</span>
+                      </div>
+
+                      <div className="seller-item__actions">
+                        <button 
+                          className="btn-msg"
+                          onClick={() => handleDirectMessage(sellerRel.Professional?.id)}
+                        >
+                          <MessageCircle size={16} />
+                        </button>
+                        <button 
+                          className="btn-prof"
+                          onClick={() => handleViewProfile(sellerRel.Professional?.id)}
+                        >
+                          <User size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {product.Product?.features && (
               <div className="np-modal__features">
                 <h4>Características</h4>
                 <ul>
-                  {product.features.map((feat, i) => (
+                  {product.Product.features.map((feat, i) => (
                     <li key={i}>
                       <ChevronRight size={14} />
                       <span>{feat}</span>
@@ -170,44 +173,6 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
                 </ul>
               </div>
             )}
-
-            {/* Action buttons */}
-            <div className="np-modal__actions">
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="np-modal__btn np-modal__btn--whatsapp"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="currentColor"
-                >
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                </svg>
-                Consultar por WhatsApp
-              </a>
-
-              <button
-                type="button"
-                className="np-modal__btn np-modal__btn--message"
-                onClick={handleDirectMessage}
-              >
-                <MessageCircle size={18} />
-                Mensaje directo
-              </button>
-
-              <button
-                type="button"
-                className="np-modal__btn np-modal__btn--profile"
-                onClick={handleViewProfile}
-              >
-                <User size={18} />
-                Ver perfil del profesional
-              </button>
-            </div>
           </div>
         </div>
       </div>

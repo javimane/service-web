@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Play,
   Pause,
@@ -7,63 +7,22 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Loader2,
+  Sparkles,
+  MapPin
 } from "lucide-react";
+import { useQuery, useQueries } from "@tanstack/react-query";
+import { reelsService } from "../../../services/reelsService";
+import { locationService } from "../../../services/locationService";
+import { suscriptions } from "../../../services/suscriptionService";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./ProfessionalReelsSection.css";
 
-const reels = [
-  {
-    id: 1,
-    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-    professional: {
-      id: "juanperez",
-      name: "Juan Pérez",
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    },
-  },
-  {
-    id: 2,
-    videoUrl: "https://www.w3schools.com/html/movie.mp4",
-    professional: {
-      id: "mariagomez",
-      name: "María Gómez",
-      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-    },
-  },
-  {
-    id: 3,
-    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-    professional: {
-      id: "carlossosa",
-      name: "Carlos Sosa",
-      avatar: "https://randomuser.me/api/portraits/men/65.jpg",
-    },
-  },
-  {
-    id: 4,
-    videoUrl: "https://www.w3schools.com/html/movie.mp4",
-    professional: {
-      id: "lauradiaz",
-      name: "Laura Díaz",
-      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-    },
-  },
-  {
-    id: 5,
-    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-    professional: {
-      id: "robertolopez",
-      name: "Roberto López",
-      avatar: "https://randomuser.me/api/portraits/men/12.jpg",
-    },
-  },
-];
-
 function ReelThumbnail({ src }: { src: string }) {
   const ref = useRef<HTMLVideoElement>(null);
-  const handleLoadedMetadata = () => {
+  useEffect(() => {
     if (ref.current) ref.current.currentTime = 0.01;
-  };
+  }, [src]);
   return (
     <video
       ref={ref}
@@ -72,19 +31,78 @@ function ReelThumbnail({ src }: { src: string }) {
       muted
       playsInline
       preload="metadata"
-      onLoadedMetadata={handleLoadedMetadata}
     />
   );
 }
 
 export default function ProfessionalReelsSection() {
+  const [userProvince] = useState<string>(localStorage.getItem("userProvince") || "Buenos Aires");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [likedReels, setLikedReels] = useState<number[]>([]);
   const sliderRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const selectedReel = selectedIndex !== null ? reels[selectedIndex] : null;
+  // Fetch Provinces to get the ID for filtering
+  const { data: provinces = [] } = useQuery({
+    queryKey: ["provinces"],
+    queryFn: () => locationService.getProvinces(),
+  });
+
+  const provinceId = useMemo(() => {
+    return provinces.find(p => p.name === userProvince)?.id;
+  }, [provinces, userProvince]);
+
+  const { data: allReels = [], isLoading: isLoadingReels } = useQuery({
+    queryKey: ["professional-reels", provinceId],
+    queryFn: () => reelsService.list(provinceId),
+    enabled: !!provinceId || userProvince === "Buenos Aires",
+  });
+
+  // Get unique professional IDs to avoid redundant queries
+  const professionalIds = useMemo(() => {
+    const ids = allReels.map(r => r.professional_id).filter(Boolean);
+    return [...new Set(ids)];
+  }, [allReels]);
+
+  // Fetch subscriptions for each professional in parallel
+  const subscriptionQueries = useQueries({
+    queries: professionalIds.map(id => ({
+      queryKey: ["professional-subscription", id],
+      queryFn: () => suscriptions.getByProfessional(id),
+      staleTime: 1000 * 60 * 5, // 5 minutes cache
+    })),
+  });
+
+  const subscriptionsMap = useMemo(() => {
+    const map: Record<string | number, any> = {};
+    subscriptionQueries.forEach((query, index) => {
+      if (query.data) {
+        map[professionalIds[index]] = query.data.data;
+      }
+    });
+    return map;
+  }, [subscriptionQueries, professionalIds]);
+
+  const isLoading = isLoadingReels || subscriptionQueries.some(q => q.isLoading);
+
+  const processedReels = useMemo(() => {
+    return [...allReels]
+      .sort((a, b) => {
+        const aSub = subscriptionsMap[a.professional_id];
+        const bSub = subscriptionsMap[b.professional_id];
+        
+        // Priority logic: Premium first. 
+        // We assume the subscription object has an is_premium or type field.
+        const aPremium = aSub?.type === 'premium' || aSub?.is_premium ? 1 : 0;
+        const bPremium = bSub?.type === 'premium' || bSub?.is_premium ? 1 : 0;
+        
+        return bPremium - aPremium;
+      })
+      .slice(0, 25);
+  }, [allReels, subscriptionsMap]);
+
+  const selectedReel = selectedIndex !== null ? processedReels[selectedIndex] : null;
 
   const {
     showLeftArrow,
@@ -139,65 +157,90 @@ export default function ProfessionalReelsSection() {
 
   const showPreviousReel = () => {
     setSelectedIndex((prev) =>
-      prev === null ? 0 : (prev - 1 + reels.length) % reels.length,
+      prev === null ? 0 : (prev - 1 + processedReels.length) % processedReels.length,
     );
   };
 
   const showNextReel = () => {
-    setSelectedIndex((prev) => (prev === null ? 0 : (prev + 1) % reels.length));
+    setSelectedIndex((prev) => (prev === null ? 0 : (prev + 1) % processedReels.length));
   };
 
   return (
     <section className="professional-reels">
       <div className="professional-reels__header">
-        <h2 className="professional-reels__title">Reels</h2>
+        <div className="professional-reels__title-group">
+          <h2 className="professional-reels__title">Reels Profesionales</h2>
+          <span className="professional-reels__location">
+            <MapPin size={14} />
+            {userProvince}
+          </span>
+        </div>
         <button className="section-link">View all &gt;</button>
       </div>
 
       <div className="professional-reels__carousel-wrapper">
-        <button
-          className={`carousel-control carousel-control--left ${showLeftArrow ? "" : "carousel-control--hidden"}`}
-          type="button"
-          onClick={() => scrollCarousel(-1)}
-          aria-label="Anterior"
-        >
-          <ChevronLeft size={18} />
-        </button>
-
-        <div
-          ref={sliderRef}
-          className="professional-reels__scroll"
-          onScroll={updateArrowVisibility}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onPointerLeave={handlePointerUp}
-        >
-          {reels.map((reel, index) => (
+        {isLoading ? (
+          <div className="reels-loading">
+            <Loader2 className="animate-spin" size={32} />
+            <p>Cargando reels...</p>
+          </div>
+        ) : processedReels.length === 0 ? (
+          <div className="reels-empty">
+            <Sparkles size={40} />
+            <p>Aún no hay reels en {userProvince}</p>
+          </div>
+        ) : (
+          <>
             <button
-              key={reel.id}
-              className="reel-card"
-              onClick={() => setSelectedIndex(index)}
+              className={`carousel-control carousel-control--left ${showLeftArrow ? "" : "carousel-control--hidden"}`}
+              type="button"
+              onClick={() => scrollCarousel(-1)}
+              aria-label="Anterior"
             >
-              <ReelThumbnail src={reel.videoUrl} />
-              <div className="reel-card__overlay" />
-              <div className="reel-card__label">
-                <Play size={14} fill="white" />
-                <span>Video</span>
-              </div>
+              <ChevronLeft size={18} />
             </button>
-          ))}
-        </div>
 
-        <button
-          className={`carousel-control carousel-control--right ${showRightArrow ? "" : "carousel-control--hidden"}`}
-          type="button"
-          onClick={() => scrollCarousel(1)}
-          aria-label="Siguiente"
-        >
-          <ChevronRight size={18} />
-        </button>
+            <div
+              ref={sliderRef}
+              className="professional-reels__scroll"
+              onScroll={updateArrowVisibility}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+            >
+              {processedReels.map((reel, index) => (
+                <button
+                  key={reel.id}
+                  className="reel-card"
+                  onClick={() => setSelectedIndex(index)}
+                >
+                  <ReelThumbnail src={reel.video_url} />
+                  {subscriptionsMap[reel.professional_id]?.type === 'premium' && (
+                    <div className="premium-badge-mini">
+                      <Sparkles size={10} fill="currentColor" />
+                    </div>
+                  )}
+                  <div className="reel-card__overlay" />
+                  <div className="reel-card__label">
+                    <Play size={14} fill="white" />
+                    <span>Video</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              className={`carousel-control carousel-control--right ${showRightArrow ? "" : "carousel-control--hidden"}`}
+              type="button"
+              onClick={() => scrollCarousel(1)}
+              aria-label="Siguiente"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </>
+        )}
       </div>
 
       {selectedReel && (
@@ -237,7 +280,7 @@ export default function ProfessionalReelsSection() {
               <video
                 ref={videoRef}
                 className="reels-modal__video"
-                src={selectedReel.videoUrl}
+                src={selectedReel.video_url}
                 autoPlay
                 loop
                 muted
@@ -247,7 +290,7 @@ export default function ProfessionalReelsSection() {
               <div className="reels-modal__topbar reels-modal__topbar--profile">
                 <a
                   className="reels-modal__profile-link"
-                  href={`/profile/${selectedReel.professional.id}`}
+                  href={`/profile/${selectedReel.professional_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => {
@@ -255,12 +298,12 @@ export default function ProfessionalReelsSection() {
                   }}
                 >
                   <img
-                    src={selectedReel.professional.avatar}
-                    alt={selectedReel.professional.name}
+                    src={selectedReel.Professional?.Profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedReel.Professional?.Profile?.display_name || "P")}`}
+                    alt={selectedReel.Professional?.Profile?.display_name}
                     className="reels-modal__profile-avatar"
                   />
                   <span className="reels-modal__profile-name">
-                    {selectedReel.professional.name}
+                    {selectedReel.Professional?.Profile?.display_name || "Profesional"}
                   </span>
                 </a>
               </div>

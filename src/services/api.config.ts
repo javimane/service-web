@@ -96,6 +96,8 @@ export const API_ENDPOINTS = {
   },
   subscriptions: {
     getPrice: `${API_BASE_URL}/api/subscription-price`,
+    byProfessional: (id: string | number) =>
+      `${API_BASE_URL}/api/subscriptions/professional/${id}`,
   },
   reels: {
     base: `${API_BASE_URL}/api/professional-reels`,
@@ -145,6 +147,11 @@ export const API_ENDPOINTS = {
   profiles: {
     base: `${API_BASE_URL}/api/profiles`,
     detail: (id: string) => `${API_BASE_URL}/api/profiles/${id}`,
+  },
+  reviews: {
+    base: `${API_BASE_URL}/api/reviews`,
+    byProfessional: (professionalId: string | number) =>
+      `${API_BASE_URL}/api/reviews/professional/${professionalId}`,
   },
   arca: {
     verify: (

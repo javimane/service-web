@@ -1,14 +1,31 @@
-import { useState, useMemo } from "react";
-import { Plus, Trash2, Search, Package, ShoppingCart } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Plus, Trash2, Search, Package, ShoppingCart, Loader2 } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
-import { products as localProducts } from "../../../data/products";
+import { useAuth } from "../../../context/AuthContext";
 import { productService } from "../../../services/productService";
 import "./AddItemModal.css";
 
 type Tab = "services" | "products";
 
-export default function AddItemModal({ isOpen, onClose, onAdd }) {
-  const [activeTab, setActiveTab] = useState<Tab>("services");
+interface AddItemModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (items: any[]) => void;
+  initialTab?: Tab;
+}
+
+export default function AddItemModal({ isOpen, onClose, onAdd, initialTab = "services" }: AddItemModalProps) {
+  const { sessionStatus } = useAuth();
+  const professionalId = sessionStatus?.subscription?.professional_id || sessionStatus?.professional_id;
+
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+  // Sync activeTab with initialTab when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   // ---- Services tab state ----
   const [tempItems, setTempItems] = useState([{ name: "", qty: 1, rate: 0 }]);
@@ -21,6 +38,27 @@ export default function AddItemModal({ isOpen, onClose, onAdd }) {
   const [selectedProducts, setSelectedProducts] = useState<
     { id: number; name: string; qty: number; rate: number; image?: string }[]
   >([]);
+
+  const mapProductData = (item: any) => {
+    // Image sorting logic (order 1 first)
+    const images = Array.isArray(item.Product?.Images)
+      ? [...item.Product.Images]
+          .sort(
+            (a: any, b: any) =>
+              Number(a?.display_order ?? 0) - Number(b?.display_order ?? 0),
+          )
+          .map((img: any) => String(img?.image_url || "").trim())
+          .filter(Boolean)
+      : [];
+
+    return {
+      id: item.product_id || item.id,
+      title: item.Product?.name || item.name || "Sin nombre",
+      price: item.price || item.Product?.price || 0,
+      image: images[0] || item.Product?.image_url || "",
+      category: (item.Product?.CategoryProduct?.name || "General").trim(),
+    };
+  };
 
   // ---- Services handlers ----
   const handleUpdateItem = (index, field, value) => {
@@ -42,26 +80,40 @@ export default function AddItemModal({ isOpen, onClose, onAdd }) {
   };
 
   // ---- Products handlers ----
-  const filteredLocalProducts = useMemo(() => {
-    if (!productSearch.trim()) return localProducts;
-    const q = productSearch.toLowerCase();
-    return localProducts.filter((p) => p.title.toLowerCase().includes(q));
-  }, [productSearch]);
-
-  const searchDbProducts = async () => {
-    const q = productSearch.trim();
-    if (!q) return;
+  const fetchProducts = async () => {
     setDbLoading(true);
     try {
-      const data = await productService.list();
-      const filtered = data
-        .filter((p: any) => p.title.toLowerCase().includes(q.toLowerCase()))
-        .slice(0, 20);
-      setDbProducts(filtered);
-    } catch {
+      let data: any[] = [];
+      if (productSource === "mine" && professionalId) {
+        data = await productService.getByProfessional(professionalId);
+      } else {
+        const response = await productService.list();
+        data = response.data || [];
+      }
+
+      let filtered = data.map(mapProductData);
+
+      if (productSearch.trim()) {
+        const q = productSearch.toLowerCase();
+        filtered = filtered.filter((p) => p.title.toLowerCase().includes(q));
+      }
+
+      setDbProducts(filtered.slice(0, 30));
+    } catch (error) {
+      console.error("Error fetching products:", error);
       setDbProducts([]);
     }
     setDbLoading(false);
+  };
+
+  useEffect(() => {
+    if (isOpen && activeTab === "products") {
+      fetchProducts();
+    }
+  }, [isOpen, activeTab, productSource]);
+
+  const searchDbProducts = () => {
+    fetchProducts();
   };
 
   const addProductToSelection = (product: any) => {
@@ -125,8 +177,7 @@ export default function AddItemModal({ isOpen, onClose, onAdd }) {
     onClose();
   };
 
-  const displayProducts =
-    productSource === "mine" ? filteredLocalProducts : dbProducts;
+  const displayProducts = dbProducts;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Agregar ítems">
@@ -235,7 +286,6 @@ export default function AddItemModal({ isOpen, onClose, onAdd }) {
               </button>
             </div>
 
-            {/* Search */}
             <div className="add-items__search-row">
               <div className="add-items__search-input">
                 <Search size={16} />
@@ -245,20 +295,17 @@ export default function AddItemModal({ isOpen, onClose, onAdd }) {
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && productSource === "all")
-                      searchDbProducts();
+                    if (e.key === "Enter") fetchProducts();
                   }}
                 />
               </div>
-              {productSource === "all" && (
-                <button
-                  className="add-items__search-btn"
-                  onClick={searchDbProducts}
-                  disabled={dbLoading}
-                >
-                  {dbLoading ? "Buscando..." : "Buscar"}
-                </button>
-              )}
+              <button
+                className="add-items__search-btn"
+                onClick={fetchProducts}
+                disabled={dbLoading}
+              >
+                {dbLoading ? <Loader2 size={16} className="animate-spin" /> : "Buscar"}
+              </button>
             </div>
 
             {/* Product list */}

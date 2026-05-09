@@ -12,6 +12,178 @@
   margin-bottom: 1.5rem;
 }
 
+.promotions-section__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.promotions-section__location-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.promotions-section__location-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.promotions-section__loading,
+.promotions-section__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: #f8fafc;
+  border-radius: 24px;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.promotions-section__empty h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1e293b;
+}
+
+.promotions-section__empty p {
+  margin: 0;
+  color: #64748b;
+  max-width: 300px;
+}
+
+.empty-icon {
+  color: #fbbf24;
+  opacity: 0.5;
+}
+
+.change-loc-btn {
+  background: #1e293b;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+/* ─── Province Selector ────────────────────────── */
+.province-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem;
+}
+
+.province-selector__hint {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.province-selector__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.province-chip {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.province-chip:hover {
+  border-color: #fbbf24;
+  background: #fffbeb;
+}
+
+.province-chip.active {
+  background: #fbbf24;
+  border-color: #fbbf24;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+/* ─── Professional Mini In Coupon ────────────────────────── */
+.promo-modal__professional-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prof-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.prof-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.prof-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  opacity: 0.8;
+  letter-spacing: 0.05em;
+}
+
+.promo-modal__close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.promo-modal__close-btn:hover {
+  background: rgba(0, 0, 0, 0.4);
+  transform: scale(1.1);
+}
+
 .promotions-section__title {
   margin: 0.25rem 0 0;
   font-size: clamp(1.5rem, 2.5vw, 2rem);

@@ -34,7 +34,7 @@ export default function AppRoutes() {
       <Route path={ROUTES.map} element={<MapPage />} />
       <Route path={ROUTES.products} element={<ProductsPage />} />
       <Route path={ROUTES.planPayment} element={<PlanPaymentPage />} />
-      <Route path={ROUTES.profile} element={<ProfilePage />} />
+      <Route path={`${ROUTES.profile}/:id`} element={<ProfilePage />} />
       <Route
         path={ROUTES.login}
         element={<OpenAuthAndRedirect mode="login" />}

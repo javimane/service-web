@@ -1,12 +1,19 @@
-import { useState, useRef } from "react";
-import { Star, MessageCircle, Phone, ArrowUpRight } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Star, MessageCircle, Phone, ArrowUpRight, Loader2, Play, Heart, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { professionalService } from "../../services/professionalService";
+import { serviceService } from "../../services/serviceService";
+import { professionalImagesService } from "../../services/professionalImagesService";
+import { videosService } from "../../services/videosService";
+import { reelsService } from "../../services/reelsService";
+import { reviewService } from "../../services/reviewService";
+import TestimonialCard from "./sections/TestimonialCard";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import Modal from "../../components/Modal/Modal";
 import PaymentMethodsCard from "../../components/Cards/PaymentMethodsCard";
 import BankPromosCard from "../../components/Cards/BankPromosCard";
-import { services } from "../../data/services";
-import { showcasedSpecialist } from "../../data/specialists";
 import "./ProfilePage.css";
 
 // Custom hook for drag-to-scroll
@@ -17,6 +24,7 @@ function useDraggableScroll() {
   const [scrollLeft, setScrollLeft] = useState(0);
 
   const onMouseDown = (e) => {
+    if (!ref.current) return;
     setIsDragging(true);
     setStartX(e.pageX - ref.current.offsetLeft);
     setScrollLeft(ref.current.scrollLeft);
@@ -26,7 +34,7 @@ function useDraggableScroll() {
   const onMouseUp = () => setIsDragging(false);
 
   const onMouseMove = (e) => {
-    if (!isDragging) return;
+    if (!isDragging || !ref.current) return;
     e.preventDefault();
     const x = e.pageX - ref.current.offsetLeft;
     const walk = (x - startX) * 2;
@@ -45,34 +53,151 @@ function useDraggableScroll() {
   };
 }
 
-export default function ProfilePage() {
-  const {
-    name,
-    title,
-    bio,
-    city,
-    province,
-    whatsapp,
-    website,
-    rating,
-    reviews,
-    yearsOfExperience,
-    avatar,
-    portfolio,
-    testimonials,
-    paymentMethods,
-    bankPromotions,
-    videos,
-  } = showcasedSpecialist;
+function ProfileVideoCard({ video, onSelect }: { video: any, onSelect: (v: any) => void }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
+  const handleMouseEnter = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(() => {});
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  return (
+    <div className="instagram-video-card">
+      <div 
+        className="video-wrapper"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={() => onSelect(video)}
+        style={{ cursor: 'pointer' }}
+      >
+        <video
+          ref={videoRef}
+          src={video.video_url}
+          className="video-element"
+          poster={video.thumbnail_url}
+          playsInline
+          loop
+          muted
+        />
+        <div className="video-stats-overlay">
+          <div className="stat">
+            <Heart size={14} fill="white" />
+            <span>{video.likes_count || 0}</span>
+          </div>
+          <div className="stat">
+            <Eye size={14} fill="white" />
+            <span>{video.views_count || 0}</span>
+          </div>
+        </div>
+        <div className="play-hint-overlay">
+          <Play size={32} fill="white" />
+        </div>
+      </div>
+      
+      <div className="video-content">
+        <h3 className="video-title">{video.title}</h3>
+        
+        <button 
+          className="description-toggle"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <span>Descripción</span>
+          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+
+        <div className={`video-description ${isExpanded ? "is-expanded" : ""}`}>
+          <p>{video.description || "Sin descripción disponible."}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ProfilePage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
-  const [isTestimonialsModalOpen, setIsTestimonialsModalOpen] = useState(false);
   const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
   const [isBankPromosModalOpen, setIsBankPromosModalOpen] = useState(false);
+  const [selectedReel, setSelectedReel] = useState(null);
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   const servicesScroll = useDraggableScroll();
-  const testimonialsScroll = useDraggableScroll();
   const videosScroll = useDraggableScroll();
+
+  const { data: professional, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ["professional-detail", id],
+    queryFn: () => professionalService.getDetail(id),
+    enabled: !!id
+  });
+
+  const { data: services = [] } = useQuery({
+    queryKey: ["professional-services", id],
+    queryFn: () => serviceService.getByProfessional(id),
+    enabled: !!id
+  });
+
+  const { data: images = [] } = useQuery({
+    queryKey: ["professional-images", id],
+    queryFn: () => professionalImagesService.findAllByProfessionalId(Number(id)),
+    enabled: !!id
+  });
+
+  const { data: videos = [] } = useQuery({
+    queryKey: ["professional-videos", id],
+    queryFn: () => videosService.findByProfessionalId(Number(id)),
+    enabled: !!id
+  });
+
+  const { data: allReels = [] } = useQuery({
+    queryKey: ["all-reels"],
+    queryFn: () => reelsService.list(),
+  });
+
+  const { data: reviews = [] } = useQuery({
+    queryKey: ["professional-reviews", id],
+    queryFn: () => reviewService.findByProfessionalId(id!),
+    enabled: !!id
+  });
+
+  const profReels = useMemo(() => {
+    return allReels.filter(r => r.professional_id === Number(id));
+  }, [allReels, id]);
+
+  if (isLoadingProfile) {
+    return (
+      <div className="profile-loading">
+        <Loader2 className="animate-spin" size={48} />
+        <p>Cargando perfil profesional...</p>
+      </div>
+    );
+  }
+
+  if (!professional) {
+    return (
+      <div className="profile-error">
+        <h2>No se encontró el profesional</h2>
+        <button onClick={() => window.history.back()}>Volver</button>
+      </div>
+    );
+  }
+
+  const profile = professional.Profile;
+  const company = professional.Company;
+  const name = profile?.display_name || company?.name || "Profesional";
+  const avatar = profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+  const isVerified = professional.is_verified;
+  const hasReels = profReels.length > 0;
 
   return (
     <div className="profile-page">
@@ -82,44 +207,52 @@ export default function ProfilePage() {
         {/* Left Sidebar */}
         <aside className="profile-sidebar">
           <div className="profile-sidebar__avatar-container">
-            <div className="avatar-frame">
+            <div 
+              className={`avatar-frame ${hasReels ? "pulse-reel" : ""}`}
+              onClick={() => hasReels && setSelectedReel(profReels[0])}
+            >
               <img src={avatar} alt={name} className="avatar-image" />
-              <div className="verified-badge">✓</div>
+              {isVerified && <div className="verified-badge">✓</div>}
+              {hasReels && (
+                <div className="reel-indicator">
+                  <Play size={12} fill="currentColor" />
+                </div>
+              )}
             </div>
           </div>
 
           <div className="profile-sidebar__info">
             <h1 className="name">{name}</h1>
-            <p className="title">{title}</p>
+            <p className="title">{professional.bio?.slice(0, 50) || "Servicios Profesionales"}</p>
           </div>
 
           <div className="profile-sidebar__stats">
             <div className="stat-item">
               <div className="stat-content">
                 <Star size={14} className="stat-icon" />
-                <span className="stat-value">{rating}</span>
+                <span className="stat-value">{professional.rating_avg || "5.0"}</span>
               </div>
               <span className="stat-label">CALIFICACIÓN</span>
             </div>
             <div className="stat-item">
               <div className="stat-content">
                 <MessageCircle size={14} className="stat-icon" />
-                <span className="stat-value">{reviews}</span>
+                <span className="stat-value">{professional.completed_jobs || "0"}</span>
               </div>
               <span className="stat-label">TRABAJOS</span>
             </div>
             <div className="stat-item">
               <div className="stat-content">
-                <span className="stat-value">{yearsOfExperience}a</span>
+                <span className="stat-value">{professional.years_experience || "1"}a</span>
               </div>
               <span className="stat-label">EXP.</span>
             </div>
           </div>
 
-          {website && (
+          {profile?.website && (
             <div className="profile-sidebar__social">
               <a
-                href={website}
+                href={profile.website}
                 target="_blank"
                 rel="noreferrer"
                 className="website-link"
@@ -129,21 +262,19 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <PaymentMethodsCard methods={paymentMethods} />
+          <PaymentMethodsCard methods={[]} />
 
           <BankPromosCard
-            promotions={bankPromotions}
+            promotions={[]}
             onOpenPromos={() => setIsBankPromosModalOpen(true)}
           />
 
-          <a
-            href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
-            className="cta-button whatsapp"
-            target="_blank"
-            rel="noreferrer"
+          <button
+            className="cta-button message-btn"
+            onClick={() => navigate(`/messages?to=${id}`)}
           >
-            SOLICITAR SERVICIO <Phone size={18} />
-          </a>
+            ENVIAR MENSAJE <MessageCircle size={18} />
+          </button>
         </aside>
 
         {/* Right Content */}
@@ -151,10 +282,10 @@ export default function ProfilePage() {
           <header className="profile-content__header">
             <div className="location-info">
               <span>
-                {city}, {province}
+                {company?.Address?.Province?.name || "Provincia"}, {company?.Address?.city || "Ciudad"}
               </span>
             </div>
-            <p className="bio">{bio}</p>
+            <p className="bio">{professional.bio || "Sin biografía disponible."}</p>
           </header>
 
           <div className="profile-section">
@@ -168,11 +299,12 @@ export default function ProfilePage() {
               </button>
             </div>
             <div className="portfolio-grid">
-              {portfolio.slice(0, 8).map((image, idx) => (
-                <div key={idx} className="portfolio-item">
-                  <img src={image} alt={`Work ${idx}`} />
+              {images.slice(0, 8).map((img, idx) => (
+                <div key={img.id} className="portfolio-item">
+                  <img src={img.image_url} alt={img.caption || `Work ${idx}`} />
                 </div>
               ))}
+              {images.length === 0 && <p className="empty-msg">No hay imágenes en el portafolio.</p>}
             </div>
           </div>
 
@@ -196,78 +328,53 @@ export default function ProfilePage() {
                   <div key={service.id} className="service-card-mini">
                     <div className="service-card-mini__header">
                       <h3>{service.name}</h3>
-                      <span className="price">{service.base_price}</span>
+                      <span className="price">${service.base_price?.toLocaleString()}</span>
                     </div>
                     <p>{service.description}</p>
                     <button className="select-service-btn">Seleccionar</button>
                   </div>
                 ))}
+                {services.length === 0 && <p className="empty-msg">No hay servicios disponibles.</p>}
               </div>
             </div>
           </div>
 
           <div className="profile-section">
             <div className="section-header">
-              <h2>TESTIMONIOS</h2>
-              <button
-                onClick={() => setIsTestimonialsModalOpen(true)}
-                className="ver-todo"
-              >
-                VER TODO
-              </button>
+              <h2>VIDEOS PROFESIONALES</h2>
             </div>
-            <div
-              className={`testimonials-scroll-container ${testimonialsScroll.isDragging ? "dragging" : ""}`}
-              ref={testimonialsScroll.ref}
-              {...testimonialsScroll.events}
-            >
-              <div className="testimonials-scroll">
-                {testimonials.map((test) => (
-                  <div key={test.id} className="testimonial-card">
-                    <div className="testimonial-header">
-                      <img
-                        src={test.photo}
-                        alt={test.author}
-                        className="author-photo"
-                      />
-                      <div className="author-info">
-                        <h3>{test.author}</h3>
-                        <div className="rating">{"★".repeat(test.rating)}</div>
-                      </div>
-                      <MessageCircle className="quote-icon" size={24} />
-                    </div>
-                    <p className="testimonial-text">"{test.text}"</p>
-                  </div>
-                ))}
-              </div>
+            <div className="videos-instagram-grid">
+              {videos.map((video) => (
+                <ProfileVideoCard 
+                  key={video.id} 
+                  video={video} 
+                  onSelect={setSelectedVideo}
+                />
+              ))}
+              {videos.length === 0 && <p className="empty-msg">No hay videos disponibles.</p>}
             </div>
           </div>
 
           <div className="profile-section">
             <div className="section-header">
-              <h2>VIDEOS</h2>
+              <h2>OPINIONES</h2>
             </div>
-            <div
-              className={`videos-scroll-container ${videosScroll.isDragging ? "dragging" : ""}`}
-              ref={videosScroll.ref}
-              {...videosScroll.events}
-            >
-              <div className="videos-scroll">
-                {videos.map((video) => (
-                  <div key={video.id} className="video-card-mini">
-                    <video
-                      src={video.url}
-                      controls
-                      poster=""
-                      className="video-card-mini__video"
-                    />
-                    <div className="video-card-mini__info">
-                      <h3>{video.title}</h3>
-                      <p>{video.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="testimonials-grid">
+              {reviews.map((review) => (
+                <TestimonialCard
+                  key={review.id}
+                  name={review.Profile?.display_name || "Usuario"}
+                  photo={review.Profile?.avatar_url}
+                  text={review.comment}
+                  rating={review.rating}
+                  commentPhoto={review.image_url}
+                />
+              ))}
+              {reviews.length === 0 && (
+                <div className="empty-reviews">
+                  <p>Todavía este profesional/comercio no tiene opiniones.</p>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -280,11 +387,11 @@ export default function ProfilePage() {
         title="Galería Completa"
       >
         <div className="modal-portfolio-grid">
-          {portfolio.map((image, idx) => (
+          {images.map((img) => (
             <img
-              key={idx}
-              src={image}
-              alt={`Work Full ${idx}`}
+              key={img.id}
+              src={img.image_url}
+              alt={img.caption || "Portafolio"}
               className="modal-image"
             />
           ))}
@@ -303,74 +410,46 @@ export default function ProfilePage() {
                 <h3>{service.name}</h3>
                 <p>{service.description}</p>
               </div>
-              <span className="service-price">{service.base_price}</span>
+              <span className="service-price">${service.base_price?.toLocaleString()}</span>
             </div>
           ))}
         </div>
       </Modal>
 
-      <Modal
-        isOpen={isTestimonialsModalOpen}
-        onClose={() => setIsTestimonialsModalOpen(false)}
-        title="Todos los Testimonios"
-      >
-        <div className="modal-testimonials-list">
-          {testimonials.map((test) => (
-            <div key={test.id} className="testimonial-card modal-version">
-              <div className="testimonial-header">
-                <img
-                  src={test.photo}
-                  alt={test.author}
-                  className="author-photo"
-                />
-                <div>
-                  <h3>{test.author}</h3>
-                  <div className="rating">{"★".repeat(test.rating)}</div>
-                </div>
-              </div>
-              <p className="testimonial-text">"{test.text}"</p>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={isBankPromosModalOpen}
-        onClose={() => setIsBankPromosModalOpen(false)}
-        title="Promociones Bancarias"
-      >
-        <div className="bank-promos-modal-content">
-          <div className="promo-days-grid">
-            {bankPromotions.map((promo, idx) => (
-              <div key={idx} className="promo-day-row">
-                <div className="day-badge">
-                  <span className="day-name">{promo.day}</span>
-                </div>
-                <div className="bank-info">
-                  <div className="bank-logo-container">
-                    <img
-                      src={promo.logo}
-                      alt={promo.bank}
-                      className="bank-logo"
-                    />
-                  </div>
-                  <div className="bank-details">
-                    <span className="bank-name">{promo.bank}</span>
-                    <span className="bank-discount">
-                      {promo.discount} de descuento
-                    </span>
-                  </div>
-                </div>
-                <div className="promo-cta">Aprovechar</div>
-              </div>
-            ))}
+      {/* Reel Modal Overlay */}
+      {selectedReel && (
+        <div className="reel-overlay" onClick={() => setSelectedReel(null)}>
+          <div className="reel-modal-container" onClick={e => e.stopPropagation()}>
+            <video 
+              src={selectedReel.video_url} 
+              autoPlay 
+              controls 
+              loop 
+              className="reel-video-full"
+            />
+            <button className="reel-close" onClick={() => setSelectedReel(null)}>×</button>
           </div>
-          <p className="promo-footer">
-            Válido para pagos con tarjeta de crédito y débito. Sujeto a términos
-            y condiciones de cada entidad bancaria.
-          </p>
         </div>
-      </Modal>
+      )}
+
+      {/* Video Modal Overlay */}
+      {selectedVideo && (
+        <div className="reel-overlay" onClick={() => setSelectedVideo(null)}>
+          <div className="reel-modal-container video-expanded" onClick={e => e.stopPropagation()}>
+            <video 
+              src={selectedVideo.video_url} 
+              autoPlay 
+              controls 
+              className="reel-video-full"
+            />
+            <div className="video-expanded__info">
+              <h3>{selectedVideo.title}</h3>
+              <p>{selectedVideo.description}</p>
+            </div>
+            <button className="reel-close" onClick={() => setSelectedVideo(null)}>×</button>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

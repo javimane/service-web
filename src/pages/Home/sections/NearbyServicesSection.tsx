@@ -1,5 +1,8 @@
-import { useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, MapPin, Star, User, MessageCircle, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { serviceService } from "../../../services/serviceService";
 import NearbyServiceCard from "../../../components/Cards/NearbyServiceCard";
 import Modal from "../../../components/Modal/Modal";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
@@ -59,8 +62,11 @@ const nearbyServices = [
 ];
 
 export default function NearbyServicesSection() {
+  const navigate = useNavigate();
   const [selectedService, setSelectedService] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
   const sliderRef = useRef(null);
+
   const {
     showLeftArrow,
     showRightArrow,
@@ -71,8 +77,43 @@ export default function NearbyServicesSection() {
     updateArrowVisibility,
   } = useCarouselDrag(sliderRef, ".nearby-card");
 
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+      },
+      (err) => {
+        console.warn("Geolocation blocked, using default location", err);
+        setUserLocation({ lat: -34.6037, lng: -58.3816 }); // Default (Buenos Aires)
+      }
+    );
+  }, []);
+
+  const { data: services = [], isLoading } = useQuery({
+    queryKey: ["nearby-services", userLocation],
+    queryFn: () => serviceService.list({
+      lat: userLocation.lat,
+      lng: userLocation.lng,
+      radius: 30, // 30km radius
+      is_premium: true,
+      limit: 25
+    }),
+    enabled: !!userLocation
+  });
+
   const handleServiceClick = (service) => {
     setSelectedService(service);
+  };
+
+  const handleMessageProfessional = (professionalId) => {
+    navigate(`/messages?to=${professionalId}`);
+  };
+
+  const handleViewProfile = (professionalId) => {
+    navigate(`/profile/${professionalId}`);
   };
 
   return (
@@ -94,7 +135,7 @@ export default function NearbyServicesSection() {
 
         <div
           ref={sliderRef}
-          className="nearby-services__scroll"
+          className={`nearby-services__scroll ${isLoading ? "loading" : ""}`}
           onScroll={updateArrowVisibility}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -102,13 +143,33 @@ export default function NearbyServicesSection() {
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerUp}
         >
-          {nearbyServices.map((service) => (
-            <NearbyServiceCard
-              key={service.id}
-              service={service}
-              onClick={handleServiceClick}
-            />
-          ))}
+          {isLoading ? (
+            <div className="nearby-loading">
+              <Loader2 className="animate-spin" size={32} />
+              <p>Buscando servicios cercanos...</p>
+            </div>
+          ) : services.length > 0 ? (
+            services.map((service) => (
+              <NearbyServiceCard
+                key={service.id}
+                service={{
+                  ...service,
+                  name: service.name,
+                  avatar: service.Professional?.Profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(service.Professional?.Profile?.display_name || "P")}`,
+                  price: `$${service.base_price?.toLocaleString() || "0"}`,
+                 // distance: service.distance ? `${service.distance.toFixed(1)} km` : "Cerca",
+                  rating: service.Professional?.rating_avg || 5.0,
+                //  reviews: service.Professional?.completed_jobs || 0
+                }}
+                onClick={handleServiceClick}
+              />
+            ))
+          ) : (
+            <div className="nearby-empty">
+              <MapPin size={40} />
+              <p>No se encontraron servicios premium en tu zona.</p>
+            </div>
+          )}
         </div>
 
         <button
@@ -124,29 +185,60 @@ export default function NearbyServicesSection() {
       <Modal
         isOpen={Boolean(selectedService)}
         onClose={() => setSelectedService(null)}
-        title={selectedService?.name || "Detalle del servicio"}
+        title="Detalle del Servicio"
       >
         {selectedService && (
           <div className="service-modal">
             <div className="service-modal__header">
-              <div>
-                <h3>{selectedService.name}</h3>
-                <p>{selectedService.description}</p>
+              <div 
+                className="professional-mini-card"
+                onClick={() => handleViewProfile(selectedService.Professional?.id)}
+              >
+                <img 
+                  src={selectedService.Professional?.Profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedService.Professional?.Profile?.display_name || "P")}`} 
+                  alt="Professional" 
+                  className="prof-avatar"
+                />
+                <div>
+                  <h4 className="prof-name">{selectedService.Professional?.Profile?.display_name || "Profesional"}</h4>
+                  <p className="prof-label">Profesional Verificado</p>
+                </div>
               </div>
               <div className="service-modal__price">
-                {selectedService.price}
+                ${selectedService.base_price?.toLocaleString()}
               </div>
             </div>
-            <div className="service-modal__info">
-              <span>Distancia: {selectedService.distance}</span>
-              <span>
-                Rating: {selectedService.rating} ({selectedService.reviews}{" "}
-                reseñas)
-              </span>
+
+            <div className="service-modal__body">
+              <h3 className="service-name">{selectedService.name}</h3>
+              <p className="service-desc">{selectedService.description}</p>
+              
+              <div className="service-stats">
+                <div className="stat">
+                  <MapPin size={16} />
+                  <span>{selectedService.distance ? `${selectedService.distance.toFixed(1)} km` : "En tu zona"}</span>
+                </div>
+                <div className="stat">
+                  <Star size={16} fill="var(--highlight)" color="var(--highlight)" />
+                  <span>{selectedService.Professional?.rating_avg || "5.0"} ({selectedService.Professional?.completed_jobs || 0} trabajos)</span>
+                </div>
+              </div>
             </div>
-            <button className="section-link" type="button">
-              Reservar ahora
-            </button>
+
+            <div className="service-modal__actions">
+              <button 
+                className="btn-view-profile"
+                onClick={() => handleViewProfile(selectedService.Professional?.id)}
+              >
+                <User size={18} /> VER PERFIL
+              </button>
+              <button 
+                className="btn-request-msg"
+                onClick={() => handleMessageProfessional(selectedService.Professional?.id)}
+              >
+                <MessageCircle size={18} /> SOLICITAR SERVICIO
+              </button>
+            </div>
           </div>
         )}
       </Modal>

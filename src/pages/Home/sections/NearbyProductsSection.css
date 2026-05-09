@@ -241,6 +241,25 @@
   font-weight: 700;
 }
 
+.products-loading, .products-empty {
+  width: 100%;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border-radius: 20px;
+  border: 1px dashed var(--border-color);
+}
+
+.products-loading p, .products-empty p {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .nearby-products__header {

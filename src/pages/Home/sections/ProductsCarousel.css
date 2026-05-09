@@ -10,14 +10,28 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.products-carousel-section__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .products-carousel-section__title {
-  margin: 0.25rem 0 0;
+  margin: 0;
   font-size: clamp(1.5rem, 2.5vw, 2rem);
-  line-height: 1.2;
+  font-weight: 900;
   color: var(--text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.products-carousel-section__subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
 }
 
 /* ===== CAROUSEL ===== */
@@ -47,6 +61,26 @@
 
 .products-carousel-section__scroll::-webkit-scrollbar {
   display: none;
+}
+
+.products-carousel-section__loading,
+.products-carousel-section__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  gap: 1rem;
+  width: 100%;
+}
+
+.empty-icon {
+  color: #3b82f6;
+  opacity: 0.3;
 }
 
 .products-carousel-section__scroll.is-dragging > * {
@@ -100,10 +134,30 @@
   transform: scale(1.05);
 }
 
-.product-carousel-card__badge {
+.product-carousel-card__badges {
   position: absolute;
   top: 10px;
   left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  width: calc(100% - 20px);
+}
+
+.product-carousel-card__badge-foreign {
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.product-carousel-card__badge-discount {
   background: #ef4444;
   color: #fff;
   font-size: 0.6rem;
@@ -119,6 +173,14 @@
   flex-direction: column;
   gap: 6px;
   flex: 1;
+}
+
+.product-carousel-card__seller {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .product-carousel-card__title {

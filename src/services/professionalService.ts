@@ -13,11 +13,17 @@ export const professionalService = {
    * @param {number} [limit] - Optional limit (clamped to 1..100)
    * @returns {Promise<any[]>} ProfessionalSummary[]
    */
-  list: (limit?: number) => {
-    const url = limit
-      ? `${API_ENDPOINTS.professionals.list}?limit=${limit}`
-      : API_ENDPOINTS.professionals.list;
-    return apiClient<any[]>(url, {
+  list: (params?: any) => {
+    const urlParams = new URLSearchParams();
+    if (params) {
+      Object.keys(params).forEach((key) => {
+        if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
+          urlParams.append(key, params[key].toString());
+        }
+      });
+    }
+    const queryString = urlParams.toString() ? `?${urlParams.toString()}` : "";
+    return apiClient<any[]>(`${API_ENDPOINTS.professionals.list}${queryString}`, {
       method: "GET",
     });
   },

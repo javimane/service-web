@@ -1,59 +1,47 @@
 import { useMemo, useState, useEffect } from "react";
-import { LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, List, Loader2, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { serviceService } from "../../services/serviceService";
+import { categoriesService } from "../../services/categoriesApi";
+import { locationService } from "../../services/locationService";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
-import { professionals } from "../../data/specialists";
 import ServiceCard from "../../components/Cards/ServiceCard";
 import ServicesFilters from "./ServicesFilters";
 import ServiceDetailModal from "./ServiceDetailModal";
 import { useTheme } from "../../context/ThemeContext";
-import { filterServices, getUniqueValues } from "./serviceUtils";
 import "./ServicesPage.css";
 
 export default function ServicesPage() {
   const [filters, setFilters] = useState({
     search: "",
-    category: "All",
-    province: "All",
-    city: "All",
+    categoryId: "All",
+    provinceId: "All",
     priceRange: "all",
   });
-  const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'list'
+  const [viewMode, setViewMode] = useState("grid");
   const [selectedService, setSelectedService] = useState(null);
   const { theme } = useTheme();
 
-  useEffect(() => {
-    document.title = "Servicios Individuales | Sercio";
-  }, []);
+  const { data: servicesData = [], isLoading } = useQuery({
+    queryKey: ["services", filters],
+    queryFn: () => serviceService.list({
+      search: filters.search || undefined,
+      categoryId: filters.categoryId === "All" ? undefined : filters.categoryId,
+      provinceId: filters.provinceId === "All" ? undefined : filters.provinceId,
+      priceRange: filters.priceRange === "all" ? undefined : filters.priceRange,
+    }),
+  });
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark-theme", theme === "dark");
+  const { data: categories = [] } = useQuery({
+    queryKey: ["service-categories"],
+    queryFn: () => categoriesService.listCategories(),
+  });
 
-    return () => {
-      document.documentElement.classList.remove("dark-theme");
-    };
-  }, [theme]);
-
-  const categories = useMemo(
-    () => getUniqueValues(professionals, "category"),
-    [],
-  );
-  const provinces = useMemo(
-    () => getUniqueValues(professionals, "province"),
-    [],
-  );
-  const cities = useMemo(() => {
-    const items =
-      filters.province === "All"
-        ? professionals
-        : professionals.filter((item) => item.province === filters.province);
-    return getUniqueValues(items, "city");
-  }, [filters.province]);
-
-  const filteredServices = useMemo(
-    () => filterServices(professionals, filters),
-    [filters],
-  );
+  const { data: provinces = [] } = useQuery({
+    queryKey: ["provinces"],
+    queryFn: () => locationService.getProvinces(),
+  });
 
   const handleFilterChange = (updates) => {
     setFilters((prev) => ({ ...prev, ...updates }));
@@ -62,9 +50,8 @@ export default function ServicesPage() {
   const handleResetFilters = () => {
     setFilters({
       search: "",
-      category: "All",
-      province: "All",
-      city: "All",
+      categoryId: "All",
+      provinceId: "All",
       priceRange: "all",
     });
   };
@@ -78,7 +65,6 @@ export default function ServicesPage() {
           filters={filters}
           categories={categories}
           provinces={provinces}
-          cities={cities}
           onFilterChange={handleFilterChange}
           onReset={handleResetFilters}
         />
@@ -113,28 +99,35 @@ export default function ServicesPage() {
           </header>
 
           <div className={`services-results view-${viewMode}`}>
-            {filteredServices.map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={service}
-                viewMode={viewMode}
-                onClick={setSelectedService}
-              />
-            ))}
-
-            {filteredServices.length === 0 && (
+            {isLoading ? (
+              <div className="services-loading">
+                <Loader2 className="animate-spin" size={40} />
+                <p>Cargando catálogo de servicios...</p>
+              </div>
+            ) : servicesData.length === 0 ? (
               <div className="services-empty">
-                <div className="services-empty__icon">🔍</div>
+                <div className="services-empty__icon">
+                  <Search size={48} />
+                </div>
                 <h3>No se encontraron resultados</h3>
                 <p>Intenta ajustar los filtros para encontrar lo que buscas.</p>
                 <button onClick={handleResetFilters} className="reset-btn">
                   Limpiar todos los filtros
                 </button>
               </div>
+            ) : (
+              servicesData.map((service) => (
+                <ServiceCard
+                  key={service.id}
+                  service={service}
+                  viewMode={viewMode}
+                  onClick={setSelectedService}
+                />
+              ))
             )}
           </div>
 
-          {filteredServices.length > 0 && (
+          {servicesData.length > 0 && (
             <div className="explore-more">
               <button className="explore-btn">
                 Explorar más servicios

@@ -5,9 +5,10 @@ import "./Modal.css";
 type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title?: string;
   message?: string;
   children?: ReactNode;
+  noPadding?: boolean;
 };
 
 export default function Modal({
@@ -16,6 +17,7 @@ export default function Modal({
   title,
   message,
   children,
+  noPadding = false,
 }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
@@ -33,13 +35,15 @@ export default function Modal({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{title}</h2>
-          <button className="modal-close" onClick={onClose}>
-            <X size={24} />
-          </button>
-        </div>
-        <div className="modal-content">
+        {title && (
+          <div className="modal-header">
+            <h2>{title}</h2>
+            <button className="modal-close" onClick={onClose}>
+              <X size={24} />
+            </button>
+          </div>
+        )}
+        <div className={`modal-content ${noPadding ? "no-padding" : ""}`}>
           {message ? <p>{message}</p> : children}
         </div>
       </div>

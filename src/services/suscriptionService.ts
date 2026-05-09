@@ -14,4 +14,11 @@ export const suscriptions = {
     }>(API_ENDPOINTS.subscriptions.getPrice, {
       method: "GET",
     }),
+
+  getByProfessional: (professionalId: string | number) =>
+    apiClient<{
+      data: any;
+    }>(API_ENDPOINTS.subscriptions.byProfessional(professionalId), {
+      method: "GET",
+    }),
 };

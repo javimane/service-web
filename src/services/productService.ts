@@ -68,15 +68,19 @@ export const productService = {
    * @param {string} [params.ean]
    * @returns {Promise<{ data: ProfessionalProductRow[]; count: number; page: number; limit: number; totalPages: number }>}
    */
-  list: (params?: { page?: number; limit?: number; ean?: string }) => {
+  list: (params?: any) => {
     const urlParams = new URLSearchParams();
-    if (params?.page) urlParams.append("page", params.page.toString());
-    if (params?.limit) urlParams.append("limit", params.limit.toString());
-    if (params?.ean) urlParams.append("ean", params.ean);
+    if (params) {
+      Object.keys(params).forEach((key) => {
+        if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
+          urlParams.append(key, params[key].toString());
+        }
+      });
+    }
     const queryString = urlParams.toString() ? `?${urlParams.toString()}` : "";
 
     return apiClient<{
-      data: ProfessionalProductRow[];
+      data: any[];
       count: number;
       page: number;
       limit: number;

@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, MapPin, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, MapPin, Truck, Loader2, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { productService } from "../../../services/productService";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import NearbyProductDetailModal from "./NearbyProductDetailModal";
 import "./NearbyProductsSection.css";
@@ -248,6 +250,7 @@ export default function NearbyProductsSection() {
   const navigate = useNavigate();
   const sliderRef = useRef<HTMLDivElement>(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
 
   const {
     showLeftArrow,
@@ -258,6 +261,34 @@ export default function NearbyProductsSection() {
     handlePointerUp,
     updateArrowVisibility,
   } = useCarouselDrag(sliderRef, ".nearby-product-card");
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+      },
+      () => {
+        setUserLocation({ lat: -34.6037, lng: -58.3816 }); // Default
+      }
+    );
+  }, []);
+
+  const { data: productsData, isLoading } = useQuery({
+    queryKey: ["nearby-products", userLocation],
+    queryFn: () => productService.list({
+      lat: userLocation.lat,
+      lng: userLocation.lng,
+      radius: 30,
+      is_premium: true,
+      limit: 20
+    }),
+    enabled: !!userLocation
+  });
+
+  const productsList = productsData?.data || [];
 
   return (
     <section className="nearby-products">
@@ -288,87 +319,84 @@ export default function NearbyProductsSection() {
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerUp}
         >
-          {nearbyProducts.map((product) => (
-            <article
-              key={product.id}
-              className="nearby-product-card"
-              onClick={() => setSelectedProduct(product)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setSelectedProduct(product);
-                }
-              }}
-            >
-              <div className="nearby-product-card__image">
-                <img
-                  src={product.image}
-                  alt={product.title}
-                  draggable="false"
-                />
-                {product.discount > 0 && (
-                  <span className="nearby-product-card__badge">
-                    -{product.discount}%
-                  </span>
-                )}
-              </div>
-
-              <div className="nearby-product-card__body">
-                <div className="nearby-product-card__seller-row">
+          {isLoading ? (
+            <div className="products-loading">
+              <Loader2 className="animate-spin" size={32} />
+              <p>Buscando productos cercanos...</p>
+            </div>
+          ) : productsList.length === 0 ? (
+            <div className="products-empty">
+              <Sparkles size={40} />
+              <p>No se encontraron productos premium cerca.</p>
+            </div>
+          ) : (
+            productsList.map((item) => (
+              <article
+                key={item.id}
+                className="nearby-product-card"
+                onClick={() => setSelectedProduct(item)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedProduct(item);
+                  }
+                }}
+              >
+                <div className="nearby-product-card__image">
                   <img
-                    src={product.sellerAvatar}
-                    alt={product.seller}
-                    className="nearby-product-card__seller-avatar"
+                    src={item.Product?.image_url?.[0] || "https://via.placeholder.com/300"}
+                    alt={item.Product?.name}
                     draggable="false"
                   />
-                  <span className="nearby-product-card__seller-name">
-                    {product.seller}
-                  </span>
-                </div>
-
-                <h3 className="nearby-product-card__title">{product.title}</h3>
-
-                <div className="nearby-product-card__pricing">
-                  {product.originalPrice && (
-                    <span className="nearby-product-card__original">
-                      ${formatPrice(product.originalPrice)}
+                  {item.offer_price && (
+                    <span className="nearby-product-card__badge">
+                      OFERTA
                     </span>
                   )}
-                  <div className="nearby-product-card__price-row">
-                    <span className="nearby-product-card__price">
-                      ${formatPrice(product.price)}
+                </div>
+
+                <div className="nearby-product-card__body">
+                  <div className="nearby-product-card__seller-row">
+                    <img
+                      src={item.Professional?.Profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.Professional?.Profile?.display_name || "P")}`}
+                      alt={item.Professional?.Profile?.display_name}
+                      className="nearby-product-card__seller-avatar"
+                      draggable="false"
+                    />
+                    <span className="nearby-product-card__seller-name">
+                      {item.Professional?.Profile?.display_name || item.Professional?.Company?.name}
                     </span>
-                    {product.discount > 0 && (
-                      <span className="nearby-product-card__discount">
-                        {product.discount}% OFF
+                  </div>
+
+                  <h3 className="nearby-product-card__title">{item.Product?.name}</h3>
+
+                  <div className="nearby-product-card__pricing">
+                    {item.offer_price && (
+                      <span className="nearby-product-card__original">
+                        ${formatPrice(item.price)}
                       </span>
                     )}
+                    <div className="nearby-product-card__price-row">
+                      <span className="nearby-product-card__price">
+                        ${formatPrice(item.offer_price || item.price)}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="nearby-product-card__meta">
-                  <span className="nearby-product-card__distance">
-                    <MapPin size={12} /> {product.distance}
-                  </span>
-                  <span className="nearby-product-card__rating">
-                    <Star size={12} fill="currentColor" /> {product.rating}
-                    <span className="nearby-product-card__reviews">
-                      ({product.reviews})
+                  <div className="nearby-product-card__meta">
+                    <span className="nearby-product-card__distance">
+                      <MapPin size={12} /> {item.distance ? `${item.distance.toFixed(1)} km` : "Cerca"}
                     </span>
-                  </span>
-                </div>
-
-                {product.freeShipping && (
-                  <div className="nearby-product-card__shipping">
-                    <Truck size={12} />
-                    <span>Envío gratis</span>
+                    <span className="nearby-product-card__rating">
+                      <Star size={12} fill="currentColor" /> {item.Professional?.rating_avg || "5.0"}
+                    </span>
                   </div>
-                )}
-              </div>
-            </article>
-          ))}
+                </div>
+              </article>
+            ))
+          )}
         </div>
 
         <button

@@ -19,6 +19,7 @@ export default function ProposalCreator({ onBack }) {
     { id: 1, name: 'Structural Design Consultation', qty: 12, rate: 150, total: 1800 }
   ]);
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+  const [modalInitialTab, setModalInitialTab] = useState<"services" | "products">("services");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
 
@@ -125,9 +126,14 @@ export default function ProposalCreator({ onBack }) {
                 <span className="step-label">STEP 03</span>
                 <h3>Itemized Services</h3>
               </div>
-              <button className="add-item-trigger" onClick={() => setIsAddItemOpen(true)}>
-                <Plus size={14} /> ADD ITEM
-              </button>
+              <div className="items-header-actions">
+                <button className="add-item-trigger" onClick={() => { setModalInitialTab("services"); setIsAddItemOpen(true); }}>
+                  <Plus size={14} /> ADD SERVICE
+                </button>
+                <button className="add-item-trigger" onClick={() => { setModalInitialTab("products"); setIsAddItemOpen(true); }}>
+                  <Plus size={14} /> ADD PRODUCT
+                </button>
+              </div>
             </header>
 
             <div className="items-list-container">
@@ -235,6 +241,7 @@ export default function ProposalCreator({ onBack }) {
         isOpen={isAddItemOpen} 
         onClose={() => setIsAddItemOpen(false)} 
         onAdd={handleAddItems}
+        initialTab={modalInitialTab}
       />
       
       <PdfPreviewModal 

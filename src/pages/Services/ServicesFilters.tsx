@@ -6,7 +6,6 @@ export default function ServicesFilters({
   filters,
   categories,
   provinces,
-  cities,
   onFilterChange,
   onReset,
 }) {
@@ -14,7 +13,7 @@ export default function ServicesFilters({
     <aside className="services-sidebar">
       {/* Discovery / Search */}
       <div className="filter-group">
-        <h3 className="filter-group-label">DISCOVERY</h3>
+        <h3 className="filter-group-label">BÚSQUEDA</h3>
         <div className="search-box">
           <Search size={18} className="search-icon" />
           <input
@@ -31,13 +30,13 @@ export default function ServicesFilters({
         <h3 className="filter-group-label">CATEGORÍAS</h3>
         <div className="select-wrapper">
           <select
-            value={filters.category}
-            onChange={(e) => onFilterChange({ category: e.target.value })}
+            value={filters.categoryId}
+            onChange={(e) => onFilterChange({ categoryId: e.target.value })}
           >
             <option value="All">Todas las categorías</option>
             {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
               </option>
             ))}
           </select>
@@ -48,42 +47,25 @@ export default function ServicesFilters({
       {/* Ubicación */}
       <div className="filter-group">
         <h3 className="filter-group-label">UBICACIÓN</h3>
-        <div className="multi-select">
-          <div className="select-wrapper">
-            <select
-              value={filters.province}
-              onChange={(e) =>
-                onFilterChange({ province: e.target.value, city: "All" })
-              }
-            >
-              <option value="All">Provincia</option>
-              {provinces.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="select-arrow" />
-          </div>
-
-          <div className="select-wrapper">
-            <select
-              value={filters.city}
-              onChange={(e) => onFilterChange({ city: e.target.value })}
-            >
-              <option value="All">Ciudad</option>
-              {cities.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="select-arrow" />
-          </div>
+        <div className="select-wrapper">
+          <select
+            value={filters.provinceId}
+            onChange={(e) =>
+              onFilterChange({ provinceId: e.target.value })
+            }
+          >
+            <option value="All">Todas las provincias</option>
+            {provinces.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="select-arrow" />
         </div>
       </div>
 
-      {/* Precio (Optional addition to match functionality while maintaining image style) */}
+      {/* Precio */}
       <div className="filter-group">
         <h3 className="filter-group-label">PRECIO</h3>
         <div className="select-wrapper">
