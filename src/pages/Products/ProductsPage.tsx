@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search,
   SlidersHorizontal,
@@ -12,7 +12,7 @@ import {
   X,
   Filter,
   Loader2,
-  Package
+  Package,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { productService } from "../../services/productService";
@@ -33,17 +33,53 @@ const sortOptions = [
   { key: "price-desc", label: "Mayor precio" },
 ];
 
+const pageLimitOptions = [10, 20, 30, 50];
+
+const defaultFilters = {
+  search: "",
+  categoryId: "all",
+  provinceId: "all",
+  is_foreign: "all", // "all", "national", "foreign"
+  price: "",
+  priceMin: "",
+  priceMax: "",
+  brand: "",
+  ean: "",
+  limit: "10",
+  sortBy: "price-asc",
+};
+
 export default function ProductsPage() {
-  const [filters, setFilters] = useState({
-    search: "",
-    categoryId: "all",
-    province: "all",
-    is_foreign: "all", // "all", "national", "foreign"
-    sortBy: "relevant",
+  const [filters, setFilters] = useState(defaultFilters);
+  const [debouncedTextFilters, setDebouncedTextFilters] = useState({
+    search: defaultFilters.search,
+    brand: defaultFilters.brand,
+    ean: defaultFilters.ean,
   });
+  const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState("grid");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedTextFilters({
+        search: filters.search,
+        brand: filters.brand,
+        ean: filters.ean,
+      });
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [filters.search, filters.brand, filters.ean]);
+
+  const effectiveFilters = useMemo(
+    () => ({
+      ...filters,
+      ...debouncedTextFilters,
+    }),
+    [filters, debouncedTextFilters],
+  );
 
   // Data fetching
   const { data: categories = [] } = useQuery({
@@ -57,60 +93,148 @@ export default function ProductsPage() {
   });
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ["products", filters],
+    queryKey: ["products", effectiveFilters, page],
     queryFn: () => {
       const params: any = {
-        name: filters.search || undefined,
-        categoryId: filters.categoryId === "all" ? undefined : filters.categoryId,
-        province: filters.province === "all" ? undefined : filters.province,
-        sortBy: filters.sortBy,
+        page,
+        limit: Number(effectiveFilters.limit),
+        name: effectiveFilters.search || undefined,
+        categoryId:
+          effectiveFilters.categoryId === "all"
+            ? undefined
+            : effectiveFilters.categoryId,
+        provinceId:
+          effectiveFilters.provinceId === "all"
+            ? undefined
+            : effectiveFilters.provinceId,
+        price: effectiveFilters.price || undefined,
+        priceMin: effectiveFilters.price
+          ? undefined
+          : effectiveFilters.priceMin || undefined,
+        priceMax: effectiveFilters.price
+          ? undefined
+          : effectiveFilters.priceMax || undefined,
+        brand: effectiveFilters.brand || undefined,
+        ean: effectiveFilters.ean || undefined,
+        sortBy: effectiveFilters.sortBy,
       };
-      if (filters.is_foreign !== "all") {
-        params.is_foreign = filters.is_foreign === "foreign";
+      if (effectiveFilters.is_foreign !== "all") {
+        params.is_foreign = effectiveFilters.is_foreign === "external";
       }
       return productService.list(params);
     },
   });
 
+  const normalizedProductsResponse = useMemo(() => {
+    if (Array.isArray(productsData)) {
+      return {
+        data: productsData,
+        count: productsData.length,
+        page: 1,
+        limit: productsData.length || Number(filters.limit),
+        totalPages: 1,
+      };
+    }
+
+    if (productsData && Array.isArray((productsData as any).data)) {
+      const paginatedData = productsData as any;
+      return {
+        data: paginatedData.data,
+        count: Number(paginatedData.count ?? paginatedData.data.length),
+        page: Number(paginatedData.page ?? page),
+        limit: Number(paginatedData.limit ?? filters.limit),
+        totalPages: Number(paginatedData.totalPages ?? 1),
+      };
+    }
+
+    return {
+      data: [],
+      count: 0,
+      page,
+      limit: Number(filters.limit),
+      totalPages: 1,
+    };
+  }, [productsData, page, filters.limit]);
+
   const productsList = useMemo(() => {
-    if (!productsData?.data) return [];
-    return productsData.data.map((item: any) => {
-      const product = item.Product || item;
+    if (!normalizedProductsResponse.data.length) return [];
+    return normalizedProductsResponse.data.map((item: any) => {
+      const product = item;
       const images = product?.Images || [];
-      const sortedImages = [...images].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
-      const primaryImage = sortedImages[0]?.image_url || product?.image_url || "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80";
+      const sortedImages = [...images].sort(
+        (a, b) => (a.display_order || 0) - (b.display_order || 0),
+      );
+      const primaryImage =
+        sortedImages[0]?.image_url ||
+        product?.image_url ||
+        "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80";
+
+      const sellers = product.ProfessionalProducts || [];
+      const firstSeller = sellers[0] || {};
+      
+      const displayPrice = product.price || firstSeller.price || 0;
+      const displayDiscount = firstSeller.discount_percentage || 0;
+      const displayOriginalPrice = firstSeller.original_price;
+
+      // Extract company name handling array structure
+      const companyData = firstSeller.Professional?.Company;
+      const sellerName = Array.isArray(companyData) 
+        ? companyData[0]?.name 
+        : companyData?.name || "Varios vendedores";
 
       return {
-        id: item.id,
-        productId: product?.id,
-        title: product?.name || "Producto sin nombre",
-        price: item.price || 0,
-        originalPrice: item.original_price,
-        discount: item.discount_percentage || 0,
-        seller: item.Professional?.Company?.name || "Profesional",
+        id: product.id,
+        productId: product.id,
+        ean: product.ean,
+        images: sortedImages
+          .map((img) => img.image_url)
+          .concat(product?.image_url ? [product.image_url] : []),
+        title: product.name || "Producto sin nombre",
+        price: displayPrice,
+        originalPrice: displayOriginalPrice,
+        discount: displayDiscount,
+        seller: sellers.length > 1 ? `Varios vendedores (${sellers.length})` : sellerName,
         image: primaryImage,
-        rating: item.Professional?.rating_avg || 5,
+        rating: firstSeller.Professional?.rating_avg || 5,
         reviews: 0,
         freeShipping: false,
-        description: product?.description || "",
-        is_foreign: product?.is_foreign,
-        _original: item
+        description: product.description || "",
+        is_foreign: product.is_foreign,
+        sellers: sellers,
+        _original: item,
       };
     });
-  }, [productsData]);
+  }, [normalizedProductsResponse]);
 
   const handleFilterChange = (key: string, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setPage(1);
   };
 
+  const handlePageChange = (nextPage: number) => {
+    if (!normalizedProductsResponse.totalPages) return;
+    setPage(
+      Math.min(Math.max(nextPage, 1), normalizedProductsResponse.totalPages),
+    );
+  };
+
+  const activeFiltersCount = useMemo(
+    () =>
+      Object.entries(filters).filter(
+        ([key, value]) =>
+          value !== defaultFilters[key as keyof typeof defaultFilters],
+      ).length,
+    [filters],
+  );
+
+  const isDebouncingTextFilters =
+    filters.search !== debouncedTextFilters.search ||
+    filters.brand !== debouncedTextFilters.brand ||
+    filters.ean !== debouncedTextFilters.ean;
+
   const clearFilters = () => {
-    setFilters({
-      search: "",
-      categoryId: "all",
-      province: "all",
-      is_foreign: "all",
-      sortBy: "relevant",
-    });
+    setFilters({ ...defaultFilters });
+    setPage(1);
   };
 
   return (
@@ -124,8 +248,31 @@ export default function ProductsPage() {
             <div>
               <h1 className="products-page__title">Catálogo de Productos</h1>
               <p className="products-page__subtitle">
-                {isLoading ? "Cargando..." : `${productsList.length} productos encontrados`}
+                {isDebouncingTextFilters
+                  ? "Buscando..."
+                  : isLoading
+                    ? "Cargando..."
+                    : `${normalizedProductsResponse.count} productos encontrados`}
               </p>
+            </div>
+            
+            <div className="products-page__view-toggle">
+              <button
+                type="button"
+                className={viewMode === "grid" ? "active" : ""}
+                onClick={() => setViewMode("grid")}
+                aria-label="Vista cuadrícula"
+              >
+                <Grid3X3 size={16} />
+              </button>
+              <button
+                type="button"
+                className={viewMode === "list" ? "active" : ""}
+                onClick={() => setViewMode("list")}
+                aria-label="Vista lista"
+              >
+                <List size={16} />
+              </button>
             </div>
           </div>
 
@@ -139,16 +286,23 @@ export default function ProductsPage() {
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
               />
+              {isDebouncingTextFilters && (
+                <span
+                  className="products-page__search-status"
+                  aria-live="polite"
+                >
+                  <Loader2 size={14} className="animate-spin" />
+                  Buscando...
+                </span>
+              )}
             </div>
-            <button 
-              className={`products-page__filter-toggle ${showFilters ? 'active' : ''}`}
+            <button
+              className={`products-page__filter-toggle ${showFilters ? "active" : ""}`}
               onClick={() => setShowFilters(!showFilters)}
             >
               <Filter size={18} />
               Filtros
-              {Object.values(filters).filter(v => v !== 'all' && v !== '' && v !== 'relevant').length > 0 && (
-                <span className="filter-badge" />
-              )}
+              {activeFiltersCount > 0 && <span className="filter-badge" />}
             </button>
           </div>
 
@@ -156,16 +310,18 @@ export default function ProductsPage() {
           {showFilters && (
             <div className="products-page__filters-panel">
               <div className="filter-group">
-                <label><Globe size={14} /> Origen</label>
+                <label>
+                  <Globe size={14} /> Origen
+                </label>
                 <div className="filter-options">
                   {[
-                    { id: 'all', name: 'Todos' },
-                    { id: 'national', name: 'Nacionales' },
-                    { id: 'foreign', name: 'Importados' }
-                  ].map(opt => (
+                    { id: "all", name: "Todos" },
+                    { id: "internal", name: "De la página" },
+                    { id: "external", name: "Externos" },
+                  ].map((opt) => (
                     <button
                       key={opt.id}
-                      className={`filter-chip ${filters.is_foreign === opt.id ? 'active' : ''}`}
+                      className={`filter-chip ${filters.is_foreign === opt.id ? "active" : ""}`}
                       onClick={() => handleFilterChange("is_foreign", opt.id)}
                     >
                       {opt.name}
@@ -175,61 +331,121 @@ export default function ProductsPage() {
               </div>
 
               <div className="filter-group">
-                <label><MapPin size={14} /> Provincia</label>
-                <select 
-                  value={filters.province}
-                  onChange={(e) => handleFilterChange("province", e.target.value)}
+                <label>
+                  <MapPin size={14} /> Provincia
+                </label>
+                <select
+                  value={filters.provinceId}
+                  onChange={(e) =>
+                    handleFilterChange("provinceId", e.target.value)
+                  }
                 >
                   <option value="all">Todas las provincias</option>
-                  {provinces.map(p => (
-                    <option key={p.id} value={p.name}>{p.name}</option>
+                  {provinces.map((p) => (
+                    <option key={p.id} value={String(p.id)}>
+                      {p.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="filter-group">
-                <label><Package size={14} /> Categoría</label>
-                <select 
-                  value={filters.categoryId}
-                  onChange={(e) => handleFilterChange("categoryId", e.target.value)}
+                <label>Marca</label>
+                <input
+                  type="text"
+                  value={filters.brand}
+                  placeholder="Ej: Samsung"
+                  onChange={(e) => handleFilterChange("brand", e.target.value)}
+                  className="filter-input"
+                />
+              </div>
+
+              <div className="filter-group">
+                <label>EAN</label>
+                <input
+                  type="text"
+                  value={filters.ean}
+                  placeholder="Código de barras"
+                  onChange={(e) => handleFilterChange("ean", e.target.value)}
+                  className="filter-input"
+                />
+              </div>
+
+              <div className="filter-group">
+                <label>Precio exacto</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={filters.price}
+                  placeholder="Ej: 12000"
+                  onChange={(e) => handleFilterChange("price", e.target.value)}
+                  className="filter-input"
+                />
+              </div>
+
+              <div className="filter-group">
+                <label>Rango de precio</label>
+                <div className="filter-range">
+                  <input
+                    type="number"
+                    min="0"
+                    value={filters.priceMin}
+                    placeholder="Mín"
+                    onChange={(e) =>
+                      handleFilterChange("priceMin", e.target.value)
+                    }
+                    className="filter-input"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    value={filters.priceMax}
+                    placeholder="Máx"
+                    onChange={(e) =>
+                      handleFilterChange("priceMax", e.target.value)
+                    }
+                    className="filter-input"
+                  />
+                </div>
+              </div>
+
+              <div className="filter-group">
+                <label>Resultados por página</label>
+                <select
+                  value={filters.limit}
+                  onChange={(e) => handleFilterChange("limit", e.target.value)}
                 >
-                  <option value="all">Todas las categorías</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                  {pageLimitOptions.map((size) => (
+                    <option key={size} value={String(size)}>
+                      {size}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              <button className="clear-filters-btn" onClick={clearFilters}>
-                Limpiar Filtros
-              </button>
-            </div>
-          )}
-
-          {/* Filters row (Quick Sort/View) */}
-          <div className="products-page__filters-row">
-            <div className="products-page__quick-categories">
-              <button
-                className={`products-page__category-chip ${filters.categoryId === 'all' ? "active" : ""}`}
-                onClick={() => handleFilterChange("categoryId", "all")}
-              >
-                Todas
-              </button>
-              {categories.slice(0, 5).map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  className={`products-page__category-chip ${filters.categoryId === cat.name ? "active" : ""}`}
-                  onClick={() => handleFilterChange("categoryId", cat.name)}
+              <div className="filter-group">
+                <label>
+                  <Package size={14} /> Categoría
+                </label>
+                <select
+                  value={filters.categoryId}
+                  onChange={(e) =>
+                    handleFilterChange("categoryId", e.target.value)
+                  }
                 >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
+                  <option value="all">Todas las categorías</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="products-page__controls">
-              <div className="products-page__sort">
-                <SlidersHorizontal size={14} />
+              <div className="filter-group">
+                <label>
+                  <SlidersHorizontal size={14} /> Ordenar por
+                </label>
                 <select
                   value={filters.sortBy}
                   onChange={(e) => handleFilterChange("sortBy", e.target.value)}
@@ -240,29 +456,13 @@ export default function ProductsPage() {
                     </option>
                   ))}
                 </select>
-                <ChevronDown size={14} />
               </div>
 
-              <div className="products-page__view-toggle">
-                <button
-                  type="button"
-                  className={viewMode === "grid" ? "active" : ""}
-                  onClick={() => setViewMode("grid")}
-                  aria-label="Vista cuadrícula"
-                >
-                  <Grid3X3 size={16} />
-                </button>
-                <button
-                  type="button"
-                  className={viewMode === "list" ? "active" : ""}
-                  onClick={() => setViewMode("list")}
-                  aria-label="Vista lista"
-                >
-                  <List size={16} />
-                </button>
-              </div>
+              <button className="clear-filters-btn" onClick={clearFilters}>
+                Limpiar Filtros
+              </button>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Products Grid/List */}
@@ -274,78 +474,80 @@ export default function ProductsPage() {
               <Loader2 className="animate-spin" size={32} />
               <p>Cargando productos...</p>
             </div>
-          ) : productsList.map((product) => (
-            <button
-              key={product.id}
-              type="button"
-              className={`product-card ${viewMode === "list" ? "product-card--list" : ""}`}
-              onClick={() => setSelectedProduct(product)}
-            >
-              <div className="product-card__image">
-                <img src={product.image} alt={product.title} />
-                {product.is_foreign && (
-                  <span className="product-card__badge-foreign">
-                    <Globe size={10} /> IMPORTADO
-                  </span>
-                )}
-                {product.discount > 0 && (
-                  <span className="product-card__badge-discount">
-                    -{product.discount}%
-                  </span>
-                )}
-              </div>
-
-              <div className="product-card__body">
-                <span className="product-card__seller">{product.seller}</span>
-                <h3 className="product-card__title">{product.title}</h3>
-
-                <div className="product-card__pricing">
-                  {product.originalPrice && (
-                    <span className="product-card__original">
-                      ${formatPrice(product.originalPrice)}
+          ) : (
+            productsList.map((product) => (
+              <button
+                key={product.id}
+                type="button"
+                className={`product-card ${viewMode === "list" ? "product-card--list" : ""}`}
+                onClick={() => setSelectedProduct(product)}
+              >
+                <div className="product-card__image">
+                  <img src={product.image} alt={product.title} />
+                  {product.is_foreign && (
+                    <span className="product-card__badge-foreign">
+                      <Globe size={10} /> EXTERNO
                     </span>
                   )}
-                  <div className="product-card__price-row">
-                    <span className="product-card__price">
-                      ${formatPrice(product.price)}
+                  {product.discount > 0 && (
+                    <span className="product-card__badge-discount">
+                      -{product.discount}%
                     </span>
-                    {product.discount > 0 && (
-                      <span className="product-card__discount">
-                        {product.discount}% OFF
+                  )}
+                </div>
+
+                <div className="product-card__body">
+                  <span className="product-card__seller">{product.seller}</span>
+                  <h3 className="product-card__title">{product.title}</h3>
+
+                  <div className="product-card__pricing">
+                    {product.originalPrice && (
+                      <span className="product-card__original">
+                        ${formatPrice(product.originalPrice)}
                       </span>
                     )}
+                    <div className="product-card__price-row">
+                      <span className="product-card__price">
+                        ${formatPrice(product.price)}
+                      </span>
+                      {product.discount > 0 && (
+                        <span className="product-card__discount">
+                          {product.discount}% OFF
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="product-card__rating">
-                  <div className="product-card__stars">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={13}
-                        fill={
-                          i < Math.round(product.rating)
-                            ? "currentColor"
-                            : "none"
-                        }
-                        className={
-                          i < Math.round(product.rating)
-                            ? "star-filled"
-                            : "star-empty"
-                        }
-                      />
-                    ))}
+                  <div className="product-card__rating">
+                    <div className="product-card__stars">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={13}
+                          fill={
+                            i < Math.round(product.rating)
+                              ? "currentColor"
+                              : "none"
+                          }
+                          className={
+                            i < Math.round(product.rating)
+                              ? "star-filled"
+                              : "star-empty"
+                          }
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {viewMode === "list" && (
-                  <p className="product-card__description">
-                    {product.description}
-                  </p>
-                )}
-              </div>
-            </button>
-          ))}
+                  {viewMode === "list" && (
+                    <p className="product-card__description">
+                      {product.description}
+                    </p>
+                  )}
+                </div>
+              </button>
+            ))
+          )}
         </div>
 
         {!isLoading && productsList.length === 0 && (
@@ -355,6 +557,32 @@ export default function ProductsPage() {
             <p>Prueba ajustando los filtros o realizando otra búsqueda.</p>
             <button className="clear-filters-btn" onClick={clearFilters}>
               Ver todos los productos
+            </button>
+          </div>
+        )}
+
+        {!isLoading && normalizedProductsResponse.totalPages > 1 && (
+          <div className="products-page__pagination">
+            <button
+              type="button"
+              className="products-page__pagination-btn"
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page <= 1}
+            >
+              Anterior
+            </button>
+
+            <span className="products-page__pagination-info">
+              Página {page} de {normalizedProductsResponse.totalPages}
+            </span>
+
+            <button
+              type="button"
+              className="products-page__pagination-btn"
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page >= normalizedProductsResponse.totalPages}
+            >
+              Siguiente
             </button>
           </div>
         )}
