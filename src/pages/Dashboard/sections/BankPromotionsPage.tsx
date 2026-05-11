@@ -14,6 +14,7 @@ import {
   Loader2,
   FileText,
   AlertTriangle,
+  WalletCards,
 } from "lucide-react";
 import {
   bankPromotionService,
@@ -33,15 +34,21 @@ const DAYS_OF_WEEK = [
   { id: "sunday", label: "D" },
 ];
 
+const PAYMENT_METHODS = [
+  "QR o NFC PRESENCIAL",
+  "ONLINE",
+  "TARJETAS CRÉDITO",
+  "TARJETAS DÉBITO",
+];
+
 export default function BankPromotionsPage() {
   const queryClient = useQueryClient();
 
   // Mutaciones
   const createMutation = useMutation({
-    mutationFn: bankPromotionService.create,
+    mutationFn: (data: any) => bankPromotionService.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
-      handleCloseModal();
     },
     onError: (err: any) => {
       setFormError(err.message || "Error al crear la promoción");
@@ -53,7 +60,6 @@ export default function BankPromotionsPage() {
       bankPromotionService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
-      handleCloseModal();
     },
     onError: (err: any) => {
       setFormError(err.message || "Error al actualizar la promoción");
@@ -80,6 +86,7 @@ export default function BankPromotionsPage() {
   const [editingPromo, setEditingPromo] = useState<BankPromotion | null>(null);
   const [promoToDelete, setPromoToDelete] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
+  const [selectedBankIds, setSelectedBankIds] = useState<number[]>([]);
 
   const {
     data: promos = [],
@@ -89,7 +96,6 @@ export default function BankPromotionsPage() {
     queryKey: ["bank-promotions"],
     queryFn: async () => {
       const data = await bankPromotionService.getMyPromotions();
-      console.log("DEBUG: Promociones cargadas:", data);
       return data;
     },
   });
@@ -98,13 +104,14 @@ export default function BankPromotionsPage() {
     queryKey: ["banks"],
     queryFn: async () => {
       const data = await bankService.findAll();
-      console.log("DEBUG: Bancos cargados:", data);
       return data;
     },
   });
 
   const loading = promosLoading || banksLoading;
-  const error = fetchPromosError ? "No se pudieron cargar las promociones." : formError;
+  const error = fetchPromosError
+    ? "No se pudieron cargar las promociones."
+    : formError;
 
   const [form, setForm] = useState({
     percentaje_discount: 0,
@@ -122,12 +129,10 @@ export default function BankPromotionsPage() {
       .toISOString()
       .split("T")[0],
     description: "",
+    payment_method: "[]",
+    terms_conditions: "",
+    minimum_amount: 0,
   });
-
-  const fetchData = async () => {
-    queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
-    queryClient.invalidateQueries({ queryKey: ["banks"] });
-  };
 
   const handleOpenModal = (promo: BankPromotion | null = null) => {
     if (promo) {
@@ -146,13 +151,17 @@ export default function BankPromotionsPage() {
         from_date: promo.from_date,
         expiration_date: promo.expiration_date,
         description: promo.description || "",
+        payment_method: promo.payment_method || "[]",
+        terms_conditions: promo.terms_conditions || "",
+        minimum_amount: promo.minimum_amount || 0,
       });
+      setSelectedBankIds([promo.bank_id]);
     } else {
       setEditingPromo(null);
       setForm({
         percentaje_discount: 0,
         refund: 0,
-        bank_id: banks.length > 0 ? banks[0].id : 0,
+        bank_id: 0,
         monday: false,
         tuesday: false,
         wednesday: false,
@@ -161,11 +170,17 @@ export default function BankPromotionsPage() {
         saturday: false,
         sunday: false,
         from_date: new Date().toISOString().split("T")[0],
-        expiration_date: new Date(new Date().setMonth(new Date().getMonth() + 1))
+        expiration_date: new Date(
+          new Date().setMonth(new Date().getMonth() + 1),
+        )
           .toISOString()
           .split("T")[0],
         description: "",
+        payment_method: "[]",
+        terms_conditions: "",
+        minimum_amount: 0,
       });
+      setSelectedBankIds([]);
     }
     if (error !== "No se pudieron cargar las promociones.") {
       setFormError("");
@@ -176,6 +191,7 @@ export default function BankPromotionsPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setFormError("");
+    setSelectedBankIds([]);
   };
 
   const handleDayToggle = (dayId: string) => {
@@ -185,8 +201,23 @@ export default function BankPromotionsPage() {
     }));
   };
 
+  const handleBankToggle = (bankId: number) => {
+    setSelectedBankIds((prev) => {
+      const next = prev.includes(bankId)
+        ? prev.filter((id) => id !== bankId)
+        : [bankId, ...prev];
+
+      setForm((prevForm) => ({
+        ...prevForm,
+        bank_id: next[0] ?? 0,
+      }));
+
+      return next;
+    });
+  };
+
   const handleSave = async () => {
-    if (!form.bank_id) {
+    if (selectedBankIds.length === 0) {
       setFormError("Debe seleccionar un banco.");
       return;
     }
@@ -214,10 +245,34 @@ export default function BankPromotionsPage() {
 
     setFormError("");
 
-    if (editingPromo) {
-      updateMutation.mutate({ id: editingPromo.id, data: form });
-    } else {
-      createMutation.mutate(form);
+    try {
+      const uniqueBankIds = Array.from(new Set(selectedBankIds));
+
+      if (editingPromo) {
+        const [primaryBankId, ...additionalBankIds] = uniqueBankIds;
+
+        await updateMutation.mutateAsync({
+          id: editingPromo.id,
+          data: { ...form, bank_id: primaryBankId },
+        });
+
+        if (additionalBankIds.length > 0) {
+          await Promise.all(
+            additionalBankIds.map((bankId) =>
+              createMutation.mutateAsync({ ...form, bank_id: bankId }),
+            ),
+          );
+        }
+      } else {
+        const promises = uniqueBankIds.map((bankId) => {
+          const promoData = { ...form, bank_id: bankId };
+          return createMutation.mutateAsync(promoData);
+        });
+        await Promise.all(promises);
+      }
+      handleCloseModal();
+    } catch (err: any) {
+      // Error is handled by mutation onError, but we catch it here to prevent closing modal if it fails
     }
   };
 
@@ -266,9 +321,12 @@ export default function BankPromotionsPage() {
           Nueva Promoción
         </button>
       </div>
-      
+
       {error && (
-        <div className="bank-promo-error-message" style={{ margin: "0 0 20px 0" }}>
+        <div
+          className="bank-promo-error-message"
+          style={{ margin: "0 0 20px 0" }}
+        >
           {error}
         </div>
       )}
@@ -277,11 +335,13 @@ export default function BankPromotionsPage() {
         {promos.map((promo) => {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          
+
           // Split YYYY-MM-DD to avoid timezone shifting
-          const [year, month, day] = promo.expiration_date.split("-").map(Number);
+          const [year, month, day] = promo.expiration_date
+            .split("-")
+            .map(Number);
           const expirationDate = new Date(year, month - 1, day);
-          
+
           const isExpired = expirationDate < today;
 
           return (
@@ -298,7 +358,7 @@ export default function BankPromotionsPage() {
                     <Building2 size={24} />
                   </div>
                   <div className="bank-promo-card__bank-info">
-                    <h3>{promo.bank?.name || "Banco"}</h3>
+                    <h3>{promo.Bank?.name || "Banco"}</h3>
                     <p>{promo.description || "Sin descripción"}</p>
                   </div>
                 </div>
@@ -322,60 +382,94 @@ export default function BankPromotionsPage() {
                 </div>
               </div>
 
-            <div className="bank-promo-card__details">
-              <div className="bank-promo-card__detail-row">
-                <span className="bank-promo-card__detail-label">
-                  <Percent size={14} /> Descuento
-                </span>
-                <span className="bank-promo-card__detail-value bank-promo-card__detail-value--highlight">
-                  {promo.percentaje_discount}% OFF
-                </span>
-              </div>
-              <div className="bank-promo-card__detail-row">
-                <span className="bank-promo-card__detail-label">
-                  <CreditCard size={14} /> Tope de reintegro
-                </span>
-                <span className="bank-promo-card__detail-value">
-                  ${promo.refund.toLocaleString()}
-                </span>
-              </div>
-              <div className="bank-promo-card__detail-row">
-                <span className="bank-promo-card__detail-label">
-                  <CalendarDays size={14} /> Vigencia
-                </span>
-                <span className="bank-promo-card__detail-value">
-                  {formatDateDisplay(promo.from_date)} -{" "}
-                  {formatDateDisplay(promo.expiration_date)}
-                </span>
-              </div>
-              <div
-                className="bank-promo-card__detail-row"
-                style={{
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  gap: "8px",
-                }}
-              >
-                <span className="bank-promo-card__detail-label">
-                  Días de aplicación
-                </span>
-                <div className="bank-promo-card__days">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <span
-                      key={day.id}
-                      className={`bank-promo-card__day ${
-                        (promo as any)[day.id] ? "active" : ""
-                      }`}
-                    >
-                      {day.label}
+              <div className="bank-promo-card__details">
+                <div className="bank-promo-card__detail-row">
+                  <span className="bank-promo-card__detail-label">
+                    <Percent size={14} /> Descuento
+                  </span>
+                  <span className="bank-promo-card__detail-value bank-promo-card__detail-value--highlight">
+                    {promo.percentaje_discount}% OFF
+                  </span>
+                </div>
+                <div className="bank-promo-card__detail-row">
+                  <span className="bank-promo-card__detail-label">
+                    <CreditCard size={14} /> Tope de reintegro
+                  </span>
+                  <span className="bank-promo-card__detail-value">
+                    ${promo.refund.toLocaleString()}
+                  </span>
+                </div>
+                {promo.minimum_amount > 0 && (
+                  <div className="bank-promo-card__detail-row">
+                    <span className="bank-promo-card__detail-label">
+                      <WalletCards size={14} /> Compra mínima
                     </span>
-                  ))}
+                    <span className="bank-promo-card__detail-value">
+                      ${promo.minimum_amount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                <div className="bank-promo-card__detail-row">
+                  <span className="bank-promo-card__detail-label">
+                    <CalendarDays size={14} /> Vigencia
+                  </span>
+                  <span className="bank-promo-card__detail-value">
+                    {formatDateDisplay(promo.from_date)} -{" "}
+                    {formatDateDisplay(promo.expiration_date)}
+                  </span>
+                </div>
+
+                {promo.payment_method &&
+                  JSON.parse(promo.payment_method).length > 0 && (
+                    <div
+                      className="bank-promo-card__detail-row"
+                      style={{
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        gap: "8px",
+                      }}
+                    >
+                      <span className="bank-promo-card__detail-label">
+                        Métodos de pago
+                      </span>
+                      <div className="bank-promo-card__methods">
+                        {JSON.parse(promo.payment_method).map((m: string) => (
+                          <span key={m} className="bank-promo-method-tag">
+                            {m}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                <div
+                  className="bank-promo-card__detail-row"
+                  style={{
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    gap: "8px",
+                  }}
+                >
+                  <span className="bank-promo-card__detail-label">
+                    Días de aplicación
+                  </span>
+                  <div className="bank-promo-card__days">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <span
+                        key={day.id}
+                        className={`bank-promo-card__day ${
+                          (promo as any)[day.id] ? "active" : ""
+                        }`}
+                      >
+                        {day.label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
         {promos.length === 0 && (
           <div className="bank-promos__empty">
             <div className="empty-icon-container">
@@ -415,27 +509,26 @@ export default function BankPromotionsPage() {
               {error && <div className="bank-promo-error-message">{error}</div>}
               <div className="bank-promo-form-grid">
                 <div className="bank-promo-field bank-promo-field--full">
-                  <label>Banco o Entidad</label>
-                  <div className="bank-promo-input-wrapper">
-                    <Landmark size={18} className="field-icon" />
-                    <select
-                      value={form.bank_id}
-                      onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          bank_id: Number(e.target.value),
-                        }))
-                      }
-                    >
-                      <option value={0} disabled>
-                        Selecciona un banco...
-                      </option>
-                      {banks.map((bank) => (
-                        <option key={bank.id} value={bank.id}>
-                          {bank.name}
-                        </option>
-                      ))}
-                    </select>
+                  <label>Bancos o Entidades (Selecciona uno o más)</label>
+                  <div className="bank-promo-checkbox-list">
+                    {banks.map((bank) => {
+                      const bankId = bank.id;
+                      const isSelected = selectedBankIds.includes(bankId);
+                      return (
+                        <div
+                          key={bank.id}
+                          className={`bank-promo-checkbox-item ${isSelected ? "selected" : ""}`}
+                          onClick={() => handleBankToggle(bankId)}
+                        >
+                          <div className="checkbox-wrapper">
+                            <div className="checkbox-custom">
+                              {isSelected && <div className="checkbox-inner" />}
+                            </div>
+                          </div>
+                          <span className="bank-name">{bank.name}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="bank-promo-field">
@@ -470,6 +563,24 @@ export default function BankPromotionsPage() {
                         setForm((prev) => ({
                           ...prev,
                           refund: Number(e.target.value),
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="bank-promo-field">
+                  <label>Compra Mínima ($)</label>
+                  <div className="bank-promo-input-wrapper">
+                    <WalletCards size={18} className="field-icon" />
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Ej. 1000"
+                      value={form.minimum_amount || ""}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          minimum_amount: Number(e.target.value),
                         }))
                       }
                     />
@@ -524,6 +635,56 @@ export default function BankPromotionsPage() {
                     />
                   </div>
                 </div>
+
+                <div className="bank-promo-field bank-promo-field--full">
+                  <label>Métodos de Pago</label>
+                  <div className="bank-promo-methods-selector">
+                    {PAYMENT_METHODS.map((method) => {
+                      const selectedMethods = JSON.parse(
+                        form.payment_method || "[]",
+                      );
+                      const isSelected = selectedMethods.includes(method);
+                      return (
+                        <button
+                          key={method}
+                          type="button"
+                          className={`bank-promo-method-btn ${isSelected ? "selected" : ""}`}
+                          onClick={() => {
+                            const newMethods = isSelected
+                              ? selectedMethods.filter(
+                                  (m: string) => m !== method,
+                                )
+                              : [...selectedMethods, method];
+                            setForm((prev) => ({
+                              ...prev,
+                              payment_method: JSON.stringify(newMethods),
+                            }));
+                          }}
+                        >
+                          {method}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bank-promo-field bank-promo-field--full">
+                  <label>Términos y Condiciones</label>
+                  <div className="bank-promo-input-wrapper bank-promo-input-wrapper--textarea">
+                    <FileText size={18} className="field-icon" />
+                    <textarea
+                      placeholder="Escribe aquí los términos y condiciones de la promoción..."
+                      value={form.terms_conditions}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          terms_conditions: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+
                 <div className="bank-promo-field bank-promo-field--full">
                   <label>Días de Aplicación</label>
                   <div className="bank-promo-days-selector">

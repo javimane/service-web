@@ -124,21 +124,24 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   };
 
   const promosList = useMemo(() => {
-    return promotions.map(p => ({
-      id: p.id,
-      title: p.title,
-      description: p.description,
-      offer: p.discount_type === 'percentage' ? `${p.discount_value}% OFF` : 
-             p.discount_type === 'fixed' ? `$${p.discount_value}` :
-             p.discount_type === 'bogo' ? '2x1' : 'GRATIS',
-      unlimitedStock: p.unlimited_stock || false,
-      applicableTo: p.applicable_to || "",       
-      status: p.state || 'active',
-      validFrom: formatDateDisplay(p.from_date || ""),
-      validTo: formatDateDisplay(p.expires_at || ""),
-      image: p.image_url || "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
-      _original: p,
-    }));
+    return promotions.map(p => {
+      const status = p.state === 'expires' ? 'expired' : (p.state || 'active');
+      return {
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        offer: p.discount_type === 'percentage' ? `${p.discount_value}% OFF` : 
+               p.discount_type === 'fixed' ? `$${p.discount_value}` :
+               p.discount_type === 'bogo' ? '2x1' : 'GRATIS',
+        unlimitedStock: p.unlimited_stock || false,
+        applicableTo: p.applicable_to || "",       
+        status: status,
+        validFrom: formatDateDisplay(p.from_date || ""),
+        validTo: formatDateDisplay(p.expires_at || ""),
+        image: p.image_url || "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
+        _original: p,
+      };
+    });
   }, [promotions]);
 
   const filtered = useMemo(() => {
@@ -242,6 +245,11 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
               >
                 {STATUS_LABELS[promo.status]}
               </span>
+              {promo.status === 'expired' && (
+                <div className="promo-list-card__expired-overlay">
+                  <span>EXPIRADA</span>
+                </div>
+              )}
               <span className="promo-list-card__offer-badge">
                 <Ticket size={12} />
                 {promo.offer}

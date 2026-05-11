@@ -11,6 +11,7 @@ export const ROUTES = {
   settings: "/settings",
   messages: "/messages",
   products: "/products",
+  promotions: "/promotions",
   planPayment: "/plan/:planId",
   favorites: "/favorites",
 };

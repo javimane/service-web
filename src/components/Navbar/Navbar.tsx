@@ -98,6 +98,7 @@ export default function Navbar() {
     { label: "Mapa", path: ROUTES.map },
     { label: "Servicios", path: ROUTES.services },
     { label: "Productos", path: ROUTES.products },
+    { label: "Promociones", path: ROUTES.promotions },
   ];
 
   // Close menus when clicking outside

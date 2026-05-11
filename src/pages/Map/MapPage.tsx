@@ -55,9 +55,16 @@ export default function MapPage() {
   const navigate = useNavigate();
 
   const [center, setCenter] = useState(getInitialCenter);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    search: string;
+    categoryId?: string;
+    provinceId?: string;
+    departmentId?: string;
+  }>({
     search: '',
-    categoryId: undefined
+    categoryId: undefined,
+    provinceId: undefined,
+    departmentId: undefined
   });
 
   // Request location permission
@@ -87,7 +94,9 @@ export default function MapPage() {
       radius: 20,
       public_trade: true,
       name: filters.search || undefined,
-      categoryId: filters.categoryId || undefined
+      categoryId: filters.categoryId || undefined,
+      province_id: filters.provinceId || undefined,
+      department_id: filters.departmentId || undefined
     }),
     enabled: !!center.lat && center.lat !== defaultCenter.lat
   });

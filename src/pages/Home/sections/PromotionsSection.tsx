@@ -19,9 +19,9 @@ import { professionalPromotionService } from "../../../services/professionalProm
 import { locationService } from "../../../services/locationService";
 import { useAuth } from "../../../context/AuthContext";
 import PromotionCard from "../../../components/Cards/PromotionCard";
+import PromotionDetailModal from "../../../components/Modals/PromotionDetailModal";
 import Modal from "../../../components/Modal/Modal";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
-import { toJpeg } from "html-to-image";
 import "./PromotionsSection.css";
 
 export default function PromotionsSection() {
@@ -30,7 +30,6 @@ export default function PromotionsSection() {
   const [userProvince, setUserProvince] = useState<string>(localStorage.getItem("userProvince") || "Buenos Aires");
   const [isProvinceModalOpen, setIsProvinceModalOpen] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState<any>(null);
-  const couponRef = useRef<HTMLDivElement>(null);
   const sliderRef = useRef(null);
   
   const {
@@ -86,24 +85,6 @@ export default function PromotionsSection() {
     setSelectedPromo(promo);
   };
 
-  const handleDownload = async (promo: any) => {
-    if (!couponRef.current) return;
-    try {
-      const dataUrl = await toJpeg(couponRef.current, {
-        quality: 0.95,
-        backgroundColor: "#fff",
-        pixelRatio: 2,
-      });
-      const link = document.createElement("a");
-      link.download = `cupon-${promo.title.toLowerCase().replace(/\s+/g, '-')}.jpg`;
-      link.href = dataUrl;
-      link.click();
-    } catch (err) {
-      console.error("Error downloading coupon:", err);
-      alert("No se pudo descargar el cupón en este momento.");
-    }
-  };
-
   const handleProvinceSelect = (provinceName: string) => {
     setUserProvince(provinceName);
     localStorage.setItem("userProvince", provinceName);
@@ -123,7 +104,7 @@ export default function PromotionsSection() {
             {userProvince}
           </button>
         </div>
-        <button className="section-link">Ver todo &gt;</button>
+        <button className="section-link" onClick={() => navigate(ROUTES.promotions)}>Ver todo &gt;</button>
       </div>
 
       <div className="promotions-section__carousel">
@@ -183,87 +164,12 @@ export default function PromotionsSection() {
         )}
       </div>
 
-      <Modal
+      <PromotionDetailModal 
         isOpen={!!selectedPromo}
         onClose={() => setSelectedPromo(null)}
-        noPadding
-      >
-        {selectedPromo && (
-          <div className="promo-modal">
-            <div className="promo-modal__coupon" ref={couponRef}>
-              <button className="promo-modal__close-btn" onClick={() => setSelectedPromo(null)}>
-                <X size={20} />
-              </button>
-              <div className="promo-modal__top-banner">
-                <div 
-                  className="promo-modal__professional-mini" 
-                  onClick={() => {
-                    navigate(`${ROUTES.profile}/${selectedPromo.professionalId}`);
-                    setSelectedPromo(null);
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className="avatar-placeholder">
-                    <Sparkles size={16} />
-                  </div>
-                  <div className="prof-info">
-                    <span className="prof-name">{selectedPromo.professionalName}</span>
-                    <span className="prof-label">PROFESIONAL VERIFICADO</span>
-                  </div>
-                </div>
-                <span className="promo-modal__offer-badge">
-                  {selectedPromo.offer}
-                </span>
-              </div>
-
-              <div className="promo-modal__image-wrapper">
-                <img
-                  src={selectedPromo.image}
-                  alt={selectedPromo.title}
-                  className="promo-modal__image"
-                />
-              </div>
-
-              <div className="promo-modal__body">
-                <h3 className="promo-modal__title">{selectedPromo.title}</h3>
-                <p className="promo-modal__description">
-                  {selectedPromo.description}
-                </p>
-
-                <div className="promo-modal__details">
-                  <div className="promo-modal__detail-item">
-                    <Calendar size={16} />
-                    <span>
-                      <strong>Validez:</strong> {selectedPromo.validFrom} al{" "}
-                      {selectedPromo.validTo}
-                    </span>
-                  </div>
-                  <div className="promo-modal__detail-item">
-                    <MapPin size={16} />
-                    <span>
-                      <strong>Ubicación:</strong> {userProvince}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  className="promo-modal__download-btn"
-                  type="button"
-                  onClick={() => handleDownload(selectedPromo)}
-                >
-                  <Download size={20} />
-                  Descargar Cupón JPG
-                </button>
-
-                <p className="promo-modal__footer-text">
-                  <CheckCircle size={12} /> Presenta este cupón al momento del
-                  servicio
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
+        promo={selectedPromo}
+        userProvince={userProvince}
+      />
 
       {/* Province Selector Modal */}
       <Modal

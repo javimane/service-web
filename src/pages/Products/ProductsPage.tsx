@@ -171,15 +171,15 @@ export default function ProductsPage() {
 
       const sellers = product.ProfessionalProducts || [];
       const firstSeller = sellers[0] || {};
-      
+
       const displayPrice = product.price || firstSeller.price || 0;
       const displayDiscount = firstSeller.discount_percentage || 0;
       const displayOriginalPrice = firstSeller.original_price;
 
       // Extract company name handling array structure
       const companyData = firstSeller.Professional?.Company;
-      const sellerName = Array.isArray(companyData) 
-        ? companyData[0]?.name 
+      const sellerName = Array.isArray(companyData)
+        ? companyData[0]?.name
         : companyData?.name || "Varios vendedores";
 
       return {
@@ -193,7 +193,10 @@ export default function ProductsPage() {
         price: displayPrice,
         originalPrice: displayOriginalPrice,
         discount: displayDiscount,
-        seller: sellers.length > 1 ? `Varios vendedores (${sellers.length})` : sellerName,
+        seller:
+          sellers.length > 1
+            ? `Varios vendedores (${sellers.length})`
+            : sellerName,
         image: primaryImage,
         rating: firstSeller.Professional?.rating_avg || 5,
         reviews: 0,
@@ -255,7 +258,7 @@ export default function ProductsPage() {
                     : `${normalizedProductsResponse.count} productos encontrados`}
               </p>
             </div>
-            
+
             <div className="products-page__view-toggle">
               <button
                 type="button"

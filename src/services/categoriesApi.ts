@@ -3,6 +3,7 @@ import { API_BASE_URL } from "./api.config";
 
 export const CATEGORIES_API_ENDPOINTS = {
   listCategories: `${API_BASE_URL}/api/categories`,
+  listCategoryServices: `${API_BASE_URL}/api/categories/services`,
   listProfiles: `${API_BASE_URL}/api/profiles`,
   profileDetail: (profileId: string) => `${API_BASE_URL}/api/profiles/${profileId}`,
   profilesByCategory: (categorySlug: string) => `${API_BASE_URL}/api/categories/${categorySlug}/profiles`,
@@ -19,6 +20,14 @@ export const categoriesService = {
    */
   listCategories: () => 
     apiClient<any[]>(CATEGORIES_API_ENDPOINTS.listCategories, { method: "GET" }),
+
+  /**
+   * @route GET /api/categories/services
+   * @auth No
+   * @returns {Promise<any[]>}
+   */
+  listCategoryServices: () => 
+    apiClient<any[]>(CATEGORIES_API_ENDPOINTS.listCategoryServices, { method: "GET" }),
 
   /**
    * @route GET /api/profiles

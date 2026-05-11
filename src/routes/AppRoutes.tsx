@@ -12,6 +12,7 @@ import AnalyticsPage from "../pages/Analytics/AnalyticsPage";
 import SettingsPage from "../pages/Settings/SettingsPage";
 import MessagesPage from "../pages/Messages/MessagesPage";
 import ProductsPage from "../pages/Products/ProductsPage";
+import PromotionsPage from "../pages/Promotions/PromotionsPage";
 import PlanPaymentPage from "../pages/PlanPayment/PlanPaymentPage";
 import FavoritesPage from "../pages/Favorites/FavoritesPage";
 import { ROUTES } from "./paths";
@@ -33,6 +34,7 @@ export default function AppRoutes() {
       <Route path={ROUTES.services} element={<ServicesPage />} />
       <Route path={ROUTES.map} element={<MapPage />} />
       <Route path={ROUTES.products} element={<ProductsPage />} />
+      <Route path={ROUTES.promotions} element={<PromotionsPage />} />
       <Route path={ROUTES.planPayment} element={<PlanPaymentPage />} />
       <Route path={`${ROUTES.profile}/:id`} element={<ProfilePage />} />
       <Route

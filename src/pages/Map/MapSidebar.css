@@ -54,6 +54,23 @@
   font-size: 0.9rem;
 }
 
+.map-select {
+  width: 100%;
+  background: #111;
+  border: 1px solid #333;
+  padding: 15px;
+  border-radius: 15px;
+  color: #fff;
+  font-size: 0.9rem;
+  appearance: none;
+  cursor: pointer;
+}
+
+.map-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .category-pills {
   display: flex;
   flex-wrap: wrap;

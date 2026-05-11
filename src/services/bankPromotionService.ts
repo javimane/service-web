@@ -1,5 +1,6 @@
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./api.config";
+import { CompanyRow, ProfessionalRow } from "../types/database.types";
 
 export interface Bank {
   id: number;
@@ -24,12 +25,22 @@ export interface BankPromotion {
   profile_id: string;
   created_at: string;
   updated_at: string;
-  bank?: Bank;
+  payment_method?: string | null;
+  terms_conditions?: string | null;
+  minimum_amount?: number | null;
+  Bank?: Bank;
+  Professional?: {
+    id: number;
+    Company?: { name: string }[];
+    Profile?: {
+      avatar_url: string | null;
+    };
+  };
 }
 
 export type CreateBankPromotionDto = Omit<
   BankPromotion,
-  "id" | "profile_id" | "created_at" | "updated_at" | "bank"
+  "id" | "profile_id" | "created_at" | "updated_at" | "Bank"
 >;
 
 export const bankPromotionService = {

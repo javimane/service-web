@@ -9,6 +9,7 @@ type ModalProps = {
   message?: string;
   children?: ReactNode;
   noPadding?: boolean;
+  maxWidth?: string;
 };
 
 export default function Modal({
@@ -18,6 +19,7 @@ export default function Modal({
   message,
   children,
   noPadding = false,
+  maxWidth,
 }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
@@ -34,7 +36,7 @@ export default function Modal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ maxWidth }}>
         {title && (
           <div className="modal-header">
             <h2>{title}</h2>

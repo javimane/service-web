@@ -253,6 +253,33 @@
   border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
+.promo-list-card__expired-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+}
+
+.promo-list-card__expired-overlay span {
+  background: #ef4444;
+  color: white;
+  padding: 8px 24px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+  transform: rotate(-4deg);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
 .promo-list-card__offer-badge {
   position: absolute;
   top: 10px;

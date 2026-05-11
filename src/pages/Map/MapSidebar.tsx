@@ -2,21 +2,37 @@ import { useState } from 'react';
 import { Search, Loader2, Filter } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { categoriesService } from '../../services/categoriesApi';
+import { locationService } from '../../services/locationService';
 import './MapSidebar.css';
 
 export default function MapSidebar({ onFilterChange, specialistsCount, isLoading }) {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
 
   const { data: categories = [], isLoading: isLoadingCats } = useQuery({
     queryKey: ['service-categories'],
-    queryFn: () => categoriesService.listCategories()
+    queryFn: () => categoriesService.listCategoryServices()
+  });
+
+  const { data: provinces = [] } = useQuery({
+    queryKey: ['provinces'],
+    queryFn: () => locationService.getProvinces()
+  });
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments', selectedProvince],
+    queryFn: () => locationService.getDepartments(selectedProvince),
+    enabled: !!selectedProvince
   });
 
   const handleApply = () => {
     onFilterChange({ 
       search, 
-      categoryId: selectedCategory === 'all' ? undefined : selectedCategory 
+      categoryId: selectedCategory === 'all' ? undefined : selectedCategory,
+      provinceId: selectedProvince || undefined,
+      departmentId: selectedDepartment || undefined
     });
   };
 
@@ -69,6 +85,37 @@ export default function MapSidebar({ onFilterChange, specialistsCount, isLoading
               {cat.name}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="map-sidebar__section">
+        <label className="map-sidebar__label">UBICACIÓN</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <select 
+            className="map-select"
+            value={selectedProvince}
+            onChange={(e) => {
+              setSelectedProvince(e.target.value);
+              setSelectedDepartment('');
+            }}
+          >
+            <option value="">Todas las provincias</option>
+            {provinces.map((prov: any) => (
+              <option key={prov.id} value={prov.id}>{prov.name}</option>
+            ))}
+          </select>
+
+          <select 
+            className="map-select"
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+            disabled={!selectedProvince}
+          >
+            <option value="">Todos los departamentos</option>
+            {departments.map((dept: any) => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
+            ))}
+          </select>
         </div>
       </div>
 

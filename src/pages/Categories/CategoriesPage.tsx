@@ -13,27 +13,28 @@ import Footer from "../../components/Footer/Footer";
 import { categories } from "../../data/categories";
 import { ROUTES } from "../../routes/paths";
 import { CATEGORIES_API_ENDPOINTS } from "../../services/categoriesApi";
+import { professionalService } from "../../services/professionalService";
 import "./CategoriesPage.css";
 
-type ProviderType = "Todos" | "Comercio" | "Autónomo";
+type AccountType = "Todos" | "Comercio" | "Autónomo";
 
 type CategoryProfile = {
   id: number;
-  name: string;
+  companyName: string;
   specialty: string;
   category: string;
   province: string;
   city: string;
-  providerType: Exclude<ProviderType, "Todos">;
+  accountType: Exclude<AccountType, "Todos">;
   emergency: boolean;
   verified: boolean;
   rating: number;
   jobs: number;
-  responseTime: string;
   priceLabel: string;
   avatar: string;
   coverImage: string;
   description: string;
+  hasPublicStore?: boolean;
 };
 
 const fallbackImage =
@@ -55,178 +56,7 @@ const categoryOptions = [
   })),
 ] as const;
 
-const mockProfiles: CategoryProfile[] = [
-  {
-    id: 1,
-    name: "Lucía Herrera",
-    specialty: "Diseño integral de interiores",
-    category: "Interior Design",
-    province: "Buenos Aires",
-    city: "La Plata",
-    providerType: "Autónomo",
-    emergency: false,
-    verified: true,
-    rating: 4.9,
-    jobs: 124,
-    responseTime: "Responde en 20 min",
-    priceLabel: "Desde $18.000",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&q=80",
-    coverImage:
-      "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=900&q=80",
-    description:
-      "Proyectos residenciales, optimización de espacios y ambientación premium.",
-  },
-  {
-    id: 2,
-    name: "Estudio Norte",
-    specialty: "Ingeniería estructural y cálculo",
-    category: "Engineering",
-    province: "Córdoba",
-    city: "Córdoba",
-    providerType: "Comercio",
-    emergency: true,
-    verified: true,
-    rating: 4.8,
-    jobs: 89,
-    responseTime: "Responde en 10 min",
-    priceLabel: "Desde $25.000",
-    avatar:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&q=80",
-    coverImage:
-      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=900&q=80",
-    description:
-      "Documentación técnica, inspecciones y refuerzos para obras nuevas y reformas.",
-  },
-  {
-    id: 3,
-    name: "Matías Silva",
-    specialty: "Domótica y automatización",
-    category: "Smart Systems",
-    province: "Mendoza",
-    city: "Mendoza",
-    providerType: "Autónomo",
-    emergency: true,
-    verified: false,
-    rating: 4.7,
-    jobs: 63,
-    responseTime: "Responde en 35 min",
-    priceLabel: "Desde $14.500",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80",
-    coverImage:
-      "https://images.unsplash.com/photo-1558002038-1055907df827?w=900&q=80",
-    description:
-      "Instalación de cámaras, sensores, cerraduras inteligentes y control remoto.",
-  },
-  {
-    id: 4,
-    name: "Verde Vivo",
-    specialty: "Paisajismo y riego",
-    category: "Paisajismo",
-    province: "Buenos Aires",
-    city: "Mar del Plata",
-    providerType: "Comercio",
-    emergency: false,
-    verified: true,
-    rating: 4.9,
-    jobs: 78,
-    responseTime: "Responde en 50 min",
-    priceLabel: "Desde $11.000",
-    avatar:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300&q=80",
-    coverImage:
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80",
-    description:
-      "Diseño exterior, patios, terrazas verdes y mantenimiento estacional.",
-  },
-  {
-    id: 5,
-    name: "Clínica Bienestar",
-    specialty: "Kinesiología y rehabilitación",
-    category: "Salud",
-    province: "Capital Federal",
-    city: "CABA",
-    providerType: "Comercio",
-    emergency: true,
-    verified: true,
-    rating: 4.8,
-    jobs: 140,
-    responseTime: "Responde en 15 min",
-    priceLabel: "Desde $9.800",
-    avatar:
-      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&q=80",
-    coverImage:
-      "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900&q=80",
-    description:
-      "Atención en consultorio y a domicilio con turnos rápidos y seguimiento.",
-  },
-  {
-    id: 6,
-    name: "Sabor de Barrio",
-    specialty: "Catering para eventos y viandas",
-    category: "Alimentos",
-    province: "Buenos Aires",
-    city: "Bahía Blanca",
-    providerType: "Comercio",
-    emergency: false,
-    verified: false,
-    rating: 4.6,
-    jobs: 54,
-    responseTime: "Responde en 1 h",
-    priceLabel: "Desde $7.500",
-    avatar:
-      "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&q=80",
-    coverImage:
-      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&q=80",
-    description:
-      "Menús corporativos, mesas dulces y servicio para reuniones privadas.",
-  },
-  {
-    id: 7,
-    name: "Profe Alma",
-    specialty: "Clases particulares de apoyo",
-    category: "Educación",
-    province: "Córdoba",
-    city: "Villa Carlos Paz",
-    providerType: "Autónomo",
-    emergency: false,
-    verified: true,
-    rating: 5,
-    jobs: 101,
-    responseTime: "Responde en 25 min",
-    priceLabel: "Desde $6.000",
-    avatar:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&q=80",
-    coverImage:
-      "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=900&q=80",
-    description:
-      "Apoyo escolar y preparación de exámenes con clases online o presenciales.",
-  },
-  {
-    id: 8,
-    name: "Patitas Center",
-    specialty: "Guardería y paseo de mascotas",
-    category: "Mascotas",
-    province: "Mendoza",
-    city: "San Rafael",
-    providerType: "Comercio",
-    emergency: true,
-    verified: false,
-    rating: 4.7,
-    jobs: 68,
-    responseTime: "Responde en 30 min",
-    priceLabel: "Desde $5.500",
-    avatar:
-      "https://images.unsplash.com/photo-1546961329-78bef0414d7c?w=300&q=80",
-    coverImage:
-      "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=900&q=80",
-    description:
-      "Cuidado diario, traslados, urgencias veterinarias y acompañamiento.",
-  },
-];
-
-const providerTypes: ProviderType[] = ["Todos", "Comercio", "Autónomo"];
+const accountTypes: AccountType[] = ["Todos", "Comercio", "Autónomo"];
 
 export default function CategoriesPage() {
   const navigate = useNavigate();
@@ -237,32 +67,90 @@ export default function CategoriesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProvince, setSelectedProvince] = useState("Todas");
   const [selectedCity, setSelectedCity] = useState("Todas");
-  const [selectedProviderType, setSelectedProviderType] =
-    useState<ProviderType>("Todos");
+  const [selectedAccountType, setSelectedAccountType] =
+    useState<AccountType>("Todos");
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [publicStoreOnly, setPublicStoreOnly] = useState(false);
+
+  const [profiles, setProfiles] = useState<CategoryProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProfiles() {
+      try {
+        setIsLoading(true);
+        const response = await professionalService.list();
+        const mappedProfiles: CategoryProfile[] = response.map((prof: any) => {
+          const profCategoryName = prof.CategoryServices?.[0]?.CategoryService?.name || prof.category || "General";
+          const catInfo = categoryOptions.find((c) => c.label === profCategoryName) || categoryOptions[0];
+          
+          let minPrice = 0;
+          if (prof.Services && prof.Services.length > 0) {
+            minPrice = Math.min(...prof.Services.map((s: any) => s.base_price || 0));
+          } else if (prof.services && prof.services.length > 0) {
+            minPrice = Math.min(...prof.services.map((s: any) => s.base_price || 0));
+          }
+
+          let acceptedJobs = 0;
+          if (prof.Proposals) {
+            acceptedJobs = prof.Proposals.filter((p: any) => p.accepted).length;
+          } else if (prof.proposals) {
+            acceptedJobs = prof.proposals.filter((p: any) => p.accepted).length;
+          }
+
+          const isCompany = prof.account_type === "company";
+          const companyData = prof.Company?.[0] || prof.company?.[0];
+          const hasPublicStore = isCompany && companyData?.public_trade === true;
+
+          return {
+            id: prof.id,
+            companyName: prof.Profile?.display_name || prof.name || "Sin Nombre",
+            specialty: prof.specialty || profCategoryName,
+            category: profCategoryName,
+            province: prof.Addresses?.[0]?.Province?.name || prof.province || "Desconocida",
+            city: prof.Addresses?.[0]?.Department?.name || prof.city || "Desconocida",
+            accountType: isCompany ? "Comercio" : "Autónomo",
+            emergency: prof.emergency || false,
+            verified: prof.is_matriculate || false,
+            rating: prof.rating_avg || 0,
+            jobs: acceptedJobs,
+            priceLabel: minPrice > 0 ? `Desde $${minPrice.toLocaleString("es-AR")}` : "Consultar precio",
+            avatar: prof.Profile?.avatar_url || fallbackImage,
+            coverImage: catInfo.image,
+            description: prof.bio || prof.description || "Sin descripción",
+            hasPublicStore,
+          };
+        });
+        setProfiles(mappedProfiles);
+      } catch (error) {
+        console.error("Error fetching professionals:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchProfiles();
+  }, []);
 
   const provinceOptions = useMemo(
     () => [
       "Todas",
-      ...Array.from(new Set(mockProfiles.map((profile) => profile.province))),
+      ...Array.from(new Set(profiles.map((profile) => profile.province))),
     ],
-    [],
+    [profiles],
   );
 
   const cityOptions = useMemo(() => {
     const scopedProfiles =
       selectedProvince === "Todas"
-        ? mockProfiles
-        : mockProfiles.filter(
-            (profile) => profile.province === selectedProvince,
-          );
+        ? profiles
+        : profiles.filter((profile) => profile.province === selectedProvince);
 
     return [
       "Todas",
       ...Array.from(new Set(scopedProfiles.map((profile) => profile.city))),
     ];
-  }, [selectedProvince]);
+  }, [selectedProvince, profiles]);
 
   useEffect(() => {
     setSelectedCategory(searchParams.get("category") || "Todas");
@@ -275,22 +163,23 @@ export default function CategoriesPage() {
   const filteredProfiles = useMemo(() => {
     const normalizedQuery = searchTerm.trim().toLowerCase();
 
-    return mockProfiles.filter((profile) => {
+    return profiles.filter((profile) => {
       const matchesCategory =
         selectedCategory === "Todas" || profile.category === selectedCategory;
       const matchesProvince =
         selectedProvince === "Todas" || profile.province === selectedProvince;
       const matchesCity =
         selectedCity === "Todas" || profile.city === selectedCity;
-      const matchesProvider =
-        selectedProviderType === "Todos" ||
-        profile.providerType === selectedProviderType;
+      const matchesAccount =
+        selectedAccountType === "Todos" ||
+        profile.accountType === selectedAccountType;
       const matchesUrgency = !urgentOnly || profile.emergency;
       const matchesVerified = !verifiedOnly || profile.verified;
+      const matchesPublicStore = !publicStoreOnly || profile.hasPublicStore;
       const matchesQuery =
         normalizedQuery.length === 0 ||
         [
-          profile.name,
+          profile.companyName,
           profile.specialty,
           profile.category,
           profile.city,
@@ -304,20 +193,23 @@ export default function CategoriesPage() {
         matchesCategory &&
         matchesProvince &&
         matchesCity &&
-        matchesProvider &&
+        matchesAccount &&
         matchesUrgency &&
         matchesVerified &&
+        matchesPublicStore &&
         matchesQuery
       );
     });
   }, [
+    profiles,
     searchTerm,
     selectedCategory,
     selectedProvince,
     selectedCity,
-    selectedProviderType,
+    selectedAccountType,
     urgentOnly,
     verifiedOnly,
+    publicStoreOnly,
   ]);
 
   return (
@@ -418,12 +310,12 @@ export default function CategoriesPage() {
               <div className="filter-group">
                 <span className="filter-label">Tipo</span>
                 <div className="segmented-control">
-                  {providerTypes.map((type) => (
+                  {accountTypes.map((type) => (
                     <button
                       key={type}
                       type="button"
-                      className={selectedProviderType === type ? "active" : ""}
-                      onClick={() => setSelectedProviderType(type)}
+                      className={selectedAccountType === type ? "active" : ""}
+                      onClick={() => setSelectedAccountType(type)}
                     >
                       {type}
                     </button>
@@ -450,6 +342,18 @@ export default function CategoriesPage() {
                     <div className="switch">
                       <input
                         type="checkbox"
+                        checked={publicStoreOnly}
+                        onChange={() => setPublicStoreOnly((value) => !value)}
+                      />
+                      <span className="slider" />
+                    </div>
+                    <span>Comercio al público</span>
+                  </label>
+
+                  <label className="switch-row">
+                    <div className="switch">
+                      <input
+                        type="checkbox"
                         checked={verifiedOnly}
                         onChange={() => setVerifiedOnly((value) => !value)}
                       />
@@ -461,40 +365,32 @@ export default function CategoriesPage() {
               </div>
             </div>
 
-            <div className="api-card">
-              <h3 className="api-card__title">Endpoints listos para API</h3>
-              <ul className="api-card__list">
-                <li>
-                  <strong>GET</strong> {CATEGORIES_API_ENDPOINTS.listCategories}
-                </li>
-                <li>
-                  <strong>GET</strong> {CATEGORIES_API_ENDPOINTS.listProfiles}
-                </li>
-                <li>
-                  <strong>GET</strong> {CATEGORIES_API_ENDPOINTS.profileDetail}
-                </li>
-                <li>
-                  <strong>GET</strong>{" "}
-                  {CATEGORIES_API_ENDPOINTS.citiesByProvince}
-                </li>
-              </ul>
-            </div>
           </aside>
 
           <div className="results-panel">
             <div className="results-panel__header">
               <div>
                 <p className="results-panel__eyebrow">Resultados</p>
-                <h2>{filteredProfiles.length} especialistas encontrados</h2>
+                <h2>
+                  {isLoading
+                    ? "Buscando especialistas..."
+                    : `${filteredProfiles.length} especialistas encontrados`}
+                </h2>
               </div>
             </div>
 
-            <div className="profiles-grid">
+            {isLoading ? (
+              <div className="loading-state" style={{ padding: "4rem 2rem", textAlign: "center", color: "var(--text-secondary)" }}>
+                <div className="spinner" style={{ margin: "0 auto 1rem", width: "40px", height: "40px", borderRadius: "50%", border: "3px solid var(--border-color)", borderTopColor: "var(--primary-color)", animation: "spin 1s linear infinite" }} />
+                <p>Cargando perfiles...</p>
+              </div>
+            ) : (
+              <div className="profiles-grid">
               {filteredProfiles.map((profile) => (
                 <article
                   key={profile.id}
                   className="profile-result-card"
-                  onClick={() => navigate(`${ROUTES.profile}?id=${profile.id}`)}
+                  onClick={() => navigate(`${ROUTES.profile}/${profile.id}`)}
                 >
                   <div
                     className="profile-result-card__cover"
@@ -511,11 +407,11 @@ export default function CategoriesPage() {
                     <div className="profile-result-card__user">
                       <img
                         src={profile.avatar}
-                        alt={profile.name}
+                        alt={profile.companyName}
                         className="profile-result-card__avatar"
                       />
                       <div>
-                        <h3>{profile.name}</h3>
+                        <h3>{profile.companyName}</h3>
                         <p>{profile.specialty}</p>
                       </div>
                     </div>
@@ -525,7 +421,7 @@ export default function CategoriesPage() {
                         <MapPin size={14} /> {profile.city}, {profile.province}
                       </span>
                       <span className="tag">
-                        <Store size={14} /> {profile.providerType}
+                        <Store size={14} /> {profile.accountType}
                       </span>
                       {profile.emergency && (
                         <span className="tag tag--urgent">
@@ -547,7 +443,6 @@ export default function CategoriesPage() {
                       <div className="profile-result-card__stats">
                         <span>★ {profile.rating}</span>
                         <span>{profile.jobs} trabajos</span>
-                        <span>{profile.responseTime}</span>
                       </div>
 
                       <button
@@ -555,7 +450,7 @@ export default function CategoriesPage() {
                         className="profile-result-card__button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          navigate(`${ROUTES.profile}?id=${profile.id}`);
+                          navigate(`${ROUTES.profile}/${profile.id}`);
                         }}
                       >
                         <UserRound size={16} /> Ver perfil
@@ -564,9 +459,10 @@ export default function CategoriesPage() {
                   </div>
                 </article>
               ))}
-            </div>
+              </div>
+            )}
 
-            {filteredProfiles.length === 0 && (
+            {!isLoading && filteredProfiles.length === 0 && (
               <div className="empty-state">
                 <h3>No hay resultados con esos filtros</h3>
                 <p>
