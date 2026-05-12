@@ -6,13 +6,13 @@
   padding-bottom: 2rem;
 }
 
-.filter-group {
+.services-sidebar .filter-group {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.filter-group-label {
+.services-sidebar .filter-group-label {
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -20,19 +20,19 @@
   margin: 0;
 }
 
-.search-box {
+.services-sidebar .search-box {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.search-icon {
+.services-sidebar .search-icon {
   position: absolute;
   left: 14px;
   color: var(--text-secondary);
 }
 
-.search-box input {
+.services-sidebar .search-box input {
   width: 100%;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -43,19 +43,20 @@
   transition: all 0.2s;
 }
 
-.search-box input:focus {
+.services-sidebar .search-box input:focus {
   outline: none;
-  border-color: var(--accent-color);
+  border-color: var(--border-color);
   background: var(--input-bg);
+  box-shadow: none;
 }
 
-.select-wrapper {
+.services-sidebar .select-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.select-wrapper select {
+.services-sidebar .select-wrapper select {
   width: 100%;
   appearance: none;
   background: var(--bg-card);
@@ -68,24 +69,24 @@
   transition: all 0.2s;
 }
 
-.select-wrapper select:hover {
+.services-sidebar .select-wrapper select:hover {
   background: var(--input-bg);
 }
 
-.select-arrow {
+.services-sidebar .select-arrow {
   position: absolute;
   right: 16px;
   color: var(--text-secondary);
   pointer-events: none;
 }
 
-.multi-select {
+.services-sidebar .multi-select {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.verification-box {
+.services-sidebar .verification-box {
   background: var(--surface-contrast);
   border: 1px solid var(--surface-contrast-border);
   padding: 1.5rem;
@@ -96,7 +97,7 @@
   margin-top: 1rem;
 }
 
-.check-icon-wrapper {
+.services-sidebar .check-icon-wrapper {
   width: 32px;
   height: 32px;
   display: flex;
@@ -104,14 +105,14 @@
   justify-content: center;
 }
 
-.verification-text p {
+.services-sidebar .verification-text p {
   font-size: 0.85rem;
   color: var(--surface-contrast-muted);
   margin: 0;
   line-height: 1.6;
 }
 
-.reset-sidebar-btn {
+.services-sidebar .reset-sidebar-btn {
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -124,7 +125,7 @@
   transition: color 0.2s;
 }
 
-.reset-sidebar-btn:hover {
+.services-sidebar .reset-sidebar-btn:hover {
   color: var(--text-primary);
 }
 

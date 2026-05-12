@@ -17,8 +17,13 @@
   flex: 1;
 }
 
+.services-layout > * {
+  min-width: 0;
+}
+
 .services-main {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
@@ -82,6 +87,7 @@
 .services-results {
   display: grid;
   transition: all 0.3s ease;
+  min-width: 0;
 }
 
 .view-grid {

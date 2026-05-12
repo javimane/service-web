@@ -11,7 +11,7 @@ export interface BankPromotion {
   id: string;
   percentaje_discount: number;
   refund: number;
-  bank_id: number;
+  bank_id?: number | null;
   monday: boolean;
   tuesday: boolean;
   wednesday: boolean;
@@ -29,6 +29,10 @@ export interface BankPromotion {
   terms_conditions?: string | null;
   minimum_amount?: number | null;
   Bank?: Bank;
+  bank_promotions_banks?: Array<{
+    bank_id: number;
+    Bank?: Bank;
+  }>;
   Professional?: {
     id: number;
     Company?: { name: string }[];
@@ -40,28 +44,38 @@ export interface BankPromotion {
 
 export type CreateBankPromotionDto = Omit<
   BankPromotion,
-  "id" | "profile_id" | "created_at" | "updated_at" | "Bank"
->;
+  | "id"
+  | "profile_id"
+  | "created_at"
+  | "updated_at"
+  | "Bank"
+  | "bank_promotions_banks"
+  | "Professional"
+> & {
+  bankIds?: number[];
+};
 
 export const bankPromotionService = {
   getAll: () => apiClient<BankPromotion[]>(API_ENDPOINTS.bankPromotions.base),
-  
-  getMyPromotions: () => apiClient<BankPromotion[]>(API_ENDPOINTS.bankPromotions.my),
-  
-  getById: (id: string) => apiClient<BankPromotion>(API_ENDPOINTS.bankPromotions.detail(id)),
-  
+
+  getMyPromotions: () =>
+    apiClient<BankPromotion[]>(API_ENDPOINTS.bankPromotions.my),
+
+  getById: (id: string) =>
+    apiClient<BankPromotion>(API_ENDPOINTS.bankPromotions.detail(id)),
+
   create: (data: CreateBankPromotionDto) =>
     apiClient<BankPromotion>(API_ENDPOINTS.bankPromotions.base, {
       method: "POST",
       body: JSON.stringify(data),
     }),
-    
+
   update: (id: string, data: Partial<CreateBankPromotionDto>) =>
     apiClient<BankPromotion>(API_ENDPOINTS.bankPromotions.detail(id), {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
-    
+
   delete: (id: string) =>
     apiClient<void>(API_ENDPOINTS.bankPromotions.detail(id), {
       method: "DELETE",

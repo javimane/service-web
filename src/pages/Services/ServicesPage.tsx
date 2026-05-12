@@ -17,7 +17,11 @@ export default function ServicesPage() {
     search: "",
     categoryId: "All",
     provinceId: "All",
-    priceRange: "all",
+    cityId: "All",
+    type: "all",
+    onlyUrgent: false,
+    onlyPublic: false,
+    onlyVerified: false,
   });
   const [viewMode, setViewMode] = useState("grid");
   const [selectedService, setSelectedService] = useState(null);
@@ -29,7 +33,11 @@ export default function ServicesPage() {
       search: filters.search || undefined,
       categoryId: filters.categoryId === "All" ? undefined : filters.categoryId,
       provinceId: filters.provinceId === "All" ? undefined : filters.provinceId,
-      priceRange: filters.priceRange === "all" ? undefined : filters.priceRange,
+      cityId: filters.cityId === "All" ? undefined : filters.cityId,
+      type: filters.type === "all" ? undefined : filters.type,
+      onlyUrgent: filters.onlyUrgent || undefined,
+      onlyPublic: filters.onlyPublic || undefined,
+      onlyVerified: filters.onlyVerified || undefined,
     }),
   });
 
@@ -52,7 +60,11 @@ export default function ServicesPage() {
       search: "",
       categoryId: "All",
       provinceId: "All",
-      priceRange: "all",
+      cityId: "All",
+      type: "all",
+      onlyUrgent: false,
+      onlyPublic: false,
+      onlyVerified: false,
     });
   };
 

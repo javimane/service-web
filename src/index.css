@@ -82,31 +82,3 @@ a {
 a:hover {
   filter: brightness(1.2);
 }
-
-:is(
-  [class*="card"],
-  [class*="btn"],
-  [class*="chip"],
-  [class*="pill"],
-  [class*="item"],
-  .ver-todo,
-  .cta-button,
-  button,
-  a
-):hover {
-  border-color: var(--hover-border-color) !important;
-}
-
-select,
-::picker(select) {
-  appearance: base-select;
-  border-radius: 20px;
-  border-color: coral;
-  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
-}
-
-select:hover {
-  border-color: var(--accent-color);
-  background-color: var(--surface-soft);
-  color: var(--brand-blue);
-}

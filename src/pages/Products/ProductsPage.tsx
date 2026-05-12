@@ -308,287 +308,289 @@ export default function ProductsPage() {
               {activeFiltersCount > 0 && <span className="filter-badge" />}
             </button>
           </div>
+        </div>
 
-          {/* Advanced Filters Panel */}
-          {showFilters && (
-            <div className="products-page__filters-panel">
-              <div className="filter-group">
-                <label>
-                  <Globe size={14} /> Origen
-                </label>
-                <div className="filter-options">
-                  {[
-                    { id: "all", name: "Todos" },
-                    { id: "internal", name: "De la página" },
-                    { id: "external", name: "Externos" },
-                  ].map((opt) => (
-                    <button
-                      key={opt.id}
-                      className={`filter-chip ${filters.is_foreign === opt.id ? "active" : ""}`}
-                      onClick={() => handleFilterChange("is_foreign", opt.id)}
-                    >
-                      {opt.name}
-                    </button>
-                  ))}
-                </div>
+        <section className="products-page__content">
+          <aside className={`products-sidebar ${showFilters ? "active" : ""}`}>
+            <div className="products-sidebar__header">
+              <h3>Filtros</h3>
+              <button
+                className="close-filters-btn"
+                onClick={() => setShowFilters(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="filter-group">
+              <label>
+                <Globe size={14} /> Origen
+              </label>
+              <div className="filter-options">
+                {[
+                  { id: "all", name: "Todos" },
+                  { id: "internal", name: "Locales" },
+                  { id: "external", name: "Externos" },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    className={`filter-chip ${filters.is_foreign === opt.id ? "active" : ""}`}
+                    onClick={() => handleFilterChange("is_foreign", opt.id)}
+                  >
+                    {opt.name}
+                  </button>
+                ))}
               </div>
+            </div>
 
-              <div className="filter-group">
-                <label>
-                  <MapPin size={14} /> Provincia
-                </label>
-                <select
-                  value={filters.provinceId}
-                  onChange={(e) =>
-                    handleFilterChange("provinceId", e.target.value)
-                  }
-                >
-                  <option value="all">Todas las provincias</option>
-                  {provinces.map((p) => (
-                    <option key={p.id} value={String(p.id)}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="filter-group">
+              <label>
+                <MapPin size={14} /> Provincia
+              </label>
+              <select
+                value={filters.provinceId}
+                onChange={(e) =>
+                  handleFilterChange("provinceId", e.target.value)
+                }
+              >
+                <option value="all">Todas las provincias</option>
+                {provinces.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="filter-group">
-                <label>Marca</label>
-                <input
-                  type="text"
-                  value={filters.brand}
-                  placeholder="Ej: Samsung"
-                  onChange={(e) => handleFilterChange("brand", e.target.value)}
-                  className="filter-input"
-                />
-              </div>
+            <div className="filter-group">
+              <label>
+                <Package size={14} /> Categoría
+              </label>
+              <select
+                value={filters.categoryId}
+                onChange={(e) =>
+                  handleFilterChange("categoryId", e.target.value)
+                }
+              >
+                <option value="all">Todas las categorías</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="filter-group">
-                <label>EAN</label>
-                <input
-                  type="text"
-                  value={filters.ean}
-                  placeholder="Código de barras"
-                  onChange={(e) => handleFilterChange("ean", e.target.value)}
-                  className="filter-input"
-                />
-              </div>
+            <div className="filter-group">
+              <label>Marca</label>
+              <input
+                type="text"
+                value={filters.brand}
+                placeholder="Ej: Samsung"
+                onChange={(e) => handleFilterChange("brand", e.target.value)}
+                className="filter-input"
+              />
+            </div>
 
-              <div className="filter-group">
-                <label>Precio exacto</label>
+            <div className="filter-group">
+              <label>Rango de precio</label>
+              <div className="filter-range">
                 <input
                   type="number"
                   min="0"
-                  value={filters.price}
-                  placeholder="Ej: 12000"
-                  onChange={(e) => handleFilterChange("price", e.target.value)}
+                  value={filters.priceMin}
+                  placeholder="Mín"
+                  onChange={(e) =>
+                    handleFilterChange("priceMin", e.target.value)
+                  }
+                  className="filter-input"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  value={filters.priceMax}
+                  placeholder="Máx"
+                  onChange={(e) =>
+                    handleFilterChange("priceMax", e.target.value)
+                  }
                   className="filter-input"
                 />
               </div>
+            </div>
 
-              <div className="filter-group">
-                <label>Rango de precio</label>
-                <div className="filter-range">
-                  <input
-                    type="number"
-                    min="0"
-                    value={filters.priceMin}
-                    placeholder="Mín"
+            <button className="clear-filters-btn" onClick={clearFilters}>
+              Limpiar Filtros
+            </button>
+          </aside>
+
+          <div className="products-results">
+            {/* Header controls inside results for better flow */}
+            <div className="results-header">
+              <div className="results-header__info">
+                <p>
+                  {isLoading
+                    ? "Buscando..."
+                    : `${normalizedProductsResponse.count} productos encontrados`}
+                </p>
+              </div>
+              <div className="results-header__controls">
+                <div className="products-page__sort">
+                  <SlidersHorizontal size={16} />
+                  <select
+                    value={filters.sortBy}
                     onChange={(e) =>
-                      handleFilterChange("priceMin", e.target.value)
+                      handleFilterChange("sortBy", e.target.value)
                     }
-                    className="filter-input"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    value={filters.priceMax}
-                    placeholder="Máx"
-                    onChange={(e) =>
-                      handleFilterChange("priceMax", e.target.value)
-                    }
-                    className="filter-input"
-                  />
+                  >
+                    {sortOptions.map((opt) => (
+                      <option key={opt.key} value={opt.key}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="products-page__view-toggle">
+                  <button
+                    type="button"
+                    className={viewMode === "grid" ? "active" : ""}
+                    onClick={() => setViewMode("grid")}
+                  >
+                    <Grid3X3 size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className={viewMode === "list" ? "active" : ""}
+                    onClick={() => setViewMode("list")}
+                  >
+                    <List size={16} />
+                  </button>
                 </div>
               </div>
-
-              <div className="filter-group">
-                <label>Resultados por página</label>
-                <select
-                  value={filters.limit}
-                  onChange={(e) => handleFilterChange("limit", e.target.value)}
-                >
-                  {pageLimitOptions.map((size) => (
-                    <option key={size} value={String(size)}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>
-                  <Package size={14} /> Categoría
-                </label>
-                <select
-                  value={filters.categoryId}
-                  onChange={(e) =>
-                    handleFilterChange("categoryId", e.target.value)
-                  }
-                >
-                  <option value="all">Todas las categorías</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label>
-                  <SlidersHorizontal size={14} /> Ordenar por
-                </label>
-                <select
-                  value={filters.sortBy}
-                  onChange={(e) => handleFilterChange("sortBy", e.target.value)}
-                >
-                  {sortOptions.map((opt) => (
-                    <option key={opt.key} value={opt.key}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button className="clear-filters-btn" onClick={clearFilters}>
-                Limpiar Filtros
-              </button>
             </div>
-          )}
-        </div>
-
-        {/* Products Grid/List */}
-        <div
-          className={`products-page__grid ${viewMode === "list" ? "products-page__grid--list" : ""}`}
-        >
-          {isLoading ? (
-            <div className="products-page__loading">
-              <Loader2 className="animate-spin" size={32} />
-              <p>Cargando productos...</p>
-            </div>
-          ) : (
-            productsList.map((product) => (
-              <button
-                key={product.id}
-                type="button"
-                className={`product-card ${viewMode === "list" ? "product-card--list" : ""}`}
-                onClick={() => setSelectedProduct(product)}
-              >
-                <div className="product-card__image">
-                  <img src={product.image} alt={product.title} />
-                  {product.is_foreign && (
-                    <span className="product-card__badge-foreign">
-                      <Globe size={10} /> EXTERNO
-                    </span>
-                  )}
-                  {product.discount > 0 && (
-                    <span className="product-card__badge-discount">
-                      -{product.discount}%
-                    </span>
-                  )}
+            <div
+              className={`products-page__grid ${viewMode === "list" ? "products-page__grid--list" : ""}`}
+            >
+              {isLoading ? (
+                <div className="products-page__loading">
+                  <Loader2 className="animate-spin" size={32} />
+                  <p>Cargando productos...</p>
                 </div>
-
-                <div className="product-card__body">
-                  <span className="product-card__seller">{product.seller}</span>
-                  <h3 className="product-card__title">{product.title}</h3>
-
-                  <div className="product-card__pricing">
-                    {product.originalPrice && (
-                      <span className="product-card__original">
-                        ${formatPrice(product.originalPrice)}
-                      </span>
-                    )}
-                    <div className="product-card__price-row">
-                      <span className="product-card__price">
-                        ${formatPrice(product.price)}
-                      </span>
+              ) : (
+                productsList.map((product) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    className={`product-card ${viewMode === "list" ? "product-card--list" : ""}`}
+                    onClick={() => setSelectedProduct(product)}
+                  >
+                    <div className="product-card__image">
+                      <img src={product.image} alt={product.title} />
+                      {product.is_foreign && (
+                        <span className="product-card__badge-foreign">
+                          <Globe size={10} /> EXTERNO
+                        </span>
+                      )}
                       {product.discount > 0 && (
-                        <span className="product-card__discount">
-                          {product.discount}% OFF
+                        <span className="product-card__badge-discount">
+                          -{product.discount}%
                         </span>
                       )}
                     </div>
-                  </div>
 
-                  <div className="product-card__rating">
-                    <div className="product-card__stars">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          size={13}
-                          fill={
-                            i < Math.round(product.rating)
-                              ? "currentColor"
-                              : "none"
-                          }
-                          className={
-                            i < Math.round(product.rating)
-                              ? "star-filled"
-                              : "star-empty"
-                          }
-                        />
-                      ))}
+                    <div className="product-card__body">
+                      <span className="product-card__seller">
+                        {product.seller}
+                      </span>
+                      <h3 className="product-card__title">{product.title}</h3>
+
+                      <div className="product-card__pricing">
+                        {product.originalPrice && (
+                          <span className="product-card__original">
+                            ${formatPrice(product.originalPrice)}
+                          </span>
+                        )}
+                        <div className="product-card__price-row">
+                          <span className="product-card__price">
+                            ${formatPrice(product.price)}
+                          </span>
+                          {product.discount > 0 && (
+                            <span className="product-card__discount">
+                              {product.discount}% OFF
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="product-card__rating">
+                        <div className="product-card__stars">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={13}
+                              fill={
+                                i < Math.round(product.rating)
+                                  ? "currentColor"
+                                  : "none"
+                              }
+                              className={
+                                i < Math.round(product.rating)
+                                  ? "star-filled"
+                                  : "star-empty"
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {viewMode === "list" && (
+                        <p className="product-card__description">
+                          {product.description}
+                        </p>
+                      )}
                     </div>
-                  </div>
+                  </button>
+                ))
+              )}
+            </div>
 
-                  {viewMode === "list" && (
-                    <p className="product-card__description">
-                      {product.description}
-                    </p>
-                  )}
-                </div>
-              </button>
-            ))
-          )}
-        </div>
+            {!isLoading && productsList.length === 0 && (
+              <div className="products-page__empty">
+                <Search size={48} />
+                <h3>No encontramos resultados</h3>
+                <p>Prueba ajustando los filtros o realizando otra búsqueda.</p>
+                <button className="clear-filters-btn" onClick={clearFilters}>
+                  Ver todos los productos
+                </button>
+              </div>
+            )}
 
-        {!isLoading && productsList.length === 0 && (
-          <div className="products-page__empty">
-            <Search size={48} />
-            <h3>No encontramos resultados</h3>
-            <p>Prueba ajustando los filtros o realizando otra búsqueda.</p>
-            <button className="clear-filters-btn" onClick={clearFilters}>
-              Ver todos los productos
-            </button>
+            {!isLoading && normalizedProductsResponse.totalPages > 1 && (
+              <div className="products-page__pagination">
+                <button
+                  type="button"
+                  className="products-page__pagination-btn"
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page <= 1}
+                >
+                  Anterior
+                </button>
+
+                <span className="products-page__pagination-info">
+                  Página {page} de {normalizedProductsResponse.totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  className="products-page__pagination-btn"
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page >= normalizedProductsResponse.totalPages}
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
           </div>
-        )}
-
-        {!isLoading && normalizedProductsResponse.totalPages > 1 && (
-          <div className="products-page__pagination">
-            <button
-              type="button"
-              className="products-page__pagination-btn"
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page <= 1}
-            >
-              Anterior
-            </button>
-
-            <span className="products-page__pagination-info">
-              Página {page} de {normalizedProductsResponse.totalPages}
-            </span>
-
-            <button
-              type="button"
-              className="products-page__pagination-btn"
-              onClick={() => handlePageChange(page + 1)}
-              disabled={page >= normalizedProductsResponse.totalPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
+        </section>
       </main>
 
       <Footer />

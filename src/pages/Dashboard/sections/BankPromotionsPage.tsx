@@ -113,10 +113,46 @@ export default function BankPromotionsPage() {
     ? "No se pudieron cargar las promociones."
     : formError;
 
+  const getPromoBankIds = (promo: BankPromotion): number[] => {
+    const relationIds = (promo.bank_promotions_banks || [])
+      .map((relation) => relation.Bank?.id ?? relation.bank_id)
+      .filter((id): id is number => typeof id === "number");
+
+    if (relationIds.length > 0) {
+      return Array.from(new Set(relationIds));
+    }
+
+    if (typeof promo.bank_id === "number") {
+      return [promo.bank_id];
+    }
+
+    return [];
+  };
+
+  const getPromoBankNames = (promo: BankPromotion): string[] => {
+    const relationNames = (promo.bank_promotions_banks || [])
+      .map((relation) => relation.Bank?.name)
+      .filter((name): name is string => Boolean(name));
+
+    if (relationNames.length > 0) {
+      return Array.from(new Set(relationNames));
+    }
+
+    if (promo.Bank?.name) {
+      return [promo.Bank.name];
+    }
+
+    if (typeof promo.bank_id === "number") {
+      const fallbackBank = banks.find((bank) => bank.id === promo.bank_id);
+      return [fallbackBank?.name || "Banco"];
+    }
+
+    return ["Banco"];
+  };
+
   const [form, setForm] = useState({
     percentaje_discount: 0,
     refund: 0,
-    bank_id: 0,
     monday: false,
     tuesday: false,
     wednesday: false,
@@ -140,7 +176,6 @@ export default function BankPromotionsPage() {
       setForm({
         percentaje_discount: promo.percentaje_discount,
         refund: promo.refund,
-        bank_id: promo.bank_id,
         monday: promo.monday,
         tuesday: promo.tuesday,
         wednesday: promo.wednesday,
@@ -155,13 +190,12 @@ export default function BankPromotionsPage() {
         terms_conditions: promo.terms_conditions || "",
         minimum_amount: promo.minimum_amount || 0,
       });
-      setSelectedBankIds([promo.bank_id]);
+      setSelectedBankIds(getPromoBankIds(promo));
     } else {
       setEditingPromo(null);
       setForm({
         percentaje_discount: 0,
         refund: 0,
-        bank_id: 0,
         monday: false,
         tuesday: false,
         wednesday: false,
@@ -203,16 +237,9 @@ export default function BankPromotionsPage() {
 
   const handleBankToggle = (bankId: number) => {
     setSelectedBankIds((prev) => {
-      const next = prev.includes(bankId)
+      return prev.includes(bankId)
         ? prev.filter((id) => id !== bankId)
         : [bankId, ...prev];
-
-      setForm((prevForm) => ({
-        ...prevForm,
-        bank_id: next[0] ?? 0,
-      }));
-
-      return next;
     });
   };
 
@@ -247,28 +274,15 @@ export default function BankPromotionsPage() {
 
     try {
       const uniqueBankIds = Array.from(new Set(selectedBankIds));
+      const payload = { ...form, bankIds: uniqueBankIds };
 
       if (editingPromo) {
-        const [primaryBankId, ...additionalBankIds] = uniqueBankIds;
-
         await updateMutation.mutateAsync({
           id: editingPromo.id,
-          data: { ...form, bank_id: primaryBankId },
+          data: payload,
         });
-
-        if (additionalBankIds.length > 0) {
-          await Promise.all(
-            additionalBankIds.map((bankId) =>
-              createMutation.mutateAsync({ ...form, bank_id: bankId }),
-            ),
-          );
-        }
       } else {
-        const promises = uniqueBankIds.map((bankId) => {
-          const promoData = { ...form, bank_id: bankId };
-          return createMutation.mutateAsync(promoData);
-        });
-        await Promise.all(promises);
+        await createMutation.mutateAsync(payload);
       }
       handleCloseModal();
     } catch (err: any) {
@@ -349,124 +363,170 @@ export default function BankPromotionsPage() {
               key={promo.id}
               className={`bank-promo-card ${isExpired ? "bank-promo-card--expired" : ""}`}
             >
-              {isExpired && (
-                <div className="bank-promo-card__expired-badge">Expirado</div>
-              )}
-              <div className="bank-promo-card__header">
-                <div className="bank-promo-card__bank">
-                  <div className="bank-promo-card__icon">
-                    <Building2 size={24} />
-                  </div>
-                  <div className="bank-promo-card__bank-info">
-                    <h3>{promo.Bank?.name || "Banco"}</h3>
-                    <p>{promo.description || "Sin descripción"}</p>
-                  </div>
-                </div>
-                <div className="bank-promo-card__actions">
-                  <button
-                    type="button"
-                    className="bank-promo-card__action"
-                    onClick={() => handleOpenModal(promo)}
-                    title="Editar"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className="bank-promo-card__action bank-promo-card__action--danger"
-                    onClick={() => handleDelete(promo.id)}
-                    title="Eliminar"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
+              {(() => {
+                const bankNames = getPromoBankNames(promo);
+                const primaryName = bankNames[0] || "Banco";
+                const secondaryCount = Math.max(bankNames.length - 1, 0);
 
-              <div className="bank-promo-card__details">
-                <div className="bank-promo-card__detail-row">
-                  <span className="bank-promo-card__detail-label">
-                    <Percent size={14} /> Descuento
-                  </span>
-                  <span className="bank-promo-card__detail-value bank-promo-card__detail-value--highlight">
-                    {promo.percentaje_discount}% OFF
-                  </span>
-                </div>
-                <div className="bank-promo-card__detail-row">
-                  <span className="bank-promo-card__detail-label">
-                    <CreditCard size={14} /> Tope de reintegro
-                  </span>
-                  <span className="bank-promo-card__detail-value">
-                    ${promo.refund.toLocaleString()}
-                  </span>
-                </div>
-                {promo.minimum_amount > 0 && (
-                  <div className="bank-promo-card__detail-row">
-                    <span className="bank-promo-card__detail-label">
-                      <WalletCards size={14} /> Compra mínima
-                    </span>
-                    <span className="bank-promo-card__detail-value">
-                      ${promo.minimum_amount.toLocaleString()}
-                    </span>
-                  </div>
-                )}
-                <div className="bank-promo-card__detail-row">
-                  <span className="bank-promo-card__detail-label">
-                    <CalendarDays size={14} /> Vigencia
-                  </span>
-                  <span className="bank-promo-card__detail-value">
-                    {formatDateDisplay(promo.from_date)} -{" "}
-                    {formatDateDisplay(promo.expiration_date)}
-                  </span>
-                </div>
-
-                {promo.payment_method &&
-                  JSON.parse(promo.payment_method).length > 0 && (
-                    <div
-                      className="bank-promo-card__detail-row"
-                      style={{
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        gap: "8px",
-                      }}
-                    >
-                      <span className="bank-promo-card__detail-label">
-                        Métodos de pago
-                      </span>
-                      <div className="bank-promo-card__methods">
-                        {JSON.parse(promo.payment_method).map((m: string) => (
-                          <span key={m} className="bank-promo-method-tag">
-                            {m}
-                          </span>
-                        ))}
+                return (
+                  <>
+                    {isExpired && (
+                      <div className="bank-promo-card__expired-badge">
+                        Expirado
+                      </div>
+                    )}
+                    <div className="bank-promo-card__header">
+                      <div className="bank-promo-card__bank">
+                        <div className="bank-promo-card__icon">
+                          <Building2 size={24} />
+                        </div>
+                        <div className="bank-promo-card__bank-info">
+                          <h3>
+                            {primaryName}
+                            {secondaryCount > 0 ? ` +${secondaryCount}` : ""}
+                          </h3>
+                          <p>{promo.description || "Sin descripción"}</p>
+                        </div>
+                      </div>
+                      <div className="bank-promo-card__actions">
+                        <button
+                          type="button"
+                          className="bank-promo-card__action"
+                          onClick={() => handleOpenModal(promo)}
+                          title="Editar"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="bank-promo-card__action bank-promo-card__action--danger"
+                          onClick={() => handleDelete(promo.id)}
+                          title="Eliminar"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
-                  )}
 
-                <div
-                  className="bank-promo-card__detail-row"
-                  style={{
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    gap: "8px",
-                  }}
-                >
-                  <span className="bank-promo-card__detail-label">
-                    Días de aplicación
-                  </span>
-                  <div className="bank-promo-card__days">
-                    {DAYS_OF_WEEK.map((day) => (
-                      <span
-                        key={day.id}
-                        className={`bank-promo-card__day ${
-                          (promo as any)[day.id] ? "active" : ""
-                        }`}
+                    {bankNames.length > 1 && (
+                      <div
+                        className="bank-promo-card__detail-row"
+                        style={{
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          gap: "8px",
+                          marginBottom: "8px",
+                        }}
                       >
-                        {day.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                        <span className="bank-promo-card__detail-label">
+                          Bancos
+                        </span>
+                        <div className="bank-promo-card__methods">
+                          {bankNames.map((bankName) => (
+                            <span
+                              key={bankName}
+                              className="bank-promo-method-tag"
+                            >
+                              {bankName}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bank-promo-card__details">
+                      <div className="bank-promo-card__detail-row">
+                        <span className="bank-promo-card__detail-label">
+                          <Percent size={14} /> Descuento
+                        </span>
+                        <span className="bank-promo-card__detail-value bank-promo-card__detail-value--highlight">
+                          {promo.percentaje_discount}% OFF
+                        </span>
+                      </div>
+                      <div className="bank-promo-card__detail-row">
+                        <span className="bank-promo-card__detail-label">
+                          <CreditCard size={14} /> Tope de reintegro
+                        </span>
+                        <span className="bank-promo-card__detail-value">
+                          ${promo.refund.toLocaleString()}
+                        </span>
+                      </div>
+                      {promo.minimum_amount > 0 && (
+                        <div className="bank-promo-card__detail-row">
+                          <span className="bank-promo-card__detail-label">
+                            <WalletCards size={14} /> Compra mínima
+                          </span>
+                          <span className="bank-promo-card__detail-value">
+                            ${promo.minimum_amount.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="bank-promo-card__detail-row">
+                        <span className="bank-promo-card__detail-label">
+                          <CalendarDays size={14} /> Vigencia
+                        </span>
+                        <span className="bank-promo-card__detail-value">
+                          {formatDateDisplay(promo.from_date)} -{" "}
+                          {formatDateDisplay(promo.expiration_date)}
+                        </span>
+                      </div>
+
+                      {promo.payment_method &&
+                        JSON.parse(promo.payment_method).length > 0 && (
+                          <div
+                            className="bank-promo-card__detail-row"
+                            style={{
+                              flexDirection: "column",
+                              alignItems: "flex-start",
+                              gap: "8px",
+                            }}
+                          >
+                            <span className="bank-promo-card__detail-label">
+                              Métodos de pago
+                            </span>
+                            <div className="bank-promo-card__methods">
+                              {JSON.parse(promo.payment_method).map(
+                                (m: string) => (
+                                  <span
+                                    key={m}
+                                    className="bank-promo-method-tag"
+                                  >
+                                    {m}
+                                  </span>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                      <div
+                        className="bank-promo-card__detail-row"
+                        style={{
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          gap: "8px",
+                        }}
+                      >
+                        <span className="bank-promo-card__detail-label">
+                          Días de aplicación
+                        </span>
+                        <div className="bank-promo-card__days">
+                          {DAYS_OF_WEEK.map((day) => (
+                            <span
+                              key={day.id}
+                              className={`bank-promo-card__day ${
+                                (promo as any)[day.id] ? "active" : ""
+                              }`}
+                            >
+                              {day.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           );
         })}

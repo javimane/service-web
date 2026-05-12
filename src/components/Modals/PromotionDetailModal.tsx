@@ -1,10 +1,21 @@
-import React, { useRef } from 'react';
-import { Download, Calendar, MapPin, CheckCircle, X, Sparkles, WalletCards, TicketPercent, Building2, FileText } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../routes/paths';
-import Modal from '../Modal/Modal';
-import { toJpeg } from 'html-to-image';
-import './PromotionDetailModal.css';
+import React, { useRef } from "react";
+import {
+  Download,
+  Calendar,
+  MapPin,
+  CheckCircle,
+  X,
+  Sparkles,
+  WalletCards,
+  TicketPercent,
+  Building2,
+  FileText,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../routes/paths";
+import Modal from "../Modal/Modal";
+import { toJpeg } from "html-to-image";
+import "./PromotionDetailModal.css";
 
 interface PromotionDetailModalProps {
   promo: any;
@@ -13,41 +24,72 @@ interface PromotionDetailModalProps {
   userProvince?: string;
 }
 
-export default function PromotionDetailModal({ promo, isOpen, onClose, userProvince }: PromotionDetailModalProps) {
+export default function PromotionDetailModal({
+  promo,
+  isOpen,
+  onClose,
+  userProvince,
+}: PromotionDetailModalProps) {
   const navigate = useNavigate();
   const couponRef = useRef<HTMLDivElement>(null);
 
   if (!promo) return null;
 
   // Normalize data between BankPromotion and ProfessionalPromotion
-  const isBank = promo.type === 'bank' || !!promo.Bank;
-  const bankName = promo.Bank?.name || promo.bank?.name;
-  
-  const companyName = promo.professionalName || 
-    promo.Professional?.Company?.[0]?.name || 
-    promo.Professional?.Company?.name || 
-    'Profesional';
-  
-  const title = isBank ? `${promo.percentaje_discount}% de descuento` : promo.title;
-  const description = promo.description || (isBank ? `Ahorrá hasta $${promo.refund} en tus compras.` : '');
-  const offer = isBank ? `${promo.percentaje_discount}%` : (
-    promo.offer || (
-      promo.discount_type === 'percentage' || promo.discount_type === 'Percentage' ? `${promo.discount_value}% OFF` :
-      promo.discount_type === 'fixed' || promo.discount_type === 'Fixed Amount' ? `$${promo.discount_value} OFF` :
-      promo.discount_type === '2x1' ? '2x1' : 'GRATIS'
-    )
-  );
-  
+  const relationBankNames = (promo.bank_promotions_banks || [])
+    .map((relation: any) => relation?.Bank?.name)
+    .filter(Boolean);
+  const bankNames =
+    relationBankNames.length > 0
+      ? Array.from(new Set(relationBankNames))
+      : [promo.Bank?.name || promo.bank?.name].filter(Boolean);
+
+  const isBank = promo.type === "bank" || bankNames.length > 0 || !!promo.Bank;
+  const bankName = bankNames.length > 0 ? bankNames.join(", ") : undefined;
+
+  const companyName =
+    promo.professionalName ||
+    promo.Professional?.Company?.[0]?.name ||
+    promo.Professional?.Company?.name ||
+    "Profesional";
+
+  const title = isBank
+    ? `${promo.percentaje_discount}% de descuento`
+    : promo.title;
+  const description =
+    promo.description ||
+    (isBank ? `Ahorrá hasta $${promo.refund} en tus compras.` : "");
+  const offer = isBank
+    ? `${promo.percentaje_discount}%`
+    : promo.offer ||
+      (promo.discount_type === "percentage" ||
+      promo.discount_type === "Percentage"
+        ? `${promo.discount_value}% OFF`
+        : promo.discount_type === "fixed" ||
+            promo.discount_type === "Fixed Amount"
+          ? `$${promo.discount_value} OFF`
+          : promo.discount_type === "2x1"
+            ? "2x1"
+            : "GRATIS");
+
   const avatarUrl = promo.Professional?.Profile?.avatar_url;
   const professionalId = promo.professional_id || promo.professionalId;
-  
-  const validFrom = promo.validFrom || (promo.from_date ? new Date(promo.from_date).toLocaleDateString() : 'N/A');
-  const validTo = promo.validTo || (promo.expires_at ? new Date(promo.expires_at).toLocaleDateString() : 'Indefinido');
-  
-  const image = promo.image || (
-    isBank ? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800' :
-    (promo.image_url || 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=800')
-  );
+
+  const validFrom =
+    promo.validFrom ||
+    (promo.from_date ? new Date(promo.from_date).toLocaleDateString() : "N/A");
+  const validTo =
+    promo.validTo ||
+    (promo.expires_at
+      ? new Date(promo.expires_at).toLocaleDateString()
+      : "Indefinido");
+
+  const image =
+    promo.image ||
+    (isBank
+      ? "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800"
+      : promo.image_url ||
+        "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=800");
 
   const handleDownload = async () => {
     if (!couponRef.current) return;
@@ -58,7 +100,7 @@ export default function PromotionDetailModal({ promo, isOpen, onClose, userProvi
         pixelRatio: 2,
       });
       const link = document.createElement("a");
-      link.download = `cupon-${title.toLowerCase().replace(/\s+/g, '-')}.jpg`;
+      link.download = `cupon-${title.toLowerCase().replace(/\s+/g, "-")}.jpg`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -84,10 +126,10 @@ export default function PromotionDetailModal({ promo, isOpen, onClose, userProvi
 
         <div className="promo-detail-modal__coupon-wrapper" ref={couponRef}>
           <div className="promo-detail-modal__top-banner">
-            <div 
-              className="promo-detail-modal__professional-mini" 
+            <div
+              className="promo-detail-modal__professional-mini"
               onClick={handleProfileClick}
-              style={{ cursor: professionalId ? 'pointer' : 'default' }}
+              style={{ cursor: professionalId ? "pointer" : "default" }}
             >
               <div className="avatar-container">
                 {avatarUrl ? (
@@ -101,7 +143,9 @@ export default function PromotionDetailModal({ promo, isOpen, onClose, userProvi
               <div className="prof-info">
                 <span className="prof-name">{companyName}</span>
                 <span className="prof-label">
-                  {isBank ? `BENEFICIO: ${bankName || 'Banco'}` : 'PROFESIONAL VERIFICADO'}
+                  {isBank
+                    ? `BENEFICIO: ${bankName || "Banco"}`
+                    : "PROFESIONAL VERIFICADO"}
                 </span>
               </div>
             </div>
@@ -121,9 +165,7 @@ export default function PromotionDetailModal({ promo, isOpen, onClose, userProvi
 
           <div className="promo-detail-modal__body">
             <h3 className="promo-detail-modal__title">{title}</h3>
-            <p className="promo-detail-modal__description">
-              {description}
-            </p>
+            <p className="promo-detail-modal__description">{description}</p>
 
             <div className="promo-detail-modal__details">
               <div className="promo-detail-modal__detail-item">
@@ -132,7 +174,7 @@ export default function PromotionDetailModal({ promo, isOpen, onClose, userProvi
                   <strong>Validez:</strong> {validFrom} al {validTo}
                 </span>
               </div>
-              
+
               {isBank && promo.refund && (
                 <div className="promo-detail-modal__detail-item">
                   <WalletCards size={16} />
@@ -155,34 +197,39 @@ export default function PromotionDetailModal({ promo, isOpen, onClose, userProvi
                 <div className="promo-detail-modal__detail-item">
                   <Calendar size={16} />
                   <span>
-                    <strong>Días:</strong> {
-                      [
-                        promo.monday && 'Lun',
-                        promo.tuesday && 'Mar',
-                        promo.wednesday && 'Mié',
-                        promo.thursday && 'Jue',
-                        promo.friday && 'Vie',
-                        promo.saturday && 'Sáb',
-                        promo.sunday && 'Dom'
-                      ].filter(Boolean).join(', ')
-                    }
+                    <strong>Días:</strong>{" "}
+                    {[
+                      promo.monday && "Lun",
+                      promo.tuesday && "Mar",
+                      promo.wednesday && "Mié",
+                      promo.thursday && "Jue",
+                      promo.friday && "Vie",
+                      promo.saturday && "Sáb",
+                      promo.sunday && "Dom",
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
                   </span>
                 </div>
               )}
 
-              {isBank && promo.payment_method && JSON.parse(promo.payment_method).length > 0 && (
-                <div className="promo-detail-modal__detail-item promo-detail-modal__detail-item--column">
-                  <div className="detail-item-header">
-                    <WalletCards size={16} />
-                    <strong>Métodos de pago aceptados:</strong>
+              {isBank &&
+                promo.payment_method &&
+                JSON.parse(promo.payment_method).length > 0 && (
+                  <div className="promo-detail-modal__detail-item promo-detail-modal__detail-item--column">
+                    <div className="detail-item-header">
+                      <WalletCards size={16} />
+                      <strong>Métodos de pago aceptados:</strong>
+                    </div>
+                    <div className="payment-methods-tags">
+                      {JSON.parse(promo.payment_method).map((m: string) => (
+                        <span key={m} className="payment-method-tag">
+                          {m}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="payment-methods-tags">
-                    {JSON.parse(promo.payment_method).map((m: string) => (
-                      <span key={m} className="payment-method-tag">{m}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
               {isBank && promo.terms_conditions && (
                 <div className="promo-detail-modal__detail-item promo-detail-modal__detail-item--column">
@@ -218,7 +265,8 @@ export default function PromotionDetailModal({ promo, isOpen, onClose, userProvi
           </button>
 
           <p className="promo-detail-modal__footer-text">
-            <CheckCircle size={12} /> Presenta este cupón al momento del servicio
+            <CheckCircle size={12} /> Presenta este cupón al momento del
+            servicio
           </p>
         </div>
       </div>
