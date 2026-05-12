@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Search,
   SlidersHorizontal,
@@ -50,6 +51,9 @@ const defaultFilters = {
 };
 
 export default function ProductsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const professionalIdParam = searchParams.get("professionalId");
+  
   const [filters, setFilters] = useState(defaultFilters);
   const [debouncedTextFilters, setDebouncedTextFilters] = useState({
     search: defaultFilters.search,
@@ -117,6 +121,7 @@ export default function ProductsPage() {
         brand: effectiveFilters.brand || undefined,
         ean: effectiveFilters.ean || undefined,
         sortBy: effectiveFilters.sortBy,
+        professionalId: professionalIdParam || undefined,
       };
       if (effectiveFilters.is_foreign !== "all") {
         params.is_foreign = effectiveFilters.is_foreign === "external";
@@ -432,6 +437,20 @@ export default function ProductsPage() {
                 />
               </div>
             </div>
+
+            {professionalIdParam && (
+              <div className="products-filter-section">
+                <div className="professional-filter-badge">
+                  <span>Filtrando por profesional</span>
+                  <button onClick={() => {
+                    searchParams.delete("professionalId");
+                    setSearchParams(searchParams);
+                  }}>
+                    <X size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             <button className="clear-filters-btn" onClick={clearFilters}>
               Limpiar Filtros

@@ -1,13 +1,17 @@
 import { useState, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Star, MessageCircle, Phone, ArrowUpRight, Loader2, Play, Heart, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, MessageCircle, Phone, ArrowUpRight, Loader2, Play, Heart, Eye, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { ROUTES } from "../../routes/paths";
 import { professionalService } from "../../services/professionalService";
 import { serviceService } from "../../services/serviceService";
 import { professionalImagesService } from "../../services/professionalImagesService";
 import { videosService } from "../../services/videosService";
 import { reelsService } from "../../services/reelsService";
 import { reviewService } from "../../services/reviewService";
+import { professionalPromotionService } from "../../services/professionalPromotionService";
+import { bankPromotionService } from "../../services/bankPromotionService";
+import { productService } from "../../services/productService";
 import TestimonialCard from "./sections/TestimonialCard";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
@@ -15,6 +19,8 @@ import Modal from "../../components/Modal/Modal";
 import PaymentMethodsCard from "../../components/Cards/PaymentMethodsCard";
 import BankPromosCard from "../../components/Cards/BankPromosCard";
 import "./ProfilePage.css";
+import ProductCard from "../../components/Cards/ProductCard";
+import PromotionDetailModal from "../../components/Modals/PromotionDetailModal";
 
 // Custom hook for drag-to-scroll
 function useDraggableScroll() {
@@ -129,11 +135,14 @@ export default function ProfilePage() {
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
   const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
   const [isBankPromosModalOpen, setIsBankPromosModalOpen] = useState(false);
+  const [isPromosModalOpen, setIsPromosModalOpen] = useState(false);
+  const [selectedPromoForDetail, setSelectedPromoForDetail] = useState<any>(null);
   const [selectedReel, setSelectedReel] = useState(null);
   const [selectedVideo, setSelectedVideo] = useState(null);
 
   const servicesScroll = useDraggableScroll();
   const videosScroll = useDraggableScroll();
+  const productsScroll = useDraggableScroll();
 
   const { data: professional, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["professional-detail", id],
@@ -170,9 +179,57 @@ export default function ProfilePage() {
     enabled: !!id
   });
 
+  const { data: profPromotions = [] } = useQuery({
+    queryKey: ["professional-promotions", id],
+    queryFn: () => professionalPromotionService.getByProfessional(id!),
+    enabled: !!id
+  });
+
+  const { data: allBankPromos = [] } = useQuery({
+    queryKey: ["all-bank-promotions"],
+    queryFn: () => bankPromotionService.getAll(),
+  });
+
+  const { data: products = [] } = useQuery({
+    queryKey: ["professional-products", id],
+    queryFn: () => productService.getByProfessional(Number(id)),
+    enabled: !!id
+  });
+
+  const profBankPromos = useMemo(() => {
+    return allBankPromos.filter(bp => bp.Professional?.id === Number(id));
+  }, [allBankPromos, id]);
+
+  const getBankNames = (promo: any) => {
+    const relationNames = (promo.bank_promotions_banks || [])
+      .map((r: any) => r.Bank?.name)
+      .filter(Boolean);
+    if (relationNames.length > 0) return Array.from(new Set(relationNames));
+    if (promo.Bank?.name) return [promo.Bank.name];
+    return ["Banco"];
+  };
+
   const profReels = useMemo(() => {
     return allReels.filter(r => r.professional_id === Number(id));
   }, [allReels, id]);
+
+  const profile = professional?.Profile;
+  const company = professional?.Companies?.[0] || professional?.Company;
+  const name = company?.name || profile?.display_name || "Profesional";
+  const avatar = profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+  const isVerified = company?.companies_arca?.[0]?.is_verified || professional?.is_verified;
+  const hasReels = profReels.length > 0;
+
+  const paymentMethods = useMemo(() => {
+    if (!company) return [];
+    const methods = [];
+    if (company.cash) methods.push({ id: 'cash', type: 'cash', label: 'Efectivo' });
+    if (company.credit) methods.push({ id: 'credit', type: 'credit', label: 'Crédito' });
+    if (company.debit) methods.push({ id: 'debit', type: 'credit', label: 'Débito' });
+    if (company.transfer) methods.push({ id: 'transfer', type: 'bank', label: 'Transferencia' });
+    if (company.cheque) methods.push({ id: 'cheque', type: 'bank', label: 'Cheque' });
+    return methods;
+  }, [company]);
 
   if (isLoadingProfile) {
     return (
@@ -192,13 +249,6 @@ export default function ProfilePage() {
     );
   }
 
-  const profile = professional.Profile;
-  const company = professional.Company;
-  const name = profile?.display_name || company?.name || "Profesional";
-  const avatar = profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
-  const isVerified = professional.is_verified;
-  const hasReels = profReels.length > 0;
-
   return (
     <div className="profile-page">
       <Navbar />
@@ -208,11 +258,15 @@ export default function ProfilePage() {
         <aside className="profile-sidebar">
           <div className="profile-sidebar__avatar-container">
             <div 
-              className={`avatar-frame ${hasReels ? "pulse-reel" : ""}`}
+              className={`avatar-frame ${hasReels ? "pulse-reel" : ""} ${isVerified ? "verified-ring" : ""}`}
               onClick={() => hasReels && setSelectedReel(profReels[0])}
             >
               <img src={avatar} alt={name} className="avatar-image" />
-              {isVerified && <div className="verified-badge">✓</div>}
+              {isVerified && (
+                <div className="verified-badge-premium">
+                  <CheckCircle size={16} />
+                </div>
+              )}
               {hasReels && (
                 <div className="reel-indicator">
                   <Play size={12} fill="currentColor" />
@@ -262,12 +316,21 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <PaymentMethodsCard methods={[]} />
+          <PaymentMethodsCard methods={paymentMethods} />
 
           <BankPromosCard
-            promotions={[]}
+            promotions={profBankPromos}
             onOpenPromos={() => setIsBankPromosModalOpen(true)}
           />
+
+          {profPromotions.length > 0 && (
+            <button
+              className="cta-button promos-btn"
+              onClick={() => setIsPromosModalOpen(true)}
+            >
+              VER PROMOCIONES SEMANALES <Star size={18} />
+            </button>
+          )}
 
           <button
             className="cta-button message-btn"
@@ -307,6 +370,8 @@ export default function ProfilePage() {
               {images.length === 0 && <p className="empty-msg">No hay imágenes en el portafolio.</p>}
             </div>
           </div>
+
+          {/* Promociones y Promos Bancarias se movieron a Modals para experiencia flotante */}
 
           <div className="profile-section">
             <div className="section-header">
@@ -377,6 +442,37 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
+
+          {products.length > 0 && (
+            <div className="profile-section">
+              <div className="section-header">
+                <h2>CATÁLOGO DE PRODUCTOS</h2>
+                <button 
+                  className="ver-todo"
+                  onClick={() => navigate(`${ROUTES.products}?professionalId=${id}`)}
+                >
+                  VER TODOS
+                </button>
+              </div>
+              <div 
+                className={`products-scroll-container ${productsScroll.isDragging ? "dragging" : ""}`}
+                ref={productsScroll.ref}
+                {...productsScroll.events}
+              >
+                <div className="products-scroll">
+                  {products.slice(0, 20).map((product) => (
+                    <div key={product.id} className="product-card-carousel-item">
+                      <ProductCard
+                        product={product}
+                        onOpenDetail={() => {}}
+                        variant="small"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </main>
 
@@ -415,6 +511,83 @@ export default function ProfilePage() {
           ))}
         </div>
       </Modal>
+
+      <Modal
+        isOpen={isBankPromosModalOpen}
+        onClose={() => setIsBankPromosModalOpen(false)}
+        title="Promociones Bancarias"
+      >
+        <div className="modal-bank-promos-grid">
+          {profBankPromos.map((promo) => {
+            const bankNames = getBankNames(promo);
+            return (
+              <div 
+                key={promo.id} 
+                className="bank-promo-card-premium"
+                onClick={() => setSelectedPromoForDetail({ ...promo, type: 'bank' })}
+              >
+                <div className="bank-promo-header">
+                  <div className="bank-names-stack">
+                    {bankNames.map((bn: any) => (
+                      <span key={bn} className="bank-name-badge">{bn}</span>
+                    ))}
+                  </div>
+                  <span className="discount-circle">{promo.percentaje_discount}%</span>
+                </div>
+                <p className="description">{promo.description}</p>
+                <div className="bank-promo-footer">
+                  <span>Reintegro: ${promo.refund || 'Sin tope'}</span>
+                  <span className="days">
+                    {[
+                      promo.monday && 'L',
+                      promo.tuesday && 'M',
+                      promo.wednesday && 'M',
+                      promo.thursday && 'J',
+                      promo.friday && 'V',
+                      promo.saturday && 'S',
+                      promo.sunday && 'D'
+                    ].filter(Boolean).join(' ')}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          {profBankPromos.length === 0 && <p className="empty-msg">No hay promociones bancarias vigentes.</p>}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isPromosModalOpen}
+        onClose={() => setIsPromosModalOpen(false)}
+        title="Ofertas Especiales"
+      >
+        <div className="modal-promotions-grid">
+          {profPromotions.map((promo) => (
+            <div 
+              key={promo.id} 
+              className="promo-card-premium"
+              onClick={() => setSelectedPromoForDetail({ ...promo, type: 'prof' })}
+              style={{ cursor: 'pointer' }}
+            >
+              {promo.image_url && <img src={promo.image_url} alt={promo.title} className="promo-img" />}
+              <div className="promo-info">
+                <span className="promo-badge">{promo.discount_type === 'percentage' ? `${promo.discount_value}% OFF` : `$${promo.discount_value} OFF`}</span>
+                <h3>{promo.title}</h3>
+                <p>{promo.description}</p>
+                {promo.expires_at && <span className="expires">Expira: {new Date(promo.expires_at).toLocaleDateString()}</span>}
+              </div>
+            </div>
+          ))}
+          {profPromotions.length === 0 && <p className="empty-msg">No hay promociones vigentes en este momento.</p>}
+        </div>
+      </Modal>
+
+      {/* Unified Promotion Detail Modal */}
+      <PromotionDetailModal
+        promo={selectedPromoForDetail}
+        isOpen={!!selectedPromoForDetail}
+        onClose={() => setSelectedPromoForDetail(null)}
+      />
 
       {/* Reel Modal Overlay */}
       {selectedReel && (

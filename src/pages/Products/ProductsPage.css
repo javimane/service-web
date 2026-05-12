@@ -877,3 +877,33 @@
     min-height: auto;
   }
 }
+
+.professional-filter-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #e94823;
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.professional-filter-badge button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.professional-filter-badge button:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
