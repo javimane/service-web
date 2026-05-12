@@ -94,7 +94,7 @@ export default function Navbar() {
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   const navLinks = [
-    { label: "Categorías", path: ROUTES.categories },
+    { label: "Profesionales/Comercios", path: ROUTES.categories },
     { label: "Mapa", path: ROUTES.map },
     { label: "Servicios", path: ROUTES.services },
     { label: "Productos", path: ROUTES.products },
@@ -339,14 +339,6 @@ export default function Navbar() {
                     >
                       <Package size={18} />
                       <span>Productos</span>
-                    </Link>
-                    <Link
-                      to={ROUTES.analytics}
-                      className="dropdown__item"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <BarChart3 size={18} />
-                      <span>Analíticas</span>
                     </Link>
                     <button
                       className="dropdown__item"

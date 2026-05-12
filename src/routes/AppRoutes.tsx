@@ -8,7 +8,6 @@ import ServicesPage from "../pages/Services/ServicesPage";
 import CategoriesPage from "../pages/Categories/CategoriesPage";
 import MapPage from "../pages/Map/MapPage";
 import DashboardPage from "../pages/Dashboard/DashboardPage";
-import AnalyticsPage from "../pages/Analytics/AnalyticsPage";
 import SettingsPage from "../pages/Settings/SettingsPage";
 import MessagesPage from "../pages/Messages/MessagesPage";
 import ProductsPage from "../pages/Products/ProductsPage";
@@ -52,14 +51,6 @@ export default function AppRoutes() {
         element={
           <PrivateRoute>
             <DashboardPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.analytics}
-        element={
-          <PrivateRoute>
-            <AnalyticsPage />
           </PrivateRoute>
         }
       />

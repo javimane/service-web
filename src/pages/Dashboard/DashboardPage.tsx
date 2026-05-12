@@ -11,7 +11,6 @@ import {
 import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
-import Footer from "../../components/Footer/Footer";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import { useAuth } from "../../context/AuthContext";
 import { activities, clips } from "../../data/dashboardData";
@@ -20,6 +19,7 @@ import { ROUTES } from "../../routes/paths";
 import { professionalService } from "../../services/professionalService";
 import { proposalService } from "../../services/proposalService";
 import { reelsService } from "../../services/reelsService";
+import { videosService } from "../../services/videosService";
 import type { CountViewsReelsRow } from "../../types/database.types";
 import ProposalCreator from "./sections/ProposalCreator";
 import ProposalsView from "./sections/ProposalsView";
@@ -33,6 +33,7 @@ import BankPromotionsPage from "./sections/BankPromotionsPage";
 import ProfessionalProfileSection from "./sections/ProfessionalProfileSection";
 import ReelsSection from "./sections/ReelsSection";
 import "./DashboardPage.css";
+import DashboardServices from "./sections/DashboardServices";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -66,6 +67,12 @@ export default function DashboardPage() {
     enabled: !!professionalId,
   });
 
+  const { data: professionalVideos = [] } = useQuery({
+    queryKey: ["professional-videos", professionalId],
+    queryFn: () => videosService.findByProfessionalId(professionalId),
+    enabled: !!professionalId,
+  });
+
   const profileViews = myProfessional?.profile_views ?? 0;
 
   const acceptedProposalsCount = proposalsCountData?.count ?? 0;
@@ -85,6 +92,7 @@ export default function DashboardPage() {
   };
   const handleShowPromotionsAll = () => setView("promotions-all");
   const handleShowProducts = () => setView("products");
+  const handleShowServices = () => setView("services");
   const handleShowSubscription = () => setView("subscription");
   const handleShowCalendar = () => setView("calendar");
   const handleShowBankPromos = () => setView("bank-promotions");
@@ -168,12 +176,6 @@ export default function DashboardPage() {
                       ? "promotions-all"
                       : view === "products"
                         ? "products"
-                        : view === "subscription"
-                          ? "subscription"
-                          : view === "calendar"
-                            ? "calendar"
-                            : view === "bank-promotions"
-                              ? "bank-promotions"
                               : view === "reels"
                                 ? "reels"
                                 : view === "profile"
@@ -193,6 +195,7 @@ export default function DashboardPage() {
           onPromotionsCreate={handleShowPromotionsCreate}
           onPromotionsViewAll={handleShowPromotionsAll}
           onProductsClick={handleShowProducts}
+          onServicesClick={handleShowServices}
           onSubscriptionClick={handleShowSubscription}
           onCalendarClick={handleShowCalendar}
           onBankPromosClick={handleShowBankPromos}
@@ -216,6 +219,8 @@ export default function DashboardPage() {
               <SubscriptionSection />
             ) : view === "products" ? (
               <DashboardProducts />
+            ) : view === "services" ? (
+              <DashboardServices />
             ) : view === "notifications" ? (
               <NotificationsPage />
             ) : view === "promotions-create" ? (
@@ -366,29 +371,49 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="videos-grid">
-                      {clips.map((clip) => (
-                        <div key={clip.id} className="video-card">
-                          <div className="video-thumb">
-                            <img src={clip.thumbnail} alt={clip.title} />
-                            <div className="thumb-overlay">
-                              <Play size={32} fill="white" />
-                            </div>
-                            <span className="duration">{clip.duration}</span>
-                          </div>
-                          <div className="video-info">
-                            <h4>{clip.title}</h4>
-                            <div className="video-meta">
-                              <span>👁 {clip.views}</span>
-                              <span>👍 {clip.likes}</span>
-                              <span
-                                className={`status-tag ${clip.status.toLowerCase()}`}
-                              >
-                                {clip.status}
+                      {professionalVideos.length > 0 ? (
+                        professionalVideos.slice(0, 4).map((video) => (
+                          <div key={video.id} className="video-card">
+                            <div className="video-thumb">
+                              {video.thumbnail_url ? (
+                                <img src={video.thumbnail_url} alt={video.title || "Video"} />
+                              ) : (
+                                <div className="video-thumb-placeholder">
+                                  <Play size={32} />
+                                </div>
+                              )}
+                              <div className="thumb-overlay">
+                                <Play size={32} fill="white" />
+                              </div>
+                              <span className="duration">
+                                {video.duration_seconds
+                                  ? `${Math.floor(video.duration_seconds / 60)}:${String(
+                                      video.duration_seconds % 60
+                                    ).padStart(2, "0")}`
+                                  : "0:00"}
                               </span>
                             </div>
+                            <div className="video-info">
+                              <h4>{video.title || "Sin título"}</h4>
+                              <div className="video-meta">
+                                <span>👁 {video.views_count || 0}</span>
+                                <span>👍 {video.likes || 0}</span>
+                                <span
+                                  className={`status-tag ${
+                                    video.activate ? "active" : "inactive"
+                                  }`}
+                                >
+                                  {video.activate ? "Activo" : "Inactivo"}
+                                </span>
+                              </div>
+                            </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="no-videos-placeholder">
+                          <p>No hay videos subidos aún.</p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
 

@@ -19,6 +19,7 @@ import {
   Landmark,
   UserRound,
   Clapperboard,
+  Briefcase,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
@@ -39,6 +40,7 @@ type DashboardSidebarProps = {
   onPromotionsCreate?: () => void;
   onPromotionsViewAll?: () => void;
   onProductsClick?: () => void;
+  onServicesClick?: () => void;
   onSubscriptionClick?: () => void;
   onCalendarClick?: () => void;
   onBankPromosClick?: () => void;
@@ -62,6 +64,7 @@ export default function DashboardSidebar({
   onPromotionsCreate,
   onPromotionsViewAll,
   onProductsClick,
+  onServicesClick,
   onSubscriptionClick,
   onCalendarClick,
   onBankPromosClick,
@@ -144,12 +147,6 @@ export default function DashboardSidebar({
       onClick: onDashboardClick ?? (() => navigate(ROUTES.dashboard)),
     },
     {
-      key: "analytics",
-      label: "ANALYTICS",
-      icon: BarChart3,
-      onClick: () => navigate(ROUTES.analytics),
-    },
-    {
       key: "proposals",
       label: "PROPOSALS",
       icon: FileText,
@@ -221,6 +218,14 @@ export default function DashboardSidebar({
       onClick:
         onProductsClick ??
         (() => navigate(ROUTES.dashboard, { state: { view: "products" } })),
+    },
+    {
+      key: "services",
+      label: "SERVICIOS",
+      icon: Briefcase,
+      onClick:
+        onServicesClick ??
+        (() => navigate(ROUTES.dashboard, { state: { view: "services" } })),
     },
     {
       key: "calendar",
@@ -420,6 +425,17 @@ export default function DashboardSidebar({
       isLocked: isItemLocked("products"),
     },
     {
+      key: "services",
+      label: "Servicios",
+      description: "Tus servicios",
+      icon: Briefcase,
+      onClick:
+        onServicesClick ??
+        (() => navigate(ROUTES.dashboard, { state: { view: "services" } })),
+      isActive: activeItem === "services",
+      isLocked: isItemLocked("services"),
+    },
+    {
       key: "reels",
       label: "Reels",
       description: "Contenido corto",
@@ -490,14 +506,6 @@ export default function DashboardSidebar({
       onClick: () => navigate(ROUTES.home),
       isActive: false,
       isLocked: false,
-    },
-    {
-      key: "analytics",
-      label: "Analytics",
-      icon: BarChart3,
-      onClick: () => navigate(ROUTES.analytics),
-      isActive: activeItem === "analytics",
-      isLocked: isItemLocked("analytics"),
     },
     {
       key: "notifications",
