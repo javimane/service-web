@@ -12,8 +12,8 @@ export default function ServicesFilters({
   return (
     <aside className="services-sidebar">
       {/* Discovery / Search */}
-      <div className="filter-group">
-        <h3 className="filter-group-label">BÚSQUEDA</h3>
+      <div className="services-filter-section">
+        <h3 className="services-filter-section-label">BÚSQUEDA</h3>
         <div className="search-box">
           <Search size={18} className="search-icon" />
           <input
@@ -26,8 +26,8 @@ export default function ServicesFilters({
       </div>
 
       {/* Categorías */}
-      <div className="filter-group">
-        <h3 className="filter-group-label">CATEGORÍAS</h3>
+      <div className="services-filter-section">
+        <h3 className="services-filter-section-label">CATEGORÍAS</h3>
         <div className="select-wrapper">
           <select
             value={filters.categoryId}
@@ -45,14 +45,12 @@ export default function ServicesFilters({
       </div>
 
       {/* Ubicación */}
-      <div className="filter-group">
-        <h3 className="filter-group-label">UBICACIÓN</h3>
+      <div className="services-filter-section">
+        <h3 className="services-filter-section-label">UBICACIÓN</h3>
         <div className="select-wrapper">
           <select
             value={filters.provinceId}
-            onChange={(e) =>
-              onFilterChange({ provinceId: e.target.value })
-            }
+            onChange={(e) => onFilterChange({ provinceId: e.target.value })}
           >
             <option value="All">Todas las provincias</option>
             {provinces.map((p) => (
@@ -66,8 +64,8 @@ export default function ServicesFilters({
       </div>
 
       {/* Precio */}
-      <div className="filter-group">
-        <h3 className="filter-group-label">PRECIO</h3>
+      <div className="services-filter-section">
+        <h3 className="services-filter-section-label">PRECIO</h3>
         <div className="select-wrapper">
           <select
             value={filters.priceRange}

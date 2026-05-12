@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   Download,
   Calendar,
@@ -10,6 +10,7 @@ import {
   TicketPercent,
   Building2,
   FileText,
+  ChevronDown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
@@ -32,6 +33,7 @@ export default function PromotionDetailModal({
 }: PromotionDetailModalProps) {
   const navigate = useNavigate();
   const couponRef = useRef<HTMLDivElement>(null);
+  const [showTerms, setShowTerms] = useState(false);
 
   if (!promo) return null;
 
@@ -233,11 +235,26 @@ export default function PromotionDetailModal({
 
               {isBank && promo.terms_conditions && (
                 <div className="promo-detail-modal__detail-item promo-detail-modal__detail-item--column">
-                  <div className="detail-item-header">
-                    <FileText size={16} />
-                    <strong>Términos y condiciones:</strong>
-                  </div>
-                  <p className="terms-text">{promo.terms_conditions}</p>
+                  <button
+                    type="button"
+                    className="promo-detail-modal__terms-toggle"
+                    onClick={() => setShowTerms((prev) => !prev)}
+                    aria-expanded={showTerms}
+                  >
+                    <span className="detail-item-header">
+                      <FileText size={16} />
+                      <strong>Términos y condiciones</strong>
+                    </span>
+                    <span className="promo-detail-modal__terms-toggle-indicator">
+                      <span className="promo-detail-modal__terms-toggle-text">
+                        {showTerms ? "Ocultar" : "Ver"}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`promo-detail-modal__terms-chevron ${showTerms ? "is-open" : ""}`}
+                      />
+                    </span>
+                  </button>
                 </div>
               )}
 
@@ -252,6 +269,29 @@ export default function PromotionDetailModal({
             </div>
           </div>
         </div>
+
+        {isBank && promo.terms_conditions && (
+          <div
+            className={`promo-detail-modal__terms-panel ${showTerms ? "is-open" : "is-closed"}`}
+            aria-hidden={!showTerms}
+          >
+            <button
+              type="button"
+              className="promo-detail-modal__terms-panel-header"
+              onClick={() => setShowTerms(false)}
+            >
+              <h4 className="promo-detail-modal__terms-title">
+                <FileText size={15} /> Términos y condiciones
+              </h4>
+              <span className="promo-detail-modal__terms-panel-close">
+                Cerrar
+              </span>
+            </button>
+            <div className="promo-detail-modal__terms-panel-body">
+              <p className="terms-text">{promo.terms_conditions}</p>
+            </div>
+          </div>
+        )}
 
         {/* Action button outside the ref area */}
         <div className="promo-detail-modal__actions">

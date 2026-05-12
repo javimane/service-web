@@ -322,7 +322,7 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            <div className="filter-group">
+            <div className="products-filter-section">
               <label>
                 <Globe size={14} /> Origen
               </label>
@@ -343,7 +343,7 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            <div className="filter-group">
+            <div className="products-filter-section">
               <label>
                 <MapPin size={14} /> Provincia
               </label>
@@ -362,7 +362,7 @@ export default function ProductsPage() {
               </select>
             </div>
 
-            <div className="filter-group">
+            <div className="products-filter-section">
               <label>
                 <Package size={14} /> Categoría
               </label>
@@ -381,7 +381,7 @@ export default function ProductsPage() {
               </select>
             </div>
 
-            <div className="filter-group">
+            <div className="products-filter-section">
               <label>Marca</label>
               <input
                 type="text"
@@ -392,7 +392,22 @@ export default function ProductsPage() {
               />
             </div>
 
-            <div className="filter-group">
+            <div className="products-filter-section">
+              <label>EAN</label>
+              <input
+                type="text"
+                value={filters.ean}
+                placeholder="Ej: 7791234567890"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                onChange={(e) =>
+                  handleFilterChange("ean", e.target.value.replace(/\D/g, ""))
+                }
+                className="filter-input"
+              />
+            </div>
+
+            <div className="products-filter-section">
               <label>Rango de precio</label>
               <div className="filter-range">
                 <input
