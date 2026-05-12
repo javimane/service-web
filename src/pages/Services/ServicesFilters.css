@@ -113,20 +113,41 @@
 }
 
 .services-sidebar .reset-sidebar-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
   cursor: pointer;
-  text-align: left;
-  padding: 0;
-  margin-top: auto;
-  transition: color 0.2s;
+  padding: 14px;
+  margin-top: 1rem;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .services-sidebar .reset-sidebar-btn:hover {
-  color: var(--text-primary);
+  background: #e94823;
+  color: white;
+  border-color: #e94823;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(233, 72, 35, 0.25);
+}
+
+.services-sidebar .reset-sidebar-btn:active {
+  transform: translateY(0);
+}
+
+.services-sidebar .reset-sidebar-btn svg {
+  transition: transform 0.4s ease;
+}
+
+.services-sidebar .reset-sidebar-btn:hover svg {
+  transform: rotate(-180deg);
 }
 
 @media (max-width: 1024px) {

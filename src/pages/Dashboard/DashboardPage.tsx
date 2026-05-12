@@ -34,6 +34,7 @@ import ProfessionalProfileSection from "./sections/ProfessionalProfileSection";
 import ReelsSection from "./sections/ReelsSection";
 import "./DashboardPage.css";
 import DashboardServices from "./sections/DashboardServices";
+import DashboardReferrals from "./sections/DashboardReferrals";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -103,6 +104,7 @@ export default function DashboardPage() {
     "subscription",
     "notifications",
     "proposals-view",
+    "referrals",
   ]);
   const shouldLockDashboardView =
     !hasProfessionalSubscription && !openViewsForInactiveSubscription.has(view);
@@ -240,6 +242,8 @@ export default function DashboardPage() {
               <ReelsSection />
             ) : view === "profile" ? (
               <ProfessionalProfileSection />
+            ) : view === "referrals" ? (
+              <DashboardReferrals />
             ) : (
               <div className="dashboard-content">
                 <div className="welcome-section">

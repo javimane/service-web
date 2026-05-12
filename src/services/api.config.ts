@@ -163,4 +163,12 @@ export const API_ENDPOINTS = {
     findByCompanyId: (companyId: number) =>
       `${API_BASE_URL}/api/arca/company/${companyId}`,
   },
+  referrals: {
+    base: `${API_BASE_URL}/api/referrals`,
+    my: `${API_BASE_URL}/api/referrals/my`,
+  },
+  userDataBank: {
+    base: `${API_BASE_URL}/api/user-data-bank`,
+    my: `${API_BASE_URL}/api/user-data-bank/my`,
+  },
 };

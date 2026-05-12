@@ -20,6 +20,7 @@ import {
   UserRound,
   Clapperboard,
   Briefcase,
+  Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
@@ -94,6 +95,7 @@ export default function DashboardSidebar({
     "notifications",
     "subscription",
     "settings",
+    "referrals",
   ]);
 
   const isItemLocked = (key: string) =>
@@ -250,6 +252,12 @@ export default function DashboardSidebar({
       onClick:
         onReelsClick ??
         (() => navigate(ROUTES.dashboard, { state: { view: "reels" } })),
+    },
+    {
+      key: "referrals",
+      label: "REFERIDOS",
+      icon: Users,
+      onClick: () => navigate(ROUTES.dashboard, { state: { view: "referrals" } }),
     },
     {
       key: "messages",

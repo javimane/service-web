@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { LayoutGrid, List, Loader2, Search } from "lucide-react";
+import { LayoutGrid, List, Loader2, Search, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { serviceService } from "../../services/serviceService";
 import { categoriesService } from "../../services/categoriesApi";
@@ -10,6 +10,8 @@ import ServiceCard from "../../components/Cards/ServiceCard";
 import ServicesFilters from "./ServicesFilters";
 import ServiceDetailModal from "./ServiceDetailModal";
 import { useTheme } from "../../context/ThemeContext";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../routes/paths";
 import "./ServicesPage.css";
 
 export default function ServicesPage() {
@@ -26,8 +28,9 @@ export default function ServicesPage() {
   const [viewMode, setViewMode] = useState("grid");
   const [selectedService, setSelectedService] = useState(null);
   const { theme } = useTheme();
+  const navigate = useNavigate();
 
-  const { data: servicesData = [], isLoading } = useQuery({
+  const { data: servicesData = [], isLoading, isError, error } = useQuery({
     queryKey: ["services", filters],
     queryFn: () => serviceService.list({
       search: filters.search || undefined,
@@ -112,20 +115,44 @@ export default function ServicesPage() {
 
           <div className={`services-results view-${viewMode}`}>
             {isLoading ? (
-              <div className="services-loading">
-                <Loader2 className="animate-spin" size={40} />
-                <p>Cargando catálogo de servicios...</p>
+              <div className="services-loading-premium">
+                <div className="premium-spinner"></div>
+                <p>Cargando catálogo de excelencia...</p>
+              </div>
+            ) : isError ? (
+              <div className="services-error">
+                <AlertTriangle size={48} />
+                <h3>Error al cargar servicios</h3>
+                <p>{(error as any)?.message?.includes('404') ? 'El catálogo no está disponible en este momento (404).' : 'Ocurrió un error inesperado.'}</p>
+                <button onClick={() => window.location.reload()} className="reset-btn">
+                  Reintentar
+                </button>
               </div>
             ) : servicesData.length === 0 ? (
-              <div className="services-empty">
-                <div className="services-empty__icon">
-                  <Search size={48} />
+              <div className="services-empty-state">
+                <div className="referral-banner">
+                  <div className="referral-banner__content">
+                    <h3>¡Hacé crecer la comunidad!</h3>
+                    <p>Unite a la red de referidos para agrandar la comunidad y ganá <strong>$5.000</strong> por cada usuario que se registre.</p>
+                  </div>
+                  <button 
+                    className="referral-banner__btn"
+                    onClick={() => navigate(ROUTES.dashboard, { state: { view: "referrals" } })}
+                  >
+                    Ir a Referidos
+                  </button>
                 </div>
-                <h3>No se encontraron resultados</h3>
-                <p>Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                <button onClick={handleResetFilters} className="reset-btn">
-                  Limpiar todos los filtros
-                </button>
+                
+                <div className="services-empty">
+                  <div className="services-empty__icon">
+                    <Search size={48} />
+                  </div>
+                  <h3>No se encontraron resultados</h3>
+                  <p>Ajustá los filtros para encontrar lo que buscás.</p>
+                  <button onClick={handleResetFilters} className="reset-btn">
+                    Limpiar filtros
+                  </button>
+                </div>
               </div>
             ) : (
               servicesData.map((service) => (
@@ -139,14 +166,6 @@ export default function ServicesPage() {
             )}
           </div>
 
-          {servicesData.length > 0 && (
-            <div className="explore-more">
-              <button className="explore-btn">
-                Explorar más servicios
-                <span className="chevron-down"></span>
-              </button>
-            </div>
-          )}
         </main>
       </div>
 

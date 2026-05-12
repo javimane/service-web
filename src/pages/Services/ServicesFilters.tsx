@@ -1,4 +1,4 @@
-import { Search, ChevronDown, CheckCircle } from "lucide-react";
+import { Search, ChevronDown, CheckCircle, RotateCcw } from "lucide-react";
 import { priceRangeOptions } from "./serviceUtils";
 import "./ServicesFilters.css";
 
@@ -80,19 +80,9 @@ export default function ServicesFilters({
           <ChevronDown size={14} className="select-arrow" />
         </div>
       </div>
-
-      {/* Verification Badge */}
-      <div className="verification-box">
-        <div className="check-icon-wrapper">
-          <CheckCircle size={20} fill="#B5FF24" color="#000" />
-        </div>
-        <div className="verification-text">
-          <p>Solo profesionales verificados con licencia activa en Sercio.</p>
-        </div>
-      </div>
-
       <button className="reset-sidebar-btn" onClick={onReset}>
-        Restablecer filtros
+        <RotateCcw size={16} />
+        <span>Restablecer filtros</span>
       </button>
     </aside>
   );

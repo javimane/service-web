@@ -3,7 +3,6 @@ import {
   CheckCircle,
   MapPin,
   Star,
-  ShieldCheck,
   MessageCircle,
   User,
 } from "lucide-react";
@@ -14,75 +13,80 @@ import { ROUTES } from "../../routes/paths";
 export default function ServiceDetailModal({ service, isOpen, onClose }) {
   if (!service) return null;
 
-  const whatsappUrl = `https://wa.me/${service.whatsapp.replace(/[^\d]/g, "")}`;
+  const professional = service.Professional || service.professional;
+  const profile = professional?.Profile || professional?.profile;
+  const company = professional?.companies?.[0] || professional?.Companies?.[0];
+  const professionalName = company?.name || profile?.display_name || "Profesional";
+  const avatar = profile?.avatar_url || profile?.portfolio_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(professionalName)}&background=random`;
+  const address = professional?.address?.[0] || professional?.Address?.[0];
+  const locationName = address?.province?.name || address?.city || "Mendoza";
+  const rating = professional?.rating_avg || 0;
+  const isVerified = company?.companies_arca?.[0]?.is_verified || false;
+  const price = service.base_price ? `$${service.base_price.toLocaleString('es-AR')}` : "Consultar";
+  
+  const professionalId = service.professional_id || professional?.id || "";
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${service.specialty} • ${service.name}`}
+      title={`${service.name} • ${professionalName}`}
     >
       <div className="service-detail-modal">
         <div className="service-detail-modal__hero">
           <img
-            src={service.avatar}
-            alt={service.name}
+            src={avatar}
+            alt={professionalName}
             className="service-detail-modal__avatar"
           />
-          <div>
-            <p className="service-detail-modal__subtitle">{service.category}</p>
-            <h3>{service.name}</h3>
+          <div className="service-detail-modal__info">
+            <div className="service-detail-modal__category-badge">
+              {service.CategoryService?.name || service.category?.name || "General"}
+            </div>
+            <h3 className="service-detail-modal__title">{service.name}</h3>
+            <p className="service-detail-modal__professional">{professionalName}</p>
             <p className="service-detail-modal__location">
-              <MapPin size={16} /> {service.city}, {service.province}
+              <MapPin size={14} /> {locationName}
             </p>
           </div>
         </div>
 
         <div className="service-detail-modal__tags">
-          <span>
-            <CheckCircle size={16} />{" "}
-            {service.verified ? "Verificado" : "No verificado"}
+          <span className={isVerified ? "tag-verified" : ""}>
+            <CheckCircle size={16} />
+            {isVerified ? "Verificado" : "No verificado"}
           </span>
           <span>
-            <ShieldCheck size={16} />{" "}
-            {service.licensed ? "Matriculado" : "Sin matrícula"}
-          </span>
-          <span>
-            <Star size={16} /> {service.rating} ({service.reviews} reseñas)
+            <Star size={16} fill="#e94823" color="#e94823" /> {rating.toFixed(1)}
           </span>
         </div>
 
         <div className="service-detail-modal__body">
           <div className="service-detail-modal__section">
-            <h4>Servicio</h4>
-            <p>{service.specialty}</p>
+            <h4>Descripción</h4>
+            <p className="service-detail-modal__desc">{service.description || "Sin descripción disponible."}</p>
           </div>
           <div className="service-detail-modal__section">
-            <h4>Precio</h4>
-            <p>{service.price}</p>
-          </div>
-          <div className="service-detail-modal__section">
-            <h4>Sobre este profesional</h4>
-            <p>{service.description}</p>
+            <h4>Inversión estimada</h4>
+            <p className="service-detail-modal__price">{price}</p>
           </div>
         </div>
 
         <div className="service-detail-modal__footer">
           <Link
-            to={ROUTES.profile}
+            to={`${ROUTES.profile}/${professionalId}`}
             className="service-detail-modal__button service-detail-modal__button--secondary"
             onClick={onClose}
           >
             <User size={18} /> Ver perfil
           </Link>
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            to={`${ROUTES.messages}?receiverId=${professionalId}`}
             className="service-detail-modal__button service-detail-modal__button--primary"
+            onClick={onClose}
           >
             <MessageCircle size={18} /> Contactar profesional
-          </a>
+          </Link>
         </div>
       </div>
     </Modal>
