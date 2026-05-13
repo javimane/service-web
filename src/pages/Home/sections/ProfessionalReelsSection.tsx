@@ -167,18 +167,21 @@ export default function ProfessionalReelsSection() {
 
   return (
     <section className="professional-reels">
-      <div className="professional-reels__header">
-        <div className="professional-reels__title-group">
-          <h2 className="professional-reels__title">Reels Profesionales</h2>
-          <span className="professional-reels__location">
-            <MapPin size={14} />
-            {userProvince}
-          </span>
+      <div className="home-section-container">
+        <div className="professional-reels__header">
+          <div className="professional-reels__title-group">
+            <h2 className="professional-reels__title">Reels Profesionales</h2>
+            <span className="professional-reels__location">
+              <MapPin size={14} />
+              {userProvince}
+            </span>
+          </div>
+          <button className="section-link">View all <span>&gt;</span></button>
         </div>
-        <button className="section-link">View all &gt;</button>
       </div>
 
-      <div className="professional-reels__carousel-wrapper">
+      <div className="home-section-container">
+        <div className="professional-reels__carousel-wrapper">
         {isLoading ? (
           <div className="reels-loading">
             <Loader2 className="animate-spin" size={32} />
@@ -242,6 +245,7 @@ export default function ProfessionalReelsSection() {
           </>
         )}
       </div>
+    </div>
 
       {selectedReel && (
         <div

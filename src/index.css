@@ -32,8 +32,12 @@
   --hover-border-color: #000000;
 
   --font-family:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
+
+  /* Layout Standards */
+  --content-max-width: 1280px;
+  --section-padding-x: 1.5rem;
+  --section-padding-y: 3rem;
 }
 
 * {
@@ -81,4 +85,47 @@ a {
 
 a:hover {
   filter: brightness(1.2);
+}
+
+/* Global Section Layout Alignment */
+.home-section-container {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--section-padding-x);
+}
+
+/* Improved Section Link Button */
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-color);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.section-link:hover {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--accent-transparent);
+}
+
+.section-link span {
+  display: flex;
+  align-items: center;
+  transition: transform 0.25s ease;
+}
+
+.section-link:hover span {
+  transform: translateX(4px);
 }

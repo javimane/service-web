@@ -93,21 +93,26 @@ export default function PromotionsSection() {
 
   return (
     <section className="promotions-section">
-      <div className="promotions-section__header">
-        <div className="promotions-section__title-group">
-          <h2 className="promotions-section__title">Promociones Imperdibles</h2>
-          <button 
-            className="promotions-section__location-btn"
-            onClick={() => setIsProvinceModalOpen(true)}
-          >
-            <MapPin size={14} />
-            {userProvince}
+      <div className="home-section-container">
+        <div className="promotions-section__header">
+          <div className="promotions-section__title-group">
+            <h2 className="promotions-section__title">Promociones Imperdibles</h2>
+            <button 
+              className="promotions-section__location-btn"
+              onClick={() => setIsProvinceModalOpen(true)}
+            >
+              <MapPin size={14} />
+              {userProvince}
+            </button>
+          </div>
+          <button className="section-link" onClick={() => navigate(ROUTES.promotions)}>
+            Ver todo <span>&gt;</span>
           </button>
         </div>
-        <button className="section-link" onClick={() => navigate(ROUTES.promotions)}>Ver todo &gt;</button>
       </div>
 
-      <div className="promotions-section__carousel">
+      <div className="home-section-container">
+        <div className="promotions-section__carousel">
         {isLoading ? (
           <div className="promotions-section__loading">
             <Loader2 className="animate-spin" size={32} />
@@ -163,6 +168,7 @@ export default function PromotionsSection() {
           </>
         )}
       </div>
+    </div>
 
       <PromotionDetailModal 
         isOpen={!!selectedPromo}

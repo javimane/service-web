@@ -33,54 +33,58 @@ export default function CategoriesSection() {
 
   return (
     <section className="categories-section">
-      <div className="categories-section__header">
-        <h2 className="categories-section__title">Carrusel de Categorías</h2>
-        <button
-          type="button"
-          className="section-link"
-          onClick={() => goToCategories()}
-        >
-          Ver categorías &gt;
-        </button>
+      <div className="home-section-container">
+        <div className="categories-section__header">
+          <h2 className="categories-section__title">Explorá Categorías</h2>
+          <button
+            type="button"
+            className="section-link"
+            onClick={() => goToCategories()}
+          >
+            Ver categorías <span>&gt;</span>
+          </button>
+        </div>
       </div>
 
-      <div className="categories-section__carousel">
-        <button
-          className={`carousel-control carousel-control--left ${showLeftArrow ? "" : "carousel-control--hidden"}`}
-          type="button"
-          onClick={() => scrollCarousel(-1)}
-          aria-label="Anterior"
-        >
-          <ChevronLeft size={18} />
-        </button>
+      <div className="home-section-container">
+        <div className="categories-section__carousel">
+          <button
+            className={`carousel-control carousel-control--left ${showLeftArrow ? "" : "carousel-control--hidden"}`}
+            type="button"
+            onClick={() => scrollCarousel(-1)}
+            aria-label="Anterior"
+          >
+            <ChevronLeft size={18} />
+          </button>
 
-        <div
-          ref={sliderRef}
-          className="categories-section__scroll"
-          onScroll={updateArrowVisibility}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onPointerLeave={handlePointerUp}
-        >
-          {categories.map((category) => (
-            <CategoryCard
-              key={category.id}
-              category={category}
-              onClick={() => goToCategories(category.label)}
-            />
-          ))}
+          <div
+            ref={sliderRef}
+            className="categories-section__scroll"
+            onScroll={updateArrowVisibility}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
+            {categories.map((category) => (
+              <CategoryCard
+                key={category.id}
+                category={category}
+                onClick={() => goToCategories(category.label)}
+              />
+            ))}
+          </div>
+
+          <button
+            className={`carousel-control carousel-control--right ${showRightArrow ? "" : "carousel-control--hidden"}`}
+            type="button"
+            onClick={() => scrollCarousel(1)}
+            aria-label="Siguiente"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
-
-        <button
-          className={`carousel-control carousel-control--right ${showRightArrow ? "" : "carousel-control--hidden"}`}
-          type="button"
-          onClick={() => scrollCarousel(1)}
-          aria-label="Siguiente"
-        >
-          <ChevronRight size={18} />
-        </button>
       </div>
     </section>
   );

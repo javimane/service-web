@@ -7,6 +7,7 @@ import NearbyServiceCard from "../../../components/Cards/NearbyServiceCard";
 import Modal from "../../../components/Modal/Modal";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./NearbyServicesSection.css";
+import { ROUTES } from "../../../routes/paths";
 
 const nearbyServices = [
   {
@@ -118,12 +119,20 @@ export default function NearbyServicesSection() {
 
   return (
     <section className="nearby-services">
-      <div className="nearby-services__header">
-        <h2 className="nearby-services__title">Servicios cerca de ti</h2>
-        <button className="section-link">Explorar mapa &gt;</button>
+      <div className="home-section-container">
+        <div className="nearby-services__header">
+          <h2 className="nearby-services__title">Servicios cerca de ti</h2>
+          <button 
+            className="section-link"
+            onClick={() => navigate(ROUTES.map)}
+          >
+            Explorar mapa <span>&gt;</span>
+          </button>
+        </div>
       </div>
 
-      <div className="nearby-services__carousel">
+      <div className="home-section-container">
+        <div className="nearby-services__carousel">
         <button
           className={`carousel-control carousel-control--left ${showLeftArrow ? "" : "carousel-control--hidden"}`}
           type="button"
@@ -181,6 +190,7 @@ export default function NearbyServicesSection() {
           <ChevronRight size={18} />
         </button>
       </div>
+    </div>
 
       <Modal
         isOpen={Boolean(selectedService)}

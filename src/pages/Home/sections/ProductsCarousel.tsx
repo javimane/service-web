@@ -59,17 +59,20 @@ export default function ProductsCarousel() {
 
   return (
     <section className="products-carousel-section">
-      <div className="products-carousel-section__header">
-        <div className="products-carousel-section__title-group">
-          <h2 className="products-carousel-section__title">Productos Importados</h2>
-          <p className="products-carousel-section__subtitle">Calidad internacional a un solo clic</p>
+      <div className="home-section-container">
+        <div className="products-carousel-section__header">
+          <div className="products-carousel-section__title-group">
+            <h2 className="products-carousel-section__title">Productos Importados</h2>
+            <p className="products-carousel-section__subtitle">Calidad internacional a un solo clic</p>
+          </div>
+          <button className="section-link" onClick={() => navigate("/products")}>
+            Ver todo <span>&gt;</span>
+          </button>
         </div>
-        <button className="section-link" onClick={() => navigate("/products")}>
-          Ver todo &gt;
-        </button>
       </div>
 
-      <div className="products-carousel-section__carousel">
+      <div className="home-section-container">
+        <div className="products-carousel-section__carousel">
         {isLoading ? (
           <div className="products-carousel-section__loading">
             <Loader2 className="animate-spin" size={32} />
@@ -163,6 +166,7 @@ export default function ProductsCarousel() {
           </>
         )}
       </div>
+    </div>
 
       <ProductDetailModal
         product={selectedProduct}

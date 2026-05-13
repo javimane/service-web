@@ -1,8 +1,6 @@
 .promotions-section {
   width: 100%;
-  max-width: 1280px;
-  padding: 0 1.5rem;
-  margin: 0 auto 3rem;
+  margin-bottom: 3rem;
 }
 
 .promotions-section__header {
@@ -193,8 +191,6 @@
 
 .promotions-section__carousel {
   position: relative;
-  margin: 0 -1.5rem;
-  padding: 0 1.5rem;
 }
 
 .promotions-section__scroll {

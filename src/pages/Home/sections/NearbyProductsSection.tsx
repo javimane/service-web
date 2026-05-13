@@ -292,14 +292,17 @@ export default function NearbyProductsSection() {
 
   return (
     <section className="nearby-products">
-      <div className="nearby-products__header">
-        <h2 className="nearby-products__title">Productos de la App</h2>
-        <button className="section-link" onClick={() => navigate("/products")}>
-          Ver todo &gt;
-        </button>
+      <div className="home-section-container">
+        <div className="nearby-products__header">
+          <h2 className="nearby-products__title">Productos de la App</h2>
+          <button className="section-link" onClick={() => navigate("/products")}>
+            Ver todo <span>&gt;</span>
+          </button>
+        </div>
       </div>
 
-      <div className="nearby-products__carousel">
+      <div className="home-section-container">
+        <div className="nearby-products__carousel">
         <button
           className={`carousel-control carousel-control--left ${showLeftArrow ? "" : "carousel-control--hidden"}`}
           type="button"
@@ -405,6 +408,7 @@ export default function NearbyProductsSection() {
           <ChevronRight size={18} />
         </button>
       </div>
+    </div>
 
       <NearbyProductDetailModal
         product={selectedProduct}

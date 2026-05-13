@@ -42,16 +42,19 @@ export default function FeaturedSpecialists() {
   }, [professionals]);
 
   return (
-    <section className="featured-specialists container">
-      <div className="featured-specialists__header">
-        <div className="featured-specialists__title-group">
-          <h2 className="featured-specialists__title">Especialistas Destacados</h2>
-          <p className="featured-specialists__subtitle">Los profesionales mejor valorados en {userProvince}</p>
+    <section className="featured-specialists">
+      <div className="home-section-container">
+        <div className="featured-specialists__header">
+          <div className="featured-specialists__title-group">
+            <h2 className="featured-specialists__title">Especialistas Destacados</h2>
+            <p className="featured-specialists__subtitle">Los profesionales mejor valorados en {userProvince}</p>
+          </div>
+          <button className="section-link">Ver todos <span>&gt;</span></button>
         </div>
-        <button className="section-link">Ver todos &gt;</button>
       </div>
 
-      <div className="featured-specialists__carousel">
+      <div className="home-section-container">
+        <div className="featured-specialists__carousel">
         {isLoading ? (
           <div className="featured-specialists__loading">
             <Loader2 className="animate-spin" size={32} />
@@ -100,6 +103,7 @@ export default function FeaturedSpecialists() {
           </>
         )}
       </div>
-    </section>
+    </div>
+  </section>
   );
 }

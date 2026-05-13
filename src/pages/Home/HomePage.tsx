@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, ArrowRight } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import CategoriesSection from "./sections/CategoriesSection";
+import BannerCarousel from "./sections/BannerCarousel";
 import NearbyServicesSection from "./sections/NearbyServicesSection";
 import NearbyProductsSection from "./sections/NearbyProductsSection";
 import ProductsCarousel from "./sections/ProductsCarousel";
@@ -90,6 +91,7 @@ export default function HomePage() {
           </div>
         </section>
 
+        <BannerCarousel />
         <CategoriesSection />
         <PromotionsSection />
         <NearbyServicesSection />
