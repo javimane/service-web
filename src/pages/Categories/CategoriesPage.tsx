@@ -15,6 +15,7 @@ import { categories } from "../../data/categories";
 import { ROUTES } from "../../routes/paths";
 import { locationService } from "../../services/locationService";
 import { professionalService } from "../../services/professionalService";
+import SEO from "../../components/SEO/SEO";
 import "./CategoriesPage.css";
 
 type AccountType = "Todos" | "Comercio" | "Autónomo";
@@ -36,6 +37,7 @@ type CategoryProfile = {
   coverImage: string;
   description: string;
   hasPublicStore?: boolean;
+  seoPath?: string | null;
 };
 
 const fallbackImage =
@@ -131,6 +133,7 @@ export default function CategoriesPage() {
         coverImage: catInfo.image,
         description: prof.bio || prof.description || "Sin descripción",
         hasPublicStore,
+        seoPath: prof.seo_path || null,
       } as CategoryProfile;
     });
   }, [professionals]);
@@ -239,6 +242,11 @@ export default function CategoriesPage() {
 
   return (
     <div className="categories-page">
+      <SEO 
+        title={selectedCategory === "Todas" ? "Categorías y Especialistas" : `${selectedCategory} - Especialistas y Profesionales`}
+        description={selectedCategoryInfo.description}
+        image={selectedCategoryInfo.image}
+      />
       <Navbar />
 
       <main className="categories-page__main">
@@ -448,7 +456,7 @@ export default function CategoriesPage() {
                   <article
                     key={profile.id}
                     className="profile-result-card"
-                    onClick={() => navigate(`${ROUTES.profile}/${profile.id}`)}
+                    onClick={() => navigate(profile.seoPath || `${ROUTES.profile}/${profile.id}`)}
                   >
                     <div
                       className="profile-result-card__cover"
@@ -509,7 +517,7 @@ export default function CategoriesPage() {
                           className="profile-result-card__button"
                           onClick={(event) => {
                             event.stopPropagation();
-                            navigate(`${ROUTES.profile}/${profile.id}`);
+                            navigate(profile.seoPath || `${ROUTES.profile}/${profile.id}`);
                           }}
                         >
                           <UserRound size={16} /> Ver perfil

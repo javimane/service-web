@@ -139,6 +139,7 @@ export interface ProductRow {
   readonly updated_at: string | null;
   readonly categories_products_id: number | null;
   readonly is_foreign: boolean | null;
+  readonly seo_path?: string | null;
   // Relationships
   readonly CategoryProduct?: CategoryProductRow;
 }
@@ -322,6 +323,7 @@ export interface ProfessionalRow {
   readonly is_matriculate: boolean | null;
   readonly emergency: boolean | null;
   readonly profile_views: number | null;
+  readonly seo_path?: string | null;
   // Relationships
   readonly Profile?: ProfileRow;
 }
@@ -377,6 +379,7 @@ export interface ServiceRow {
   readonly base_price: number | null;
   readonly created_at: string | null;
   readonly updated_at: string | null;
+  readonly seo_path?: string | null;
   // Relationships
   readonly Professional?: ProfessionalRow;
   readonly CategoryService?: CategoryServiceRow;

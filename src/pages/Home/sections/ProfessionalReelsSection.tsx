@@ -16,6 +16,7 @@ import { reelsService } from "../../../services/reelsService";
 import { locationService } from "../../../services/locationService";
 import { suscriptions } from "../../../services/suscriptionService";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
+import { getProfilePath } from "../../../utils/utils";
 import "./ProfessionalReelsSection.css";
 
 function ReelThumbnail({ src }: { src: string }) {
@@ -294,7 +295,7 @@ export default function ProfessionalReelsSection() {
               <div className="reels-modal__topbar reels-modal__topbar--profile">
                 <a
                   className="reels-modal__profile-link"
-                  href={`/profile/${selectedReel.professional_id}`}
+                  href={getProfilePath(selectedReel.professional_id, selectedReel.Professional?.seo_path)}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => {

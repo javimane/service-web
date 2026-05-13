@@ -8,6 +8,7 @@ import Modal from "../../../components/Modal/Modal";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./NearbyServicesSection.css";
 import { ROUTES } from "../../../routes/paths";
+import { getProfilePath } from "../../../utils/utils";
 
 const nearbyServices = [
   {
@@ -113,8 +114,8 @@ export default function NearbyServicesSection() {
     navigate(`/messages?to=${professionalId}`);
   };
 
-  const handleViewProfile = (professionalId) => {
-    navigate(`/profile/${professionalId}`);
+  const handleViewProfile = (professionalId, seoPath?: string) => {
+    navigate(getProfilePath(professionalId, seoPath));
   };
 
   return (
@@ -202,7 +203,7 @@ export default function NearbyServicesSection() {
             <div className="service-modal__header">
               <div 
                 className="professional-mini-card"
-                onClick={() => handleViewProfile(selectedService.Professional?.id)}
+                onClick={() => handleViewProfile(selectedService.Professional?.id, selectedService.Professional?.seo_path)}
               >
                 <img 
                   src={selectedService.Professional?.Profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedService.Professional?.Profile?.display_name || "P")}`} 
@@ -238,7 +239,7 @@ export default function NearbyServicesSection() {
             <div className="service-modal__actions">
               <button 
                 className="btn-view-profile"
-                onClick={() => handleViewProfile(selectedService.Professional?.id)}
+                onClick={() => handleViewProfile(selectedService.Professional?.id, selectedService.Professional?.seo_path)}
               >
                 <User size={18} /> VER PERFIL
               </button>

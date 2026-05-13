@@ -10,3 +10,11 @@ export const formatDateDisplay = (dateStr: string) => {
   const date = new Date(year, month - 1, day);
   return date.toLocaleDateString();
 };
+
+/**
+ * Returns the best path for a professional profile,
+ * prioritizing the SEO-friendly path if available.
+ */
+export const getProfilePath = (id: string | number, seoPath?: string | null) => {
+  return seoPath || `/profile/${id}`;
+};

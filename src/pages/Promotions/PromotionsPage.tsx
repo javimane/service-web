@@ -30,6 +30,8 @@ import { locationService } from "../../services/locationService";
 import { ProvinceRow } from "../../types/database.types";
 import { ROUTES } from "../../routes/paths";
 import PromotionDetailModal from "../../components/Modals/PromotionDetailModal";
+import SEO from "../../components/SEO/SEO";
+import { getProfilePath } from "../../utils/utils";
 import "./PromotionsPage.css";
 
 export default function PromotionsPage() {
@@ -169,13 +171,17 @@ export default function PromotionsPage() {
     "Free Shipping",
   ];
 
-  const handleProfileClick = (e: React.MouseEvent, id: string) => {
+  const handleProfileClick = (e: React.MouseEvent, id: string, seoPath?: string | null) => {
     e.stopPropagation();
-    navigate(`${ROUTES.profile}/${id}`);
+    navigate(getProfilePath(id, seoPath));
   };
 
   return (
     <div className="promotions-page-wrapper">
+      <SEO 
+        title="Promociones y Descuentos Exclusivos"
+        description="Ahorrá con los mejores descuentos bancarios y promociones de profesionales. Beneficios exclusivos en todos los rubros."
+      />
       <Navbar />
       <main className="promotions-page container">
         <header className="promotions-header">
@@ -322,6 +328,7 @@ export default function PromotionsPage() {
                                 handleProfileClick(
                                   e,
                                   String(discount.Professional?.id),
+                                  (discount.Professional as any)?.seo_path
                                 )
                               }
                             >
@@ -427,6 +434,7 @@ export default function PromotionsPage() {
                           handleProfileClick(
                             e,
                             promo.professional_id.toString(),
+                            (promo.Professional as any)?.seo_path
                           )
                         }
                       >

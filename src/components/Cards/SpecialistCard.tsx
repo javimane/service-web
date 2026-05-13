@@ -29,7 +29,7 @@ export default function SpecialistCard({ specialist }) {
       />
       
       <div className="specialist-card__avatar-wrap">
-        <Link to={ROUTES.profile}>
+        <Link to={specialist.seoPath || `${ROUTES.profile}/${specialist.id}`}>
           <img
             className="specialist-card__avatar"
             src={avatar}
@@ -38,9 +38,11 @@ export default function SpecialistCard({ specialist }) {
           />
         </Link>
       </div>
-
+  
       <div className="specialist-card__body">
-        <h3 className="specialist-card__name">{name}</h3>
+        <Link to={specialist.seoPath || `${ROUTES.profile}/${specialist.id}`} className="specialist-card__link">
+          <h3 className="specialist-card__name">{name}</h3>
+        </Link>
         <span className="specialist-card__specialty">{specialty}</span>
       </div>
 

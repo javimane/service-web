@@ -133,7 +133,8 @@ function ProfileVideoCard({ video, onSelect }: { video: any, onSelect: (v: any) 
 }
 
 export default function ProfilePage() {
-  const { id } = useParams();
+  const { id: rawId } = useParams();
+  const id = rawId?.split("-")[0] || "";
   const navigate = useNavigate();
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
   const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
@@ -289,6 +290,7 @@ export default function ProfilePage() {
         title={`${name} - ${professional.bio?.slice(0, 50) || "Profesional"}`}
         description={professional.bio || `Conocé el perfil de ${name}, sus servicios, productos y opiniones de clientes.`}
         image={avatar}
+        url={professional.seo_path ? `${window.location.origin}${professional.seo_path}` : window.location.href}
         schema={professionalSchema}
       />
       <Navbar />
