@@ -14,6 +14,7 @@ import ProductsPage from "../pages/Products/ProductsPage";
 import PromotionsPage from "../pages/Promotions/PromotionsPage";
 import PlanPaymentPage from "../pages/PlanPayment/PlanPaymentPage";
 import FavoritesPage from "../pages/Favorites/FavoritesPage";
+import ProfessionalStorePage from "../pages/ProfessionalStore/ProfessionalStorePage";
 import { ROUTES } from "./paths";
 
 function OpenAuthAndRedirect({ mode }) {
@@ -36,6 +37,7 @@ export default function AppRoutes() {
       <Route path={ROUTES.promotions} element={<PromotionsPage />} />
       <Route path={ROUTES.planPayment} element={<PlanPaymentPage />} />
       <Route path={`${ROUTES.profile}/:id`} element={<ProfilePage />} />
+      <Route path={ROUTES.professionalStore} element={<ProfessionalStorePage />} />
       <Route
         path={ROUTES.login}
         element={<OpenAuthAndRedirect mode="login" />}

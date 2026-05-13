@@ -555,27 +555,6 @@ export default function ProductsPage() {
                         </div>
                       </div>
 
-                      <div className="product-card__rating">
-                        <div className="product-card__stars">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={13}
-                              fill={
-                                i < Math.round(product.rating)
-                                  ? "currentColor"
-                                  : "none"
-                              }
-                              className={
-                                i < Math.round(product.rating)
-                                  ? "star-filled"
-                                  : "star-empty"
-                              }
-                            />
-                          ))}
-                        </div>
-                      </div>
-
                       {viewMode === "list" && (
                         <p className="product-card__description">
                           {product.description}

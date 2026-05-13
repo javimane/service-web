@@ -13,4 +13,5 @@ export const ROUTES = {
   promotions: "/promotions",
   planPayment: "/plan/:planId",
   favorites: "/favorites",
+  professionalStore: "/profile/:id/store",
 };

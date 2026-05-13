@@ -1,6 +1,5 @@
 import {
   X,
-  Star,
   MapPin,
   Truck,
   ShieldCheck,
@@ -127,9 +126,6 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
                         />
                         <div className="seller-item__info">
                           <span className="seller-item__name">{sellerRel.Professional?.Profile?.display_name || sellerRel.Professional?.Company?.name}</span>
-                          <span className="seller-item__rating">
-                            <Star size={10} fill="currentColor" /> {sellerRel.Professional?.rating_avg || "5.0"}
-                          </span>
                         </div>
                       </div>
                       

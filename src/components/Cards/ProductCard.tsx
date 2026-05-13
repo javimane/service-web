@@ -25,10 +25,6 @@ const ProductCard = ({ product, onOpenDetail, variant = 'default' }) => {
           <span className="current-price">${price.toLocaleString()}</span>
         </div>
         <div className="product-footer">
-          <div className="rating">
-            <Star size={12} fill="#e94823" color="#e94823" />
-            <span>5.0</span>
-          </div>
           <button className="add-to-cart">
             <ShoppingBag size={14} />
           </button>

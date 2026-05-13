@@ -292,9 +292,8 @@
 }
 
 .seller-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-  border-color: color-mix(in srgb, var(--accent-color) 30%, var(--border-color));
+  box-shadow: 0 10px 28px rgba(0,0,0,0.10);
+  border-color: color-mix(in srgb, var(--accent-color) 45%, var(--border-color));
 }
 
 .seller-card__header {

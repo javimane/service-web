@@ -142,43 +142,175 @@ export default function Navbar() {
 
   return (
     <header className="navbar">
-      <div className="navbar__inner container">
-        {/* Mobile menu + Logo */}
-        <div className="navbar__mobile-menu" ref={mobileMenuRef}>
-          <button
-            className="navbar__hamburger"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Menú de navegación"
-          >
-            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+      {/* ── TOP ROW: logo + search + actions ── */}
+      <div className="navbar__top">
+        <div className="navbar__inner container">
+          {/* Mobile hamburger */}
+          <div className="navbar__mobile-menu" ref={mobileMenuRef}>
+            <button
+              className="navbar__hamburger"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Menú de navegación"
+            >
+              {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
 
-          {isMobileMenuOpen && (
-            <div className="navbar__mobile-dropdown">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  to={link.path}
-                  className={`navbar__mobile-link ${location.pathname === link.path ? "active" : ""}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
+            {isMobileMenuOpen && (
+              <div className="navbar__mobile-dropdown">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.label}
+                    to={link.path}
+                    className={`navbar__mobile-link ${location.pathname === link.path ? "active" : ""}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Logo */}
+          <Link to={ROUTES.home} className="navbar__logo" aria-label="Ir al inicio">
+            <BrandLogo className="navbar__brand-mark" />
+          </Link>
+
+          {/* Search */}
+          <div className="navbar__search">
+            <SearchBar />
+          </div>
+
+          {/* Plans button */}
+          {!hasProfessionalSubscription && (
+            <>
+              <button className="navbar__plans-btn" onClick={() => setIsPlansOpen(true)}>
+                <Crown size={16} />
+                <span>Planes</span>
+              </button>
+              <PlansModal isOpen={isPlansOpen} onClose={() => setIsPlansOpen(false)} />
+            </>
+          )}
+
+          {/* Right side — authenticated */}
+          {user ? (
+            <div className="navbar__right">
+              <Link to={ROUTES.messages} className="navbar__icon-btn" aria-label="Mensajes">
+                <MessageSquare size={20} />
+              </Link>
+
+              <div className="navbar__notif-container" ref={notifRef}>
+                <button
+                  className={`navbar__icon-btn ${isNotifOpen ? "active" : ""}`}
+                  aria-label="Notificaciones"
+                  onClick={toggleNotif}
                 >
-                  {link.label}
-                </Link>
-              ))}
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="navbar__notif-badge">{unreadCount}</span>
+                  )}
+                </button>
+
+                {isNotifOpen && (
+                  <div className="navbar__notif-dropdown">
+                    <div className="notif-dropdown__header">
+                      <span className="notif-dropdown__title">Notificaciones</span>
+                      <button type="button" className="notif-dropdown__mark-all" aria-label="Marcar todas como leídas">
+                        <CheckCheck size={16} />
+                      </button>
+                    </div>
+                    <div className="notif-dropdown__list">
+                      {notifications.map((notif) => {
+                        const IconComp = notif.icon;
+                        return (
+                          <div key={notif.id} className={`notif-item ${notif.unread ? "notif-item--unread" : ""}`}>
+                            <div className={`notif-item__icon notif-item__icon--${notif.iconColor}`}>
+                              <IconComp size={16} />
+                            </div>
+                            <div className="notif-item__content">
+                              <span className="notif-item__title">{notif.title}</span>
+                              <span className="notif-item__desc">{notif.description}</span>
+                            </div>
+                            <span className="notif-item__time">{notif.time}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="notif-dropdown__footer">
+                      <Link
+                        to={ROUTES.dashboard}
+                        state={{ view: "notifications" }}
+                        className="notif-dropdown__view-all"
+                        onClick={() => setIsNotifOpen(false)}
+                      >
+                        Ver todas las notificaciones
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="navbar__user-container" ref={menuRef}>
+                <button
+                  className={`navbar__icon-btn navbar__avatar ${isMenuOpen ? "active" : ""}`}
+                  onClick={toggleMenu}
+                  aria-label="Menú de usuario"
+                >
+                  <User size={20} />
+                </button>
+
+                {isMenuOpen && (
+                  <div className="navbar__dropdown">
+                    <div className="dropdown__header">
+                      <div className="dropdown__user-info">
+                        <span className="dropdown__username">{displayName}</span>
+                        <span className="dropdown__user-role">{user.email}</span>
+                      </div>
+                    </div>
+                    <div className="dropdown__divider"></div>
+                    <div className="dropdown__body">
+                      <Link to={ROUTES.profile} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
+                        <Settings size={18} /><span>Mi Cuenta</span>
+                      </Link>
+                      <Link to={ROUTES.dashboard} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
+                        <LayoutDashboard size={18} /><span>Dashboard</span>
+                      </Link>
+                      <Link to={ROUTES.favorites} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
+                        <Heart size={18} /><span>Favoritos</span>
+                      </Link>
+                      <Link to={ROUTES.products} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
+                        <Package size={18} /><span>Productos</span>
+                      </Link>
+                      <button className="dropdown__item" onClick={() => { setIsMenuOpen(false); }}>
+                        <UploadCloud size={18} /><span>Subir Reel</span>
+                      </button>
+                    </div>
+                    <div className="dropdown__divider"></div>
+                    <div className="dropdown__footer">
+                      <button className="dropdown__item dropdown__item--logout" onClick={handleLogout}>
+                        <LogOut size={18} /><span>Cerrar Sesión</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="navbar__right">
+              <button className="navbar__auth-btn" onClick={() => openAuth("login")}>
+                <LogIn size={18} /><span>Iniciar Sesión</span>
+              </button>
+              <button className="navbar__auth-btn navbar__auth-btn--primary" onClick={() => openAuth("register")}>
+                Registrarse
+              </button>
             </div>
           )}
         </div>
+      </div>
 
-        <Link
-          to={ROUTES.home}
-          className="navbar__logo"
-          aria-label="Ir al inicio"
-        >
-          <BrandLogo className="navbar__brand-mark" />
-        </Link>
-
-        {/* Navigation Links */}
-        <nav className="navbar__nav">
+      {/* ── BOTTOM ROW: nav links (desktop only) ── */}
+      <nav className="navbar__bottom">
+        <div className="navbar__bottom-inner container">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -188,201 +320,8 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-        </nav>
-
-        {/* Search */}
-        <div className="navbar__search">
-          <SearchBar />
         </div>
-
-        {/* Plans button */}
-        {!hasProfessionalSubscription && (
-          <>
-            <button
-              className="navbar__plans-btn"
-              onClick={() => setIsPlansOpen(true)}
-            >
-              <Crown size={16} />
-              <span>Planes</span>
-            </button>
-            <PlansModal
-              isOpen={isPlansOpen}
-              onClose={() => setIsPlansOpen(false)}
-            />
-          </>
-        )}
-
-        {/* Right side — authenticated */}
-        {user ? (
-          <div className="navbar__right">
-            <Link
-              to={ROUTES.messages}
-              className="navbar__icon-btn"
-              aria-label="Mensajes"
-            >
-              <MessageSquare size={20} />
-            </Link>
-
-            <div className="navbar__notif-container" ref={notifRef}>
-              <button
-                className={`navbar__icon-btn ${isNotifOpen ? "active" : ""}`}
-                aria-label="Notificaciones"
-                onClick={toggleNotif}
-              >
-                <Bell size={20} />
-                {unreadCount > 0 && (
-                  <span className="navbar__notif-badge">{unreadCount}</span>
-                )}
-              </button>
-
-              {isNotifOpen && (
-                <div className="navbar__notif-dropdown">
-                  <div className="notif-dropdown__header">
-                    <span className="notif-dropdown__title">
-                      Notificaciones
-                    </span>
-                    <button
-                      type="button"
-                      className="notif-dropdown__mark-all"
-                      aria-label="Marcar todas como leídas"
-                    >
-                      <CheckCheck size={16} />
-                    </button>
-                  </div>
-                  <div className="notif-dropdown__list">
-                    {notifications.map((notif) => {
-                      const IconComp = notif.icon;
-                      return (
-                        <div
-                          key={notif.id}
-                          className={`notif-item ${notif.unread ? "notif-item--unread" : ""}`}
-                        >
-                          <div
-                            className={`notif-item__icon notif-item__icon--${notif.iconColor}`}
-                          >
-                            <IconComp size={16} />
-                          </div>
-                          <div className="notif-item__content">
-                            <span className="notif-item__title">
-                              {notif.title}
-                            </span>
-                            <span className="notif-item__desc">
-                              {notif.description}
-                            </span>
-                          </div>
-                          <span className="notif-item__time">{notif.time}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="notif-dropdown__footer">
-                    <Link
-                      to={ROUTES.dashboard}
-                      state={{ view: "notifications" }}
-                      className="notif-dropdown__view-all"
-                      onClick={() => setIsNotifOpen(false)}
-                    >
-                      Ver todas las notificaciones
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="navbar__user-container" ref={menuRef}>
-              <button
-                className={`navbar__icon-btn navbar__avatar ${isMenuOpen ? "active" : ""}`}
-                onClick={toggleMenu}
-                aria-label="Menú de usuario"
-              >
-                <User size={20} />
-              </button>
-
-              {isMenuOpen && (
-                <div className="navbar__dropdown">
-                  <div className="dropdown__header">
-                    <div className="dropdown__user-info">
-                      <span className="dropdown__username">{displayName}</span>
-                      <span className="dropdown__user-role">{user.email}</span>
-                    </div>
-                  </div>
-                  <div className="dropdown__divider"></div>
-                  <div className="dropdown__body">
-                    <Link
-                      to={ROUTES.profile}
-                      className="dropdown__item"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Settings size={18} />
-                      <span>Mi Cuenta</span>
-                    </Link>
-                    <Link
-                      to={ROUTES.dashboard}
-                      className="dropdown__item"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <LayoutDashboard size={18} />
-                      <span>Dashboard</span>
-                    </Link>
-                    <Link
-                      to={ROUTES.favorites}
-                      className="dropdown__item"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Heart size={18} />
-                      <span>Favoritos</span>
-                    </Link>
-                    <Link
-                      to={ROUTES.products}
-                      className="dropdown__item"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Package size={18} />
-                      <span>Productos</span>
-                    </Link>
-                    <button
-                      className="dropdown__item"
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <UploadCloud size={18} />
-                      <span>Subir Reel</span>
-                    </button>
-                  </div>
-                  <div className="dropdown__divider"></div>
-                  <div className="dropdown__footer">
-                    <button
-                      className="dropdown__item dropdown__item--logout"
-                      onClick={handleLogout}
-                    >
-                      <LogOut size={18} />
-                      <span>Cerrar Sesión</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Right side — not authenticated */
-          <div className="navbar__right">
-            <button
-              className="navbar__auth-btn"
-              onClick={() => openAuth("login")}
-            >
-              <LogIn size={18} />
-              <span>Iniciar Sesión</span>
-            </button>
-            <button
-              className="navbar__auth-btn navbar__auth-btn--primary"
-              onClick={() => openAuth("register")}
-            >
-              Registrarse
-            </button>
-          </div>
-        )}
-      </div>
+      </nav>
     </header>
   );
 }

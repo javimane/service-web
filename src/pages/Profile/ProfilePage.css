@@ -1794,6 +1794,33 @@
   left: 100%;
 }
 
+.cta-button.store-btn {
+  background: linear-gradient(135deg, #f5c518 0%, #ffd700 60%, #f5c518 100%) !important;
+  color: #1a1a1a !important;
+  border: none !important;
+  padding: 18px !important;
+  border-radius: 20px !important;
+  font-weight: 900 !important;
+  font-size: 0.88rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  box-shadow: 0 8px 24px rgba(245, 197, 24, 0.45) !important;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  margin-top: 8px !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  background-size: 200% auto !important;
+}
+
+.cta-button.store-btn:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 14px 36px rgba(245, 197, 24, 0.65) !important;
+  background: linear-gradient(135deg, #ffd700 0%, #ff9500 50%, #e94823 100%) !important;
+  color: #fff !important;
+}
+
 /* Carousel Navigation */
 .section-header__actions {
   display: flex;

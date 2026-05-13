@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, MapPin, Truck, Loader2, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Truck, Loader2, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { productService } from "../../../services/productService";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
@@ -388,9 +388,6 @@ export default function NearbyProductsSection() {
                   <div className="nearby-product-card__meta">
                     <span className="nearby-product-card__distance">
                       <MapPin size={12} /> {item.distance ? `${item.distance.toFixed(1)} km` : "Cerca"}
-                    </span>
-                    <span className="nearby-product-card__rating">
-                      <Star size={12} fill="currentColor" /> {item.Professional?.rating_avg || "5.0"}
                     </span>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star, Truck, Loader2, Globe, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Truck, Loader2, Globe, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { productService } from "../../../services/productService";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
@@ -147,10 +147,6 @@ export default function ProductsCarousel() {
                       </div>
                     </div>
 
-                    <div className="product-carousel-card__rating">
-                      <Star size={12} fill="currentColor" className="star-filled" />
-                      <span>{product.rating}</span>
-                    </div>
                   </div>
                 </button>
               ))}

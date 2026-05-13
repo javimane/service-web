@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Star, MessageCircle, Phone, ArrowUpRight, Loader2, Play, Heart, Eye, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
+import { Star, MessageCircle, Phone, ArrowUpRight, Loader2, Play, Heart, Eye, ChevronDown, ChevronUp, CheckCircle, ShoppingBag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ROUTES } from "../../routes/paths";
 import { professionalService } from "../../services/professionalService";
@@ -21,7 +21,7 @@ import BankPromosCard from "../../components/Cards/BankPromosCard";
 import "./ProfilePage.css";
 import ProductCard from "../../components/Cards/ProductCard";
 import PromotionDetailModal from "../../components/Modals/PromotionDetailModal";
-import ServiceDetailModal from "../Services/ServiceDetailModal";
+import ProfileServiceDetailModal from "./sections/ProfileServiceDetailModal";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // Custom hook for drag-to-scroll
@@ -349,6 +349,15 @@ export default function ProfilePage() {
           >
             ENVIAR MENSAJE <MessageCircle size={18} />
           </button>
+
+          {products.length > 0 && (
+            <button
+              className="cta-button store-btn"
+              onClick={() => navigate(`/profile/${id}/store`)}
+            >
+              INGRESAR A LA TIENDA <ShoppingBag size={18} />
+            </button>
+          )}
         </aside>
 
         {/* Right Content */}
@@ -470,7 +479,7 @@ export default function ProfilePage() {
                 <h2>CATÁLOGO DE PRODUCTOS</h2>
                 <button 
                   className="ver-todo"
-                  onClick={() => navigate(`${ROUTES.products}?professionalId=${id}`)}
+                  onClick={() => navigate(`/profile/${id}/store`)}
                 >
                   VER TODOS
                 </button>
@@ -646,10 +655,11 @@ export default function ProfilePage() {
       )}
 
       {/* Service Detail Modal */}
-      <ServiceDetailModal
+      <ProfileServiceDetailModal
         service={selectedServiceForDetail}
         isOpen={!!selectedServiceForDetail}
         onClose={() => setSelectedServiceForDetail(null)}
+        professionalId={id}
       />
 
       {/* Product Detail Modal */}
