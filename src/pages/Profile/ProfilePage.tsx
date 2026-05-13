@@ -18,6 +18,7 @@ import Footer from "../../components/Footer/Footer";
 import Modal from "../../components/Modal/Modal";
 import PaymentMethodsCard from "../../components/Cards/PaymentMethodsCard";
 import BankPromosCard from "../../components/Cards/BankPromosCard";
+import SEO from "../../components/SEO/SEO";
 import "./ProfilePage.css";
 import ProductCard from "../../components/Cards/ProductCard";
 import PromotionDetailModal from "../../components/Modals/PromotionDetailModal";
@@ -242,6 +243,28 @@ export default function ProfilePage() {
     return methods;
   }, [company]);
 
+  const professionalSchema = useMemo(() => {
+    if (!professional) return null;
+    return {
+      "@context": "https://schema.org",
+      "@type": "ProfessionalService",
+      "name": name,
+      "description": professional.bio || "Servicios profesionales",
+      "image": avatar,
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": company?.Address?.city,
+        "addressRegion": company?.Address?.Province?.name,
+        "addressCountry": "AR"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": professional.rating_avg || "5.0",
+        "reviewCount": reviews.length || "1"
+      }
+    };
+  }, [professional, name, avatar, company, reviews]);
+
   if (isLoadingProfile) {
     return (
       <div className="profile-loading">
@@ -262,6 +285,12 @@ export default function ProfilePage() {
 
   return (
     <div className="profile-page">
+      <SEO 
+        title={`${name} - ${professional.bio?.slice(0, 50) || "Profesional"}`}
+        description={professional.bio || `Conocé el perfil de ${name}, sus servicios, productos y opiniones de clientes.`}
+        image={avatar}
+        schema={professionalSchema}
+      />
       <Navbar />
 
       <main className="profile-page__layout container">

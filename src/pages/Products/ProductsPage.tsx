@@ -22,6 +22,7 @@ import { locationService } from "../../services/locationService";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ProductDetailModal from "./ProductDetailModal";
+import SEO from "../../components/SEO/SEO";
 import "./ProductsPage.css";
 
 function formatPrice(n) {
@@ -245,8 +246,20 @@ export default function ProductsPage() {
     setPage(1);
   };
 
+  const currentCategoryName = useMemo(() => {
+    if (filters.categoryId === "all") return null;
+    const cat = categories.find((c: any) => String(c.id) === String(filters.categoryId));
+    return cat ? cat.name : null;
+  }, [categories, filters.categoryId]);
+
   return (
     <div className="products-page">
+      <SEO 
+        title={currentCategoryName ? `${currentCategoryName} - Catálogo de Productos` : "Catálogo de Productos - Encontrá lo mejor"}
+        description={currentCategoryName 
+          ? `Explorá nuestra selección de ${currentCategoryName}. Los mejores precios y calidad en un solo lugar.` 
+          : "Explorá nuestro catálogo completo de productos profesionales. Filtros por categoría, precio y ubicación."}
+      />
       <Navbar />
 
       <main className="products-page__main">

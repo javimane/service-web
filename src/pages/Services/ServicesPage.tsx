@@ -9,6 +9,7 @@ import Footer from "../../components/Footer/Footer";
 import ServiceCard from "../../components/Cards/ServiceCard";
 import ServicesFilters from "./ServicesFilters";
 import ServiceDetailModal from "./ServiceDetailModal";
+import SEO from "../../components/SEO/SEO";
 import { useTheme } from "../../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../routes/paths";
@@ -71,8 +72,20 @@ export default function ServicesPage() {
     });
   };
 
+  const currentCategoryName = useMemo(() => {
+    if (filters.categoryId === "All") return null;
+    const cat = categories.find((c: any) => String(c.id) === String(filters.categoryId));
+    return cat ? cat.name : null;
+  }, [categories, filters.categoryId]);
+
   return (
-    <div className="services-redesign">
+    <div className={`services-redesign ${theme === "dark" ? "dark" : ""}`}>
+      <SEO 
+        title={currentCategoryName ? `${currentCategoryName} - Servicios Profesionales` : "Servicios Profesionales - Encontrá al experto que necesitás"}
+        description={currentCategoryName 
+          ? `Buscá expertos en ${currentCategoryName}. Servicios verificados, presupuestos y contacto directo.` 
+          : "Catálogo de servicios profesionales. Plomería, electricidad, diseño, gas y más servicios verificados."}
+      />
       <Navbar />
 
       <div className="services-layout">

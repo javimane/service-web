@@ -13,6 +13,7 @@ import { categoriesProductService } from "../../services/categoriesProduct";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ProductDetailModal from "../Products/ProductDetailModal";
+import SEO from "../../components/SEO/SEO";
 import "./ProfessionalStorePage.css";
 
 function formatPrice(n: any) {
@@ -181,6 +182,11 @@ export default function ProfessionalStorePage() {
 
   return (
     <div className="professional-store">
+      <SEO 
+        title={`Tienda de ${storeName} - Productos y Ofertas`}
+        description={`Explorá el catálogo de productos de ${storeName}. Encontrá los mejores precios y ofertas disponibles.`}
+        image={avatar}
+      />
       <Navbar />
 
       {/* BANNER */}
