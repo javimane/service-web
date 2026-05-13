@@ -21,6 +21,8 @@ import BankPromosCard from "../../components/Cards/BankPromosCard";
 import "./ProfilePage.css";
 import ProductCard from "../../components/Cards/ProductCard";
 import PromotionDetailModal from "../../components/Modals/PromotionDetailModal";
+import ServiceDetailModal from "../Services/ServiceDetailModal";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // Custom hook for drag-to-scroll
 function useDraggableScroll() {
@@ -137,12 +139,21 @@ export default function ProfilePage() {
   const [isBankPromosModalOpen, setIsBankPromosModalOpen] = useState(false);
   const [isPromosModalOpen, setIsPromosModalOpen] = useState(false);
   const [selectedPromoForDetail, setSelectedPromoForDetail] = useState<any>(null);
+  const [selectedServiceForDetail, setSelectedServiceForDetail] = useState<any>(null);
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState<any>(null);
   const [selectedReel, setSelectedReel] = useState(null);
   const [selectedVideo, setSelectedVideo] = useState(null);
 
   const servicesScroll = useDraggableScroll();
   const videosScroll = useDraggableScroll();
   const productsScroll = useDraggableScroll();
+
+  const scrollContainer = (ref: any, direction: 'left' | 'right') => {
+    if (ref.current) {
+      const scrollAmount = direction === 'left' ? -400 : 400;
+      ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   const { data: professional, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["professional-detail", id],
@@ -376,12 +387,18 @@ export default function ProfilePage() {
           <div className="profile-section">
             <div className="section-header">
               <h2>SERVICIOS</h2>
-              <button
-                onClick={() => setIsServicesModalOpen(true)}
-                className="ver-todo"
-              >
-                VER TODO
-              </button>
+              <div className="section-header__actions">
+                <div className="carousel-nav">
+                  <button onClick={() => scrollContainer(servicesScroll.ref, 'left')} className="nav-btn"><ChevronLeft size={20} /></button>
+                  <button onClick={() => scrollContainer(servicesScroll.ref, 'right')} className="nav-btn"><ChevronRight size={20} /></button>
+                </div>
+                <button
+                  onClick={() => setIsServicesModalOpen(true)}
+                  className="ver-todo"
+                >
+                  VER TODO
+                </button>
+              </div>
             </div>
             <div
               className={`services-scroll-container ${servicesScroll.isDragging ? "dragging" : ""}`}
@@ -390,13 +407,17 @@ export default function ProfilePage() {
             >
               <div className="services-scroll">
                 {services.map((service) => (
-                  <div key={service.id} className="service-card-mini">
+                  <div 
+                    key={service.id} 
+                    className="service-card-mini"
+                    onClick={() => !servicesScroll.isDragging && setSelectedServiceForDetail(service)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div className="service-card-mini__header">
                       <h3>{service.name}</h3>
                       <span className="price">${service.base_price?.toLocaleString()}</span>
                     </div>
                     <p>{service.description}</p>
-                    <button className="select-service-btn">Seleccionar</button>
                   </div>
                 ))}
                 {services.length === 0 && <p className="empty-msg">No hay servicios disponibles.</p>}
@@ -464,7 +485,7 @@ export default function ProfilePage() {
                     <div key={product.id} className="product-card-carousel-item">
                       <ProductCard
                         product={product}
-                        onOpenDetail={() => {}}
+                        onOpenDetail={(p) => setSelectedProductForDetail(p)}
                         variant="small"
                       />
                     </div>
@@ -622,6 +643,59 @@ export default function ProfilePage() {
             <button className="reel-close" onClick={() => setSelectedVideo(null)}>×</button>
           </div>
         </div>
+      )}
+
+      {/* Service Detail Modal */}
+      <ServiceDetailModal
+        service={selectedServiceForDetail}
+        isOpen={!!selectedServiceForDetail}
+        onClose={() => setSelectedServiceForDetail(null)}
+      />
+
+      {/* Product Detail Modal */}
+      {selectedProductForDetail && (
+        <Modal
+          isOpen={!!selectedProductForDetail}
+          onClose={() => setSelectedProductForDetail(null)}
+          title="Detalle del Producto"
+          maxWidth="500px"
+        >
+          <div className="profile-product-detail">
+            <div className="product-detail-image-main">
+              <img 
+                src={selectedProductForDetail.images?.[0]?.image_url || selectedProductForDetail.image_url || "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80"} 
+                alt={selectedProductForDetail.name} 
+              />
+            </div>
+            <div className="product-detail-info">
+              <h2 className="product-detail-title">{selectedProductForDetail.name}</h2>
+              <div className="product-detail-pricing">
+                {selectedProductForDetail.original_price && (
+                  <span className="original-price">${selectedProductForDetail.original_price.toLocaleString()}</span>
+                )}
+                <div className="current-price-row">
+                  <span className="current-price">${selectedProductForDetail.price?.toLocaleString()}</span>
+                  {selectedProductForDetail.discount_percentage > 0 && (
+                    <span className="discount-badge">-{selectedProductForDetail.discount_percentage}% OFF</span>
+                  )}
+                </div>
+              </div>
+              <div className="product-detail-description">
+                <h4>Descripción</h4>
+                <p>{selectedProductForDetail.description || "Sin descripción disponible."}</p>
+              </div>
+              <button 
+                className="contact-professional-btn"
+                onClick={() => {
+                  navigate(`/messages?to=${id}`);
+                  setSelectedProductForDetail(null);
+                }}
+              >
+                <MessageCircle size={18} /> CONSULTAR AL PROFESIONAL
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
 
       <Footer />

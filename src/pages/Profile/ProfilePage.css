@@ -339,14 +339,16 @@
 .video-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 9 / 16;
+  aspect-ratio: 4 / 5;
   background: #000;
 }
 
 .video-element {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  accent-color: #e94823;
+  background: #000;
 }
 
 .video-stats-overlay {
@@ -413,14 +415,16 @@
 .video-description {
   max-height: 0;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0;
+  transform: translateY(-10px);
 }
 
 .video-description.is-expanded {
   max-height: 300px;
   opacity: 1;
   padding-top: 10px;
+  transform: translateY(0);
 }
 
 .video-description p {
@@ -478,7 +482,7 @@
 /* Services Section */
 .services-scroll-container {
   overflow-x: auto;
-  padding-bottom: 20px;
+  padding-top: 15px; padding-bottom: 20px;
   cursor: grab;
   user-select: none;
   -ms-overflow-style: none; /* IE and Edge */
@@ -603,7 +607,7 @@
 /* Testimonials Section */
 .testimonials-scroll-container {
   overflow-x: auto;
-  padding-bottom: 20px;
+  padding-top: 15px; padding-bottom: 20px;
   cursor: grab;
   user-select: none;
   -ms-overflow-style: none;
@@ -807,9 +811,9 @@
 
 .reel-card-profile {
   position: relative;
-  min-width: 240px;
-  width: 240px;
-  aspect-ratio: 9 / 16;
+  min-width: 280px;
+  width: 280px;
+  aspect-ratio: 4 / 5;
   border-radius: 12px;
   overflow: hidden;
   background: #000;
@@ -827,7 +831,9 @@
 .reel-card-profile__video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  accent-color: #e94823;
+  background: #000;
 }
 
 .reel-card-profile__overlay {
@@ -1495,11 +1501,37 @@
 }
 
 .promos-btn {
-  background: linear-gradient(135deg, #e94823 0%, #ff6b6b 100%);
+  background: linear-gradient(135deg, #e94823 0%, #ff4757 50%, #e94823 100%);
+  background-size: 200% auto;
   color: #fff !important;
   border: none !important;
+  padding: 22px;
+  border-radius: 24px;
+  font-weight: 900;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: 0 10px 25px rgba(233, 72, 35, 0.4);
+  transition: all 0.4s ease;
   margin-bottom: 12px;
+  cursor: pointer;
+  animation: shine-btn 3s infinite;
 }
+
+.promos-btn:hover {
+  transform: translateY(-5px) scale(1.02);
+  background-position: right center;
+  box-shadow: 0 15px 35px rgba(233, 72, 35, 0.6);
+}
+
+@keyframes shine-btn {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 
 /* Promo Detail View Styling */
 .promo-detail-view {
@@ -1717,4 +1749,184 @@
   font-size: 0.9rem;
   flex-shrink: 0;
   box-shadow: 0 4px 10px rgba(233, 72, 35, 0.3);
+}
+
+/* Redesigned Sidebar Buttons */
+.cta-button.message-btn {
+  background: linear-gradient(135deg, var(--highlight) 0%, #ff8e53 100%) !important;
+  color: #000 !important;
+  border: none !important;
+  padding: 22px !important;
+  border-radius: 24px !important;
+  font-weight: 900 !important;
+  font-size: 0.95rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  box-shadow: 0 10px 30px var(--highlight-glow) !important;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  margin-top: 10px !important;
+  text-decoration: none !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.cta-button.message-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: 0.5s;
+}
+
+.cta-button.message-btn:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 15px 45px var(--highlight-glow-strong) !important;
+}
+
+.cta-button.message-btn:hover::after {
+  left: 100%;
+}
+
+/* Carousel Navigation */
+.section-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.carousel-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  background: var(--accent-transparent);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: scale(1.1);
+}
+
+/* Profile Product Detail Modal */
+.profile-product-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.product-detail-image-main {
+  width: 100%;
+  height: 300px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+.product-detail-image-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.product-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.product-detail-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.product-detail-pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.product-detail-pricing .original-price {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.current-price-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.product-detail-pricing .current-price {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent-color);
+}
+
+.discount-badge {
+  background: #ff4757;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.product-detail-description h4 {
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.product-detail-description p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  opacity: 0.9;
+}
+
+.contact-professional-btn {
+  background: var(--highlight);
+  color: #000;
+  border: none;
+  padding: 16px;
+  border-radius: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 10px;
+}
+
+.contact-professional-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--highlight-glow);
 }

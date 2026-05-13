@@ -179,3 +179,26 @@
     grid-template-columns: 1fr;
   }
 }
+
+.service-detail-modal__title-large {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.service-detail-modal__price-large {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent-color);
+  margin-top: 10px;
+}
+
+.service-detail-modal__price-large span {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 8px;
+}

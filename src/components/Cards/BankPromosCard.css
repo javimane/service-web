@@ -1,66 +1,94 @@
 .bank-promos-card {
-  margin-top: 1rem;
-  padding: 1.25rem;
-  background: linear-gradient(
-    135deg,
-    rgba(79, 172, 254, 0.05) 0%,
-    rgba(0, 242, 254, 0.05) 100%
-  );
-  border-radius: 12px;
-  border: 1px solid rgba(79, 172, 254, 0.2);
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(79, 172, 254, 0.3);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.bank-promos-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transform: rotate(45deg);
+  transition: 0.6s;
+  pointer-events: none;
 }
 
 .bank-promos-card:hover {
-  transform: translateY(-4px);
-  background: linear-gradient(
-    135deg,
-    rgba(79, 172, 254, 0.1) 0%,
-    rgba(0, 242, 254, 0.1) 100%
-  );
-  border-color: rgba(79, 172, 254, 0.4);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-6px) scale(1.02);
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.15) 0%, rgba(0, 242, 254, 0.1) 100%);
+  border-color: rgba(79, 172, 254, 0.6);
+  box-shadow: 0 15px 30px rgba(79, 172, 254, 0.2);
+}
+
+.bank-promos-card:hover::before {
+  left: 100%;
 }
 
 .promo-preview {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.2rem;
 }
 
 .promo-preview__icon {
-  width: 40px;
-  height: 40px;
-  background: rgba(79, 172, 254, 0.1);
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4facfe;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+}
+
+.promo-preview__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .promo-preview__content p {
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #eee;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary, #fff);
+  letter-spacing: -0.01em;
 }
 
 .promo-preview__content span {
   font-size: 0.75rem;
   color: #4facfe;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .chevron {
   margin-left: auto;
-  color: #666;
-  transition: transform 0.3s ease;
+  color: var(--text-secondary, #666);
+  transition: all 0.3s ease;
 }
 
 .bank-promos-card:hover .chevron {
-  transform: translateX(4px);
+  transform: translateX(6px);
   color: #4facfe;
 }
 
