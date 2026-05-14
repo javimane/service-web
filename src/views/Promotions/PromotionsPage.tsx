@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
   MapPin,
@@ -14,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import PromotionDetailPage from "./PromotionDetailPage";
@@ -40,11 +40,17 @@ export default function PromotionsPage() {
   const searchParams = useSearchParams();
   const promoId = searchParams?.get("id");
 
+  const [activeTab, setActiveTab] = useState<"bancos" | "promos">("bancos");
+
+  // Filter state
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedBank, setSelectedBank] = useState("");
+  const [selectedDiscountType, setSelectedDiscountType] = useState("");
+  const [selectedDay, setSelectedDay] = useState("");
+
   if (promoId) {
     return <PromotionDetailPage />;
   }
-
-  const [activeTab, setActiveTab] = useState<"bancos" | "promos">("bancos");
 
   // Queries with caching
   const { data: banks = [], isLoading: loadingBanks } = useQuery({
@@ -59,26 +65,99 @@ export default function PromotionsPage() {
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 
-  const { data: bankPromotions = [], isLoading: loadingBankPromos } = useQuery({
-    queryKey: ["bankPromotions"],
-    queryFn: () => bankPromotionService.getAll(),
-    staleTime: 1000 * 60 * 10, // 10 minutes
+  // Infinite Queries
+  const {
+    data: bankPromosData,
+    fetchNextPage: fetchNextBankPromos,
+    hasNextPage: hasNextBankPromos,
+    isFetchingNextPage: isFetchingNextBankPromos,
+    isLoading: loadingBankPromos,
+  } = useInfiniteQuery({
+    queryKey: ["bankPromotions", selectedProvince, selectedBank, selectedDay],
+    queryFn: ({ pageParam = 0 }) => {
+      const dayMap: Record<string, string> = {
+        Lunes: "monday",
+        Martes: "tuesday",
+        Miércoles: "wednesday",
+        Jueves: "thursday",
+        Viernes: "friday",
+        Sábado: "saturday",
+        Domingo: "sunday",
+      };
+      return bankPromotionService.getAll({
+        ...(selectedProvince ? { provinceId: selectedProvince } : {}),
+        ...(selectedBank ? { bankId: selectedBank } : {}),
+        ...(selectedDay ? { day: dayMap[selectedDay] } : {}),
+        limit: 20,
+        offset: pageParam,
+      });
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === 20 ? allPages.length * 20 : undefined;
+    },
+    initialPageParam: 0,
+    staleTime: 1000 * 60 * 10,
   });
 
-  const { data: profPromotions = [], isLoading: loadingProfPromos } = useQuery({
-    queryKey: ["profPromotions"],
-    queryFn: () => professionalPromotionService.getAll(),
-    staleTime: 1000 * 60 * 10, // 10 minutes
+  const {
+    data: profPromosData,
+    fetchNextPage: fetchNextProfPromos,
+    hasNextPage: hasNextProfPromos,
+    isFetchingNextPage: isFetchingNextProfPromos,
+    isLoading: loadingProfPromos,
+  } = useInfiniteQuery({
+    queryKey: ["profPromotions", selectedProvince, selectedDiscountType],
+    queryFn: ({ pageParam = 0 }) =>
+      professionalPromotionService.getAll({
+        ...(selectedProvince ? { provinceId: selectedProvince } : {}),
+        limit: 20,
+        offset: pageParam,
+      }),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === 20 ? allPages.length * 20 : undefined;
+    },
+    initialPageParam: 0,
+    staleTime: 1000 * 60 * 10,
   });
 
   const loading =
     loadingBanks || loadingProvinces || loadingBankPromos || loadingProfPromos;
 
-  // Filter state
-  const [selectedProvince, setSelectedProvince] = useState("");
-  const [selectedBank, setSelectedBank] = useState("");
-  const [selectedDiscountType, setSelectedDiscountType] = useState("");
-  const [selectedDay, setSelectedDay] = useState("");
+  // Infinite scroll observer
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          if (activeTab === "bancos" && hasNextBankPromos && !isFetchingNextBankPromos) {
+            fetchNextBankPromos();
+          } else if (activeTab === "promos" && hasNextProfPromos && !isFetchingNextProfPromos) {
+            fetchNextProfPromos();
+          }
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [
+    activeTab,
+    hasNextBankPromos,
+    isFetchingNextBankPromos,
+    fetchNextBankPromos,
+    hasNextProfPromos,
+    isFetchingNextProfPromos,
+    fetchNextProfPromos,
+  ]);
+
+  // Flattened data
+  const bankPromotions = bankPromosData?.pages.flat() || [];
+  const profPromotions = profPromosData?.pages.flat() || [];
 
   const getPromoBankIds = (promo: BankPromotion): number[] => {
     const relationIds = (promo.bank_promotions_banks || [])
@@ -145,7 +224,27 @@ export default function PromotionsPage() {
     return key ? !!promo[key] : false;
   };
 
+  const clearFilters = () => {
+    setSelectedProvince("");
+    setSelectedBank("");
+    setSelectedDiscountType("");
+    setSelectedDay("");
+  };
+
   const filteredBankDiscounts = bankPromotions.filter((d) => {
+    if (selectedProvince) {
+      const provId = Number(selectedProvince);
+      const matchesDirect = d.province_id === provId;
+      const matchesCompany = d.Professional?.Company?.some(
+        (c: any) =>
+          c.company_provinces?.some((cp: any) => cp.province_id === provId) ||
+          c.CompanyProvinces?.some((cp: any) => cp.province_id === provId),
+      );
+      const matchesAddress = d.Professional?.address?.some(
+        (a: any) => a.province_id === provId,
+      );
+      if (!matchesDirect && !matchesCompany && !matchesAddress) return false;
+    }
     if (selectedBank) {
       const bankIds = getPromoBankIds(d).map((id) => id.toString());
       if (!bankIds.includes(selectedBank)) return false;
@@ -155,6 +254,21 @@ export default function PromotionsPage() {
   });
 
   const filteredPromotions = profPromotions.filter((p) => {
+    if (selectedProvince) {
+      const provId = Number(selectedProvince);
+      // Check if it matches the direct province_id or any of the company's provinces
+      const matchesDirect = (p as any).province_id === provId;
+      const matchesCompany = (p.Professional as any)?.Company?.some(
+        (c: any) =>
+          c.company_provinces?.some((cp: any) => cp.province_id === provId) ||
+          c.CompanyProvinces?.some((cp: any) => cp.province_id === provId),
+      );
+      const matchesAddress = (p.Professional as any)?.address?.some(
+        (a: any) => a.province_id === provId,
+      );
+
+      if (!matchesDirect && !matchesCompany && !matchesAddress) return false;
+    }
     if (selectedDiscountType && p.discount_type !== selectedDiscountType)
       return false;
     return true;
@@ -237,22 +351,24 @@ export default function PromotionsPage() {
             </div>
           </div>
 
-          <div className="filter-group">
-            <Calendar size={18} />
-            <div className="select-wrapper">
-              <select
-                value={selectedDay}
-                onChange={(e) => setSelectedDay(e.target.value)}
-              >
-                <option value="">Cualquier Día</option>
-                {MOCK_DAYS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
+          {activeTab === "bancos" && (
+            <div className="filter-group">
+              <Calendar size={18} />
+              <div className="select-wrapper">
+                <select
+                  value={selectedDay}
+                  onChange={(e) => setSelectedDay(e.target.value)}
+                >
+                  <option value="">Cualquier Día</option>
+                  {MOCK_DAYS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
+          )}
 
           {activeTab === "bancos" ? (
             <div className="filter-group">
@@ -289,6 +405,11 @@ export default function PromotionsPage() {
               </div>
             </div>
           )}
+
+          <button className="clear-filters-btn" onClick={clearFilters}>
+            <X size={18} />
+            <span>Limpiar Filtros</span>
+          </button>
         </div>
 
         {loading ? (
@@ -303,12 +424,17 @@ export default function PromotionsPage() {
                 <div
                   key={discount.id}
                   className="promo-card"
-                  onClick={() =>
+                  onClick={() => {
+                    const slug = discount.description
+                      ? discount.description
+                          .trim()
+                          .toLowerCase()
+                          .replace(/\s+/g, "-")
+                      : `promocion-bancaria-${discount.id}`;
                     router.push(
-                      discount.seo_path ||
-                        `/promociones-bancarias/${discount.id}`,
-                    )
-                  }
+                      `/promociones-bancarias/${slug}?id=${discount.id}`,
+                    );
+                  }}
                 >
                   {(() => {
                     const promoBankNames = getPromoBankNames(discount);
@@ -358,10 +484,7 @@ export default function PromotionsPage() {
                                 <User size={12} />
                               )}
                               <span>
-                                {(discount.Professional as any)?.Company?.[0]
-                                  ?.name ||
-                                  (discount.Professional as any)?.Company
-                                    ?.name ||
+                                {discount.Professional?.Company?.[0]?.name ||
                                   "Ver Perfil"}
                               </span>
                             </div>
@@ -466,7 +589,6 @@ export default function PromotionsPage() {
                         )}
                         <span>
                           {promo.Professional?.Company?.[0]?.name ||
-                            promo.Professional?.Company?.name ||
                             "Ver Perfil"}
                         </span>
                       </div>
@@ -485,6 +607,16 @@ export default function PromotionsPage() {
                 <p>Intentá ajustar los filtros para ver más promociones.</p>
               </div>
             )}
+
+            {/* sentinel for infinite scroll */}
+            <div ref={loadMoreRef} className="promo-sentinel">
+              {(isFetchingNextBankPromos || isFetchingNextProfPromos) && (
+                <div className="promo-fetching-next">
+                  <Loader2 size={24} className="animate-spin" />
+                  <span>Cargando m&#225;s...</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>

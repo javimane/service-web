@@ -35,12 +35,22 @@ export interface BankPromotion {
   }>;
   Professional?: {
     id: number;
-    Company?: { name: string }[];
+    Company?: Array<{
+      id: number;
+      name: string;
+      company_provinces?: Array<{ province_id: number }>;
+      CompanyProvinces?: Array<{ province_id: number }>;
+    }>;
     Profile?: {
       avatar_url: string | null;
     };
+    address?: Array<{
+      province_id: number;
+      department_id: number;
+    }>;
   };
-  seo_path?: string; // Optional field for SEO-friendly URLs
+  province_id?: number;
+  seo_path?: string;
 }
 
 export type CreateBankPromotionDto = Omit<
@@ -57,7 +67,13 @@ export type CreateBankPromotionDto = Omit<
 };
 
 export const bankPromotionService = {
-  getAll: () => apiClient<BankPromotion[]>(API_ENDPOINTS.bankPromotions.base),
+  getAll: (params?: any) => {
+    const query = new URLSearchParams(params).toString();
+    const url = query
+      ? `${API_ENDPOINTS.bankPromotions.base}?${query}`
+      : API_ENDPOINTS.bankPromotions.base;
+    return apiClient<BankPromotion[]>(url);
+  },
 
   getMyPromotions: () =>
     apiClient<BankPromotion[]>(API_ENDPOINTS.bankPromotions.my),

@@ -24,7 +24,9 @@
   margin-bottom: 1.5rem;
   transition: background 0.2s;
 }
-.back-btn:hover { background: var(--surface-soft); }
+.back-btn:hover {
+  background: var(--surface-soft);
+}
 
 .bank-promo-detail-card {
   background: var(--bg-card);
@@ -44,7 +46,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   color: white;
   border-radius: 20px;
   padding: 0.3rem 0.9rem;
@@ -84,11 +86,18 @@
   min-width: 100px;
   color: var(--brand-blue);
 }
-.stat-value { font-size: 1.8rem; font-weight: 700; }
-.stat-label { font-size: 0.8rem; font-weight: 600; }
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
 
 .bank-promo-banks h3,
 .bank-promo-days h3,
+.bank-promo-payment-methods h3,
 .bank-promo-description h3,
 .bank-promo-terms h3 {
   display: flex;
@@ -106,14 +115,33 @@
   gap: 0.5rem;
 }
 
-.bank-tag, .day-tag {
+.bank-tag,
+.day-tag {
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
 }
-.bank-tag { background: var(--brand-blue-soft); color: var(--brand-blue); border: 1px solid var(--brand-blue-border); }
-.day-tag { background: var(--accent-transparent); color: var(--accent-color); border: 1px solid var(--highlight-border); }
+.bank-tag {
+  background: var(--brand-blue-soft);
+  color: var(--brand-blue);
+  border: 1px solid var(--brand-blue-border);
+}
+.day-tag {
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+  border: 1px solid var(--highlight-border);
+}
+
+.payment-method-tag {
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #eef5ff;
+  color: #1a4fa0;
+  border: 1px solid #cfe1ff;
+}
 
 .bank-promo-detail-row {
   display: flex;
@@ -148,7 +176,9 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-.bank-promo-profile-btn:hover { background: #1a4fa0; }
+.bank-promo-profile-btn:hover {
+  background: #1a4fa0;
+}
 
 .bank-promo-detail-loading,
 .bank-promo-detail-error {

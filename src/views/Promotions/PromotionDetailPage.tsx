@@ -23,15 +23,17 @@ export default function PromotionDetailPage({
 }: {
   promotionId?: string;
 }) {
-  const params = useParams<{ seoPath: string }>();
-  const seoPath = params?.seoPath as string;
+  const params = useParams<{ seoPath: string | string[] }>();
+  const seoPathRaw = params?.seoPath;
   const searchParams = useSearchParams();
   const idFromQuery = searchParams?.get("id") ?? null;
   const router = useRouter();
 
-  const id = promotionId
-    ? String(promotionId)
-    : extractIdFromSlug(seoPath) || extractIdFromSlug(idFromQuery!);
+  const idFromPath = Array.isArray(seoPathRaw)
+    ? seoPathRaw[seoPathRaw.length - 1]
+    : extractIdFromSlug(seoPathRaw as string);
+
+  const id = promotionId ? String(promotionId) : idFromQuery || idFromPath;
 
   const {
     data: promotion,
@@ -109,6 +111,10 @@ export default function PromotionDetailPage({
             promotion.discount_type === "Fixed Amount"
           ? `$${promotion.discount_value} OFF`
           : String(promotion.discount_value);
+
+  const fromDate = promotion.from_date
+    ? new Date(promotion.from_date).toLocaleDateString("es-AR")
+    : null;
 
   const expiryDate = promotion.expires_at
     ? new Date(promotion.expires_at).toLocaleDateString("es-AR")
@@ -189,6 +195,14 @@ export default function PromotionDetailPage({
             )}
 
             <div className="promotion-detail__meta">
+              {fromDate && (
+                <div className="promotion-detail__meta-item">
+                  <Calendar size={16} />
+                  <span>
+                    <strong>V&#225;lido desde:</strong> {fromDate}
+                  </span>
+                </div>
+              )}
               {expiryDate && (
                 <div className="promotion-detail__meta-item">
                   <Calendar size={16} />

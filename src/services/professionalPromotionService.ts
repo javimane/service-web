@@ -14,16 +14,33 @@ export interface ProfessionalPromotion {
   image_url: string | null;
   state: string | null;
   professional_id: number;
+  province?: string | null;
+  province_id?: number | null;
   created_at: string;
   updated_at: string;
   Professional?: {
     id: number;
-    Company?: { name: string };
+    Company?: Array<{
+      name: string;
+      CompanyProvinces?: Array<{
+        province_id: number;
+        Province?: { id: number; name: string };
+      }>;
+      CompanyDepartments?: Array<{
+        province_department_id: number;
+        Department?: { id: number; name: string };
+      }>;
+    }>;
     Profile?: {
       avatar_url: string | null;
     };
+    address?: Array<{
+      province_id: number;
+      department_id: number;
+      Province?: { id: number; name: string };
+    }>;
   };
-  seo_path?: string; // Optional field for SEO-friendly URLs
+  seo_path?: string;
 }
 
 export interface CreateProfessionalPromotionRequest {

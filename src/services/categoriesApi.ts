@@ -2,7 +2,7 @@ import { apiClient } from "./apiClient";
 import { API_BASE_URL } from "./api.config";
 
 export const CATEGORIES_API_ENDPOINTS = {
-  listCategories: `${API_BASE_URL}/api/categories`,
+  listCategoriesProducts: `${API_BASE_URL}/api/categories/products`,
   listCategoryServices: `${API_BASE_URL}/api/categories/services`,
   listProfiles: `${API_BASE_URL}/api/profiles`,
   profileDetail: (profileId: string) => `${API_BASE_URL}/api/profiles/${profileId}`,
@@ -18,8 +18,8 @@ export const categoriesService = {
    * @auth No
    * @returns {Promise<any[]>}
    */
-  listCategories: () => 
-    apiClient<any[]>(CATEGORIES_API_ENDPOINTS.listCategories, { method: "GET" }),
+  listCategoriesProducts: () => 
+    apiClient<any[]>(CATEGORIES_API_ENDPOINTS.listCategoriesProducts, { method: "GET" }),
 
   /**
    * @route GET /api/categories/services

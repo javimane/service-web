@@ -1,4 +1,4 @@
-﻿.promotion-detail-page {
+.promotion-detail-page {
   min-height: 100vh;
   padding: 2rem 1rem;
   max-width: 680px;
@@ -203,14 +203,15 @@
 }
 
 .promotion-detail__btn--secondary {
-  background: var(--bg-secondary, #f1f3f7);
-  color: var(--text-primary, #1e293b);
-  border: 1px solid var(--border-color, #e0e0e0);
+  background: coral;
+  color: white;
+  border: none;
 }
 
 .promotion-detail__btn--secondary:hover {
-  border-color: #fbbf24;
-  background: rgba(251, 191, 36, 0.08);
+  background: #ff6b3d;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(255, 127, 80, 0.4);
 }
 
 .promotion-detail-loading,

@@ -44,14 +44,48 @@ function formatDate(dateStr: string) {
   });
 }
 
+function getPaymentMethods(value: unknown): string[] {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.filter(
+      (method): method is string => typeof method === "string",
+    );
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (method): method is string => typeof method === "string",
+          );
+        }
+      } catch {
+        // If JSON parsing fails, fallback to raw value below.
+      }
+    }
+
+    return trimmed ? [trimmed] : [];
+  }
+
+  return [];
+}
+
 export default function BankPromotionDetailPage() {
-  const params = useParams<{ seoPath: string }>();
+  const params = useParams<{ seoPath: string | string[] }>();
   const searchParams = useSearchParams();
-  const seoPath = params?.seoPath as string;
+  const seoPathRaw = params?.seoPath;
 
   // Try to get ID from query param first, then from slug
   const queryId = searchParams?.get("id");
-  const id = queryId || extractIdFromSlug(seoPath);
+  const idFromPath = Array.isArray(seoPathRaw)
+    ? seoPathRaw[seoPathRaw.length - 1]
+    : extractIdFromSlug(seoPathRaw as string);
+  const id = queryId || idFromPath;
   const router = useRouter();
 
   const {
@@ -59,7 +93,7 @@ export default function BankPromotionDetailPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["bank-promotion", seoPath, id],
+    queryKey: ["bank-promotion", seoPathRaw, id],
     queryFn: () => bankPromotionService.getById(id),
     enabled: !!id,
   });
@@ -117,6 +151,7 @@ export default function BankPromotionDetailPage() {
   const banks =
     promo.bank_promotions_banks?.map((b) => b.Bank?.name).filter(Boolean) ??
     (promo.Bank ? [promo.Bank.name] : []);
+  const paymentMethods = getPaymentMethods((promo as any).payment_method);
 
   return (
     <>
@@ -152,8 +187,8 @@ export default function BankPromotionDetailPage() {
                 {promo.refund > 0 && (
                   <div className="bank-promo-stat">
                     <Tag size={20} />
-                    <span className="stat-value">{promo.refund}%</span>
-                    <span className="stat-label">Reintegro</span>
+                    <span className="stat-value">${promo.refund}</span>
+                    <span className="stat-label">Tope Reintegro</span>
                   </div>
                 )}
               </div>
@@ -176,12 +211,19 @@ export default function BankPromotionDetailPage() {
               )}
 
               {/* Payment Method */}
-              {promo.payment_method && (
-                <div className="bank-promo-detail-row">
-                  <CreditCard size={16} />
-                  <span>
-                    <strong>Medio de pago:</strong> {promo.payment_method}
-                  </span>
+              {paymentMethods.length > 0 && (
+                <div className="bank-promo-payment-methods">
+                  <h3>
+                    <CreditCard size={16} />
+                    Medios de pago
+                  </h3>
+                  <div className="bank-promo-tags">
+                    {paymentMethods.map((method) => (
+                      <span key={method} className="payment-method-tag">
+                        {method}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 

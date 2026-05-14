@@ -57,7 +57,7 @@ export default function ServicesPage() {
 
   const { data: categories = [] } = useQuery({
     queryKey: ["service-categories"],
-    queryFn: () => categoriesService.listCategories(),
+    queryFn: () => categoriesService.listCategoriesProducts(),
   });
 
   const { data: provinces = [] } = useQuery({
