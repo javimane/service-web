@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import {
   LayoutDashboard,
@@ -22,7 +23,7 @@ import {
   Briefcase,
   Users,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
 import BrandLogo from "../BrandLogo/BrandLogo";
@@ -74,7 +75,7 @@ export default function DashboardSidebar({
   onProposalsCreate,
   onProposalsView,
 }: DashboardSidebarProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { logout, hasProfessionalSubscription, user, sessionStatus } =
     useAuth();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
@@ -110,6 +111,10 @@ export default function DashboardSidebar({
     }
   };
 
+  const goToDashboardView = (view: string) => {
+    router.push(`${ROUTES.dashboard}?view=${view}`);
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -117,7 +122,7 @@ export default function DashboardSidebar({
       console.error("Unable to sign out cleanly:", error);
     }
 
-    navigate(ROUTES.login);
+    router.push(ROUTES.login);
   };
 
   const handleNavigation = (action?: () => void) => {
@@ -146,7 +151,7 @@ export default function DashboardSidebar({
       key: "dashboard",
       label: "DASHBOARD",
       icon: LayoutDashboard,
-      onClick: onDashboardClick ?? (() => navigate(ROUTES.dashboard)),
+      onClick: onDashboardClick ?? (() => router.push(ROUTES.dashboard)),
     },
     {
       key: "proposals",
@@ -158,21 +163,13 @@ export default function DashboardSidebar({
           key: "proposals-create",
           label: "Crear Presupuesto",
           onClick:
-            onProposalsCreate ??
-            (() =>
-              navigate(ROUTES.dashboard, {
-                state: { view: "proposals-create" },
-              })),
+            onProposalsCreate ?? (() => goToDashboardView("proposals-create")),
         },
         {
           key: "proposals-view",
           label: "Ver Presupuestos",
           onClick:
-            onProposalsView ??
-            (() =>
-              navigate(ROUTES.dashboard, {
-                state: { view: "proposals-view" },
-              })),
+            onProposalsView ?? (() => goToDashboardView("proposals-view")),
         },
       ],
     },
@@ -187,20 +184,13 @@ export default function DashboardSidebar({
           label: "Crear Promoción",
           onClick:
             onPromotionsCreate ??
-            (() =>
-              navigate(ROUTES.dashboard, {
-                state: { view: "promotions-create" },
-              })),
+            (() => goToDashboardView("promotions-create")),
         },
         {
           key: "promotions-all",
           label: "Ver Todas",
           onClick:
-            onPromotionsViewAll ??
-            (() =>
-              navigate(ROUTES.dashboard, {
-                state: { view: "promotions-all" },
-              })),
+            onPromotionsViewAll ?? (() => goToDashboardView("promotions-all")),
         },
       ],
     },
@@ -209,84 +199,68 @@ export default function DashboardSidebar({
       label: "BANK PROMOTIONS",
       icon: Landmark,
       onClick:
-        onBankPromosClick ??
-        (() =>
-          navigate(ROUTES.dashboard, { state: { view: "bank-promotions" } })),
+        onBankPromosClick ?? (() => goToDashboardView("bank-promotions")),
     },
     {
       key: "products",
       label: "PRODUCTS",
       icon: Package,
-      onClick:
-        onProductsClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "products" } })),
+      onClick: onProductsClick ?? (() => goToDashboardView("products")),
     },
     {
       key: "services",
       label: "SERVICIOS",
       icon: Briefcase,
-      onClick:
-        onServicesClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "services" } })),
+      onClick: onServicesClick ?? (() => goToDashboardView("services")),
     },
     {
       key: "calendar",
       label: "CALENDAR",
       icon: CalendarDays,
-      onClick:
-        onCalendarClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "calendar" } })),
+      onClick: onCalendarClick ?? (() => goToDashboardView("calendar")),
     },
     {
       key: "profile",
       label: "PERFIL",
       icon: UserRound,
-      onClick:
-        onProfileClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "profile" } })),
+      onClick: onProfileClick ?? (() => goToDashboardView("profile")),
     },
     {
       key: "reels",
       label: "REELS",
       icon: Clapperboard,
-      onClick:
-        onReelsClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "reels" } })),
+      onClick: onReelsClick ?? (() => goToDashboardView("reels")),
     },
     {
       key: "referrals",
       label: "REFERIDOS",
       icon: Users,
-      onClick: () => navigate(ROUTES.dashboard, { state: { view: "referrals" } }),
+      onClick: () => goToDashboardView("referrals"),
     },
     {
       key: "messages",
       label: "MESSAGES",
       icon: MessageSquare,
-      onClick: onMessagesClick ?? (() => navigate(ROUTES.messages)),
+      onClick: onMessagesClick ?? (() => router.push(ROUTES.messages)),
     },
     {
       key: "notifications",
       label: "NOTIFICATIONS",
       icon: Bell,
       onClick:
-        onNotificationsClick ??
-        (() =>
-          navigate(ROUTES.dashboard, { state: { view: "notifications" } })),
+        onNotificationsClick ?? (() => goToDashboardView("notifications")),
     },
     {
       key: "subscription",
       label: "SUBSCRIPTION",
       icon: CreditCard,
-      onClick:
-        onSubscriptionClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "subscription" } })),
+      onClick: onSubscriptionClick ?? (() => goToDashboardView("subscription")),
     },
     {
       key: "settings",
       label: "ACCOUNT SETTINGS",
       icon: Settings,
-      onClick: () => navigate(ROUTES.settings),
+      onClick: () => router.push(ROUTES.settings),
     },
   ];
 
@@ -404,9 +378,7 @@ export default function DashboardSidebar({
       label: "Perfil",
       description: "Tu vidriera",
       icon: UserRound,
-      onClick:
-        onProfileClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "profile" } })),
+      onClick: onProfileClick ?? (() => goToDashboardView("profile")),
       isActive: activeItem === "profile",
       isLocked: isItemLocked("profile"),
     },
@@ -415,9 +387,7 @@ export default function DashboardSidebar({
       label: "Agenda",
       description: "Horarios y turnos",
       icon: CalendarDays,
-      onClick:
-        onCalendarClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "calendar" } })),
+      onClick: onCalendarClick ?? (() => goToDashboardView("calendar")),
       isActive: activeItem === "calendar",
       isLocked: isItemLocked("calendar"),
     },
@@ -426,9 +396,7 @@ export default function DashboardSidebar({
       label: "Productos",
       description: "Catalogo rapido",
       icon: Package,
-      onClick:
-        onProductsClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "products" } })),
+      onClick: onProductsClick ?? (() => goToDashboardView("products")),
       isActive: activeItem === "products",
       isLocked: isItemLocked("products"),
     },
@@ -437,9 +405,7 @@ export default function DashboardSidebar({
       label: "Servicios",
       description: "Tus servicios",
       icon: Briefcase,
-      onClick:
-        onServicesClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "services" } })),
+      onClick: onServicesClick ?? (() => goToDashboardView("services")),
       isActive: activeItem === "services",
       isLocked: isItemLocked("services"),
     },
@@ -448,9 +414,7 @@ export default function DashboardSidebar({
       label: "Reels",
       description: "Contenido corto",
       icon: Clapperboard,
-      onClick:
-        onReelsClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "reels" } })),
+      onClick: onReelsClick ?? (() => goToDashboardView("reels")),
       isActive: activeItem === "reels",
       isLocked: isItemLocked("reels"),
     },
@@ -462,11 +426,7 @@ export default function DashboardSidebar({
       label: "Crear presupuesto",
       icon: FileText,
       onClick:
-        onProposalsCreate ??
-        (() =>
-          navigate(ROUTES.dashboard, {
-            state: { view: "proposals-create" },
-          })),
+        onProposalsCreate ?? (() => goToDashboardView("proposals-create")),
       isActive: activeItem === "proposals-create",
       isLocked: isItemLocked("proposals"),
     },
@@ -475,11 +435,7 @@ export default function DashboardSidebar({
       label: "Nueva promocion",
       icon: Ticket,
       onClick:
-        onPromotionsCreate ??
-        (() =>
-          navigate(ROUTES.dashboard, {
-            state: { view: "promotions-create" },
-          })),
+        onPromotionsCreate ?? (() => goToDashboardView("promotions-create")),
       isActive: activeItem === "promotions-create",
       isLocked: isItemLocked("promotions"),
     },
@@ -488,9 +444,7 @@ export default function DashboardSidebar({
       label: "Promos bancarias",
       icon: Landmark,
       onClick:
-        onBankPromosClick ??
-        (() =>
-          navigate(ROUTES.dashboard, { state: { view: "bank-promotions" } })),
+        onBankPromosClick ?? (() => goToDashboardView("bank-promotions")),
       isActive: activeItem === "bank-promotions",
       isLocked: isItemLocked("bank-promotions"),
     },
@@ -498,9 +452,7 @@ export default function DashboardSidebar({
       key: "subscription",
       label: "Suscripcion",
       icon: CreditCard,
-      onClick:
-        onSubscriptionClick ??
-        (() => navigate(ROUTES.dashboard, { state: { view: "subscription" } })),
+      onClick: onSubscriptionClick ?? (() => goToDashboardView("subscription")),
       isActive: activeItem === "subscription",
       isLocked: false,
     },
@@ -511,7 +463,7 @@ export default function DashboardSidebar({
       key: "home",
       label: "Inicio",
       icon: LayoutDashboard,
-      onClick: () => navigate(ROUTES.home),
+      onClick: () => router.push(ROUTES.home),
       isActive: false,
       isLocked: false,
     },
@@ -520,9 +472,7 @@ export default function DashboardSidebar({
       label: "Notificaciones",
       icon: Bell,
       onClick:
-        onNotificationsClick ??
-        (() =>
-          navigate(ROUTES.dashboard, { state: { view: "notifications" } })),
+        onNotificationsClick ?? (() => goToDashboardView("notifications")),
       isActive: activeItem === "notifications",
       isLocked: false,
     },
@@ -530,7 +480,7 @@ export default function DashboardSidebar({
       key: "settings",
       label: "Configuracion",
       icon: Settings,
-      onClick: () => navigate(ROUTES.settings),
+      onClick: () => router.push(ROUTES.settings),
       isActive: activeItem === "settings",
       isLocked: false,
     },
@@ -551,7 +501,7 @@ export default function DashboardSidebar({
               <button
                 type="button"
                 className="brand-logo-btn"
-                onClick={() => navigate(ROUTES.home)}
+                onClick={() => router.push(ROUTES.home)}
                 aria-label="Go to home"
               >
                 <BrandLogo className="brand-logo" />
@@ -722,7 +672,7 @@ export default function DashboardSidebar({
             className={`dashboard-bottom-nav__item ${activeItem === "messages" ? "is-active" : ""}`}
             onClick={() =>
               handleNavigation(
-                onMessagesClick ?? (() => navigate(ROUTES.messages)),
+                onMessagesClick ?? (() => router.push(ROUTES.messages)),
               )
             }
           >
@@ -736,10 +686,7 @@ export default function DashboardSidebar({
             onClick={() =>
               handleNavigation(
                 onNotificationsClick ??
-                  (() =>
-                    navigate(ROUTES.dashboard, {
-                      state: { view: "notifications" },
-                    })),
+                  (() => goToDashboardView("notifications")),
               )
             }
           >
@@ -752,11 +699,7 @@ export default function DashboardSidebar({
             className={`dashboard-bottom-nav__item ${activeItem === "profile" ? "is-active" : ""}`}
             onClick={() =>
               handleNavigation(
-                onProfileClick ??
-                  (() =>
-                    navigate(ROUTES.dashboard, {
-                      state: { view: "profile" },
-                    })),
+                onProfileClick ?? (() => goToDashboardView("profile")),
               )
             }
           >
@@ -787,12 +730,11 @@ export default function DashboardSidebar({
         <button
           type="button"
           className="brand-logo-btn"
-          onClick={() => navigate(ROUTES.home)}
+          onClick={() => router.push(ROUTES.home)}
           aria-label="Go to home"
         >
           <BrandLogo className="brand-logo" compact={isCollapsed} />
         </button>
-
       </div>
 
       <nav className="sidebar-nav">

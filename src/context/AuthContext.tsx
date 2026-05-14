@@ -1,7 +1,42 @@
-import { createContext, useContext, useState, useEffect } from "react";
+"use client";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 import { authService } from "../services/authService";
 
-const AuthContext = createContext<any>(null);
+type SessionStatus = {
+  status?: boolean | string;
+  is_professional?: boolean;
+  professional_active?: boolean;
+  full_name?: string;
+  email?: string;
+  subscription?: {
+    status?: string;
+    professional_id?: number | string;
+    plan?: string;
+    started_at?: string;
+    expires_at?: string;
+    amount_paid?: number;
+  } | null;
+  [key: string]: any;
+};
+
+type AuthContextValue = {
+  user: any;
+  sessionStatus: SessionStatus | null;
+  hasProfessionalSubscription: boolean;
+  loading: boolean;
+  refreshSession: () => Promise<void>;
+  logout: () => Promise<void>;
+  setUser: (value: any) => void;
+  setSessionStatus: (value: SessionStatus | null) => void;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
 
 const normalizeSessionPayload = (payload: any) => {
   const data = payload?.data ?? payload ?? null;
@@ -22,9 +57,11 @@ const normalizeSessionPayload = (payload: any) => {
   };
 };
 
-export function AuthProvider({ children }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState(null);
-  const [sessionStatus, setSessionStatus] = useState(null);
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   const hasActiveStatusFlag =
@@ -68,10 +105,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = async () => {
-    try {
-      // If there's an API logout endpoint, we'd call it here
-      // await apiClient('/api/auth/logout', { method: 'POST' });
-    } catch (e) {}
+    // If there's an API logout endpoint, we'd call it here
+    // await apiClient('/api/auth/logout', { method: 'POST' });
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     setUser(null);

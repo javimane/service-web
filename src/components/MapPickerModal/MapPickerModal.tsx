@@ -1,5 +1,12 @@
+"use client";
 import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
 import { X, MapPin, Check, Navigation, Loader2 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
@@ -10,8 +17,8 @@ import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 
 let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
+  iconUrl: icon.src,
+  shadowUrl: iconShadow.src,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
@@ -29,12 +36,12 @@ interface MapPickerModalProps {
 }
 
 // Sub-component to handle map clicks
-function LocationMarker({ 
-  pos, 
-  setPos 
-}: { 
-  pos: [number, number] | null; 
-  setPos: (pos: [number, number]) => void 
+function LocationMarker({
+  pos,
+  setPos,
+}: {
+  pos: [number, number] | null;
+  setPos: (pos: [number, number]) => void;
 }) {
   useMapEvents({
     click(e) {
@@ -42,9 +49,7 @@ function LocationMarker({
     },
   });
 
-  return pos === null ? null : (
-    <Marker position={pos} />
-  );
+  return pos === null ? null : <Marker position={pos} />;
 }
 
 // Sub-component to pan the map programmatically
@@ -95,10 +100,12 @@ export default function MapPickerModal({
       },
       (error) => {
         console.error("Error getting location:", error);
-        alert("No se pudo obtener tu ubicación. Por favor, verificá los permisos de tu navegador.");
+        alert(
+          "No se pudo obtener tu ubicación. Por favor, verificá los permisos de tu navegador.",
+        );
         setLocating(false);
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true },
     );
   };
 
@@ -120,13 +127,17 @@ export default function MapPickerModal({
             <h3>Ubicación del comercio</h3>
           </div>
           <div className="map-picker-header-actions">
-            <button 
+            <button
               className={`map-location-btn ${locating ? "locating" : ""}`}
               onClick={handleGetCurrentLocation}
               disabled={locating}
               title="Usar mi ubicación actual"
             >
-              {locating ? <Loader2 className="animate-spin" size={18} /> : <Navigation size={18} />}
+              {locating ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <Navigation size={18} />
+              )}
               <span>{locating ? "Ubicando..." : "Mi ubicación"}</span>
             </button>
             <button className="map-picker-close" onClick={onClose}>
@@ -136,9 +147,9 @@ export default function MapPickerModal({
         </div>
 
         <div className="map-picker-body">
-          <MapContainer 
-            center={mapCenter} 
-            zoom={13} 
+          <MapContainer
+            center={mapCenter}
+            zoom={13}
             style={{ width: "100%", height: "100%" }}
             scrollWheelZoom={true}
           >
@@ -156,11 +167,14 @@ export default function MapPickerModal({
             Hacé click en el mapa para colocar el pin en la ubicación exacta.
           </p>
           <div className="map-picker-actions">
-            <button className="map-picker-btn map-picker-btn--secondary" onClick={onClose}>
+            <button
+              className="map-picker-btn map-picker-btn--secondary"
+              onClick={onClose}
+            >
               Cancelar
             </button>
-            <button 
-              className="map-picker-btn map-picker-btn--primary" 
+            <button
+              className="map-picker-btn map-picker-btn--primary"
               onClick={handleConfirm}
               disabled={!markerPos}
             >

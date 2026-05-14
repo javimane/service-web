@@ -1,4 +1,6 @@
-import { Link, useNavigate } from "react-router-dom";
+"use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import {
   Bell,
@@ -18,7 +20,6 @@ import {
 import "./NavbarMessaje.css";
 import { useAuth } from "../../../context/AuthContext";
 import { ROUTES } from "../../../routes/paths";
-
 
 const notifications = [
   {
@@ -69,22 +70,23 @@ const notifications = [
 ];
 
 export default function NavbarMessage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const menuRef = useRef(null);
-  const notifRef = useRef(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const notifRef = useRef<HTMLDivElement | null>(null);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   // Close menus when clicking outside
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setIsMenuOpen(false);
       }
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
+      if (notifRef.current && !notifRef.current.contains(target)) {
         setIsNotifOpen(false);
       }
     }
@@ -105,7 +107,7 @@ export default function NavbarMessage() {
   const handleLogout = async () => {
     await logout();
     setIsMenuOpen(false);
-    navigate(ROUTES.home);
+    router.push(ROUTES.home);
   };
 
   const displayName =
@@ -115,14 +117,12 @@ export default function NavbarMessage() {
     <header className="navbar">
       <div className="navbar__inner container">
         {/* Back to home */}
-        <Link to={ROUTES.home} className="navbar__logo">
+        <Link href={ROUTES.home} className="navbar__logo">
           Cercio
         </Link>
 
         {/* Right side */}
         <div className="navbar__right">
-          
-
           <div className="navbar__notif-container" ref={notifRef}>
             <button
               className={`navbar__icon-btn ${isNotifOpen ? "active" : ""}`}
@@ -175,8 +175,7 @@ export default function NavbarMessage() {
                 </div>
                 <div className="notif-dropdown__footer">
                   <Link
-                    to={ROUTES.dashboard}
-                    state={{ view: "notifications" }}
+                    href={ROUTES.dashboard}
                     className="notif-dropdown__view-all"
                     onClick={() => setIsNotifOpen(false)}
                   >
@@ -208,7 +207,7 @@ export default function NavbarMessage() {
                   <div className="dropdown__divider"></div>
                   <div className="dropdown__body">
                     <Link
-                      to={ROUTES.profile}
+                      href={ROUTES.profile}
                       className="dropdown__item"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -216,7 +215,7 @@ export default function NavbarMessage() {
                       <span>Mi Cuenta</span>
                     </Link>
                     <Link
-                      to={ROUTES.dashboard}
+                      href={ROUTES.dashboard}
                       className="dropdown__item"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -224,7 +223,7 @@ export default function NavbarMessage() {
                       <span>Dashboard</span>
                     </Link>
                     <Link
-                      to={ROUTES.products}
+                      href={ROUTES.products}
                       className="dropdown__item"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -232,7 +231,7 @@ export default function NavbarMessage() {
                       <span>Productos</span>
                     </Link>
                     <Link
-                      to={ROUTES.analytics}
+                      href={ROUTES.dashboard}
                       className="dropdown__item"
                       onClick={() => setIsMenuOpen(false)}
                     >

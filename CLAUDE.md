@@ -5,41 +5,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev       # Start dev server (Vite HMR)
+npm run dev       # Start Next.js dev server
 npm run build     # Production build
-npm run preview   # Preview production build
+npm run start     # Start the production server
 npm run lint      # ESLint
 npm run test      # Run all tests once (Vitest)
 ```
 
 To run a single test file:
+
 ```bash
-npx vitest run src/pages/Login/LoginPage.test.jsx
+npx vitest run src/views/Login/LoginPage.test.tsx
 ```
 
 ## Environment Variables
 
-Requires a `.env` file with:
+Requires `.env` / `.env.local` with:
+
 ```
-VITE_SUPABASE_URL=...
-VITE_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
 ## Architecture
 
-**Entry point:** `src/main.jsx` wraps the app in `<StrictMode>`, `<BrowserRouter>`, and `<ThemeProvider>` (in that order).
+**Framework:** Next.js 15 App Router.
 
-**Routing** (`src/App.jsx`): React Router v7. Current routes: `/login`, `/register`. Any unmatched path redirects to `/login`. The `<ThemeToggle>` component renders outside routes, always visible.
+**App entry:** `src/app/layout.tsx` wraps the app in providers, and `src/app/providers.tsx` wires theme, auth, and data providers.
 
-**Auth** (`src/services/supabaseClient.js`): A single exported `supabase` instance used directly in pages. Login uses `supabase.auth.signInWithPassword`; Register uses `supabase.auth.signUp` with `full_name` in user metadata.
+**Routing:** App routes live under `src/app/` and use folder-based routing. Dynamic SEO pages are under folders like `src/app/perfil/[seoPath]`, `src/app/productos/[seoPath]`, `src/app/promociones/[seoPath]`, and `src/app/promociones-bancarias/[seoPath]`.
 
-**Theme** (`src/context/ThemeContext.jsx`): Dark/light mode stored in `localStorage` under `app-theme`. Applied by setting `data-theme` attribute on `document.documentElement`. `useTheme()` hook exposes `{ theme, toggleTheme }`.
+**Compatibility hooks:** `src/hooks/compat-router.ts` provides Next.js wrappers for navigation/search params so older React Router-style code can keep working during the migration.
 
-**File colocation:** Each page/component has its CSS file alongside it (e.g. `LoginPage.jsx` + `LoginPage.css`).
+**Auth:** `src/services/supabaseClient.ts` exports the shared Supabase client. Auth flows use Supabase directly from pages and contexts.
+
+**Theme:** `src/context/ThemeContext.tsx` stores theme in `localStorage` and applies it through `data-theme` on `document.documentElement`.
+
+**UI colocation:** Components and view sections keep their CSS alongside the TSX files.
+
+**Legacy code:** `src/views/` contains the current app screens. Avoid reintroducing new routes under `src/pages/`; the project is App Router based.
 
 ## Testing Conventions
 
-- Tests use Vitest + Testing Library with jsdom (configured in `vite.config.js`).
-- `src/setupTests.js` imports `@testing-library/jest-dom` for DOM matchers.
-- Supabase is always mocked via `vi.mock('../../services/supabaseClient', ...)`.
-- Pages that use React Router hooks must be wrapped in `<BrowserRouter>` in tests.
+- Tests use Vitest + Testing Library with jsdom.
+- `src/setupTests.ts` imports `@testing-library/jest-dom`.
+- Supabase and other services should be mocked in tests when a page or hook depends on them.
+- Components that use `next/navigation` hooks should be tested with the Next-compatible setup used in this repo, not React Router wrappers.

@@ -74,6 +74,7 @@ export interface CompanyRow {
   readonly Address?: AddressRow;
   readonly CompanyProvinces?: CompanyProvinceRow[];
   readonly CompanyDepartments?: CompanyDepartmentRow[];
+  readonly CompanyArca?: CompaniesArcaRow;
 }
 
 export interface CompanyProvinceRow {
@@ -128,6 +129,17 @@ export interface MessageRow {
   readonly ContactRequest?: ContactRequestRow;
 }
 
+export interface ImageRow {
+  readonly id: number;
+  readonly image_url: string;
+  readonly caption: string | null;
+  readonly display_order: number;
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly review_id: number | null;
+  readonly product_id: number | null;
+}
+
 export interface ProductRow {
   readonly id: number;
   readonly ean: string;
@@ -140,8 +152,11 @@ export interface ProductRow {
   readonly categories_products_id: number | null;
   readonly is_foreign: boolean | null;
   readonly seo_path?: string | null;
+  readonly price?: number | null;
   // Relationships
   readonly CategoryProduct?: CategoryProductRow;
+  readonly Images?: ImageRow[];
+  readonly ProfessionalProducts?: ProfessionalProductRow[];
 }
 
 export interface ProductWithAssociation extends ProductRow {
@@ -218,13 +233,19 @@ export interface ProfessionalPromotionRow {
   readonly id: number;
   readonly professional_id: number;
   readonly image_url: string;
-  readonly description: string;
-  readonly discount_percentage: number;
+  readonly description: string | null;
+  readonly seo_path?: string | null;
   readonly amount: number;
   readonly expires_at: string | null;
   readonly state: string | null;
   readonly created_at: string;
   readonly updated_at: string;
+  readonly from_date: string | null;
+  readonly title: string;
+  readonly applicable_to: string | null;
+  readonly unlimited_stock: boolean | null;
+  readonly discount_value: number | null;
+  readonly discount_type: string | null;
   // Relationships
   readonly Professional?: ProfessionalRow;
 }
@@ -325,7 +346,9 @@ export interface ProfessionalRow {
   readonly profile_views: number | null;
   readonly seo_path?: string | null;
   // Relationships
+  readonly Address?: AddressRow;
   readonly Profile?: ProfileRow;
+  readonly Company?: CompanyRow;
 }
 
 export interface ProvinceRow {
@@ -380,9 +403,28 @@ export interface ServiceRow {
   readonly created_at: string | null;
   readonly updated_at: string | null;
   readonly seo_path?: string | null;
-  // Relationships
+  // Relationships (capitalized - legacy/ORM style)
   readonly Professional?: ProfessionalRow;
   readonly CategoryService?: CategoryServiceRow;
+  // Relationships (lowercase - actual API response style)
+  readonly professional?: {
+    readonly address?: Array<{
+      readonly province?: { readonly name: string } | null;
+      readonly province_id?: number | null;
+      readonly department_id?: number | null;
+    }>;
+    readonly profile?: {
+      readonly avatar_url?: string | null;
+      readonly portfolio_image_url?: string | null;
+      readonly display_name?: string | null;
+    } | null;
+    readonly companies?: Array<{
+      readonly name: string;
+      readonly companies_arca?: Array<{ readonly is_verified: boolean }>;
+    }>;
+    readonly rating_avg?: number | null;
+    readonly seo_path?: string | null;
+  } | null;
 }
 
 export interface SubscriptionRow {

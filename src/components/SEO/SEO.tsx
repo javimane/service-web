@@ -1,4 +1,6 @@
-import { Helmet } from 'react-helmet-async';
+"use client";
+// In Next.js App Router, page-level SEO is handled via generateMetadata in route pages.
+// This component is kept for inline/dynamic use within client components.
 
 interface SEOProps {
   title?: string;
@@ -7,50 +9,23 @@ interface SEOProps {
   image?: string;
   url?: string;
   type?: string;
-  schema?: any; // For JSON-LD structured data
+  schema?: any;
 }
 
 const SEO = ({
   title = "TuApp - Servicios Profesionales y Productos",
-  description = "Encontrá a los mejores profesionales y productos en un solo lugar. Servicios de plomería, gas, diseño y más.",
-  keywords = "servicios, profesionales, productos, hogar, construcción, reparaciones",
-  image = "/og-image.png", // Default image for social media
-  url = window.location.href,
-  type = "website",
-  schema
+  description = "Encontrá a los mejores profesionales y productos en un solo lugar.",
+  schema,
 }: SEOProps) => {
-  const siteName = "TuApp";
-  const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
+  // In Next.js, meta tags are managed via layout.tsx and generateMetadata.
+  // For JSON-LD structured data we inject it via script tag.
+  if (!schema) return null;
 
   return (
-    <Helmet>
-      {/* Standard metadata */}
-      <title>{fullTitle}</title>
-      <meta name="description" content={description} />
-      <meta name="keywords" content={keywords} />
-      <link rel="canonical" href={url} />
-
-      {/* Open Graph / Facebook */}
-      <meta property="og:type" content={type} />
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
-      <meta property="og:url" content={url} />
-      <meta property="og:site_name" content={siteName} />
-
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
-
-      {/* JSON-LD Structured Data */}
-      {schema && (
-        <script type="application/ld+json">
-          {JSON.stringify(schema)}
-        </script>
-      )}
-    </Helmet>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
   );
 };
 

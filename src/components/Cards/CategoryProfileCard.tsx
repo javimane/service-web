@@ -74,7 +74,7 @@ export default function CategoryCard({
             className="category-card__button"
             onClick={(e) => {
               e.stopPropagation();
-              onClick();
+              onClick?.();
             }}
           >
             Explore Category

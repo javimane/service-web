@@ -1,3 +1,4 @@
+"use client";
 import { X, Check, Crown, Star, Zap } from "lucide-react";
 import { useEffect } from "react";
 import { plans, type Plan } from "../../data/plans";
@@ -13,8 +14,8 @@ function formatPrice(n: number) {
 }
 
 export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
-  const basicCheckoutUrl = import.meta.env.VITE_MP_BASIC_CHECKOUT_URL;
-  const premiumCheckoutUrl = import.meta.env.VITE_MP_PREMIUM_CHECKOUT_URL;
+  const basicCheckoutUrl = process.env.NEXT_PUBLIC_MP_BASIC_CHECKOUT_URL;
+  const premiumCheckoutUrl = process.env.NEXT_PUBLIC_MP_PREMIUM_CHECKOUT_URL;
 
   useEffect(() => {
     if (isOpen) {

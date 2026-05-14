@@ -1,5 +1,7 @@
+"use client";
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
 import { useAuthModal } from "../../context/AuthModalContext";
@@ -78,17 +80,17 @@ const notifications = [
 ];
 
 export default function Navbar() {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const pathname = usePathname();
+  const router = useRouter();
   const { user, logout, hasProfessionalSubscription } = useAuth();
   const { openAuth } = useAuthModal();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isPlansOpen, setIsPlansOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const menuRef = useRef(null);
-  const notifRef = useRef(null);
-  const mobileMenuRef = useRef(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const notifRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const [setIsReelsModalOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
@@ -103,17 +105,15 @@ export default function Navbar() {
 
   // Close menus when clicking outside
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setIsMenuOpen(false);
       }
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
+      if (notifRef.current && !notifRef.current.contains(target)) {
         setIsNotifOpen(false);
       }
-      if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(event.target)
-      ) {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(target)) {
         setIsMobileMenuOpen(false);
       }
     }
@@ -134,7 +134,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     await logout();
     setIsMenuOpen(false);
-    navigate(ROUTES.home);
+    router.push(ROUTES.home);
   };
 
   const displayName =
@@ -160,8 +160,8 @@ export default function Navbar() {
                 {navLinks.map((link) => (
                   <Link
                     key={link.label}
-                    to={link.path}
-                    className={`navbar__mobile-link ${location.pathname === link.path ? "active" : ""}`}
+                    href={link.path}
+                    className={`navbar__mobile-link ${pathname === link.path ? "active" : ""}`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     {link.label}
@@ -172,7 +172,11 @@ export default function Navbar() {
           </div>
 
           {/* Logo */}
-          <Link to={ROUTES.home} className="navbar__logo" aria-label="Ir al inicio">
+          <Link
+            href={ROUTES.home}
+            className="navbar__logo"
+            aria-label="Ir al inicio"
+          >
             <BrandLogo className="navbar__brand-mark" />
           </Link>
 
@@ -184,18 +188,28 @@ export default function Navbar() {
           {/* Plans button */}
           {!hasProfessionalSubscription && (
             <>
-              <button className="navbar__plans-btn" onClick={() => setIsPlansOpen(true)}>
+              <button
+                className="navbar__plans-btn"
+                onClick={() => setIsPlansOpen(true)}
+              >
                 <Crown size={16} />
                 <span>Planes</span>
               </button>
-              <PlansModal isOpen={isPlansOpen} onClose={() => setIsPlansOpen(false)} />
+              <PlansModal
+                isOpen={isPlansOpen}
+                onClose={() => setIsPlansOpen(false)}
+              />
             </>
           )}
 
           {/* Right side — authenticated */}
           {user ? (
             <div className="navbar__right">
-              <Link to={ROUTES.messages} className="navbar__icon-btn" aria-label="Mensajes">
+              <Link
+                href={ROUTES.messages}
+                className="navbar__icon-btn"
+                aria-label="Mensajes"
+              >
                 <MessageSquare size={20} />
               </Link>
 
@@ -214,8 +228,14 @@ export default function Navbar() {
                 {isNotifOpen && (
                   <div className="navbar__notif-dropdown">
                     <div className="notif-dropdown__header">
-                      <span className="notif-dropdown__title">Notificaciones</span>
-                      <button type="button" className="notif-dropdown__mark-all" aria-label="Marcar todas como leídas">
+                      <span className="notif-dropdown__title">
+                        Notificaciones
+                      </span>
+                      <button
+                        type="button"
+                        className="notif-dropdown__mark-all"
+                        aria-label="Marcar todas como leídas"
+                      >
                         <CheckCheck size={16} />
                       </button>
                     </div>
@@ -223,23 +243,33 @@ export default function Navbar() {
                       {notifications.map((notif) => {
                         const IconComp = notif.icon;
                         return (
-                          <div key={notif.id} className={`notif-item ${notif.unread ? "notif-item--unread" : ""}`}>
-                            <div className={`notif-item__icon notif-item__icon--${notif.iconColor}`}>
+                          <div
+                            key={notif.id}
+                            className={`notif-item ${notif.unread ? "notif-item--unread" : ""}`}
+                          >
+                            <div
+                              className={`notif-item__icon notif-item__icon--${notif.iconColor}`}
+                            >
                               <IconComp size={16} />
                             </div>
                             <div className="notif-item__content">
-                              <span className="notif-item__title">{notif.title}</span>
-                              <span className="notif-item__desc">{notif.description}</span>
+                              <span className="notif-item__title">
+                                {notif.title}
+                              </span>
+                              <span className="notif-item__desc">
+                                {notif.description}
+                              </span>
                             </div>
-                            <span className="notif-item__time">{notif.time}</span>
+                            <span className="notif-item__time">
+                              {notif.time}
+                            </span>
                           </div>
                         );
                       })}
                     </div>
                     <div className="notif-dropdown__footer">
                       <Link
-                        to={ROUTES.dashboard}
-                        state={{ view: "notifications" }}
+                        href={ROUTES.dashboard}
                         className="notif-dropdown__view-all"
                         onClick={() => setIsNotifOpen(false)}
                       >
@@ -263,32 +293,66 @@ export default function Navbar() {
                   <div className="navbar__dropdown">
                     <div className="dropdown__header">
                       <div className="dropdown__user-info">
-                        <span className="dropdown__username">{displayName}</span>
-                        <span className="dropdown__user-role">{user.email}</span>
+                        <span className="dropdown__username">
+                          {displayName}
+                        </span>
+                        <span className="dropdown__user-role">
+                          {user.email}
+                        </span>
                       </div>
                     </div>
                     <div className="dropdown__divider"></div>
                     <div className="dropdown__body">
-                      <Link to={ROUTES.profile} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
-                        <Settings size={18} /><span>Mi Cuenta</span>
+                      <Link
+                        href={ROUTES.profile}
+                        className="dropdown__item"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Settings size={18} />
+                        <span>Mi Cuenta</span>
                       </Link>
-                      <Link to={ROUTES.dashboard} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
-                        <LayoutDashboard size={18} /><span>Dashboard</span>
+                      <Link
+                        href={ROUTES.dashboard}
+                        className="dropdown__item"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <LayoutDashboard size={18} />
+                        <span>Dashboard</span>
                       </Link>
-                      <Link to={ROUTES.favorites} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
-                        <Heart size={18} /><span>Favoritos</span>
+                      <Link
+                        href={ROUTES.favorites}
+                        className="dropdown__item"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Heart size={18} />
+                        <span>Favoritos</span>
                       </Link>
-                      <Link to={ROUTES.products} className="dropdown__item" onClick={() => setIsMenuOpen(false)}>
-                        <Package size={18} /><span>Productos</span>
+                      <Link
+                        href={ROUTES.products}
+                        className="dropdown__item"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Package size={18} />
+                        <span>Productos</span>
                       </Link>
-                      <button className="dropdown__item" onClick={() => { setIsMenuOpen(false); }}>
-                        <UploadCloud size={18} /><span>Subir Reel</span>
+                      <button
+                        className="dropdown__item"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                        }}
+                      >
+                        <UploadCloud size={18} />
+                        <span>Subir Reel</span>
                       </button>
                     </div>
                     <div className="dropdown__divider"></div>
                     <div className="dropdown__footer">
-                      <button className="dropdown__item dropdown__item--logout" onClick={handleLogout}>
-                        <LogOut size={18} /><span>Cerrar Sesión</span>
+                      <button
+                        className="dropdown__item dropdown__item--logout"
+                        onClick={handleLogout}
+                      >
+                        <LogOut size={18} />
+                        <span>Cerrar Sesión</span>
                       </button>
                     </div>
                   </div>
@@ -297,10 +361,17 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="navbar__right">
-              <button className="navbar__auth-btn" onClick={() => openAuth("login")}>
-                <LogIn size={18} /><span>Iniciar Sesión</span>
+              <button
+                className="navbar__auth-btn"
+                onClick={() => openAuth("login")}
+              >
+                <LogIn size={18} />
+                <span>Iniciar Sesión</span>
               </button>
-              <button className="navbar__auth-btn navbar__auth-btn--primary" onClick={() => openAuth("register")}>
+              <button
+                className="navbar__auth-btn navbar__auth-btn--primary"
+                onClick={() => openAuth("register")}
+              >
                 Registrarse
               </button>
             </div>
@@ -314,8 +385,8 @@ export default function Navbar() {
           {navLinks.map((link) => (
             <Link
               key={link.label}
-              to={link.path}
-              className={`navbar__link ${location.pathname === link.path ? "active" : ""}`}
+              href={link.path}
+              className={`navbar__link ${pathname === link.path ? "active" : ""}`}
             >
               {link.label}
             </Link>

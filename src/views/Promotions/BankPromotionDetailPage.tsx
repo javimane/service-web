@@ -1,0 +1,268 @@
+"use client";
+import { useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  Calendar,
+  CreditCard,
+  Loader2,
+  Percent,
+  Tag,
+} from "lucide-react";
+import {
+  bankPromotionService,
+  type BankPromotion,
+} from "../../services/bankPromotionService";
+import Navbar from "../../components/Navbar/Navbar";
+import Footer from "../../components/Footer/Footer";
+import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
+import "./BankPromotionDetailPage.css";
+
+const DAYS_ES: Record<string, string> = {
+  monday: "Lunes",
+  tuesday: "Martes",
+  wednesday: "Miércoles",
+  thursday: "Jueves",
+  friday: "Viernes",
+  saturday: "Sábado",
+  sunday: "Domingo",
+};
+
+function getActiveDays(promo: BankPromotion): string[] {
+  return Object.keys(DAYS_ES).filter(
+    (day) => promo[day as keyof BankPromotion],
+  );
+}
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export default function BankPromotionDetailPage() {
+  const params = useParams<{ seoPath: string }>();
+  const searchParams = useSearchParams();
+  const seoPath = params?.seoPath as string;
+
+  // Try to get ID from query param first, then from slug
+  const queryId = searchParams?.get("id");
+  const id = queryId || extractIdFromSlug(seoPath);
+  const router = useRouter();
+
+  const {
+    data: promo,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["bank-promotion", seoPath, id],
+    queryFn: () => bankPromotionService.getById(id),
+    enabled: !!id,
+  });
+
+  // URL Normalization disabled - using query params approach instead
+  // The URL pattern /promociones-bancarias/{slug}?id={id} is maintained by PromotionsPage
+  // useEffect(() => {
+  //   if (promo?.seo_path) {
+  //     const currentPath = window.location.pathname;
+  //     const slug = promo.seo_path;
+  //     const targetPath = slug.startsWith("/")
+  //       ? slug.replace("/promotions/", "/promociones-bancarias/")
+  //       : `/promociones-bancarias/${slug}`;
+  //     if (currentPath !== targetPath) {
+  //       router.replace(targetPath);
+  //     }
+  //   }
+  // }, [promo, router, seoPath]);
+
+  if (isLoading) {
+    return (
+      <>
+        <Navbar />
+        <div className="bank-promo-detail-loading">
+          <Loader2 className="animate-spin" size={40} />
+          <p>Cargando promoción...</p>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error || !promo) {
+    return (
+      <>
+        <Navbar />
+        <div className="bank-promo-detail-error">
+          <h2>Promoción no encontrada</h2>
+          <p>
+            La promoción bancaria que buscas no existe o no está disponible.
+          </p>
+          <button onClick={() => router.back()} className="back-btn">
+            <ArrowLeft size={18} />
+            Volver
+          </button>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  const professional = promo.Professional;
+  const companyName = professional?.Company?.[0]?.name ?? "Comercio";
+  const activeDays = getActiveDays(promo);
+  const banks =
+    promo.bank_promotions_banks?.map((b) => b.Bank?.name).filter(Boolean) ??
+    (promo.Bank ? [promo.Bank.name] : []);
+
+  return (
+    <>
+      <Navbar />
+      <div className="bank-promo-detail-page">
+        <div className="bank-promo-detail-container">
+          <button className="back-btn" onClick={() => router.back()}>
+            <ArrowLeft size={18} />
+            Volver
+          </button>
+
+          <div className="bank-promo-detail-card">
+            <div className="bank-promo-detail-header">
+              <span className="bank-promo-badge">
+                <CreditCard size={16} />
+                Promoción Bancaria
+              </span>
+              <h1 className="bank-promo-company">{companyName}</h1>
+            </div>
+
+            <div className="bank-promo-detail-body">
+              {/* Discount Info */}
+              <div className="bank-promo-discount-grid">
+                {promo.percentaje_discount > 0 && (
+                  <div className="bank-promo-stat">
+                    <Percent size={20} />
+                    <span className="stat-value">
+                      {promo.percentaje_discount}%
+                    </span>
+                    <span className="stat-label">Descuento</span>
+                  </div>
+                )}
+                {promo.refund > 0 && (
+                  <div className="bank-promo-stat">
+                    <Tag size={20} />
+                    <span className="stat-value">{promo.refund}%</span>
+                    <span className="stat-label">Reintegro</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Banks */}
+              {banks.length > 0 && (
+                <div className="bank-promo-banks">
+                  <h3>
+                    <CreditCard size={16} />
+                    Bancos participantes
+                  </h3>
+                  <div className="bank-promo-tags">
+                    {banks.map((bank, i) => (
+                      <span key={i} className="bank-tag">
+                        {bank}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Method */}
+              {promo.payment_method && (
+                <div className="bank-promo-detail-row">
+                  <CreditCard size={16} />
+                  <span>
+                    <strong>Medio de pago:</strong> {promo.payment_method}
+                  </span>
+                </div>
+              )}
+
+              {/* Active Days */}
+              {activeDays.length > 0 && (
+                <div className="bank-promo-days">
+                  <h3>Días de vigencia</h3>
+                  <div className="bank-promo-tags">
+                    {activeDays.map((day) => (
+                      <span key={day} className="day-tag">
+                        {DAYS_ES[day]}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Dates */}
+              <div className="bank-promo-dates">
+                <div className="bank-promo-detail-row">
+                  <Calendar size={16} />
+                  <span>
+                    <strong>Desde:</strong> {formatDate(promo.from_date)}
+                  </span>
+                </div>
+                <div className="bank-promo-detail-row">
+                  <Calendar size={16} />
+                  <span>
+                    <strong>Hasta:</strong> {formatDate(promo.expiration_date)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Minimum Amount */}
+              {promo.minimum_amount && (
+                <div className="bank-promo-detail-row">
+                  <Tag size={16} />
+                  <span>
+                    <strong>Compra mínima:</strong> $
+                    {promo.minimum_amount.toLocaleString("es-AR")}
+                  </span>
+                </div>
+              )}
+
+              {/* Description */}
+              {promo.description && (
+                <div className="bank-promo-description">
+                  <h3>Descripción</h3>
+                  <p>{promo.description}</p>
+                </div>
+              )}
+
+              {/* Terms */}
+              {promo.terms_conditions && (
+                <div className="bank-promo-terms">
+                  <h3>Términos y condiciones</h3>
+                  <p>{promo.terms_conditions}</p>
+                </div>
+              )}
+
+              {/* CTA - View Profile */}
+              {professional && (
+                <button
+                  className="bank-promo-profile-btn"
+                  onClick={() =>
+                    router.push(
+                      getProfilePath(
+                        professional.id,
+                        (professional as any).seo_path,
+                      ),
+                    )
+                  }
+                >
+                  Ver perfil del comercio
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </>
+  );
+}

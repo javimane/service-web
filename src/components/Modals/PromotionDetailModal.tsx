@@ -1,3 +1,4 @@
+"use client";
 import React, { useRef, useState } from "react";
 import {
   Download,
@@ -12,7 +13,7 @@ import {
   FileText,
   ChevronDown,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import Modal from "../Modal/Modal";
 import { toJpeg } from "html-to-image";
@@ -31,7 +32,7 @@ export default function PromotionDetailModal({
   onClose,
   userProvince,
 }: PromotionDetailModalProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const couponRef = useRef<HTMLDivElement>(null);
   const [showTerms, setShowTerms] = useState(false);
 
@@ -113,7 +114,7 @@ export default function PromotionDetailModal({
 
   const handleProfileClick = () => {
     if (professionalId) {
-      navigate(`${ROUTES.profile}/${professionalId}`);
+      router.push(`${ROUTES.profile}/${professionalId}`);
       onClose();
     }
   };

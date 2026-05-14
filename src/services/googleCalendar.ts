@@ -1,9 +1,9 @@
 /**
  * Google Calendar integration service.
  *
- * Required env vars (add to .env):
- *   VITE_GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
- *   VITE_GOOGLE_API_KEY=<your-api-key>
+ * Required env vars (add to .env.local):
+ *   NEXT_PUBLIC_GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
+ *   NEXT_PUBLIC_GOOGLE_API_KEY=<your-api-key>
  *
  * Google Cloud Console setup:
  *   1. Enable "Google Calendar API"
@@ -12,8 +12,8 @@
  *   4. Create an API key and restrict it to Calendar API
  */
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY ?? "";
+const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? "";
 const DISCOVERY_DOC =
   "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
 const SCOPES = "https://www.googleapis.com/auth/calendar";

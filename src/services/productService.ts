@@ -2,6 +2,7 @@ import { API_ENDPOINTS } from "./api.config";
 import { apiClient } from "./apiClient";
 import type {
   ProductRow,
+  ProductWithAssociation,
   ProfessionalProductRow,
 } from "../types/database.types";
 
@@ -97,7 +98,7 @@ export const productService = {
    * @returns {Promise<ProfessionalProductRow>}
    */
   getDetail: (id: string | number) =>
-    apiClient<ProfessionalProductRow>(
+    apiClient<ProductWithAssociation>(
       API_ENDPOINTS.products.detail(id.toString()),
       {
         method: "GET",

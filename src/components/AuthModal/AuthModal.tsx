@@ -1,8 +1,9 @@
+"use client";
 import { useAuthModal } from "../../context/AuthModalContext";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect } from "react";
-import LoginPage from "../../pages/Login/LoginPage";
-import RegisterPage from "../../pages/Register/RegisterPage";
+import LoginPage from "../../views/Login/LoginPage";
+import RegisterPage from "../../views/Register/RegisterPage";
 import { X } from "lucide-react";
 import "./AuthModal.css";
 

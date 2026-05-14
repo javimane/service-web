@@ -1,11 +1,26 @@
-import { createContext, useContext, useState, useCallback } from "react";
+"use client";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  type ReactNode,
+} from "react";
 
-const AuthModalContext = createContext(null);
+type AuthMode = "login" | "register";
 
-export function AuthModalProvider({ children }) {
-  const [authMode, setAuthMode] = useState(null); // null | 'login' | 'register'
+type AuthModalContextValue = {
+  authMode: AuthMode | null;
+  openAuth: (mode: AuthMode) => void;
+  closeAuth: () => void;
+};
 
-  const openAuth = useCallback((mode) => setAuthMode(mode), []);
+const AuthModalContext = createContext<AuthModalContextValue | null>(null);
+
+export function AuthModalProvider({ children }: { children: ReactNode }) {
+  const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+
+  const openAuth = useCallback((mode: AuthMode) => setAuthMode(mode), []);
   const closeAuth = useCallback(() => setAuthMode(null), []);
 
   return (

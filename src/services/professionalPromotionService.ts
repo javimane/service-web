@@ -23,6 +23,7 @@ export interface ProfessionalPromotion {
       avatar_url: string | null;
     };
   };
+  seo_path?: string; // Optional field for SEO-friendly URLs
 }
 
 export interface CreateProfessionalPromotionRequest {
@@ -38,6 +39,7 @@ export interface CreateProfessionalPromotionRequest {
   applicable_to: string | null;
   image_url: string | null;
   state: string | null;
+  seo_path?: string; // Optional field for SEO-friendly URLs
   discount_percentage?: number; // Keep as optional for backward compatibility or if backend needs it
   created_at?: string;
   updated_at?: string;
@@ -46,30 +48,45 @@ export interface CreateProfessionalPromotionRequest {
 export const professionalPromotionService = {
   getAll: async (params?: any) => {
     const query = new URLSearchParams(params).toString();
-    const url = query ? `${API_ENDPOINTS.professionalPromotions.base}?${query}` : API_ENDPOINTS.professionalPromotions.base;
+    const url = query
+      ? `${API_ENDPOINTS.professionalPromotions.base}?${query}`
+      : API_ENDPOINTS.professionalPromotions.base;
     return apiClient<ProfessionalPromotion[]>(url);
   },
 
   getByProfessional: async (professionalId: string | number) => {
-    return apiClient<ProfessionalPromotion[]>(API_ENDPOINTS.professionalPromotions.byProfessional(professionalId));
+    return apiClient<ProfessionalPromotion[]>(
+      API_ENDPOINTS.professionalPromotions.byProfessional(professionalId),
+    );
   },
 
   getById: async (id: string | number) => {
-    return apiClient<ProfessionalPromotion>(API_ENDPOINTS.professionalPromotions.detail(id));
+    return apiClient<ProfessionalPromotion>(
+      API_ENDPOINTS.professionalPromotions.detail(id),
+    );
   },
 
   create: async (data: CreateProfessionalPromotionRequest) => {
-    return apiClient<ProfessionalPromotion>(API_ENDPOINTS.professionalPromotions.base, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+    return apiClient<ProfessionalPromotion>(
+      API_ENDPOINTS.professionalPromotions.base,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    );
   },
 
-  update: async (id: string | number, data: Partial<CreateProfessionalPromotionRequest>) => {
-    return apiClient<ProfessionalPromotion>(API_ENDPOINTS.professionalPromotions.detail(id), {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
+  update: async (
+    id: string | number,
+    data: Partial<CreateProfessionalPromotionRequest>,
+  ) => {
+    return apiClient<ProfessionalPromotion>(
+      API_ENDPOINTS.professionalPromotions.detail(id),
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      },
+    );
   },
 
   delete: async (id: string | number) => {

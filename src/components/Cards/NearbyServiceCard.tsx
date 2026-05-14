@@ -1,9 +1,10 @@
+"use client";
 import { MapPin, Star } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import "./NearbyServiceCard.css";
 
 export default function NearbyServiceCard({ service, onClick }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { id, name, avatar, description, price, distance, rating, reviews } =
     service;
 
@@ -11,7 +12,7 @@ export default function NearbyServiceCard({ service, onClick }) {
     if (onClick) {
       onClick(service);
     } else {
-      navigate(`/profile/${id}`);
+      router.push(service.seo_path || `/perfil/${id}`);
     }
   };
 

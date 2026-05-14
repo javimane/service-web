@@ -1,0 +1,162 @@
+.bank-promo-detail-page {
+  min-height: 100vh;
+  background: var(--bg-color);
+  padding-bottom: 3rem;
+}
+
+.bank-promo-detail-container {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  transition: background 0.2s;
+}
+.back-btn:hover { background: var(--surface-soft); }
+
+.bank-promo-detail-card {
+  background: var(--bg-card);
+  border: 2px solid var(--brand-blue-border);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px var(--brand-blue-soft);
+  overflow: hidden;
+}
+
+.bank-promo-detail-header {
+  background: linear-gradient(135deg, var(--brand-blue), #1a4fa0);
+  padding: 2rem;
+  color: white;
+}
+
+.bank-promo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border-radius: 20px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.bank-promo-company {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.bank-promo-detail-body {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.bank-promo-discount-grid {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.bank-promo-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--brand-blue-soft);
+  border: 1px solid var(--brand-blue-border);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  min-width: 100px;
+  color: var(--brand-blue);
+}
+.stat-value { font-size: 1.8rem; font-weight: 700; }
+.stat-label { font-size: 0.8rem; font-weight: 600; }
+
+.bank-promo-banks h3,
+.bank-promo-days h3,
+.bank-promo-description h3,
+.bank-promo-terms h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.bank-promo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bank-tag, .day-tag {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.bank-tag { background: var(--brand-blue-soft); color: var(--brand-blue); border: 1px solid var(--brand-blue-border); }
+.day-tag { background: var(--accent-transparent); color: var(--accent-color); border: 1px solid var(--highlight-border); }
+
+.bank-promo-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.bank-promo-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bank-promo-description p,
+.bank-promo-terms p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.bank-promo-profile-btn {
+  margin-top: 0.5rem;
+  padding: 0.875rem 2rem;
+  background: var(--brand-blue);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.bank-promo-profile-btn:hover { background: #1a4fa0; }
+
+.bank-promo-detail-loading,
+.bank-promo-detail-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1rem;
+  color: var(--text-secondary);
+}

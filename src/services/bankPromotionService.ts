@@ -40,6 +40,7 @@ export interface BankPromotion {
       avatar_url: string | null;
     };
   };
+  seo_path?: string; // Optional field for SEO-friendly URLs
 }
 
 export type CreateBankPromotionDto = Omit<

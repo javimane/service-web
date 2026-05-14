@@ -21,8 +21,12 @@ export default function BrandLogo({
         .filter(Boolean)
         .join(" ")}
     >
-      <img src={logoIcon} alt="Sercio" className="brand-lockup__icon" />
-      <img src={logoWordmark} alt="Sercio" className="brand-lockup__wordmark" />
+      <img src={logoIcon.src} alt="Sercio" className="brand-lockup__icon" />
+      <img
+        src={logoWordmark.src}
+        alt="Sercio"
+        className="brand-lockup__wordmark"
+      />
     </span>
   );
 }
