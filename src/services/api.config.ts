@@ -14,9 +14,16 @@ export const API_ENDPOINTS = {
     favorites: `${API_BASE_URL}/api/users/me/favorites`,
     favoriteDetail: (professionalId: string) =>
       `${API_BASE_URL}/api/users/me/favorites/${professionalId}`,
+    deviceTokens: `${API_BASE_URL}/api/users/me/device-tokens`,
     roles: `${API_BASE_URL}/api/users/roles`,
     benefits: (userId: string) =>
       `${API_BASE_URL}/api/users/${userId}/benefits`,
+  },
+  chats: {
+    base: `${API_BASE_URL}/api/chats`,
+    requests: `${API_BASE_URL}/api/chats/requests`,
+    requestMessages: (requestId: string | number) =>
+      `${API_BASE_URL}/api/chats/requests/${requestId}/messages`,
   },
   professionals: {
     list: `${API_BASE_URL}/api/professionals`,

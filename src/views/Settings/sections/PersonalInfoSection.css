@@ -25,7 +25,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Notifications */
@@ -69,8 +71,14 @@
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .personal-fields {
@@ -122,6 +130,35 @@
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.personal-notification-state {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+  letter-spacing: 0.02em;
+}
+
+.personal-notification-state--allowed {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #10b98133;
+}
+
+.personal-notification-state--pending {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e133;
+}
+
+.personal-notification-state--blocked {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #ef444433;
 }
 
 .personal-input {
@@ -206,7 +243,7 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .personal-password-inputs {
     grid-template-columns: 1fr;
   }

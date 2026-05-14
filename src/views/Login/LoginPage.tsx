@@ -162,9 +162,6 @@ export default function LoginPage({
           <button type="button" className="btn-social">
             G Google
           </button>
-          <button type="button" className="btn-social">
-            f Facebook
-          </button>
         </div>
 
         <p className="register-prompt">

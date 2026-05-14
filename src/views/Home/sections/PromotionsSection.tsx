@@ -28,9 +28,10 @@ import "./PromotionsSection.css";
 export default function PromotionsSection() {
   const router = useRouter();
   const { sessionStatus } = useAuth();
-  const [userProvince, setUserProvince] = useState<string>(
-    localStorage.getItem("userProvince") || "Buenos Aires",
-  );
+  const [userProvince, setUserProvince] = useState<string>(() => {
+    if (typeof window === "undefined") return "Buenos Aires";
+    return localStorage.getItem("userProvince") || "Buenos Aires";
+  });
   const [isProvinceModalOpen, setIsProvinceModalOpen] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState<any>(null);
   const sliderRef = useRef(null);
@@ -61,6 +62,7 @@ export default function PromotionsSection() {
 
   // Auto-detect province if authenticated and not set
   useEffect(() => {
+    if (typeof window === "undefined") return;
     if (
       sessionStatus?.address?.Province?.name &&
       !localStorage.getItem("userProvince")
@@ -105,7 +107,9 @@ export default function PromotionsSection() {
 
   const handleProvinceSelect = (provinceName: string) => {
     setUserProvince(provinceName);
-    localStorage.setItem("userProvince", provinceName);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("userProvince", provinceName);
+    }
     setIsProvinceModalOpen(false);
   };
 

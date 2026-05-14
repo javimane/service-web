@@ -4,47 +4,68 @@ import type { ContactRequestRow, MessageRow } from "../types/database.types";
 
 export const communicationService = {
   /**
-   * @route POST /api/communications/contact-request
-   * @auth No
+   * @route POST /api/chats/requests
+   * @auth Bearer
    * @param {Partial<ContactRequestRow>} data
    * @returns {Promise<ContactRequestRow>}
    */
-  createRequest: (data: Partial<ContactRequestRow>) => 
-    apiClient<ContactRequestRow>(`${API_ENDPOINTS.communications.base}/contact-request`, {
+  createRequest: (data: Partial<ContactRequestRow>) =>
+    apiClient<ContactRequestRow>(API_ENDPOINTS.chats.requests, {
       method: "POST",
       body: JSON.stringify(data),
     }),
-    
+
   /**
    * @route GET /api/communications/requests/user/:userId
    * @auth No
    * @param {string} userId
    * @returns {Promise<ContactRequestRow[]>}
    */
-  getUserRequests: (userId: string) => 
-    apiClient<ContactRequestRow[]>(API_ENDPOINTS.communications.userRequests(userId), {
-      method: "GET",
-    }),
-    
+  getUserRequests: (userId: string) =>
+    apiClient<ContactRequestRow[]>(
+      API_ENDPOINTS.communications.userRequests(userId),
+      {
+        method: "GET",
+      },
+    ),
+
   /**
    * @route GET /api/communications/requests/professional/:professionalId
    * @auth No
    * @param {string | number} professionalId
    * @returns {Promise<ContactRequestRow[]>}
    */
-  getProfessionalRequests: (professionalId: string | number) => 
-    apiClient<ContactRequestRow[]>(API_ENDPOINTS.communications.professionalRequests(professionalId.toString()), {
-      method: "GET",
-    }),
-    
+  getProfessionalRequests: (professionalId: string | number) =>
+    apiClient<ContactRequestRow[]>(
+      API_ENDPOINTS.communications.professionalRequests(
+        professionalId.toString(),
+      ),
+      {
+        method: "GET",
+      },
+    ),
+
   /**
-   * @route GET /api/communications/requests/:requestId/messages
-   * @auth No
+   * @route GET /api/chats/requests/:requestId/messages
+   * @auth Bearer
    * @param {string | number} requestId
    * @returns {Promise<MessageRow[]>}
    */
-  getMessages: (requestId: string | number) => 
-    apiClient<MessageRow[]>(`${API_ENDPOINTS.communications.base}/requests/${requestId}/messages`, {
+  getMessages: (requestId: string | number) =>
+    apiClient<MessageRow[]>(API_ENDPOINTS.chats.requestMessages(requestId), {
       method: "GET",
+    }),
+
+  /**
+   * @route POST /api/chats/requests/:requestId/messages
+   * @auth Bearer
+   * @param {string | number} requestId
+   * @param {string} content
+   * @returns {Promise<MessageRow>}
+   */
+  sendMessage: (requestId: string | number, content: string) =>
+    apiClient<MessageRow>(API_ENDPOINTS.chats.requestMessages(requestId), {
+      method: "POST",
+      body: JSON.stringify({ content }),
     }),
 };

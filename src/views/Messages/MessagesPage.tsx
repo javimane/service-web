@@ -1,13 +1,12 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   Paperclip,
   Mic,
   Smile,
   Send,
-  ImageIcon,
   PanelLeftClose,
   PanelLeftOpen,
   ArrowLeft,
@@ -15,127 +14,66 @@ import {
   Video,
   MoreVertical,
 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
-import Navbar from "../../components/Navbar/Navbar";
-import "./MessagesPage.css";
 import NavbarMessage from "../../components/Navbar/NavBar Messaje/NavbarMessage";
+import { communicationService } from "../../services/communicationService";
+import "./MessagesPage.css";
 
-const conversations = [
-  {
-    id: 1,
-    name: "Julian Vargas",
-    role: "Arquitecto & Diseñador",
-    avatar: "JV",
-    lastMessage: "Los planos del proyecto están...",
-    time: "2H",
-    online: true,
-    messages: [
-      {
-        id: 1,
-        sender: "them",
-        text: "¡Hola! Acabo de finalizar los conceptos estructurales del proyecto Obsidian Tower. ¿Te gustaría revisar los renders 3D iniciales ahora?",
-        time: "10:42 AM",
-        date: "MARTES, 24 OCT",
-      },
-      {
-        id: 2,
-        sender: "me",
-        text: "Suena perfecto, Julian. La precisión arquitectónica es exactamente lo que buscamos. Adelante, compártelos.",
-        time: "10:42 AM",
-        status: "LEÍDO",
-      },
-      {
-        id: 3,
-        sender: "them",
-        text: "Aquí tienes un adelanto de la entrada principal del lobby. Observa cómo el acabado de obsidiana interactúa con las matrices de luz lavanda.",
-        time: "10:45 AM",
-        image: {
-          title: "Vista del Proyecto",
-          subtitle: "Entrada del lobby",
-        },
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "Elena Rossi",
-    role: "Diseñadora de Interiores",
-    avatar: "ER",
-    lastMessage: "Te envié la paleta de colores...",
-    time: "1H",
-    online: false,
-    messages: [
-      {
-        id: 1,
-        sender: "them",
-        text: "Te envié la paleta de colores actualizada para la suite penthouse. ¡Déjame saber qué piensas!",
-        time: "11:30 AM",
-        date: "MARTES, 24 OCT",
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: "Marcus Chen",
-    role: "Project Manager",
-    avatar: "MC",
-    lastMessage: "¿Podemos agendar una llamada...",
-    time: "AYER",
-    online: false,
-    messages: [
-      {
-        id: 1,
-        sender: "them",
-        text: "¿Podemos agendar una llamada para este jueves? Necesitamos revisar la línea de tiempo del proyecto.",
-        time: "3:15 PM",
-        date: "LUNES, 23 OCT",
-      },
-    ],
-  },
-  {
-    id: 4,
-    name: "Sarah Jenkins",
-    role: "Asesora Legal",
-    avatar: "SJ",
-    lastMessage: "El contrato ha sido firmado...",
-    time: "2D",
-    online: false,
-    messages: [
-      {
-        id: 1,
-        sender: "them",
-        text: "El contrato ha sido firmado y archivado. Toda la documentación está en orden para la siguiente fase.",
-        time: "9:00 AM",
-        date: "DOMINGO, 22 OCT",
-      },
-    ],
-  },
-  {
-    id: 5,
-    name: "Ana Torres",
-    role: "Fotógrafa",
-    avatar: "AT",
-    lastMessage: "Las fotos del evento están...",
-    time: "3D",
-    online: true,
-    messages: [
-      {
-        id: 1,
-        sender: "them",
-        text: "Las fotos del evento están listas. Te envío el enlace del álbum en un momento.",
-        time: "4:20 PM",
-        date: "SÁBADO, 21 OCT",
-      },
-    ],
-  },
-];
+type UIConversation = {
+  id: string;
+  requestId?: string;
+  professionalId?: number;
+  name: string;
+  role: string;
+  avatar: string;
+  online: boolean;
+  time: string;
+  lastMessage: string;
+};
+
+type UIMessage = {
+  id: string;
+  sender: "me" | "other";
+  text: string;
+  time: string;
+  date?: string;
+  status?: string;
+};
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase())
+    .join("") || "US";
+
+const formatTime = (value?: string | null) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" });
+};
 
 export default function MessagesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [activeConversation, setActiveConversation] = useState(
-    conversations[0],
-  );
+
+  const targetProfessional =
+    searchParams?.get("to") || searchParams?.get("professionalId");
+  const requestIdParam = searchParams?.get("requestId");
+
+  const [activeConversationId, setActiveConversationId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -143,28 +81,180 @@ export default function MessagesPage() {
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const filteredConversations = conversations.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  const { data: requestsData } = useQuery({
+    queryKey: ["my-contact-requests", user?.id],
+    queryFn: () => communicationService.getUserRequests(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const requests = useMemo(() => {
+    if (!requestsData) return [] as any[];
+    if (Array.isArray(requestsData)) return requestsData;
+    const payload = requestsData as any;
+    if (Array.isArray(payload.data)) return payload.data;
+    return [] as any[];
+  }, [requestsData]);
+
+  const conversations = useMemo<UIConversation[]>(() => {
+    const mapped = requests.map((req: any) => {
+      const professional = req.Professional as any;
+      const companyData =
+        professional?.Company ||
+        professional?.Companies ||
+        professional?.company ||
+        professional?.companies;
+      const company = Array.isArray(companyData) ? companyData[0] : companyData;
+      const name =
+        company?.name ||
+        professional?.Profile?.display_name ||
+        `Profesional ${req.professional_id ?? ""}`;
+
+      return {
+        id: String(req.id),
+        requestId: String(req.id),
+        professionalId: Number(req.professional_id),
+        name,
+        role: "Profesional",
+        avatar: getInitials(name),
+        online: false,
+        time: formatTime(req.updated_at || req.created_at),
+        lastMessage: req.message || "Abri la conversacion para ver mensajes",
+      };
+    });
+
+    if (mapped.length === 0 && targetProfessional) {
+      const name = `Profesional ${targetProfessional}`;
+      mapped.push({
+        id: `draft-${targetProfessional}`,
+        professionalId: Number(targetProfessional),
+        name,
+        role: "Profesional",
+        avatar: getInitials(name),
+        online: false,
+        time: "",
+        lastMessage: "Envia el primer mensaje para iniciar el chat",
+      });
+    }
+
+    return mapped;
+  }, [requests, targetProfessional]);
+
+  const activeConversation =
+    conversations.find((c) => c.id === activeConversationId) ||
+    conversations[0] ||
+    null;
+
+  useEffect(() => {
+    if (!conversations.length) return;
+    if (activeConversationId) return;
+
+    if (requestIdParam) {
+      const byParam = conversations.find((c) => c.requestId === requestIdParam);
+      if (byParam) {
+        setActiveConversationId(byParam.id);
+        return;
+      }
+    }
+
+    setActiveConversationId(conversations[0].id);
+  }, [conversations, activeConversationId, requestIdParam]);
+
+  const filteredConversations = useMemo(
+    () =>
+      conversations.filter((c) =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [conversations, searchQuery],
   );
+
+  const activeRequestId = activeConversation?.requestId;
+
+  const { data: messagesData = [] } = useQuery({
+    queryKey: ["chat-messages", activeRequestId],
+    queryFn: () => communicationService.getMessages(activeRequestId!),
+    enabled: !!activeRequestId,
+  });
+
+  const messages = useMemo<UIMessage[]>(() => {
+    const list = Array.isArray(messagesData)
+      ? messagesData
+      : Array.isArray((messagesData as any)?.data)
+        ? (messagesData as any).data
+        : [];
+
+    let lastDate = "";
+    return list.map((msg: any) => {
+      const msgDate = formatDate(msg.created_at);
+      const showDate = msgDate && msgDate !== lastDate;
+      if (msgDate) lastDate = msgDate;
+
+      return {
+        id: String(msg.id),
+        sender: msg.sender_id === user?.id ? "me" : "other",
+        text: msg.content,
+        time: formatTime(msg.created_at),
+        date: showDate ? msgDate : "",
+        status: msg.is_read ? "Leido" : undefined,
+      };
+    });
+  }, [messagesData, user?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeConversation]);
+  }, [messages]);
+
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      if (activeRequestId) {
+        return communicationService.sendMessage(activeRequestId, content);
+      }
+
+      if (!activeConversation?.professionalId) {
+        throw new Error("No se pudo determinar el profesional destino.");
+      }
+
+      const created = await communicationService.createRequest({
+        professional_id: activeConversation.professionalId,
+        message: content,
+      });
+
+      const createdId = String(
+        (created as any)?.id || (created as any)?.data?.id || "",
+      );
+      if (createdId) {
+        setActiveConversationId(createdId);
+      }
+
+      return created;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["my-contact-requests", user?.id],
+      });
+      if (activeRequestId) {
+        queryClient.invalidateQueries({
+          queryKey: ["chat-messages", activeRequestId],
+        });
+      }
+    },
+  });
 
   const handleSend = () => {
-    if (!newMessage.trim()) return;
+    const content = newMessage.trim();
+    if (!content) return;
+    sendMessageMutation.mutate(content);
     setNewMessage("");
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
-  const handleSelectConversation = (conv) => {
-    setActiveConversation(conv);
+  const handleSelectConversation = (conv: UIConversation) => {
+    setActiveConversationId(conv.id);
     setMobileShowChat(true);
   };
 
@@ -172,7 +262,6 @@ export default function MessagesPage() {
     <div className="msg-app">
       <NavbarMessage />
       <div className="msg-app__container">
-        {/* ===== Top Bar ===== */}
         <header className="msg-topbar">
           <div className="msg-topbar__left">
             <button
@@ -212,11 +301,9 @@ export default function MessagesPage() {
           </div>
         </header>
 
-        {/* ===== Main Layout ===== */}
         <div
           className={`msg-layout ${sidebarCollapsed ? "msg-layout--collapsed" : ""} ${mobileShowChat ? "msg-layout--chat-active" : ""}`}
         >
-          {/* Conversations Panel */}
           <aside
             className={`msg-panel ${sidebarCollapsed ? "msg-panel--collapsed" : ""}`}
           >
@@ -247,7 +334,7 @@ export default function MessagesPage() {
                 {filteredConversations.map((conv) => (
                   <button
                     key={conv.id}
-                    className={`msg-conv ${activeConversation.id === conv.id ? "msg-conv--active" : ""}`}
+                    className={`msg-conv ${activeConversation?.id === conv.id ? "msg-conv--active" : ""}`}
                     onClick={() => handleSelectConversation(conv)}
                   >
                     <div className="msg-conv__avatar">
@@ -271,7 +358,7 @@ export default function MessagesPage() {
                 {filteredConversations.map((conv) => (
                   <button
                     key={conv.id}
-                    className={`msg-avatar-btn ${activeConversation.id === conv.id ? "msg-avatar-btn--active" : ""}`}
+                    className={`msg-avatar-btn ${activeConversation?.id === conv.id ? "msg-avatar-btn--active" : ""}`}
                     onClick={() => handleSelectConversation(conv)}
                     title={conv.name}
                   >
@@ -285,9 +372,7 @@ export default function MessagesPage() {
             )}
           </aside>
 
-          {/* Chat Area */}
           <main className="msg-chat">
-            {/* Chat Header */}
             <div className="msg-chat__header">
               <button
                 className="msg-chat__back-mobile"
@@ -297,18 +382,19 @@ export default function MessagesPage() {
                 <ArrowLeft size={18} />
               </button>
               <div className="msg-chat__header-avatar">
-                {activeConversation.avatar}
-                {activeConversation.online && (
+                {activeConversation?.avatar || "--"}
+                {activeConversation?.online && (
                   <span className="msg-online-dot" />
                 )}
               </div>
               <div className="msg-chat__header-info">
                 <span className="msg-chat__header-name">
-                  {activeConversation.name}
+                  {activeConversation?.name || "Selecciona una conversacion"}
                 </span>
                 <span className="msg-chat__header-status">
-                  {activeConversation.online ? "En línea" : "Desconectado"} ·{" "}
-                  {activeConversation.role}
+                  {activeConversation
+                    ? `${activeConversation.online ? "En linea" : "Desconectado"} · ${activeConversation.role}`
+                    : ""}
                 </span>
               </div>
               <div className="msg-chat__header-actions">
@@ -323,16 +409,15 @@ export default function MessagesPage() {
                 </button>
                 <button
                   className="msg-topbar__icon-btn"
-                  aria-label="Más opciones"
+                  aria-label="Mas opciones"
                 >
                   <MoreVertical size={18} />
                 </button>
               </div>
             </div>
 
-            {/* Messages */}
             <div className="msg-chat__messages">
-              {activeConversation.messages.map((msg) => (
+              {messages.map((msg) => (
                 <div key={msg.id}>
                   {msg.date && (
                     <div className="msg-date-sep">
@@ -345,19 +430,6 @@ export default function MessagesPage() {
                     <div
                       className={`msg-bubble ${msg.sender === "me" ? "msg-bubble--sent" : "msg-bubble--received"}`}
                     >
-                      {msg.image && (
-                        <div className="msg-bubble__image">
-                          <ImageIcon size={28} />
-                          <div className="msg-bubble__image-info">
-                            <span className="msg-bubble__image-title">
-                              {msg.image.title}
-                            </span>
-                            <span className="msg-bubble__image-sub">
-                              {msg.image.subtitle}
-                            </span>
-                          </div>
-                        </div>
-                      )}
                       <p>{msg.text}</p>
                     </div>
                     <span className="msg-bubble__time">
@@ -367,10 +439,14 @@ export default function MessagesPage() {
                   </div>
                 </div>
               ))}
+              {!messages.length && (
+                <div className="msg-date-sep">
+                  <span>Sin mensajes todavia</span>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Bar */}
             <div className="msg-input">
               <button className="msg-input__icon" aria-label="Adjuntar archivo">
                 <Paperclip size={20} />
@@ -392,7 +468,7 @@ export default function MessagesPage() {
               <button
                 className="msg-input__send"
                 onClick={handleSend}
-                disabled={!newMessage.trim()}
+                disabled={!newMessage.trim() || sendMessageMutation.isPending}
                 aria-label="Enviar mensaje"
               >
                 <Send size={18} />

@@ -19,59 +19,6 @@ import "./NearbyServicesSection.css";
 import { ROUTES } from "../../../routes/paths";
 import { getProfilePath } from "../../../utils/utils";
 
-const nearbyServices = [
-  {
-    id: 101,
-    name: "Carlos Plomería",
-    avatar: "https://i.pravatar.cc/150?u=carlos2",
-    description: "Reparación de filtraciones y mantenimiento general.",
-    price: "$25.000",
-    distance: "1.2 km",
-    rating: 4.8,
-    reviews: 124,
-  },
-  {
-    id: 102,
-    name: "Electricidad Express",
-    avatar: "https://i.pravatar.cc/150?u=elec",
-    description: "Urgencias eléctricas 24/7 y tableros.",
-    price: "$30.000",
-    distance: "2.5 km",
-    rating: 4.9,
-    reviews: 89,
-  },
-  {
-    id: 103,
-    name: "Limpieza Profunda Ana",
-    avatar: "https://i.pravatar.cc/150?u=ana2",
-    description: "Limpieza residencial y oficinas, post-obra.",
-    price: "$18.000",
-    distance: "3.1 km",
-    rating: 4.7,
-    reviews: 210,
-  },
-  {
-    id: 104,
-    name: "Pintura y Deco Juan",
-    avatar: "https://i.pravatar.cc/150?u=juan",
-    description: "Pintura interior, exterior y texturados.",
-    price: "$45.000",
-    distance: "4.0 km",
-    rating: 4.6,
-    reviews: 56,
-  },
-  {
-    id: 105,
-    name: "Tech Support IT",
-    avatar: "https://i.pravatar.cc/150?u=tech",
-    description: "Armado de PC, limpieza de virus y redes.",
-    price: "$20.000",
-    distance: "5.2 km",
-    rating: 5.0,
-    reviews: 42,
-  },
-];
-
 type UserLocation = {
   lat: number;
   lng: number;

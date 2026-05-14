@@ -7,6 +7,11 @@ import {
   type ReactNode,
 } from "react";
 import { authService } from "../services/authService";
+import { userService } from "../services/userService";
+import {
+  getFirebaseMessagingToken,
+  subscribeToForegroundMessages,
+} from "../services/firebaseMessaging";
 
 type SessionStatus = {
   status?: boolean | string;
@@ -63,6 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     null,
   );
   const [loading, setLoading] = useState(true);
+  const [foregroundNotification, setForegroundNotification] = useState<{
+    title: string;
+    body: string;
+  } | null>(null);
 
   const hasActiveStatusFlag =
     sessionStatus?.status === true || sessionStatus?.status === "active";
@@ -104,11 +113,100 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshSession();
   }, []);
 
+  useEffect(() => {
+    const registerDeviceTokenIfPresent = async () => {
+      if (!user || typeof window === "undefined") return;
+
+      // Ask browser permission and fetch token from Firebase when possible.
+      const firebaseToken = await getFirebaseMessagingToken(true);
+      if (firebaseToken) {
+        localStorage.setItem("firebase_token", firebaseToken);
+      }
+
+      const tokenKeys = [
+        "firebase_token",
+        "fcm_token",
+        "firebaseMessagingToken",
+      ];
+      const token = tokenKeys
+        .map((key) => localStorage.getItem(key))
+        .find((value): value is string => Boolean(value));
+
+      if (!token) return;
+
+      const lastRegistered = localStorage.getItem("registered_device_token");
+      if (lastRegistered === token) return;
+
+      try {
+        await userService.registerDeviceToken(token, "web");
+        localStorage.setItem("registered_device_token", token);
+      } catch (error) {
+        // Silent fail: app auth flow should not break if notifications fail.
+      }
+    };
+
+    registerDeviceTokenIfPresent();
+  }, [user]);
+
+  useEffect(() => {
+    let unsubscribe: undefined | (() => void);
+    let clearToastTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const setupForegroundNotifications = async () => {
+      unsubscribe = await subscribeToForegroundMessages((payload: any) => {
+        const title = payload?.notification?.title || "Nueva notificacion";
+        const body = payload?.notification?.body || "Tenes un nuevo mensaje.";
+
+        setForegroundNotification({ title, body });
+        if (clearToastTimer) {
+          clearTimeout(clearToastTimer);
+        }
+        clearToastTimer = setTimeout(() => {
+          setForegroundNotification(null);
+        }, 5000);
+
+        if (
+          typeof window !== "undefined" &&
+          Notification.permission === "granted"
+        ) {
+          new Notification(title, { body });
+        }
+      });
+    };
+
+    setupForegroundNotifications();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+      if (clearToastTimer) clearTimeout(clearToastTimer);
+    };
+  }, []);
+
   const logout = async () => {
+    if (typeof window !== "undefined") {
+      const tokenKeys = [
+        "firebase_token",
+        "fcm_token",
+        "firebaseMessagingToken",
+      ];
+      const deviceToken = tokenKeys
+        .map((key) => localStorage.getItem(key))
+        .find((value): value is string => Boolean(value));
+
+      if (deviceToken) {
+        try {
+          await userService.removeDeviceToken(deviceToken);
+        } catch (error) {
+          // Silent fail on logout.
+        }
+      }
+    }
+
     // If there's an API logout endpoint, we'd call it here
     // await apiClient('/api/auth/logout', { method: 'POST' });
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("registered_device_token");
     setUser(null);
     setSessionStatus(null);
   };
@@ -127,6 +225,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      {foregroundNotification && (
+        <div
+          style={{
+            position: "fixed",
+            right: 16,
+            bottom: 16,
+            zIndex: 9999,
+            maxWidth: 360,
+            background: "#111827",
+            color: "#f9fafb",
+            borderRadius: 12,
+            padding: "12px 14px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+            border: "1px solid rgba(255,255,255,0.12)",
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+            {foregroundNotification.title}
+          </div>
+          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
+            {foregroundNotification.body}
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }

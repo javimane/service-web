@@ -1,5 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from "axios";
 
+const isBrowser = typeof window !== "undefined";
+
 // Create axios instance
 const axiosInstance = axios.create({
   withCredentials: true,
@@ -8,7 +10,7 @@ const axiosInstance = axios.create({
 // Request interceptor to add token
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("access_token");
+    const token = isBrowser ? localStorage.getItem("access_token") : null;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -16,7 +18,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor to handle errors and automatically save tokens
@@ -24,24 +26,25 @@ axiosInstance.interceptors.response.use(
   (response) => {
     // Automatically save token if present in response (standard Supabase/API structure)
     const session = response.data?.data?.session || response.data?.session;
-    if (session?.access_token) {
+    if (isBrowser && session?.access_token) {
       localStorage.setItem("access_token", session.access_token);
     }
-    if (session?.refresh_token) {
+    if (isBrowser && session?.refresh_token) {
       localStorage.setItem("refresh_token", session.refresh_token);
     }
     return response;
   },
   (error) => {
     if (error.response?.status === 401) {
-      const token = localStorage.getItem("access_token");
+      const token = isBrowser ? localStorage.getItem("access_token") : null;
       if (token) {
         window.dispatchEvent(new CustomEvent("session-expired"));
       }
     }
-    const message = error.response?.data?.message || error.message || "Error de red";
+    const message =
+      error.response?.data?.message || error.message || "Error de red";
     return Promise.reject(new Error(message));
-  }
+  },
 );
 
 /**
