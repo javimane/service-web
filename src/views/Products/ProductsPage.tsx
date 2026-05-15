@@ -5,11 +5,8 @@ import { useSearchParams } from "next/navigation";
 import {
   Search,
   SlidersHorizontal,
-  Star,
-  Truck,
   Grid3X3,
   List,
-  ChevronDown,
   Globe,
   MapPin,
   X,
@@ -18,14 +15,13 @@ import {
   Package,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { productService } from "../../services/productService";
-import { categoriesProductService } from "../../services/categoriesProduct";
-import { locationService } from "../../services/locationService";
+import { getProductsAction } from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
-import { normalizeSeoPath } from "../../utils/utils";
 import "./ProductsPage.css";
+import { getProductCategoriesAction } from "@/app/actions/categories";
+import { getProvincesAction } from "@/app/actions/provinces";
 
 function formatPrice(n) {
   return Number(n || 0).toLocaleString("es-AR");
@@ -36,8 +32,6 @@ const sortOptions = [
   { key: "price-asc", label: "Menor precio" },
   { key: "price-desc", label: "Mayor precio" },
 ];
-
-const pageLimitOptions = [10, 20, 30, 50];
 
 const defaultFilters = {
   search: "",
@@ -92,46 +86,66 @@ export default function ProductsPage() {
   // Data fetching
   const { data: categories = [] } = useQuery({
     queryKey: ["product-categories"],
-    queryFn: () => categoriesProductService.listCategoriesProducts(),
+    queryFn: async () => {
+      const result = await getProductCategoriesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],
-    queryFn: () => locationService.getProvinces(),
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["products", effectiveFilters, page],
-    queryFn: () => {
-      const params: any = {
+    queryFn: async () => {
+      const params = {
         page,
         limit: Number(effectiveFilters.limit),
         name: effectiveFilters.search || undefined,
+        sortBy: effectiveFilters.sortBy || undefined,
         categoryId:
           effectiveFilters.categoryId === "all"
             ? undefined
-            : effectiveFilters.categoryId,
+            : Number(effectiveFilters.categoryId),
         provinceId:
           effectiveFilters.provinceId === "all"
             ? undefined
-            : effectiveFilters.provinceId,
-        price: effectiveFilters.price || undefined,
+            : Number(effectiveFilters.provinceId),
+        price:
+          effectiveFilters.price === ""
+            ? undefined
+            : Number(effectiveFilters.price),
         priceMin: effectiveFilters.price
           ? undefined
-          : effectiveFilters.priceMin || undefined,
+          : effectiveFilters.priceMin === ""
+            ? undefined
+            : Number(effectiveFilters.priceMin),
         priceMax: effectiveFilters.price
           ? undefined
-          : effectiveFilters.priceMax || undefined,
+          : effectiveFilters.priceMax === ""
+            ? undefined
+            : Number(effectiveFilters.priceMax),
         brand: effectiveFilters.brand || undefined,
         ean: effectiveFilters.ean || undefined,
-        sortBy: effectiveFilters.sortBy,
-        professionalId: professionalIdParam || undefined,
+        is_foreign:
+          effectiveFilters.is_foreign === "all"
+            ? undefined
+            : effectiveFilters.is_foreign === "external",
       };
-      if (effectiveFilters.is_foreign !== "all") {
-        params.is_foreign = effectiveFilters.is_foreign === "external";
-      }
-      return productService.list(params);
+      const result = await getProductsAction(params);
+      return result?.data;
     },
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
   });
 
   const normalizedProductsResponse = useMemo(() => {
@@ -167,7 +181,22 @@ export default function ProductsPage() {
 
   const productsList = useMemo(() => {
     if (!normalizedProductsResponse.data.length) return [];
-    return normalizedProductsResponse.data.map((item: any) => {
+    const professionalId = professionalIdParam
+      ? Number(professionalIdParam)
+      : null;
+    const professionalFilteredProducts = normalizedProductsResponse.data.filter(
+      (item: any) => {
+        if (!professionalId) return true;
+        const sellers = Array.isArray(item?.ProfessionalProducts)
+          ? item.ProfessionalProducts
+          : [];
+        return sellers.some(
+          (seller: any) => Number(seller?.professional_id) === professionalId,
+        );
+      },
+    );
+
+    return professionalFilteredProducts.map((item: any) => {
       const product = item;
       const images = product?.Images || [];
       const sortedImages = [...images].sort(
@@ -216,7 +245,7 @@ export default function ProductsPage() {
         _original: item,
       };
     });
-  }, [normalizedProductsResponse]);
+  }, [normalizedProductsResponse, professionalIdParam]);
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

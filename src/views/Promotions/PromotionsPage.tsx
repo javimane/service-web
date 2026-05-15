@@ -18,22 +18,19 @@ import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import PromotionDetailPage from "./PromotionDetailPage";
-import {
-  bankPromotionService,
-  bankService,
-  Bank,
-  BankPromotion,
-} from "../../services/bankPromotionService";
-import {
-  professionalPromotionService,
-  ProfessionalPromotion,
-} from "../../services/professionalPromotionService";
-import { locationService } from "../../services/locationService";
+import { Bank, BankPromotion } from "../../services/bankPromotionService";
+import { ProfessionalPromotion } from "../../services/professionalPromotionService";
 import { ProvinceRow } from "../../types/database.types";
 import { ROUTES } from "../../routes/paths";
 import SEO from "../../components/SEO/SEO";
 import { getProfilePath, normalizeSeoPath } from "../../utils/utils";
 import "./PromotionsPage.css";
+import {
+  getBanksAction,
+  getBankPromotionsAction,
+} from "@/app/actions/bankPromotions";
+import { getProfessionalPromotionsAction } from "@/app/actions/professionalPromotions";
+import { getProvincesAction } from "@/app/actions/provinces";
 
 export default function PromotionsPage() {
   const router = useRouter();
@@ -55,13 +52,19 @@ export default function PromotionsPage() {
   // Queries with caching
   const { data: banks = [], isLoading: loadingBanks } = useQuery({
     queryKey: ["banks"],
-    queryFn: () => bankService.findAll(),
+    queryFn: async () => {
+      const result = await getBanksAction();
+      return result?.data ?? [];
+    },
     staleTime: 1000 * 60 * 30, // 30 minutes
   });
 
   const { data: provinces = [], isLoading: loadingProvinces } = useQuery({
     queryKey: ["provinces"],
-    queryFn: () => locationService.getProvinces(),
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 
@@ -74,7 +77,7 @@ export default function PromotionsPage() {
     isLoading: loadingBankPromos,
   } = useInfiniteQuery({
     queryKey: ["bankPromotions", selectedProvince, selectedBank, selectedDay],
-    queryFn: ({ pageParam = 0 }) => {
+    queryFn: async ({ pageParam = 0 }) => {
       const dayMap: Record<string, string> = {
         Lunes: "monday",
         Martes: "tuesday",
@@ -84,13 +87,14 @@ export default function PromotionsPage() {
         Sábado: "saturday",
         Domingo: "sunday",
       };
-      return bankPromotionService.getAll({
+      const result = await getBankPromotionsAction({
         ...(selectedProvince ? { provinceId: selectedProvince } : {}),
         ...(selectedBank ? { bankId: selectedBank } : {}),
         ...(selectedDay ? { day: dayMap[selectedDay] } : {}),
         limit: 20,
         offset: pageParam,
       });
+      return result?.data ?? [];
     },
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.length === 20 ? allPages.length * 20 : undefined;
@@ -107,12 +111,14 @@ export default function PromotionsPage() {
     isLoading: loadingProfPromos,
   } = useInfiniteQuery({
     queryKey: ["profPromotions", selectedProvince, selectedDiscountType],
-    queryFn: ({ pageParam = 0 }) =>
-      professionalPromotionService.getAll({
+    queryFn: async ({ pageParam = 0 }) => {
+      const result = await getProfessionalPromotionsAction({
         ...(selectedProvince ? { provinceId: selectedProvince } : {}),
         limit: 20,
         offset: pageParam,
-      }),
+      });
+      return result?.data ?? [];
+    },
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.length === 20 ? allPages.length * 20 : undefined;
     },
@@ -130,9 +136,17 @@ export default function PromotionsPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          if (activeTab === "bancos" && hasNextBankPromos && !isFetchingNextBankPromos) {
+          if (
+            activeTab === "bancos" &&
+            hasNextBankPromos &&
+            !isFetchingNextBankPromos
+          ) {
             fetchNextBankPromos();
-          } else if (activeTab === "promos" && hasNextProfPromos && !isFetchingNextProfPromos) {
+          } else if (
+            activeTab === "promos" &&
+            hasNextProfPromos &&
+            !isFetchingNextProfPromos
+          ) {
             fetchNextProfPromos();
           }
         }

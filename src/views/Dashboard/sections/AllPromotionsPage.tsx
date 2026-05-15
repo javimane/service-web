@@ -2,7 +2,11 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
-import { professionalPromotionService } from "../../../services/professionalPromotionService";
+import {
+  createProfessionalPromotionAction,
+  deleteProfessionalPromotionAction,
+  getPromotionsByProfessionalAction,
+} from "../../../app/actions/professionalPromotions";
 import {
   Plus,
   Search,
@@ -34,7 +38,9 @@ const STATUS_LABELS = {
 
 export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   const { sessionStatus } = useAuth();
-  const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
+  const professionalId =
+    sessionStatus?.subscription?.professional_id ??
+    sessionStatus?.professional_id;
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -44,12 +50,21 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
 
   const { data: promotions = [], isLoading } = useQuery({
     queryKey: ["professional-promotions", professionalId],
-    queryFn: () => professionalPromotionService.getByProfessional(professionalId),
+    queryFn: async () => {
+      const result = await getPromotionsByProfessionalAction({
+        professionalId,
+      });
+      return result?.data ?? [];
+    },
     enabled: !!professionalId,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => professionalPromotionService.delete(id),
+    mutationFn: async (id: string) => {
+      const result = await deleteProfessionalPromotionAction({ id });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-promotions"] });
     },
@@ -61,15 +76,19 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   const duplicateMutation = useMutation({
     mutationFn: (promo: any) => {
       // Find the original promotion data to get all fields
-      const original = promotions.find(p => p.id === promo.id);
+      const original = promotions.find((p) => p.id === promo.id);
       if (!original) throw new Error("Promoción no encontrada");
 
       const { id, created_at, updated_at, Professional, ...rest } = original;
-      return professionalPromotionService.create({
+      return createProfessionalPromotionAction({
         ...rest,
         title: `${rest.title} (Copia)`,
-        state: 'draft',
-        discount_percentage: rest.discount_type === 'percentage' ? Number(rest.discount_value) : 0,
+        state: "draft",
+        discount_percentage:
+          rest.discount_type === "percentage" ? Number(rest.discount_value) : 0,
+      }).then((result) => {
+        if (result?.serverError) throw new Error(result.serverError);
+        return result?.data;
       });
     },
     onSuccess: () => {
@@ -82,7 +101,9 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   });
 
   const handleDelete = (id: string) => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar esta promoción?")) {
+    if (
+      window.confirm("¿Estás seguro de que deseas eliminar esta promoción?")
+    ) {
       deleteMutation.mutate(id);
     }
   };
@@ -92,7 +113,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   };
 
   const handleView = (promoId: string) => {
-    const promo = promosList.find(p => p.id === promoId);
+    const promo = promosList.find((p) => p.id === promoId);
     setSelectedPromo(promo);
   };
 
@@ -125,21 +146,28 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   };
 
   const promosList = useMemo(() => {
-    return promotions.map(p => {
-      const status = p.state === 'expires' ? 'expired' : (p.state || 'active');
+    return promotions.map((p) => {
+      const status = p.state === "expires" ? "expired" : p.state || "active";
       return {
         id: p.id,
         title: p.title,
         description: p.description,
-        offer: p.discount_type === 'percentage' ? `${p.discount_value}% OFF` : 
-               p.discount_type === 'fixed' ? `$${p.discount_value}` :
-               p.discount_type === 'bogo' ? '2x1' : 'GRATIS',
+        offer:
+          p.discount_type === "percentage"
+            ? `${p.discount_value}% OFF`
+            : p.discount_type === "fixed"
+              ? `$${p.discount_value}`
+              : p.discount_type === "bogo"
+                ? "2x1"
+                : "GRATIS",
         unlimitedStock: p.unlimited_stock || false,
-        applicableTo: p.applicable_to || "",       
+        applicableTo: p.applicable_to || "",
         status: status,
         validFrom: formatDateDisplay(p.from_date || ""),
         validTo: formatDateDisplay(p.expires_at || ""),
-        image: p.image_url || "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
+        image:
+          p.image_url ||
+          "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
         _original: p,
       };
     });
@@ -201,9 +229,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
       {/* Stats Row */}
       <div className="all-promos__stats">
         <div className="promo-stat-card">
-          <span className="promo-stat-card__value">
-            {promosList.length}
-          </span>
+          <span className="promo-stat-card__value">{promosList.length}</span>
           <span className="promo-stat-card__label">Total</span>
         </div>
         <div className="promo-stat-card promo-stat-card--active">
@@ -233,76 +259,84 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
             <Loader2 className="animate-spin" size={32} />
             <p>Cargando promociones...</p>
           </div>
-        ) : filtered.map((promo) => (
-          <article 
-            key={promo.id} 
-            className="promo-list-card promo-list-card--clickable"
-            onClick={() => handleView(promo.id)}
-          >
-            <div className="promo-list-card__image">
-              <img src={promo.image} alt={promo.title} loading="lazy" />
-              <span
-                className={`promo-list-card__status promo-list-card__status--${promo.status}`}
-              >
-                {STATUS_LABELS[promo.status]}
-              </span>
-              {promo.status === 'expired' && (
-                <div className="promo-list-card__expired-overlay">
-                  <span>EXPIRADA</span>
-                </div>
-              )}
-              <span className="promo-list-card__offer-badge">
-                <Ticket size={12} />
-                {promo.offer}
-              </span>
-            </div>
-
-            <div className="promo-list-card__body">
-              <h3 className="promo-list-card__title">{promo.title}</h3>
-              <p className="promo-list-card__desc">{promo.description}</p>
-
-              <div className="promo-list-card__meta">
-                <span className="promo-list-card__dates">
-                  <Calendar size={12} />
-                  {promo.validFrom} — {promo.validTo}
+        ) : (
+          filtered.map((promo) => (
+            <article
+              key={promo.id}
+              className="promo-list-card promo-list-card--clickable"
+              onClick={() => handleView(promo.id)}
+            >
+              <div className="promo-list-card__image">
+                <img src={promo.image} alt={promo.title} loading="lazy" />
+                <span
+                  className={`promo-list-card__status promo-list-card__status--${promo.status}`}
+                >
+                  {STATUS_LABELS[promo.status]}
                 </span>
-                <code className="promo-list-card__code">PROMO-{promo.id.slice(0, 4).toUpperCase()}</code>
-              </div>
-            </div>
-
-            <div className="promo-list-card__actions" onClick={e => e.stopPropagation()}>
-              <button
-                type="button"
-                className="promo-list-card__action"
-                title="Modificar"
-                onClick={() => onEdit(promo._original)}
-              >
-                <Edit2 size={16} />
-              </button>
-              <button
-                type="button"
-                className="promo-list-card__action"
-                title="Descargar Imagen"
-                onClick={() => handleDownloadImage(promo.image, promo.title)}
-              >
-                <Download size={16} />
-              </button>
-              <button
-                type="button"
-                className="promo-list-card__action promo-list-card__action--danger"
-                title="Eliminar"
-                onClick={() => handleDelete(promo.id)}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending && deleteMutation.variables === promo.id ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <Trash2 size={16} />
+                {promo.status === "expired" && (
+                  <div className="promo-list-card__expired-overlay">
+                    <span>EXPIRADA</span>
+                  </div>
                 )}
-              </button>
-            </div>
-          </article>
-        ))}
+                <span className="promo-list-card__offer-badge">
+                  <Ticket size={12} />
+                  {promo.offer}
+                </span>
+              </div>
+
+              <div className="promo-list-card__body">
+                <h3 className="promo-list-card__title">{promo.title}</h3>
+                <p className="promo-list-card__desc">{promo.description}</p>
+
+                <div className="promo-list-card__meta">
+                  <span className="promo-list-card__dates">
+                    <Calendar size={12} />
+                    {promo.validFrom} — {promo.validTo}
+                  </span>
+                  <code className="promo-list-card__code">
+                    PROMO-{promo.id.slice(0, 4).toUpperCase()}
+                  </code>
+                </div>
+              </div>
+
+              <div
+                className="promo-list-card__actions"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="promo-list-card__action"
+                  title="Modificar"
+                  onClick={() => onEdit(promo._original)}
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="promo-list-card__action"
+                  title="Descargar Imagen"
+                  onClick={() => handleDownloadImage(promo.image, promo.title)}
+                >
+                  <Download size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="promo-list-card__action promo-list-card__action--danger"
+                  title="Eliminar"
+                  onClick={() => handleDelete(promo.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending &&
+                  deleteMutation.variables === promo.id ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                </button>
+              </div>
+            </article>
+          ))
+        )}
 
         {filtered.length === 0 && (
           <div className="all-promos__empty">
@@ -314,20 +348,33 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
 
       {/* View Modal (Coupon Design) */}
       {selectedPromo && (
-        <div className="coupon-modal-overlay" onClick={() => setSelectedPromo(null)}>
-          <div className="coupon-modal-content" onClick={e => e.stopPropagation()}>
-            <button className="coupon-modal__close" onClick={() => setSelectedPromo(null)}>
+        <div
+          className="coupon-modal-overlay"
+          onClick={() => setSelectedPromo(null)}
+        >
+          <div
+            className="coupon-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="coupon-modal__close"
+              onClick={() => setSelectedPromo(null)}
+            >
               <X size={24} />
             </button>
-            
+
             <div className="public-promo-preview" ref={couponRef}>
               <div className="public-promo-preview__hero">
-                <img src={selectedPromo.image} alt="Promo" className="public-promo-preview__image" />
+                <img
+                  src={selectedPromo.image}
+                  alt="Promo"
+                  className="public-promo-preview__image"
+                />
                 <div className="public-promo-preview__badge">
                   {selectedPromo.offer}
                 </div>
               </div>
-              
+
               <div className="public-promo-preview__content">
                 <div className="public-promo-preview__header">
                   <div className="public-promo-preview__professional">
@@ -335,29 +382,43 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
                       <Sparkles size={16} />
                     </div>
                     <div className="professional-info">
-                      <span className="professional-name">{sessionStatus?.user?.display_name || "Tu Studio"}</span>
-                      <span className="professional-label">PROFESIONAL VERIFICADO</span>
+                      <span className="professional-name">
+                        {sessionStatus?.user?.display_name || "Tu Studio"}
+                      </span>
+                      <span className="professional-label">
+                        PROFESIONAL VERIFICADO
+                      </span>
                     </div>
                   </div>
-                  <h2 className="public-promo-preview__title">{selectedPromo.title}</h2>
-                  <code className="public-promo-preview__code">PROMO-{selectedPromo.id.slice(0, 8).toUpperCase()}</code>
+                  <h2 className="public-promo-preview__title">
+                    {selectedPromo.title}
+                  </h2>
+                  <code className="public-promo-preview__code">
+                    PROMO-{selectedPromo.id.slice(0, 8).toUpperCase()}
+                  </code>
                 </div>
 
-                <p className="public-promo-preview__description">{selectedPromo.description}</p>
+                <p className="public-promo-preview__description">
+                  {selectedPromo.description}
+                </p>
 
                 <div className="public-promo-preview__details-grid">
                   <div className="detail-item">
                     <Calendar size={18} />
                     <div className="detail-text">
                       <label>VALIDEZ</label>
-                      <span>{selectedPromo.validFrom} - {selectedPromo.validTo}</span>
+                      <span>
+                        {selectedPromo.validFrom} - {selectedPromo.validTo}
+                      </span>
                     </div>
                   </div>
                   <div className="detail-item">
                     <Sparkles size={18} />
                     <div className="detail-text">
                       <label>APLICA A</label>
-                      <span>{selectedPromo.applicableTo || "Todo el catálogo"}</span>
+                      <span>
+                        {selectedPromo.applicableTo || "Todo el catálogo"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -371,7 +432,8 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
                     OBTENER ESTE CUPÓN
                   </button>
                   <p className="public-promo-preview__hint">
-                    Presenta este cupón digital al momento de contratar el servicio.
+                    Presenta este cupón digital al momento de contratar el
+                    servicio.
                   </p>
                 </div>
               </div>

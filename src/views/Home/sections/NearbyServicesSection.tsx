@@ -11,13 +11,13 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { serviceService } from "../../../services/serviceService";
 import NearbyServiceCard from "../../../components/Cards/NearbyServiceCard";
 import Modal from "../../../components/Modal/Modal";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./NearbyServicesSection.css";
 import { ROUTES } from "../../../routes/paths";
 import { getProfilePath } from "../../../utils/utils";
+import { getServicesAction } from "@/app/actions/services";
 
 type UserLocation = {
   lat: number;
@@ -57,15 +57,28 @@ export default function NearbyServicesSection() {
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ["nearby-services", userLocation],
-    queryFn: () =>
-      serviceService.list({
+    queryFn: async () => {
+      const result = await getServicesAction({
         lat: userLocation!.lat,
         lng: userLocation!.lng,
         radius: 30, // 30km radius
         is_premium: true,
         limit: 25,
-      }),
+      });
+
+      if (result?.data) {
+        return result.data;
+      }
+
+      if (result?.serverError) {
+        throw new Error(result.serverError);
+      }
+
+      return null;
+    },
     enabled: !!userLocation,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
   });
 
   const handleServiceClick = (service) => {

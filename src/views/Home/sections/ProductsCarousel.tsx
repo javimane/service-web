@@ -10,10 +10,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { productService } from "../../../services/productService";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import ProductDetailModal from "../../Products/ProductDetailModal";
 import "./ProductsCarousel.css";
+import { getProductsAction } from "@/app/actions/products";
 
 function formatPrice(n) {
   return Number(n || 0).toLocaleString("es-AR");
@@ -36,7 +36,24 @@ export default function ProductsCarousel() {
 
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["foreign-products"],
-    queryFn: () => productService.list({ is_foreign: true, limit: 20 }),
+    queryFn: async () => {
+      const result = await getProductsAction({
+        is_foreign: true,
+        limit: 20,
+      });
+
+      if (result?.data) {
+        return result.data;
+      }
+
+      if (result?.serverError) {
+        throw new Error(result.serverError);
+      }
+
+      return null;
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const productsList = useMemo(() => {

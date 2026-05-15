@@ -18,15 +18,19 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ROUTES } from "../../routes/paths";
-import { professionalService } from "../../services/professionalService";
-import { serviceService } from "../../services/serviceService";
-import { professionalImagesService } from "../../services/professionalImagesService";
-import { videosService } from "../../services/videosService";
-import { reelsService } from "../../services/reelsService";
-import { reviewService } from "../../services/reviewService";
-import { professionalPromotionService } from "../../services/professionalPromotionService";
-import { bankPromotionService } from "../../services/bankPromotionService";
-import { productService } from "../../services/productService";
+import { getProfessionalDetailAction } from "../../app/actions/professionals";
+import { getServicesByProfessionalAction } from "../../app/actions/services";
+import {
+  getImagesByProfessionalAction,
+  getVideosByProfessionalAction,
+  incrementVideoLikesAction,
+  incrementVideoViewsAction,
+} from "../../app/actions/multimedia";
+import { getReelsAction, updateReelStatsAction } from "../../app/actions/reels";
+import { getProfessionalReviewsAction } from "../../app/actions/reviews";
+import { getPromotionsByProfessionalAction } from "../../app/actions/professionalPromotions";
+import { getBankPromotionsAction } from "../../app/actions/bankPromotions";
+import { getProductsByProfessionalAction } from "../../app/actions/products";
 import TestimonialCard from "./sections/TestimonialCard";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
@@ -101,13 +105,21 @@ function ProfileVideoCard({
     }
   };
 
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    incrementVideoLikesAction({ id: video.id });
+  };
+
   return (
     <div className="instagram-video-card">
       <div
         className="video-wrapper"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onClick={() => onSelect(video)}
+        onClick={() => {
+          incrementVideoViewsAction({ id: video.id });
+          onSelect(video);
+        }}
         style={{ cursor: "pointer" }}
       >
         <video
@@ -120,7 +132,11 @@ function ProfileVideoCard({
           muted
         />
         <div className="video-stats-overlay">
-          <div className="stat">
+          <div
+            className="stat"
+            onClick={handleLike}
+            style={{ cursor: "pointer" }}
+          >
             <Heart size={14} fill="white" />
             <span>{video.likes_count || 0}</span>
           </div>
@@ -192,55 +208,111 @@ export default function ProfilePage() {
 
   const { data: professional, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["professional-detail", id],
-    queryFn: () => professionalService.getDetail(id),
+    queryFn: async () => {
+      const result = await getProfessionalDetailAction({ id: id! });
+      return result?.data ?? null;
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ["professional-services", id],
-    queryFn: () => serviceService.getByProfessional(id),
+    queryFn: async () => {
+      const result = await getServicesByProfessionalAction({
+        professionalId: id!,
+      });
+      return result?.data ?? [];
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const { data: images = [] } = useQuery({
     queryKey: ["professional-images", id],
-    queryFn: () =>
-      professionalImagesService.findAllByProfessionalId(Number(id)),
+    queryFn: async () => {
+      const result = await getImagesByProfessionalAction({
+        professionalId: Number(id),
+      });
+      return result?.data ?? [];
+    },
     enabled: !!id && !isNaN(Number(id)),
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const { data: videos = [] } = useQuery({
     queryKey: ["professional-videos", id],
-    queryFn: () => videosService.findByProfessionalId(Number(id)),
+    queryFn: async () => {
+      const result = await getVideosByProfessionalAction({
+        professionalId: Number(id),
+      });
+      return result?.data ?? [];
+    },
     enabled: !!id && !isNaN(Number(id)),
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const { data: allReels = [] } = useQuery({
     queryKey: ["all-reels"],
-    queryFn: () => reelsService.list(),
+    queryFn: async () => {
+      const result = await getReelsAction({});
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
   });
 
   const { data: reviews = [] } = useQuery({
     queryKey: ["professional-reviews", id],
-    queryFn: () => reviewService.findByProfessionalId(id!),
+    queryFn: async () => {
+      const result = await getProfessionalReviewsAction({
+        professionalId: id!,
+      });
+      return result?.data ?? [];
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
   });
 
   const { data: profPromotions = [] } = useQuery({
     queryKey: ["professional-promotions", id],
-    queryFn: () => professionalPromotionService.getByProfessional(id!),
+    queryFn: async () => {
+      const result = await getPromotionsByProfessionalAction({
+        professionalId: id!,
+      });
+      return result?.data ?? [];
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const { data: allBankPromos = [] } = useQuery({
     queryKey: ["all-bank-promotions"],
-    queryFn: () => bankPromotionService.getAll(),
+    queryFn: async () => {
+      const result = await getBankPromotionsAction({});
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ["professional-products", id],
-    queryFn: () => productService.getByProfessional(Number(id)),
+    queryFn: async () => {
+      const result = await getProductsByProfessionalAction({
+        professionalId: Number(id),
+      });
+      return result?.data ?? [];
+    },
     enabled: !!id && !isNaN(Number(id)),
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const profBankPromos = useMemo(() => {
@@ -323,6 +395,12 @@ export default function ProfilePage() {
     professional,
     rawId,
   ]);
+
+  useEffect(() => {
+    if (selectedReel) {
+      updateReelStatsAction({ id: selectedReel.id, data: { views: 1 } });
+    }
+  }, [selectedReel]);
 
   const handleCloseModal = () => {
     const rawSeo = professional?.seo_path
@@ -929,7 +1007,17 @@ export default function ProfilePage() {
               className="reel-video-full"
             />
             <div className="video-expanded__info">
-              <h3>{selectedVideo.title}</h3>
+              <div className="video-expanded__header">
+                <h3>{selectedVideo.title}</h3>
+                <button
+                  className="video-like-btn"
+                  onClick={() =>
+                    incrementVideoLikesAction({ id: selectedVideo.id })
+                  }
+                >
+                  <Heart size={20} />
+                </button>
+              </div>
               <p>{selectedVideo.description}</p>
             </div>
             <button

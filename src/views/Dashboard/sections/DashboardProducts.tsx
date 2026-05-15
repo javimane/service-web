@@ -25,8 +25,17 @@ import {
   Filter,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
-import { productService } from "../../../services/productService";
-import { categoriesProductService } from "../../../services/categoriesProduct";
+import {
+  assignProductToProfessionalAction,
+  createProductAction,
+  getProductByEanAction,
+  getProductsAction,
+  getProductsByProfessionalAction,
+  massUpdateProductPricesAction,
+  unassignProductFromProfessionalAction,
+  updateProfessionalProductAction,
+} from "../../../app/actions/products";
+import { getProductCategoriesAction } from "../../../app/actions/categories";
 import { uploadProductImage } from "../../../services/storageUploads";
 import "./DashboardProducts.css";
 
@@ -224,13 +233,21 @@ export default function DashboardProducts() {
   // Queries & Mutations
   const { data: productsData = [], isLoading: loadingProducts } = useQuery({
     queryKey: ["professional-products", professionalId],
-    queryFn: () => productService.getByProfessional(professionalId),
+    queryFn: async () => {
+      const result = await getProductsByProfessionalAction({
+        professionalId,
+      });
+      return result?.data ?? [];
+    },
     enabled: !!professionalId,
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-products"],
-    queryFn: categoriesProductService.listCategoriesProducts,
+    queryFn: async () => {
+      const result = await getProductCategoriesAction();
+      return result?.data ?? [];
+    },
   });
 
   // Map API data to component structure
@@ -282,7 +299,11 @@ export default function DashboardProducts() {
   }, [productsData]);
 
   const createMutation = useMutation({
-    mutationFn: productService.create,
+    mutationFn: async (data: any) => {
+      const result = await createProductAction(data);
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-products"] });
       setAddOpen(false);
@@ -291,7 +312,11 @@ export default function DashboardProducts() {
   });
 
   const assignMutation = useMutation({
-    mutationFn: productService.assignToProfessional,
+    mutationFn: async (data: any) => {
+      const result = await assignProductToProfessionalAction(data);
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-products"] });
       setAddOpen(false);
@@ -300,8 +325,21 @@ export default function DashboardProducts() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ productId, data }: { productId: string; data: any }) =>
-      productService.updateProfessionalProduct(professionalId, productId, data),
+    mutationFn: async ({
+      productId,
+      data,
+    }: {
+      productId: string;
+      data: any;
+    }) => {
+      const result = await updateProfessionalProductAction({
+        professionalId,
+        productId,
+        updates: data,
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-products"] });
       resetEditModal();
@@ -309,15 +347,25 @@ export default function DashboardProducts() {
   });
 
   const unassignMutation = useMutation({
-    mutationFn: (productId: string) =>
-      productService.unassignFromProfessional(productId, professionalId),
+    mutationFn: async (productId: string) => {
+      const result = await unassignProductFromProfessionalAction({
+        productId,
+        professionalId,
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-products"] });
     },
   });
 
   const massUpdateMutation = useMutation({
-    mutationFn: productService.massUpdatePrice,
+    mutationFn: async (data: any) => {
+      const result = await massUpdateProductPricesAction(data);
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-products"] });
       setBulkApplied(true);
@@ -469,7 +517,8 @@ export default function DashboardProducts() {
     setEanLoading(true);
     setEanMatch(null);
     try {
-      const match = await productService.getByEan(ean, professionalId);
+      const result = await getProductByEanAction({ ean, professionalId });
+      const match = result?.data ?? null;
 
       if (match) {
         setEanMatch({
@@ -501,10 +550,10 @@ export default function DashboardProducts() {
     if (!editProduct?.ean.trim()) return;
     setEanLoading(true);
     try {
-      const response = await productService.list({
+      const result = await getProductsAction({
         ean: editProduct.ean.trim(),
       });
-      const match = response.data[0];
+      const match = (result?.data ?? [])[0];
 
       if (match) {
         const matchedImages = Array.isArray((match.Product as any)?.Images)

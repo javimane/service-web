@@ -15,7 +15,8 @@ import Footer from "../../components/Footer/Footer";
 import { categories } from "../../data/categories";
 import { ROUTES } from "../../routes/paths";
 import { locationService } from "../../services/locationService";
-import { professionalService } from "../../services/professionalService";
+import { getProfessionalsAction, incrementProfessionalViewsAction } from "../../app/actions/professionals";
+import { getProvincesAction, getDepartmentsAction } from "../../app/actions/locations";
 import SEO from "../../components/SEO/SEO";
 import "./CategoriesPage.css";
 
@@ -77,64 +78,98 @@ export default function CategoriesPage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [publicStoreOnly, setPublicStoreOnly] = useState(false);
 
-  const { data: professionals = [], isLoading } = useQuery({
-    queryKey: ["categories-professionals"],
-    queryFn: () => professionalService.list(),
+  const { data: professionalsData, isLoading } = useQuery({
+    queryKey: [
+      "categories-professionals",
+      selectedCategory,
+      selectedProvince,
+      urgentOnly,
+      verifiedOnly,
+      publicStoreOnly,
+      searchTerm,
+    ],
+    queryFn: async () => {
+      // Find category ID
+      const categoryId =
+        selectedCategory === "Todas"
+          ? undefined
+          : categories.find((c) => c.label === selectedCategory)?.id;
+
+      // Find province ID
+      const provinceId =
+        selectedProvince === "Todas"
+          ? undefined
+          : provinces.find((p) => p.name === selectedProvince)?.id;
+
+      const result = await getProfessionalsAction({
+        categoryId: categoryId?.toString(),
+        provinceId: provinceId?.toString(),
+        isMatriculate: verifiedOnly ? "true" : undefined,
+        emergency: urgentOnly ? "true" : undefined,
+        publicTrade: publicStoreOnly ? "true" : undefined,
+        query: searchTerm.length >= 3 ? searchTerm : undefined,
+        limit: 100,
+      });
+
+      if (result?.data) return result.data;
+      return [];
+    },
     staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 30,
   });
+
+  const professionals = professionalsData || [];
 
   const profiles = useMemo(() => {
     return professionals.map((prof: any) => {
+      // Mapping based on the new backend response structure
       const profCategoryName =
         prof.CategoryServices?.[0]?.CategoryService?.name ||
         prof.category ||
         "General";
+      
       const catInfo =
         categoryOptions.find((c) => c.label === profCategoryName) ||
         categoryOptions[0];
 
       let minPrice = 0;
-      if (prof.Services && prof.Services.length > 0) {
-        minPrice = Math.min(
-          ...prof.Services.map((s: any) => s.base_price || 0),
-        );
-      } else if (prof.services && prof.services.length > 0) {
-        minPrice = Math.min(
-          ...prof.services.map((s: any) => s.base_price || 0),
-        );
+      // Handle both backend naming conventions
+      const services = prof.Services || prof.services || [];
+      if (services.length > 0) {
+        minPrice = Math.min(...services.map((s: any) => s.base_price || 0));
       }
 
-      let acceptedJobs = 0;
-      if (prof.Proposals) {
-        acceptedJobs = prof.Proposals.filter((p: any) => p.accepted).length;
-      } else if (prof.proposals) {
-        acceptedJobs = prof.proposals.filter((p: any) => p.accepted).length;
-      }
+      const acceptedJobs = prof.accepted_proposals_count || 0;
+      
+      const isCompany = prof.accountType === "company" || prof.account_type === "company";
+      const companyData = prof.company?.[0] || prof.Company?.[0] || prof.company_arca;
+      const hasPublicStore = isCompany && (companyData?.public_trade === true || prof.publicTrade === true);
 
-      const isCompany = prof.account_type === "company";
-      const companyData = prof.Company?.[0] || prof.company?.[0];
-      const hasPublicStore = isCompany && companyData?.public_trade === true;
+      // Extract location info from address array
+      const mainAddress = prof.address?.[0] || prof.Addresses?.[0];
 
       return {
         id: prof.id,
-        companyName: prof.Profile?.display_name || prof.name || "Sin Nombre",
+        companyName: prof.name || prof.Profile?.display_name || "Profesional",
         specialty: prof.specialty || profCategoryName,
         category: profCategoryName,
         province:
-          prof.Addresses?.[0]?.Province?.name || prof.province || "Desconocida",
+          mainAddress?.Province?.name || 
+          prof.company_provinces?.[0]?.Province?.name || 
+          "Desconocida",
         city:
-          prof.Addresses?.[0]?.Department?.name || prof.city || "Desconocida",
+          mainAddress?.Department?.name || 
+          prof.city || 
+          "Desconocida",
         accountType: isCompany ? "Comercio" : "Autónomo",
         emergency: prof.emergency || false,
-        verified: prof.is_matriculate || false,
-        rating: prof.rating_avg || 0,
+        verified: prof.is_matriculate || prof.isMatriculate || false,
+        rating: prof.ratingAvg || prof.rating_avg || 0,
         jobs: acceptedJobs,
         priceLabel:
           minPrice > 0
             ? `Desde $${minPrice.toLocaleString("es-AR")}`
             : "Consultar precio",
-        avatar: prof.Profile?.avatar_url || fallbackImage,
+        avatar: prof.profile?.avatar_url || prof.Profile?.avatar_url || fallbackImage,
         coverImage: catInfo.image,
         description: prof.bio || prof.description || "Sin descripción",
         hasPublicStore,
@@ -145,7 +180,10 @@ export default function CategoriesPage() {
 
   const { data: provinces = [] } = useQuery({
     queryKey: ["categories-provinces"],
-    queryFn: () => locationService.getProvinces(),
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data || [];
+    },
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 6,
   });
@@ -158,7 +196,10 @@ export default function CategoriesPage() {
 
   const { data: departments = [] } = useQuery({
     queryKey: ["categories-departments", selectedProvinceId],
-    queryFn: () => locationService.getDepartments(selectedProvinceId as number),
+    queryFn: async () => {
+      const result = await getDepartmentsAction({ provinceId: selectedProvinceId as number });
+      return result?.data || [];
+    },
     enabled: !!selectedProvinceId,
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 6,
@@ -197,18 +238,14 @@ export default function CategoriesPage() {
     const normalizedQuery = searchTerm.trim().toLowerCase();
 
     return profiles.filter((profile) => {
-      const matchesCategory =
-        selectedCategory === "Todas" || profile.category === selectedCategory;
-      const matchesProvince =
-        selectedProvince === "Todas" || profile.province === selectedProvince;
+      // These are now handled by the server, but we keep client-side checks for city and account type
       const matchesCity =
         selectedCity === "Todas" || profile.city === selectedCity;
       const matchesAccount =
         selectedAccountType === "Todos" ||
         profile.accountType === selectedAccountType;
-      const matchesUrgency = !urgentOnly || profile.emergency;
-      const matchesVerified = !verifiedOnly || profile.verified;
-      const matchesPublicStore = !publicStoreOnly || profile.hasPublicStore;
+      
+      // If query is short, we might want to still filter on client if server didn't handle it
       const matchesQuery =
         normalizedQuery.length === 0 ||
         [
@@ -222,16 +259,7 @@ export default function CategoriesPage() {
           .toLowerCase()
           .includes(normalizedQuery);
 
-      return (
-        matchesCategory &&
-        matchesProvince &&
-        matchesCity &&
-        matchesAccount &&
-        matchesUrgency &&
-        matchesVerified &&
-        matchesPublicStore &&
-        matchesQuery
-      );
+      return matchesCity && matchesAccount && matchesQuery;
     });
   }, [
     profiles,
@@ -465,9 +493,10 @@ export default function CategoriesPage() {
                   <article
                     key={profile.id}
                     className="profile-result-card"
-                    onClick={() =>
-                      router.push(`${ROUTES.profile}/${profile.seoPath}`)
-                    }
+                    onClick={() => {
+                      incrementProfessionalViewsAction({ id: profile.id });
+                      router.push(`${ROUTES.profile}/${profile.seoPath}`);
+                    }}
                   >
                     <div
                       className="profile-result-card__cover"
@@ -528,6 +557,7 @@ export default function CategoriesPage() {
                           className="profile-result-card__button"
                           onClick={(event) => {
                             event.stopPropagation();
+                            incrementProfessionalViewsAction({ id: profile.id });
                             router.push(`${ROUTES.profile}/${profile.seoPath}`);
                           }}
                         >

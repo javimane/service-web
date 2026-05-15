@@ -17,11 +17,14 @@ import {
   AlertTriangle,
   WalletCards,
 } from "lucide-react";
+import type { BankPromotion } from "../../../services/bankPromotionService";
 import {
-  bankPromotionService,
-  bankService,
-  BankPromotion,
-} from "../../../services/bankPromotionService";
+  createBankPromotionAction,
+  deleteBankPromotionAction,
+  getBanksAction,
+  getMyBankPromotionsAction,
+  updateBankPromotionAction,
+} from "../../../app/actions/bankPromotions";
 import { formatDateDisplay } from "../../../utils/utils";
 import "./BankPromotionsPage.css";
 
@@ -47,7 +50,11 @@ export default function BankPromotionsPage() {
 
   // Mutaciones
   const createMutation = useMutation({
-    mutationFn: (data: any) => bankPromotionService.create(data),
+    mutationFn: async (data: any) => {
+      const result = await createBankPromotionAction(data);
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
     },
@@ -57,8 +64,11 @@ export default function BankPromotionsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      bankPromotionService.update(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const result = await updateBankPromotionAction({ id, data });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
     },
@@ -68,7 +78,11 @@ export default function BankPromotionsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: bankPromotionService.delete,
+    mutationFn: async (id: string) => {
+      const result = await deleteBankPromotionAction({ id });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bank-promotions"] });
       setIsDeleteModalOpen(false);
@@ -96,16 +110,16 @@ export default function BankPromotionsPage() {
   } = useQuery({
     queryKey: ["bank-promotions"],
     queryFn: async () => {
-      const data = await bankPromotionService.getMyPromotions();
-      return data;
+      const result = await getMyBankPromotionsAction();
+      return result?.data ?? [];
     },
   });
 
   const { data: banks = [], isLoading: banksLoading } = useQuery({
     queryKey: ["banks"],
     queryFn: async () => {
-      const data = await bankService.findAll();
-      return data;
+      const result = await getBanksAction();
+      return result?.data ?? [];
     },
   });
 

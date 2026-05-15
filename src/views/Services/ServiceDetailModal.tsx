@@ -5,6 +5,7 @@ import { CheckCircle, MapPin, Star, MessageCircle, User } from "lucide-react";
 import Modal from "../../components/Modal/Modal";
 import "./ServiceDetailModal.css";
 import { ROUTES } from "../../routes/paths";
+import { incrementProfessionalViewsAction } from "../../app/actions/professionals";
 
 export default function ServiceDetailModal({ service, isOpen, onClose }) {
   const router = useRouter();
@@ -101,7 +102,10 @@ export default function ServiceDetailModal({ service, isOpen, onClose }) {
           <Link
             href={`${ROUTES.profile}/${professionalId}`}
             className="service-detail-modal__button service-detail-modal__button--secondary"
-            onClick={onClose}
+            onClick={() => {
+              incrementProfessionalViewsAction({ id: professionalId });
+              onClose();
+            }}
           >
             <User size={18} />
             Ver Perfil

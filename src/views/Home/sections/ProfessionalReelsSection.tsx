@@ -13,9 +13,13 @@ import {
   MapPin,
 } from "lucide-react";
 import { useQuery, useQueries } from "@tanstack/react-query";
-import { reelsService } from "../../../services/reelsService";
-import { locationService } from "../../../services/locationService";
-import { suscriptions } from "../../../services/suscriptionService";
+import {
+  getReelsAction,
+  updateReelStatsAction,
+} from "../../../app/actions/reels";
+import { getProvincesAction } from "@/app/actions/provinces";
+import { getSubscriptionByProfessionalAction } from "@/app/actions/subscriptions";
+import type { ProfessionalReelRow } from "../../../types/database.types";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import { getProfilePath } from "../../../utils/utils";
 import "./ProfessionalReelsSection.css";
@@ -38,33 +42,51 @@ function ReelThumbnail({ src }: { src: string }) {
 }
 
 export default function ProfessionalReelsSection() {
-  const [userProvince] = useState<string>(
-    localStorage.getItem("userProvince") || "Buenos Aires",
-  );
+  const [userProvince, setUserProvince] = useState<string>("Buenos Aires");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [likedReels, setLikedReels] = useState<number[]>([]);
   const sliderRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  useEffect(() => {
+    const storedProvince = window.localStorage.getItem("userProvince");
+    if (storedProvince) {
+      setUserProvince(storedProvince);
+    }
+  }, []);
+
   // Fetch Provinces to get the ID for filtering
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],
-    queryFn: () => locationService.getProvinces(),
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const provinceId = useMemo(() => {
     return provinces.find((p) => p.name === userProvince)?.id;
   }, [provinces, userProvince]);
 
-  const { data: allReels = [], isLoading: isLoadingReels } = useQuery({
+  const { data: allReels = [], isLoading: isLoadingReels } = useQuery<
+    ProfessionalReelRow[]
+  >({
     queryKey: ["professional-reels", provinceId],
-    queryFn: () => reelsService.list(provinceId),
+    queryFn: async () => {
+      const result = await getReelsAction({ provinceId });
+      if (result?.data) return result.data;
+      return [];
+    },
     enabled: !!provinceId || userProvince === "Buenos Aires",
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
   });
 
   // Get unique professional IDs to avoid redundant queries
-  const professionalIds = useMemo(() => {
+  const professionalIds = useMemo<number[]>(() => {
     const ids = allReels.map((r) => r.professional_id).filter(Boolean);
     return [...new Set(ids)];
   }, [allReels]);
@@ -73,7 +95,12 @@ export default function ProfessionalReelsSection() {
   const subscriptionQueries = useQueries({
     queries: professionalIds.map((id) => ({
       queryKey: ["professional-subscription", id],
-      queryFn: () => suscriptions.getByProfessional(id),
+      queryFn: async () => {
+        const result = await getSubscriptionByProfessionalAction({
+          professionalId: id,
+        });
+        return result?.data ?? null;
+      },
       staleTime: 1000 * 60 * 5, // 5 minutes cache
     })),
   });
@@ -81,8 +108,9 @@ export default function ProfessionalReelsSection() {
   const subscriptionsMap = useMemo(() => {
     const map: Record<string | number, any> = {};
     subscriptionQueries.forEach((query, index) => {
-      if (query.data) {
-        map[professionalIds[index]] = query.data.data;
+      const professionalId = professionalIds[index];
+      if (query.data && professionalId !== undefined) {
+        map[professionalId] = (query.data as any).data ?? query.data;
       }
     });
     return map;
@@ -122,6 +150,9 @@ export default function ProfessionalReelsSection() {
 
   useEffect(() => {
     if (selectedReel && videoRef.current) {
+      // Increment views
+      updateReelStatsAction({ id: selectedReel.id, data: { views: 1 } });
+
       const video = videoRef.current;
       video.currentTime = 0;
       void video.play().catch(() => undefined);
@@ -145,8 +176,15 @@ export default function ProfessionalReelsSection() {
   const toggleLike = () => {
     if (!selectedReel) return;
 
+    const isLiked = likedReels.includes(selectedReel.id);
+
+    // Only increment if not already liked (simple client-side check)
+    if (!isLiked) {
+      updateReelStatsAction({ id: selectedReel.id, data: { likes: 1 } });
+    }
+
     setLikedReels((prev) =>
-      prev.includes(selectedReel.id)
+      isLiked
         ? prev.filter((id) => id !== selectedReel.id)
         : [...prev, selectedReel.id],
     );

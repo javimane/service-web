@@ -6,10 +6,13 @@ import "leaflet/dist/leaflet.css";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
-import { professionalService } from "../../services/professionalService";
+import {
+  getProfessionalsAction,
+  incrementProfessionalViewsAction,
+} from "../../app/actions/professionals";
 import Navbar from "../../components/Navbar/Navbar";
 import MapSidebar from "./MapSidebar";
-import { Star, User } from "lucide-react";
+import { AlertCircle, CheckCircle2, Star, User } from "lucide-react";
 import "./MapPage.css";
 
 const defaultCenter = {
@@ -89,37 +92,76 @@ export default function MapPage() {
 
   const { data: professionals = [], isLoading } = useQuery({
     queryKey: ["map-professionals", center, filters],
-    queryFn: () =>
-      professionalService.list({
+    queryFn: async () => {
+      const result = await getProfessionalsAction({
         lat: center.lat,
         lng: center.lng,
         radius: 20,
-        public_trade: true,
+        public_trade: "true",
         name: filters.search || undefined,
         categoryId: filters.categoryId || undefined,
         province_id: filters.provinceId || undefined,
         department_id: filters.departmentId || undefined,
-      }),
-    enabled: !!center.lat && center.lat !== defaultCenter.lat,
+      });
+      return result?.data ?? [];
+    },
+    enabled: !!center.lat,
+    staleTime: 1000 * 60 * 2, // 2 minutos
+    gcTime: 1000 * 60 * 10,
   });
 
   const mappedProfessionals = useMemo(() => {
     return professionals
       .map((p: any) => {
-        // Find address with coordinates
-        const address = p.Company?.Address || p.Addresses?.[0];
+        const addresses =
+          p.address ||
+          p.Address ||
+          p.addresses ||
+          p.Addresses ||
+          p.Company?.Address
+            ? [
+                ...(p.address || []),
+                ...(p.Address || []),
+                ...(p.addresses || []),
+                ...(p.Addresses || []),
+                ...(p.Company?.Address ? [p.Company.Address] : []),
+              ]
+            : [];
+
+        const address =
+          addresses.find((a: any) => a?.is_main_address) || addresses[0];
+
+        const profile = p.profile || p.Profile;
+        const company = p.company || p.Company;
+        const isVerified = Boolean(
+          p.company_arca?.is_verified ??
+          p.companyArca?.is_verified ??
+          company?.company_arca?.is_verified ??
+          company?.companyArca?.is_verified,
+        );
 
         const avatar =
-          p.Profile?.avatar_url ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(p.Profile?.display_name || "P")}&background=random`;
+          profile?.avatar_url ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || company?.name || "P")}&background=random`;
+
+        const name =
+          company?.name || profile?.display_name || p.name || "Profesional";
+
+        const seoPath = p.seo_path || p.seoPath || null;
+        const profileUrl = seoPath
+          ? `${ROUTES.profile}${seoPath.startsWith("/") ? seoPath : `/${seoPath}`}`
+          : `${ROUTES.profile}/${p.id}`;
 
         return {
           id: p.user_id || p.id,
-          name: p.Profile?.display_name || p.Company?.name || "Profesional",
-          specialty: p.bio || "Servicios",
-          rating: p.rating_avg || 5.0,
+          name,
+          companyName: company?.name || "Sin empresa",
+          specialty: p.specialty || p.bio || "Servicios",
+          rating: p.ratingAvg || p.rating_avg || 0,
+          isVerified,
           avatar,
-          seoPath: p.seo_path || null,
+          seoPath,
+          profileUrl,
           coordinates: {
             lat: Number(address?.latitude || 0),
             lng: Number(address?.longitude || 0),
@@ -127,8 +169,20 @@ export default function MapPage() {
           icon: createCustomIcon(avatar),
         };
       })
-      .filter((p: any) => p.coordinates.lat !== 0);
+      .filter((p: any) => p.coordinates.lat !== 0 && p.coordinates.lng !== 0);
   }, [professionals]);
+
+  useEffect(() => {
+    const firstProfessional = mappedProfessionals[0];
+    if (!firstProfessional) return;
+
+    const nextCenter = firstProfessional.coordinates;
+    if (nextCenter.lat === center.lat && nextCenter.lng === center.lng) {
+      return;
+    }
+
+    setCenter(nextCenter);
+  }, [mappedProfessionals, center.lat, center.lng]);
 
   return (
     <div className="map-page">
@@ -169,20 +223,37 @@ export default function MapPage() {
                     <img src={prof.avatar} alt={prof.name} />
                     <div className="map-info-window__content">
                       <h3>{prof.name}</h3>
+                      <p>{prof.companyName}</p>
                       <p>{prof.specialty}</p>
                       <div className="map-info-window__meta">
                         <span>
                           <Star size={12} fill="currentColor" /> {prof.rating}
                         </span>
-                        <span className="badge">PÚBLICO</span>
+                        <span
+                          className={`badge ${prof.isVerified ? "badge--verified" : "badge--unverified"}`}
+                          title={
+                            prof.isVerified
+                              ? "Verificado en ARCA"
+                              : "Sin verificación en ARCA"
+                          }
+                        >
+                          {prof.isVerified ? (
+                            <>
+                              <CheckCircle2 size={12} /> Verificado
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle size={12} /> Sin verificar
+                            </>
+                          )}
+                        </span>
                       </div>
                       <button
                         className="map-info-window__btn"
                         onClick={(e) => {
                           e.preventDefault();
-                          router.push(
-                            prof.seoPath || `${ROUTES.profile}/${prof.id}`,
-                          );
+                          incrementProfessionalViewsAction({ id: prof.id });
+                          router.push(prof.profileUrl);
                         }}
                       >
                         <User size={14} />

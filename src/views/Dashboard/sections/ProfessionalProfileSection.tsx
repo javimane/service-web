@@ -20,16 +20,38 @@ import {
   uploadProfileWorkImage,
 } from "../../../services/storageUploads";
 import { multimediaService } from "../../../services/multimediaService";
-import { videosService } from "../../../services/videosService";
-import { professionalImagesService } from "../../../services/professionalImagesService";
-import { profileService } from "../../../services/profileService";
-import { professionalService } from "../../../services/professionalService";
 import {
-  availabilityService,
-  type AvailabilityUpsertItem,
-} from "../../../services/availabilityService";
+  getProfileAction,
+  updateProfileAction,
+} from "../../../app/actions/profile";
+import {
+  getProfessionalDetailAction,
+  updateProfessionalAction,
+} from "../../../app/actions/professionals";
+import {
+  createProfessionalImageAction,
+  createVideoAction,
+  deleteProfessionalImageAction,
+  deleteVideoAction,
+  getMultimediaUploadUrlAction,
+  getImagesByProfessionalAction,
+  getVideoDetailAction,
+  getVideosByProfessionalAction,
+} from "../../../app/actions/multimedia";
+import {
+  deleteAvailabilityAction,
+  getAvailabilityByProfessionalAction,
+  upsertAvailabilityBulkAction,
+} from "../../../app/actions/availability";
 import { useAuth } from "../../../context/AuthContext";
 import "./ProfessionalProfileSection.css";
+
+type AvailabilityUpsertItem = {
+  id?: number;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+};
 
 type GalleryImage = {
   id: string;
@@ -83,7 +105,10 @@ export default function ProfessionalProfileSection() {
   // Profile Query
   const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["profile", userId],
-    queryFn: () => profileService.getProfile(userId!),
+    queryFn: async () => {
+      const result = await getProfileAction({ id: userId! });
+      return result?.data ?? null;
+    },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
   });
@@ -91,7 +116,10 @@ export default function ProfessionalProfileSection() {
   // Professional Query
   const { data: professional, isLoading: isProfessionalLoading } = useQuery({
     queryKey: ["professional-detail", professionalId],
-    queryFn: () => professionalService.getDetail(professionalId),
+    queryFn: async () => {
+      const result = await getProfessionalDetailAction({ id: professionalId });
+      return result?.data ?? null;
+    },
     enabled: !isNaN(professionalId),
     staleTime: 5 * 60 * 1000,
   });
@@ -101,7 +129,8 @@ export default function ProfessionalProfileSection() {
     queryKey: ["videos", professionalId],
     queryFn: async () => {
       if (!professionalId) return [];
-      const data = await videosService.findByProfessionalId(professionalId);
+      const result = await getVideosByProfessionalAction({ professionalId });
+      const data = result?.data ?? [];
       const filtered = data.filter((v) => v.activate === true);
       return filtered.map((v) => ({
         id: v.id.toString(),
@@ -117,7 +146,12 @@ export default function ProfessionalProfileSection() {
   // Availability Query
   const { data: availabilityData = [] } = useQuery({
     queryKey: ["availability", professionalId],
-    queryFn: () => availabilityService.findByProfessionalId(professionalId),
+    queryFn: async () => {
+      const result = await getAvailabilityByProfessionalAction({
+        professionalId,
+      });
+      return result?.data ?? [];
+    },
     enabled: !isNaN(professionalId),
     staleTime: 5 * 60 * 1000,
   });
@@ -127,8 +161,8 @@ export default function ProfessionalProfileSection() {
     queryKey: ["professionalImages", professionalId],
     queryFn: async () => {
       if (!professionalId) return [];
-      const data =
-        await professionalImagesService.findAllByProfessionalId(professionalId);
+      const result = await getImagesByProfessionalAction({ professionalId });
+      const data = result?.data ?? [];
       return data.map((img) => ({
         id: img.id.toString(),
         url: img.image_url,
@@ -265,9 +299,13 @@ export default function ProfessionalProfileSection() {
 
       setProfilePhoto(uploaded.publicUrl);
 
-      await profileService.updateProfile(userId, {
-        avatar_url: uploaded.publicUrl,
+      const updateResult = await updateProfileAction({
+        id: userId,
+        data: {
+          avatar_url: uploaded.publicUrl,
+        },
       });
+      if (updateResult?.serverError) throw new Error(updateResult.serverError);
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
 
       setSavedMessage("Foto de perfil actualizada.");
@@ -295,11 +333,14 @@ export default function ProfessionalProfileSection() {
           const uploaded = await uploadProfileWorkImage({
             file,
           });
-          const newImage = await professionalImagesService.create({
+          const imageResult = await createProfessionalImageAction({
             professional_id: professionalId,
             image_url: uploaded.publicUrl,
             display_order: currentOrder,
           });
+          if (imageResult?.serverError)
+            throw new Error(imageResult.serverError);
+          const newImage = imageResult?.data;
           return { id: newImage.id.toString(), url: newImage.image_url };
         }),
       );
@@ -328,7 +369,8 @@ export default function ProfessionalProfileSection() {
   // No se edita más la imagen, solo se elimina
   const removeImage = async (id: string) => {
     try {
-      await professionalImagesService.delete(id);
+      const result = await deleteProfessionalImageAction({ id });
+      if (result?.serverError) throw new Error(result.serverError);
       queryClient.setQueryData(
         ["professionalImages", professionalId],
         (current: GalleryImage[] = []) =>
@@ -358,7 +400,8 @@ export default function ProfessionalProfileSection() {
   // Video: solo se edita título y descripción, no el archivo
   const removeVideo = async (id: string) => {
     try {
-      await videosService.delete(id);
+      const result = await deleteVideoAction({ id });
+      if (result?.serverError) throw new Error(result.serverError);
       queryClient.setQueryData(
         ["videos", professionalId],
         (current: VideoItem[] = []) =>
@@ -399,23 +442,34 @@ export default function ProfessionalProfileSection() {
       setIsPublishingVideo(true);
       setVideoModalInfo("Subiendo video... esto puede tardar unos minutos.");
 
-      const { uploadUrl, key } = await multimediaService.getUploadUrl(
+      const uploadUrlResult = await getMultimediaUploadUrlAction({
         professionalId,
-        newVideoFile.name,
-        newVideoFile.type,
-        "PROFILE",
-      );
+        fileName: newVideoFile.name,
+        fileType: newVideoFile.type,
+        type: "PROFILE",
+      });
+      if (uploadUrlResult?.serverError)
+        throw new Error(uploadUrlResult.serverError);
+      const uploadData = uploadUrlResult?.data;
+      if (!uploadData?.uploadUrl || !uploadData?.key) {
+        throw new Error("No se pudo obtener la URL de subida del video.");
+      }
+      const { uploadUrl, key } = uploadData;
 
       await multimediaService.uploadToPresignedUrl(uploadUrl, newVideoFile);
 
       setVideoModalInfo("Video subido. Procesando en servidores...");
 
-      const newVideo = await videosService.create({
+      const createVideoResult = await createVideoAction({
         professional_id: professionalId,
         title: newVideoTitle.trim(),
         description: newVideoDescription.trim(),
         video_url: key,
       });
+      if (createVideoResult?.serverError) {
+        throw new Error(createVideoResult.serverError);
+      }
+      const newVideo = createVideoResult?.data;
 
       // Poll until activated
       let activatedVideo = newVideo;
@@ -425,9 +479,12 @@ export default function ProfessionalProfileSection() {
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         if (activatedVideo.activate === true) break;
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-        activatedVideo = await videosService.getById(
-          activatedVideo.id.toString(),
-        );
+        const detailResult = await getVideoDetailAction({
+          id: activatedVideo.id.toString(),
+        });
+        if (detailResult?.serverError)
+          throw new Error(detailResult.serverError);
+        activatedVideo = detailResult?.data;
       }
 
       queryClient.setQueryData(
@@ -474,17 +531,28 @@ export default function ProfessionalProfileSection() {
     mutationFn: async () => {
       if (!userId) return;
 
-      await profileService.updateProfile(userId, {
-        display_name: displayName || null,
+      const profileResult = await updateProfileAction({
+        id: userId,
+        data: {
+          display_name: displayName || null,
+        },
       });
+      if (profileResult?.serverError)
+        throw new Error(profileResult.serverError);
 
       if (professionalId) {
-        await professionalService.update(professionalId, {
-          bio: description || null,
-          is_matriculate: isMatriculate,
-          emergency: attendsEmergency,
-          web_url: webUrl || null,
+        const professionalResult = await updateProfessionalAction({
+          id: professionalId,
+          data: {
+            bio: description || null,
+            is_matriculate: isMatriculate,
+            emergency: attendsEmergency,
+            web_url: webUrl || null,
+          },
         });
+        if (professionalResult?.serverError) {
+          throw new Error(professionalResult.serverError);
+        }
       }
     },
     onSuccess: () => {
@@ -522,7 +590,8 @@ export default function ProfessionalProfileSection() {
 
     if (slot.id !== undefined) {
       try {
-        await availabilityService.delete(slot.id);
+        const result = await deleteAvailabilityAction({ id: slot.id });
+        if (result?.serverError) throw new Error(result.serverError);
         queryClient.invalidateQueries({
           queryKey: ["availability", professionalId],
         });
@@ -557,7 +626,11 @@ export default function ProfessionalProfileSection() {
         start_time: s.start_time,
         end_time: s.end_time,
       }));
-      const saved = await availabilityService.upsertBulk(items);
+      const result = await upsertAvailabilityBulkAction({
+        availability: items,
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      const saved = result?.data ?? [];
       setLocalSlots(
         saved.map((s) => ({
           tempId: `srv-${s.id}`,

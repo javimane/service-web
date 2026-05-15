@@ -96,4 +96,15 @@ export const professionalService = {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+
+  /**
+   * @route POST /api/professionals/:id/views
+   * @auth Optional
+   * @param {string | number} id
+   * @returns {Promise<void>}
+   */
+  incrementViews: (id: string | number) =>
+    apiClient<void>(API_ENDPOINTS.professionals.incrementViews(id.toString()), {
+      method: "POST",
+    }),
 };

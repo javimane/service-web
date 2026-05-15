@@ -11,15 +11,11 @@ import {
   ArrowLeft,
   Loader2,
 } from "lucide-react";
-import { serviceService } from "../../services/serviceService";
+import { getServiceDetailAction } from "../../app/actions/services";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
-import {
-  extractIdFromSlug,
-  getProfilePath,
-  normalizeSeoPath,
-} from "../../utils/utils";
+import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import "./ServiceDetailPage.css";
 
 export default function ServiceDetailPage() {
@@ -38,8 +34,13 @@ export default function ServiceDetailPage() {
     error,
   } = useQuery({
     queryKey: ["service", seoPath, id],
-    queryFn: () => serviceService.getDetail(id),
+    queryFn: async () => {
+      const result = await getServiceDetailAction({ id: id! });
+      return result?.data ?? null;
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   // URL Normalization disabled - using query params approach instead

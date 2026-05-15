@@ -14,9 +14,9 @@ import {
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { productService } from "../../../services/productService";
 import { getProfilePath } from "../../../utils/utils";
 import "./NearbyProductDetailModal.css";
+import { getProductDetailAction } from "@/app/actions/products";
 
 function formatPrice(n: number) {
   return n.toLocaleString("es-AR");
@@ -28,8 +28,24 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
 
   const { data: sellersData, isLoading: isLoadingSellers } = useQuery({
     queryKey: ["product-sellers", product?.Product?.id],
-    queryFn: () => productService.list({ product_id: product?.Product?.id }),
+    queryFn: async () => {
+      const result = await getProductDetailAction({
+        id: product?.Product?.id,
+      });
+
+      if (result?.data) {
+        return result.data;
+      }
+
+      if (result?.serverError) {
+        throw new Error(result.serverError);
+      }
+
+      return null;
+    },
     enabled: !!product?.Product?.id && isOpen,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const allSellers = sellersData?.data || [];

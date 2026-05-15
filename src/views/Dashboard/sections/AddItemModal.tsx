@@ -1,9 +1,19 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Trash2, Search, Package, ShoppingCart, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Search,
+  Package,
+  ShoppingCart,
+  Loader2,
+} from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
 import { useAuth } from "../../../context/AuthContext";
-import { productService } from "../../../services/productService";
+import {
+  getProductsAction,
+  getProductsByProfessionalAction,
+} from "../../../app/actions/products";
 import "./AddItemModal.css";
 
 type Tab = "services" | "products";
@@ -15,9 +25,16 @@ interface AddItemModalProps {
   initialTab?: Tab;
 }
 
-export default function AddItemModal({ isOpen, onClose, onAdd, initialTab = "services" }: AddItemModalProps) {
+export default function AddItemModal({
+  isOpen,
+  onClose,
+  onAdd,
+  initialTab = "services",
+}: AddItemModalProps) {
   const { sessionStatus } = useAuth();
-  const professionalId = sessionStatus?.subscription?.professional_id || sessionStatus?.professional_id;
+  const professionalId =
+    sessionStatus?.subscription?.professional_id ||
+    sessionStatus?.professional_id;
 
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
@@ -86,10 +103,13 @@ export default function AddItemModal({ isOpen, onClose, onAdd, initialTab = "ser
     try {
       let data: any[] = [];
       if (productSource === "mine" && professionalId) {
-        data = await productService.getByProfessional(professionalId);
+        const result = await getProductsByProfessionalAction({
+          professionalId,
+        });
+        data = result?.data ?? [];
       } else {
-        const response = await productService.list();
-        data = response.data || [];
+        const result = await getProductsAction();
+        data = result?.data || [];
       }
 
       let filtered = data.map(mapProductData);
@@ -305,7 +325,11 @@ export default function AddItemModal({ isOpen, onClose, onAdd, initialTab = "ser
                 onClick={fetchProducts}
                 disabled={dbLoading}
               >
-                {dbLoading ? <Loader2 size={16} className="animate-spin" /> : "Buscar"}
+                {dbLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  "Buscar"
+                )}
               </button>
             </div>
 

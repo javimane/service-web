@@ -17,10 +17,10 @@ import { useAuth } from "../../context/AuthContext";
 import { activities, clips } from "../../data/dashboardData";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import { ROUTES } from "../../routes/paths";
-import { professionalService } from "../../services/professionalService";
-import { proposalService } from "../../services/proposalService";
-import { reelsService } from "../../services/reelsService";
-import { videosService } from "../../services/videosService";
+import { getProfessionalMeAction } from "../../app/actions/professionals";
+import { getProposalsCountAction } from "../../app/actions/proposals";
+import { getProfessionalReelStatsAction } from "../../app/actions/reels";
+import { getVideosByProfessionalAction } from "../../app/actions/multimedia";
 import type { CountViewsReelsRow } from "../../types/database.types";
 import ProposalCreator from "./sections/ProposalCreator";
 import ProposalsView from "./sections/ProposalsView";
@@ -54,25 +54,37 @@ export default function DashboardPage() {
 
   const { data: myProfessional } = useQuery({
     queryKey: ["professional-me"],
-    queryFn: () => professionalService.getMe(),
+    queryFn: async () => {
+      const result = await getProfessionalMeAction();
+      return result?.data ?? null;
+    },
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: proposalsCountData } = useQuery({
     queryKey: ["proposals-count", professionalId],
-    queryFn: () => proposalService.getCount(professionalId),
+    queryFn: async () => {
+      const result = await getProposalsCountAction({ professionalId });
+      return result?.data ?? { count: 0 };
+    },
     enabled: !!professionalId,
   });
 
   const { data: reelsStats } = useQuery({
     queryKey: ["reels-stats", professionalId],
-    queryFn: () => reelsService.getProfessionalStats(professionalId),
+    queryFn: async () => {
+      const result = await getProfessionalReelStatsAction({ professionalId });
+      return result?.data ?? null;
+    },
     enabled: !!professionalId,
   });
 
   const { data: professionalVideos = [] } = useQuery({
     queryKey: ["professional-videos", professionalId],
-    queryFn: () => videosService.findByProfessionalId(professionalId),
+    queryFn: async () => {
+      const result = await getVideosByProfessionalAction({ professionalId });
+      return result?.data ?? [];
+    },
     enabled: !!professionalId,
   });
 

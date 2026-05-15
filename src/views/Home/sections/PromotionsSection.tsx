@@ -16,22 +16,19 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { professionalPromotionService } from "../../../services/professionalPromotionService";
-import { locationService } from "../../../services/locationService";
 import { useAuth } from "../../../context/AuthContext";
 import PromotionCard from "../../../components/Cards/PromotionCard";
 import PromotionDetailModal from "../../../components/Modals/PromotionDetailModal";
 import Modal from "../../../components/Modal/Modal";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./PromotionsSection.css";
+import { getProfessionalPromotionsAction } from "@/app/actions/professionalPromotions";
+import { getProvincesAction } from "@/app/actions/provinces";
 
 export default function PromotionsSection() {
   const router = useRouter();
   const { sessionStatus } = useAuth();
-  const [userProvince, setUserProvince] = useState<string>(() => {
-    if (typeof window === "undefined") return "Buenos Aires";
-    return localStorage.getItem("userProvince") || "Buenos Aires";
-  });
+  const [userProvince, setUserProvince] = useState<string>("Buenos Aires");
   const [isProvinceModalOpen, setIsProvinceModalOpen] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState<any>(null);
   const sliderRef = useRef(null);
@@ -46,18 +43,38 @@ export default function PromotionsSection() {
     updateArrowVisibility,
   } = useCarouselDrag(sliderRef, ".promotion-card");
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const storedProvince = window.localStorage.getItem("userProvince");
+    if (storedProvince) {
+      setUserProvince(storedProvince);
+    }
+  }, []);
+
   // Fetch Provinces for the selector
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],
-    queryFn: () => locationService.getProvinces(),
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   // Fetch Promotions based on province
   const { data: promotionsData, isLoading } = useQuery({
     queryKey: ["promotions", userProvince],
-    queryFn: () =>
-      professionalPromotionService.getAll({ province: userProvince }),
-    enabled: true,
+    queryFn: async () => {
+      const result = await getProfessionalPromotionsAction({
+        province: userProvince,
+      });
+      if (result?.data) return result.data;
+      return [];
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   // Auto-detect province if authenticated and not set

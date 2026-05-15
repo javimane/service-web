@@ -3,9 +3,9 @@ import { useMemo, useState } from "react";
 import { LayoutGrid, List, Search, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { serviceService } from "../../services/serviceService";
-import { categoriesService } from "../../services/categoriesApi";
-import { locationService } from "../../services/locationService";
+import { getServicesAction } from "../../app/actions/services";
+import { getServiceCategoriesAction } from "../../app/actions/categories";
+import { getProvincesAction } from "../../app/actions/provinces";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ServiceCard from "../../components/Cards/ServiceCard";
@@ -13,7 +13,6 @@ import ServicesFilters from "./ServicesFilters";
 import SEO from "../../components/SEO/SEO";
 import { useTheme } from "../../context/ThemeContext";
 import { ROUTES } from "../../routes/paths";
-import { normalizeSeoPath } from "../../utils/utils";
 import "./ServicesPage.css";
 
 export default function ServicesPage() {
@@ -38,8 +37,8 @@ export default function ServicesPage() {
     error,
   } = useQuery({
     queryKey: ["services", filters],
-    queryFn: () =>
-      serviceService.list({
+    queryFn: async () => {
+      const result = await getServicesAction({
         ...(filters.search ? { search: filters.search } : {}),
         ...(filters.categoryId === "All"
           ? {}
@@ -52,17 +51,32 @@ export default function ServicesPage() {
         ...(filters.onlyUrgent ? { onlyUrgent: true } : {}),
         ...(filters.onlyPublic ? { onlyPublic: true } : {}),
         ...(filters.onlyVerified ? { onlyVerified: true } : {}),
-      }),
+      });
+
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ["service-categories"],
-    queryFn: () => categoriesService.listCategoriesProducts(),
+    queryFn: async () => {
+      const result = await getServiceCategoriesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],
-    queryFn: () => locationService.getProvinces(),
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const handleFilterChange = (updates) => {

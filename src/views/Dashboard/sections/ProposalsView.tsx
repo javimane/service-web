@@ -1,8 +1,18 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FileText, CheckCircle, Clock, ExternalLink, Download } from "lucide-react";
+import {
+  FileText,
+  CheckCircle,
+  Clock,
+  ExternalLink,
+  Download,
+} from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
-import { proposalService } from "../../../services/proposalService";
+import {
+  acceptProposalAction,
+  getReceivedProposalsAction,
+  getSentProposalsAction,
+} from "../../../app/actions/proposals";
 import type { ProfessionalProposalRow } from "../../../types/database.types";
 import "./ProposalsView.css";
 
@@ -10,10 +20,14 @@ type TabType = "received" | "sent";
 
 export default function ProposalsView() {
   const { hasProfessionalSubscription } = useAuth();
-  
+
   const [activeTab, setActiveTab] = useState<TabType>("received");
-  const [receivedProposals, setReceivedProposals] = useState<ProfessionalProposalRow[]>([]);
-  const [sentProposals, setSentProposals] = useState<ProfessionalProposalRow[]>([]);
+  const [receivedProposals, setReceivedProposals] = useState<
+    ProfessionalProposalRow[]
+  >([]);
+  const [sentProposals, setSentProposals] = useState<ProfessionalProposalRow[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
@@ -25,14 +39,14 @@ export default function ProposalsView() {
     setIsLoading(true);
     try {
       // Always fetch received proposals
-      const received = await proposalService.getReceived();
-      setReceivedProposals(received);
+      const receivedResult = await getReceivedProposalsAction();
+      setReceivedProposals(receivedResult?.data ?? []);
 
       // Only fetch sent proposals if they are a professional
       if (hasProfessionalSubscription) {
         try {
-          const sent = await proposalService.getSent();
-          setSentProposals(sent);
+          const sentResult = await getSentProposalsAction();
+          setSentProposals(sentResult?.data ?? []);
         } catch (error) {
           console.error("Error fetching sent proposals:", error);
           // Don't break the whole page if sent fails
@@ -48,11 +62,12 @@ export default function ProposalsView() {
   const handleAccept = async (id: string) => {
     try {
       setAcceptingId(id);
-      await proposalService.accept(id);
-      
+      const result = await acceptProposalAction({ id });
+      if (result?.serverError) throw new Error(result.serverError);
+
       // Update local state to reflect accepted status
-      setReceivedProposals(prev => 
-        prev.map(p => p.id === id ? { ...p, accepted: true } : p)
+      setReceivedProposals((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, accepted: true } : p)),
       );
     } catch (error) {
       console.error("Error accepting proposal:", error);
@@ -65,7 +80,10 @@ export default function ProposalsView() {
     window.open(url, "_blank");
   };
 
-  const renderProposalCard = (proposal: ProfessionalProposalRow, isReceived: boolean) => {
+  const renderProposalCard = (
+    proposal: ProfessionalProposalRow,
+    isReceived: boolean,
+  ) => {
     const isAccepted = proposal.accepted;
     const date = new Date(proposal.created_at).toLocaleDateString();
 
@@ -76,11 +94,11 @@ export default function ProposalsView() {
             <h3 className="proposal-card__name">
               {isReceived ? proposal.professional_name : "Presupuesto Enviado"}
             </h3>
-            <span className="proposal-card__date">
-              Emitido el {date}
-            </span>
+            <span className="proposal-card__date">Emitido el {date}</span>
           </div>
-          <div className={`proposal-status ${isAccepted ? "proposal-status--accepted" : "proposal-status--pending"}`}>
+          <div
+            className={`proposal-status ${isAccepted ? "proposal-status--accepted" : "proposal-status--pending"}`}
+          >
             {isAccepted ? (
               <>
                 <CheckCircle size={12} />
@@ -96,7 +114,7 @@ export default function ProposalsView() {
         </div>
 
         <div className="proposal-card__actions">
-          <button 
+          <button
             type="button"
             className="btn-proposal btn-proposal-view"
             onClick={() => handleViewFile(proposal.file_url)}
@@ -104,9 +122,9 @@ export default function ProposalsView() {
             <FileText size={16} />
             Ver Archivo
           </button>
-          
+
           {isReceived && !isAccepted && (
-            <button 
+            <button
               type="button"
               className="btn-proposal btn-proposal-accept"
               onClick={() => handleAccept(proposal.id)}
@@ -121,7 +139,8 @@ export default function ProposalsView() {
     );
   };
 
-  const currentProposals = activeTab === "received" ? receivedProposals : sentProposals;
+  const currentProposals =
+    activeTab === "received" ? receivedProposals : sentProposals;
 
   return (
     <div className="proposals-view">
@@ -138,7 +157,9 @@ export default function ProposalsView() {
             onClick={() => setActiveTab("received")}
           >
             Recibidos
-            <span className="proposals-tab-count">{receivedProposals.length}</span>
+            <span className="proposals-tab-count">
+              {receivedProposals.length}
+            </span>
           </button>
           <button
             type="button"
@@ -156,11 +177,16 @@ export default function ProposalsView() {
       ) : currentProposals.length === 0 ? (
         <div className="proposals-empty">
           <FileText size={48} opacity={0.5} />
-          <p>No hay presupuestos {activeTab === "received" ? "recibidos" : "enviados"} aún.</p>
+          <p>
+            No hay presupuestos{" "}
+            {activeTab === "received" ? "recibidos" : "enviados"} aún.
+          </p>
         </div>
       ) : (
         <div className="proposals-grid">
-          {currentProposals.map(p => renderProposalCard(p, activeTab === "received"))}
+          {currentProposals.map((p) =>
+            renderProposalCard(p, activeTab === "received"),
+          )}
         </div>
       )}
     </div>

@@ -1,44 +1,76 @@
 "use client";
-import { useState } from 'react';
-import { Search, Loader2, Filter } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { categoriesService } from '../../services/categoriesApi';
-import { locationService } from '../../services/locationService';
-import './MapSidebar.css';
+import { useEffect, useState } from "react";
+import { Search, Loader2, Filter } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getServiceCategoriesAction } from "../../app/actions/categories";
+import {
+  getProvincesAction,
+  getDepartmentsAction,
+} from "../../app/actions/locations";
+import "./MapSidebar.css";
 
-export default function MapSidebar({ onFilterChange, specialistsCount, isLoading }) {
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedProvince, setSelectedProvince] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
+export default function MapSidebar({
+  onFilterChange,
+  specialistsCount,
+  isLoading,
+}) {
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
   const { data: categories = [], isLoading: isLoadingCats } = useQuery({
-    queryKey: ['service-categories'],
-    queryFn: () => categoriesService.listCategoryServices()
+    queryKey: ["service-categories"],
+    queryFn: async () => {
+      const result = await getServiceCategoriesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const { data: provinces = [] } = useQuery({
-    queryKey: ['provinces'],
-    queryFn: () => locationService.getProvinces()
+    queryKey: ["provinces"],
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const { data: departments = [] } = useQuery({
-    queryKey: ['departments', selectedProvince],
-    queryFn: () => locationService.getDepartments(selectedProvince),
-    enabled: !!selectedProvince
+    queryKey: ["departments", selectedProvince],
+    queryFn: async () => {
+      const result = await getDepartmentsAction({
+        provinceId: selectedProvince,
+      });
+      return result?.data ?? [];
+    },
+    enabled: !!selectedProvince,
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const handleApply = () => {
-    onFilterChange({ 
-      search, 
-      categoryId: selectedCategory === 'all' ? undefined : selectedCategory,
+    onFilterChange({
+      search,
+      categoryId: selectedCategory === "all" ? undefined : selectedCategory,
       provinceId: selectedProvince || undefined,
-      departmentId: selectedDepartment || undefined
+      departmentId: selectedDepartment || undefined,
     });
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleApply();
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [search, selectedCategory, selectedProvince, selectedDepartment]);
+
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleApply();
+    if (e.key === "Enter") handleApply();
   };
 
   return (
@@ -52,9 +84,9 @@ export default function MapSidebar({ onFilterChange, specialistsCount, isLoading
         <label className="map-sidebar__label">BÚSQUEDA RÁPIDA</label>
         <div className="search-input">
           <Search size={18} className="search-icon" />
-          <input 
-            type="text" 
-            placeholder="Nombre o especialidad..." 
+          <input
+            type="text"
+            placeholder="Nombre o especialidad..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyPress={handleKeyPress}
@@ -65,10 +97,10 @@ export default function MapSidebar({ onFilterChange, specialistsCount, isLoading
       <div className="map-sidebar__section">
         <label className="map-sidebar__label">CATEGORÍAS</label>
         <div className="category-pills">
-          <button 
+          <button
             type="button"
-            className={`pill ${selectedCategory === 'all' ? 'active' : ''}`}
-            onClick={() => setSelectedCategory('all')}
+            className={`pill ${selectedCategory === "all" ? "active" : ""}`}
+            onClick={() => setSelectedCategory("all")}
           >
             Todas
           </button>
@@ -76,37 +108,41 @@ export default function MapSidebar({ onFilterChange, specialistsCount, isLoading
             <div className="pills-loading">
               <Loader2 className="animate-spin" size={14} />
             </div>
-          ) : categories.map((cat) => (
-            <button 
-              key={cat.id} 
-              type="button"
-              className={`pill ${selectedCategory === cat.id ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(cat.id)}
-            >
-              {cat.name}
-            </button>
-          ))}
+          ) : (
+            categories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                className={`pill ${selectedCategory === cat.id ? "active" : ""}`}
+                onClick={() => setSelectedCategory(cat.id)}
+              >
+                {cat.name}
+              </button>
+            ))
+          )}
         </div>
       </div>
 
       <div className="map-sidebar__section">
         <label className="map-sidebar__label">UBICACIÓN</label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <select 
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <select
             className="map-select"
             value={selectedProvince}
             onChange={(e) => {
               setSelectedProvince(e.target.value);
-              setSelectedDepartment('');
+              setSelectedDepartment("");
             }}
           >
             <option value="">Todas las provincias</option>
             {provinces.map((prov: any) => (
-              <option key={prov.id} value={prov.id}>{prov.name}</option>
+              <option key={prov.id} value={prov.id}>
+                {prov.name}
+              </option>
             ))}
           </select>
 
-          <select 
+          <select
             className="map-select"
             value={selectedDepartment}
             onChange={(e) => setSelectedDepartment(e.target.value)}
@@ -114,7 +150,9 @@ export default function MapSidebar({ onFilterChange, specialistsCount, isLoading
           >
             <option value="">Todos los departamentos</option>
             {departments.map((dept: any) => (
-              <option key={dept.id} value={dept.id}>{dept.name}</option>
+              <option key={dept.id} value={dept.id}>
+                {dept.name}
+              </option>
             ))}
           </select>
         </div>
@@ -125,8 +163,8 @@ export default function MapSidebar({ onFilterChange, specialistsCount, isLoading
           <span>Encontrados:</span>
           <span className="count">{isLoading ? "..." : specialistsCount}</span>
         </div>
-        <button 
-          className="apply-btn" 
+        <button
+          className="apply-btn"
           onClick={handleApply}
           disabled={isLoading}
         >

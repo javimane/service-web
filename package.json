@@ -34,12 +34,14 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^1.8.0",
     "next": "^15.5.18",
+    "next-safe-action": "^8.5.2",
     "preact": "^10.29.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-leaflet": "^5.0.0",
     "tailwind-merge": "^3.5.0",
-    "temporal-polyfill": "0.3.0"
+    "temporal-polyfill": "0.3.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

@@ -10,7 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { productService } from "../../../services/productService";
+import { getProductsAction } from "../../../app/actions/products";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import NearbyProductDetailModal from "./NearbyProductDetailModal";
 import "./NearbyProductsSection.css";
@@ -56,15 +56,27 @@ export default function NearbyProductsSection() {
 
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["nearby-products", userLocation],
-    queryFn: () =>
-      productService.list({
+    queryFn: async () => {
+      const result = await getProductsAction({
         lat: userLocation!.lat,
         lng: userLocation!.lng,
         radius: 30,
-        is_premium: true,
         limit: 20,
-      }),
+      });
+
+      if (result?.data) {
+        return result.data;
+      }
+
+      if (result?.serverError) {
+        throw new Error(result.serverError);
+      }
+
+      return null;
+    },
     enabled: !!userLocation,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
   });
 
   const productsList = useMemo(() => {

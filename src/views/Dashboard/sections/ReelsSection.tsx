@@ -13,7 +13,13 @@ import {
   Plus,
 } from "lucide-react";
 import { multimediaService } from "../../../services/multimediaService";
-import { reelsService } from "../../../services/reelsService";
+import {
+  createReelAction,
+  deleteReelAction,
+  getReelDetailAction,
+  getReelsByProfessionalAction,
+} from "../../../app/actions/reels";
+import { getMultimediaUploadUrlAction } from "../../../app/actions/multimedia";
 import { useAuth } from "../../../context/AuthContext";
 import "./ReelsSection.css";
 
@@ -46,9 +52,10 @@ export default function ReelsSection() {
     queryKey: ["reels", professionalId],
     queryFn: async () => {
       if (!professionalId) return [];
-      const data = await reelsService.list();
+      const result = await getReelsByProfessionalAction({ professionalId });
+      const data = result?.data ?? [];
       const filtered = data.filter(
-        (r) => r.professional_id === professionalId && r.activate === true,
+        (r: any) => r.professional_id === professionalId && r.activate === true,
       );
 
       return filtered.map((r) => ({
@@ -105,21 +112,30 @@ export default function ReelsSection() {
       setIsModalOpen(false); // Close modal immediately
       setSavedMessage("Procesando, le notificaremos cuando esté subido."); // Show processing message
 
-      const { uploadUrl, key } = await multimediaService.getUploadUrl(
+      const uploadUrlResult = await getMultimediaUploadUrlAction({
         professionalId,
-        selectedFile.name,
-        selectedFile.type,
-        "REEL",
-      );
+        fileName: selectedFile.name,
+        fileType: selectedFile.type,
+        type: "REEL",
+      });
+      if (uploadUrlResult?.serverError)
+        throw new Error(uploadUrlResult.serverError);
+      const uploadData = uploadUrlResult?.data;
+      if (!uploadData?.uploadUrl || !uploadData?.key) {
+        throw new Error("No se pudo obtener la URL de subida del reel.");
+      }
+      const { uploadUrl, key } = uploadData;
 
       await multimediaService.uploadToPresignedUrl(uploadUrl, selectedFile);
 
-      const newReel = await reelsService.create({
+      const createResult = await createReelAction({
         professional_id: professionalId,
         title: title.trim(),
         description: description.trim(),
         video_url: key,
       });
+      if (createResult?.serverError) throw new Error(createResult.serverError);
+      const newReel = createResult?.data;
 
       let activatedReel = newReel;
       const MAX_ATTEMPTS = 10;
@@ -127,7 +143,12 @@ export default function ReelsSection() {
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         if (activatedReel.activate === true) break;
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-        activatedReel = await reelsService.getById(activatedReel.id.toString());
+        const detailResult = await getReelDetailAction({
+          id: activatedReel.id.toString(),
+        });
+        if (detailResult?.serverError)
+          throw new Error(detailResult.serverError);
+        activatedReel = detailResult?.data;
       }
 
       if (activatedReel.activate !== true) {
@@ -173,7 +194,8 @@ export default function ReelsSection() {
 
   const handleRemove = async (id: string) => {
     try {
-      await reelsService.delete(id);
+      const result = await deleteReelAction({ id });
+      if (result?.serverError) throw new Error(result.serverError);
       queryClient.setQueryData(
         ["reels", professionalId],
         (current: ReelItem[] = []) => current.filter((reel) => reel.id !== id),

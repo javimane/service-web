@@ -17,7 +17,12 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import NavbarMessage from "../../components/Navbar/NavBar Messaje/NavbarMessage";
-import { communicationService } from "../../services/communicationService";
+import {
+  createRequestAction,
+  getRequestMessagesAction,
+  getUserRequestsAction,
+  sendMessageAction,
+} from "../../app/actions/communications";
 import "./MessagesPage.css";
 
 type UIConversation = {
@@ -83,8 +88,13 @@ export default function MessagesPage() {
 
   const { data: requestsData } = useQuery({
     queryKey: ["my-contact-requests", user?.id],
-    queryFn: () => communicationService.getUserRequests(user!.id),
+    queryFn: async () => {
+      const result = await getUserRequestsAction({ userId: user!.id });
+      return result?.data ?? [];
+    },
     enabled: !!user?.id,
+    staleTime: 1000 * 30, // 30 segundos (datos en tiempo real)
+    gcTime: 1000 * 60 * 2,
   });
 
   const requests = useMemo(() => {
@@ -171,8 +181,15 @@ export default function MessagesPage() {
 
   const { data: messagesData = [] } = useQuery({
     queryKey: ["chat-messages", activeRequestId],
-    queryFn: () => communicationService.getMessages(activeRequestId!),
+    queryFn: async () => {
+      const result = await getRequestMessagesAction({
+        requestId: activeRequestId!,
+      });
+      return result?.data ?? [];
+    },
     enabled: !!activeRequestId,
+    staleTime: 1000 * 30, // 30 segundos (datos en tiempo real)
+    gcTime: 1000 * 60 * 2,
   });
 
   const messages = useMemo<UIMessage[]>(() => {
@@ -206,17 +223,22 @@ export default function MessagesPage() {
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (activeRequestId) {
-        return communicationService.sendMessage(activeRequestId, content);
+        const result = await sendMessageAction({
+          requestId: activeRequestId,
+          content,
+        });
+        return result?.data;
       }
 
       if (!activeConversation?.professionalId) {
         throw new Error("No se pudo determinar el profesional destino.");
       }
 
-      const created = await communicationService.createRequest({
+      const createdResult = await createRequestAction({
         professional_id: activeConversation.professionalId,
         message: content,
       });
+      const created = createdResult?.data;
 
       const createdId = String(
         (created as any)?.id || (created as any)?.data?.id || "",

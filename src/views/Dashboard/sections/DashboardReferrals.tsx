@@ -11,13 +11,19 @@ import {
   Loader2,
   CreditCard,
 } from "lucide-react";
-import { referralService } from "../../../services/referralService";
-import { userDataBankService } from "../../../services/userDataBankService";
+import {
+  createReferralAction,
+  getMyReferralsAction,
+} from "../../../app/actions/referrals";
+import {
+  getMyUserDataBankAction,
+  upsertUserDataBankAction,
+} from "../../../app/actions/userDataBank";
 import "./DashboardReferrals.css";
 
 export default function DashboardReferrals() {
   const queryClient = useQueryClient();
-  
+
   // Bank Data States
   const [bankData, setBankData] = useState({
     cbu: "",
@@ -33,20 +39,26 @@ export default function DashboardReferrals() {
   // Queries
   const { data: bankDataFetched, isLoading: loadingBank } = useQuery({
     queryKey: ["user-bank-data"],
-    queryFn: () => userDataBankService.getMy(),
+    queryFn: async () => {
+      const result = await getMyUserDataBankAction();
+      return result?.data ?? null;
+    },
     retry: (failureCount, error: any) => {
       if (error.message.includes("404")) return false;
       return failureCount < 3;
-    }
+    },
   });
 
   const { data: referrals = [], isLoading: loadingReferrals } = useQuery({
     queryKey: ["user-referrals"],
-    queryFn: () => referralService.listMy(),
+    queryFn: async () => {
+      const result = await getMyReferralsAction();
+      return result?.data ?? [];
+    },
     retry: (failureCount, error: any) => {
       if (error.message.includes("404")) return false;
       return failureCount < 3;
-    }
+    },
   });
 
   // Sync bank data when fetched
@@ -61,7 +73,11 @@ export default function DashboardReferrals() {
 
   // Mutations
   const bankMutation = useMutation({
-    mutationFn: userDataBankService.upsert,
+    mutationFn: async (data: { cbu: string; alias: string }) => {
+      const result = await upsertUserDataBankAction(data);
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-bank-data"] });
       setBankSuccess(true);
@@ -78,7 +94,11 @@ export default function DashboardReferrals() {
   });
 
   const referralMutation = useMutation({
-    mutationFn: referralService.create,
+    mutationFn: async (referred_email: string) => {
+      const result = await createReferralAction({ referred_email });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-referrals"] });
       setReferralEmail("");
@@ -139,7 +159,14 @@ export default function DashboardReferrals() {
             <Landmark size={20} />
             Datos de Cobro
           </h2>
-          <p className="dash-referrals__field-desc" style={{ fontSize: '13px', color: 'rgba(0,0,0,0.5)', marginTop: '-12px' }}>
+          <p
+            className="dash-referrals__field-desc"
+            style={{
+              fontSize: "13px",
+              color: "rgba(0,0,0,0.5)",
+              marginTop: "-12px",
+            }}
+          >
             Ingresá tu CBU o Alias para recibir los beneficios de tus referidos.
           </p>
 
@@ -164,7 +191,9 @@ export default function DashboardReferrals() {
                 type="text"
                 placeholder="Ej: mi.alias.bancario"
                 value={bankData.alias}
-                onChange={(e) => setBankData({ ...bankData, alias: e.target.value })}
+                onChange={(e) =>
+                  setBankData({ ...bankData, alias: e.target.value })
+                }
               />
             </div>
 
@@ -176,7 +205,16 @@ export default function DashboardReferrals() {
             )}
 
             {bankSuccess && (
-              <div className="dash-referrals__success" style={{ color: '#00e676', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div
+                className="dash-referrals__success"
+                style={{
+                  color: "#00e676",
+                  fontSize: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
                 <CheckCircle2 size={16} />
                 <span>Datos guardados correctamente</span>
               </div>
@@ -187,7 +225,11 @@ export default function DashboardReferrals() {
               className="dash-referrals__btn"
               disabled={bankMutation.isPending || loadingBank}
             >
-              {bankMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : "Guardar Datos"}
+              {bankMutation.isPending ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                "Guardar Datos"
+              )}
             </button>
           </form>
         </section>
@@ -198,16 +240,32 @@ export default function DashboardReferrals() {
             <Users size={20} />
             Mis Referidos
           </h2>
-          
-          <form className="dash-referrals__form" onSubmit={handleReferralSubmit}>
+
+          <form
+            className="dash-referrals__form"
+            onSubmit={handleReferralSubmit}
+          >
             <div className="dash-referrals__field">
               <label>Email del referido</label>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Mail size={16} style={{ position: 'absolute', left: '16px', color: 'rgba(0,0,0,0.3)' }} />
+              <div
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Mail
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: "16px",
+                    color: "rgba(0,0,0,0.3)",
+                  }}
+                />
                 <input
                   type="email"
                   placeholder="ejemplo@correo.com"
-                  style={{ paddingLeft: '44px', width: '100%' }}
+                  style={{ paddingLeft: "44px", width: "100%" }}
                   value={referralEmail}
                   onChange={(e) => setReferralEmail(e.target.value)}
                 />
@@ -226,7 +284,9 @@ export default function DashboardReferrals() {
               className="dash-referrals__btn"
               disabled={referralMutation.isPending}
             >
-              {referralMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : (
+              {referralMutation.isPending ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
                 <>
                   <Plus size={18} />
                   <span>Agregar Referido</span>
@@ -236,9 +296,19 @@ export default function DashboardReferrals() {
           </form>
 
           <div className="dash-referrals__list-container">
-            <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}>Historial</h3>
+            <h3
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                marginBottom: "12px",
+              }}
+            >
+              Historial
+            </h3>
             {loadingReferrals ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}><Loader2 className="animate-spin" /></div>
+              <div style={{ textAlign: "center", padding: "20px" }}>
+                <Loader2 className="animate-spin" />
+              </div>
             ) : referrals.length === 0 ? (
               <div className="dash-referrals__empty">
                 Aún no tenés referidos agregados.
@@ -247,7 +317,9 @@ export default function DashboardReferrals() {
               <div className="dash-referrals__referrals-list">
                 {referrals.map((ref) => (
                   <div key={ref.id} className="dash-referrals__referral-item">
-                    <div className="dash-referrals__referral-email">{ref.referred_email}</div>
+                    <div className="dash-referrals__referral-email">
+                      {ref.referred_email}
+                    </div>
                     <div className="dash-referrals__referral-date">
                       {new Date(ref.created_at).toLocaleDateString()}
                     </div>

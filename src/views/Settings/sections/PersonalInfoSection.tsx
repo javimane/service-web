@@ -14,8 +14,11 @@ import {
   Bell,
 } from "lucide-react";
 import { authService } from "../../../services/authService";
-import { profileService } from "../../../services/profileService";
 import { userService } from "../../../services/userService";
+import {
+  getProfileAction,
+  updateProfileAction,
+} from "../../../app/actions/profile";
 import { getFirebaseMessagingToken } from "../../../services/firebaseMessaging";
 import "./PersonalInfoSection.css";
 
@@ -59,7 +62,10 @@ export default function PersonalInfoSection({
   // 1. Fetch Profile with Cache
   const { data: profile, isLoading: fetching } = useQuery({
     queryKey: ["profile", userId],
-    queryFn: () => profileService.getProfile(userId),
+    queryFn: async () => {
+      const result = await getProfileAction({ id: userId });
+      return result?.data ?? null;
+    },
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -84,8 +90,14 @@ export default function PersonalInfoSection({
 
   // 2. Mutations for Updates
   const updateNameMutation = useMutation({
-    mutationFn: (newName: string) =>
-      profileService.updateProfile(userId, { display_name: newName }),
+    mutationFn: async (newName: string) => {
+      const result = await updateProfileAction({
+        id: userId,
+        data: { display_name: newName },
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
       setIsEditingName(false);

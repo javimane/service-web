@@ -14,8 +14,13 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
-import { serviceService } from "../../../services/serviceService";
-import { categoriesService } from "../../../services/categoriesApi";
+import { getServicesByProfessionalAction } from "../../../app/actions/services";
+import { getServiceCategoriesAction } from "../../../app/actions/categories";
+import {
+  createServiceAction,
+  deleteServiceAction,
+  updateServiceAction,
+} from "../../../app/actions/services";
 import "./DashboardServices.css";
 
 export default function DashboardServices() {
@@ -54,18 +59,30 @@ export default function DashboardServices() {
   // Queries
   const { data: services = [], isLoading: loadingServices } = useQuery({
     queryKey: ["professional-services", professionalId],
-    queryFn: () => serviceService.getByProfessional(professionalId),
+    queryFn: async () => {
+      const result = await getServicesByProfessionalAction({
+        professionalId,
+      });
+      return result?.data ?? [];
+    },
     enabled: !!professionalId,
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ["service-categories"],
-    queryFn: () => categoriesService.listCategoryServices(),
+    queryFn: async () => {
+      const result = await getServiceCategoriesAction();
+      return result?.data ?? [];
+    },
   });
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: serviceService.create,
+    mutationFn: async (data: any) => {
+      const result = await createServiceAction(data);
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-services"] });
       setSuccessMessage("¡Servicio creado correctamente!");
@@ -82,8 +99,11 @@ export default function DashboardServices() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) =>
-      serviceService.update(id, data),
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const result = await updateServiceAction({ id, data });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-services"] });
       setSuccessMessage("¡Servicio actualizado correctamente!");
@@ -100,7 +120,11 @@ export default function DashboardServices() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: serviceService.delete,
+    mutationFn: async (id: number) => {
+      const result = await deleteServiceAction({ id });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-services"] });
       setDeleteConfirmOpen(false);
@@ -117,7 +141,7 @@ export default function DashboardServices() {
 
   const filteredServices = useMemo(() => {
     return services.filter((s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase())
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [services, searchQuery]);
 
@@ -152,7 +176,11 @@ export default function DashboardServices() {
   };
 
   const handleSave = () => {
-    if (!currentService.name.trim() || !currentService.categoryId || !currentService.price) {
+    if (
+      !currentService.name.trim() ||
+      !currentService.categoryId ||
+      !currentService.price
+    ) {
       setErrorMessage("Por favor completá los campos obligatorios.");
       return;
     }
@@ -221,7 +249,10 @@ export default function DashboardServices() {
           <div className="dash-services__empty">
             <Briefcase size={48} />
             <h3>No tenés servicios publicados</h3>
-            <p>Comenzá creando tu primer servicio para que los clientes te encuentren.</p>
+            <p>
+              Comenzá creando tu primer servicio para que los clientes te
+              encuentren.
+            </p>
             <button className="dash-services__empty-btn" onClick={openAddModal}>
               Crear mi primer servicio
             </button>
@@ -234,7 +265,9 @@ export default function DashboardServices() {
                   <div className="dash-services__card-info">
                     <h3>{service.name}</h3>
                     <span className="dash-services__card-category">
-                      {categories.find((c) => c.id === service.category_services_id)?.name || "Sin categoría"}
+                      {categories.find(
+                        (c) => c.id === service.category_services_id,
+                      )?.name || "Sin categoría"}
                     </span>
                   </div>
                   <div className="dash-services__card-price">
@@ -277,10 +310,16 @@ export default function DashboardServices() {
       {/* Modal Add/Edit */}
       {modalOpen && (
         <div className="dash-services__overlay" onClick={closeModal}>
-          <div className="dash-services__modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="dash-services__modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="dash-services__modal-header">
               <h2>{isEditing ? "Editar Servicio" : "Nuevo Servicio"}</h2>
-              <button className="dash-services__modal-close" onClick={closeModal}>
+              <button
+                className="dash-services__modal-close"
+                onClick={closeModal}
+              >
                 <X size={20} />
               </button>
             </div>
@@ -299,7 +338,12 @@ export default function DashboardServices() {
                   type="text"
                   placeholder="Ej: Pintura de interiores"
                   value={currentService.name}
-                  onChange={(e) => setCurrentService({ ...currentService, name: e.target.value })}
+                  onChange={(e) =>
+                    setCurrentService({
+                      ...currentService,
+                      name: e.target.value,
+                    })
+                  }
                 />
               </div>
 
@@ -307,7 +351,12 @@ export default function DashboardServices() {
                 <label>Categoría *</label>
                 <select
                   value={currentService.categoryId}
-                  onChange={(e) => setCurrentService({ ...currentService, categoryId: e.target.value })}
+                  onChange={(e) =>
+                    setCurrentService({
+                      ...currentService,
+                      categoryId: e.target.value,
+                    })
+                  }
                 >
                   <option value="">Seleccionar categoría</option>
                   {categories.map((cat) => (
@@ -326,7 +375,12 @@ export default function DashboardServices() {
                     type="number"
                     placeholder="0"
                     value={currentService.price}
-                    onChange={(e) => setCurrentService({ ...currentService, price: e.target.value })}
+                    onChange={(e) =>
+                      setCurrentService({
+                        ...currentService,
+                        price: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -337,13 +391,21 @@ export default function DashboardServices() {
                   rows={4}
                   placeholder="Detallá de qué trata el servicio..."
                   value={currentService.description}
-                  onChange={(e) => setCurrentService({ ...currentService, description: e.target.value })}
+                  onChange={(e) =>
+                    setCurrentService({
+                      ...currentService,
+                      description: e.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
 
             <div className="dash-services__modal-footer">
-              <button className="dash-services__modal-cancel" onClick={closeModal}>
+              <button
+                className="dash-services__modal-cancel"
+                onClick={closeModal}
+              >
                 Cancelar
               </button>
               <button
@@ -354,7 +416,9 @@ export default function DashboardServices() {
                 {createMutation.isPending || updateMutation.isPending ? (
                   <Loader2 className="animate-spin" size={18} />
                 ) : (
-                  <span>{isEditing ? "Guardar Cambios" : "Crear Servicio"}</span>
+                  <span>
+                    {isEditing ? "Guardar Cambios" : "Crear Servicio"}
+                  </span>
                 )}
               </button>
             </div>
@@ -370,7 +434,9 @@ export default function DashboardServices() {
               <Check size={28} />
             </div>
             <div className="dash-services__floating-content">
-              <span className="dash-services__floating-title">{successMessage}</span>
+              <span className="dash-services__floating-title">
+                {successMessage}
+              </span>
             </div>
             <div className="dash-services__floating-actions">
               <button
@@ -392,9 +458,12 @@ export default function DashboardServices() {
               <Trash2 size={28} />
             </div>
             <div className="dash-services__floating-content">
-              <span className="dash-services__floating-title">¿Eliminar servicio?</span>
+              <span className="dash-services__floating-title">
+                ¿Eliminar servicio?
+              </span>
               <p className="dash-services__floating-desc">
-                Estás por eliminar <strong>{serviceToDelete?.name}</strong>. Esta acción no se puede deshacer.
+                Estás por eliminar <strong>{serviceToDelete?.name}</strong>.
+                Esta acción no se puede deshacer.
               </p>
             </div>
             <div className="dash-services__floating-actions">

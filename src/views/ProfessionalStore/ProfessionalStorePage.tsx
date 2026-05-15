@@ -7,7 +7,6 @@ import {
   X,
   Loader2,
   Package,
-  Star,
   Grid3X3,
   List,
   SlidersHorizontal,
@@ -18,9 +17,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { professionalService } from "../../services/professionalService";
-import { productService } from "../../services/productService";
-import { categoriesProductService } from "../../services/categoriesProduct";
+import { getProfessionalDetailAction } from "../../app/actions/professionals";
+import { getProductsAction } from "../../app/actions/products";
+import { getProductCategoriesAction } from "../../app/actions/categories";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
@@ -73,31 +72,45 @@ export default function ProfessionalStorePage() {
 
   const { data: professional, isLoading: loadingPro } = useQuery({
     queryKey: ["professional-detail", id],
-    queryFn: () => professionalService.getDetail(id!),
+    queryFn: async () => {
+      const result = await getProfessionalDetailAction({ id: id! });
+      return result?.data ?? null;
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ["product-categories"],
-    queryFn: () => categoriesProductService.listCategoriesProducts(),
+    queryFn: async () => {
+      const result = await getProductCategoriesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const { data: productsData, isLoading: loadingProducts } = useQuery({
     queryKey: ["store-products", id, debouncedText, filters, page],
-    queryFn: () =>
-      productService.list({
+    queryFn: async () => {
+      const result = await getProductsAction({
         page,
         limit: 20,
-        professionalId: id,
+        professionalId: id ? Number(id) : undefined,
         name: debouncedText.search || undefined,
         categoryId:
-          filters.categoryId !== "all" ? filters.categoryId : undefined,
-        priceMin: filters.priceMin || undefined,
-        priceMax: filters.priceMax || undefined,
+          filters.categoryId !== "all" ? Number(filters.categoryId) : undefined,
+        priceMin: filters.priceMin ? Number(filters.priceMin) : undefined,
+        priceMax: filters.priceMax ? Number(filters.priceMax) : undefined,
         ean: debouncedText.ean || undefined,
         sortBy: filters.sortBy,
-      }),
+      });
+      return result?.data;
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
   });
 
   const normalized = useMemo(() => {

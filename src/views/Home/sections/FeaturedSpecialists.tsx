@@ -8,10 +8,10 @@ import {
   Star,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { professionalService } from "../../../services/professionalService";
 import SpecialistCard from "../../../components/Cards/SpecialistCard";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./FeaturedSpecialists.css";
+import { getProfessionalsAction } from "@/app/actions/professionals";
 
 export default function FeaturedSpecialists() {
   const [userProvince, setUserProvince] = useState("Buenos Aires");
@@ -35,13 +35,25 @@ export default function FeaturedSpecialists() {
 
   const { data: professionals = [], isLoading } = useQuery({
     queryKey: ["featured-professionals", userProvince],
-    queryFn: () =>
-      professionalService.list({
-        province: userProvince,
+    queryFn: async () => {
+      const result = await getProfessionalsAction({
+        provinceId: userProvince,
         limit: 20,
         sortBy: "rating",
-        subscription: "premium",
-      }),
+      });
+
+      if (result?.data) {
+        return result.data;
+      }
+
+      if (result?.serverError) {
+        throw new Error(result.serverError);
+      }
+
+      return null;
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   const specialistsList = useMemo(() => {

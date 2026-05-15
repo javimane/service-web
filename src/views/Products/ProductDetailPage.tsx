@@ -11,7 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { productService } from "../../services/productService";
+import { getProductDetailAction } from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
@@ -41,8 +41,13 @@ export default function ProductDetailPage() {
     error,
   } = useQuery({
     queryKey: ["product", seoPath, id],
-    queryFn: () => productService.getDetail(id),
+    queryFn: async () => {
+      const result = await getProductDetailAction({ id: id! });
+      return result?.data ?? null;
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   // URL Normalization disabled - using query params approach instead

@@ -14,6 +14,7 @@ import {
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import { favoritesService } from "../../services/favoritesService";
+import { incrementProfessionalViewsAction } from "../../app/actions/professionals";
 import { ROUTES } from "../../routes/paths";
 import "./FavoritesPage.css";
 
@@ -119,9 +120,10 @@ export default function FavoritesPage() {
                 <div
                   key={professional.id}
                   className={`favorite-item ${removingId === professional.id ? "removing" : ""}`}
-                  onClick={() =>
-                    router.push(`${ROUTES.profile}/${professional.id}`)
-                  }
+                  onClick={() => {
+                    incrementProfessionalViewsAction({ id: professional.id });
+                    router.push(`${ROUTES.profile}/${professional.id}`);
+                  }}
                 >
                   <div className="favorite-item__avatar-wrap">
                     <img

@@ -20,7 +20,10 @@ import {
 import { toJpeg } from "html-to-image";
 import { useAuth } from "../../../context/AuthContext";
 import { uploadPromotionImage } from "../../../services/storageUploads";
-import { professionalPromotionService } from "../../../services/professionalPromotionService";
+import {
+  createProfessionalPromotionAction,
+  updateProfessionalPromotionAction,
+} from "../../../app/actions/professionalPromotions";
 import "./PromotionCreator.css";
 
 const DISCOUNT_TYPES = [
@@ -129,9 +132,16 @@ export default function PromotionCreator({
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       if (promotionToEdit?.id) {
-        return professionalPromotionService.update(promotionToEdit.id, data);
+        const result = await updateProfessionalPromotionAction({
+          id: promotionToEdit.id,
+          data,
+        });
+        if (result?.serverError) throw new Error(result.serverError);
+        return result?.data;
       }
-      return professionalPromotionService.create(data);
+      const result = await createProfessionalPromotionAction(data);
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-promotions"] });

@@ -10,14 +10,12 @@ import {
   Percent,
   Tag,
 } from "lucide-react";
-import {
-  bankPromotionService,
-  type BankPromotion,
-} from "../../services/bankPromotionService";
+import { type BankPromotion } from "../../services/bankPromotionService";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import "./BankPromotionDetailPage.css";
+import { getBankPromotionDetailAction } from "../../app/actions/bankPromotions";
 
 const DAYS_ES: Record<string, string> = {
   monday: "Lunes",
@@ -94,8 +92,13 @@ export default function BankPromotionDetailPage() {
     error,
   } = useQuery({
     queryKey: ["bank-promotion", seoPathRaw, id],
-    queryFn: () => bankPromotionService.getById(id),
+    queryFn: async () => {
+      const result = await getBankPromotionDetailAction({ id: id! });
+      return result?.data ?? null;
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 30, // 30 minutos
+    gcTime: 1000 * 60 * 60,
   });
 
   // URL Normalization disabled - using query params approach instead

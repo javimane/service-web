@@ -11,7 +11,7 @@ import {
   MessageCircle,
   Ticket,
 } from "lucide-react";
-import { professionalPromotionService } from "../../services/professionalPromotionService";
+import { getProfessionalPromotionDetailAction } from "../../app/actions/professionalPromotions";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
@@ -41,8 +41,13 @@ export default function PromotionDetailPage({
     error,
   } = useQuery({
     queryKey: ["promotion", id],
-    queryFn: () => professionalPromotionService.getById(id),
+    queryFn: async () => {
+      const result = await getProfessionalPromotionDetailAction({ id: id! });
+      return result?.data ?? null;
+    },
     enabled: !!id,
+    staleTime: 1000 * 60 * 10, // 10 minutos
+    gcTime: 1000 * 60 * 30,
   });
 
   // URL Normalization disabled - using query params approach instead

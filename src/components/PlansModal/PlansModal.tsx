@@ -1,7 +1,12 @@
 "use client";
 import { X, Check, Crown, Star, Zap } from "lucide-react";
-import { useEffect } from "react";
-import { plans, type Plan } from "../../data/plans";
+import { useEffect, useState } from "react";
+import {
+  plans,
+  mergePlansWithSubscriptionPrices,
+  type Plan,
+} from "../../data/plans";
+import { getSubscriptionPricesAction } from "../../app/actions/plans";
 import "./PlansModal.css";
 
 type PlansModalProps = {
@@ -16,6 +21,20 @@ function formatPrice(n: number) {
 export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
   const basicCheckoutUrl = process.env.NEXT_PUBLIC_MP_BASIC_CHECKOUT_URL;
   const premiumCheckoutUrl = process.env.NEXT_PUBLIC_MP_PREMIUM_CHECKOUT_URL;
+  const [displayPlans, setDisplayPlans] = useState<Plan[]>(plans);
+
+  useEffect(() => {
+    getSubscriptionPricesAction()
+      .then((result) => {
+        const prices = result?.data;
+        if (Array.isArray(prices) && prices.length > 0) {
+          setDisplayPlans(mergePlansWithSubscriptionPrices(plans, prices));
+        }
+      })
+      .catch(() => {
+        // fallback prices ya están en el estado inicial
+      });
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -61,7 +80,7 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
         </div>
 
         <div className="plans-modal__grid">
-          {plans.map((plan) => (
+          {displayPlans.map((plan) => (
             <div
               key={plan.id}
               className={`plans-modal__card ${plan.recommended ? "plans-modal__card--recommended" : ""}`}

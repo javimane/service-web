@@ -30,4 +30,14 @@ export const videosService = {
     apiClient<void>(API_ENDPOINTS.videos.detail(id), {
       method: "DELETE",
     }),
+
+  incrementLikes: (id: string | number) =>
+    apiClient<void>(API_ENDPOINTS.videos.like(id.toString()), {
+      method: "POST",
+    }),
+
+  incrementViews: (id: string | number) =>
+    apiClient<void>(API_ENDPOINTS.videos.view(id.toString()), {
+      method: "POST",
+    }),
 };

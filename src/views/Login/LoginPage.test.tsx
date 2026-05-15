@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import LoginPage from "./LoginPage";
@@ -26,7 +27,7 @@ describe("LoginPage", () => {
   const renderWithRouter = (ui) => render(ui);
 
   it("se renderiza correctamente", () => {
-    renderWithRouter(<LoginPage />);
+    renderWithRouter(React.createElement(LoginPage));
     expect(screen.getByText("Bienvenido")).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("arquitecto@obsidian.pro"),
@@ -35,7 +36,7 @@ describe("LoginPage", () => {
   });
 
   it("muestra errores de validación si se envía vacío", () => {
-    renderWithRouter(<LoginPage />);
+    renderWithRouter(React.createElement(LoginPage));
     const submitBtn = screen.getByRole("button", { name: /ingresar/i });
 
     fireEvent.click(submitBtn);
@@ -47,7 +48,7 @@ describe("LoginPage", () => {
   });
 
   it("muestra error de formato de email", () => {
-    renderWithRouter(<LoginPage />);
+    renderWithRouter(React.createElement(LoginPage));
     const emailInput = screen.getByPlaceholderText("arquitecto@obsidian.pro");
     const submitBtn = screen.getByRole("button", { name: /ingresar/i });
 
@@ -67,7 +68,7 @@ describe("LoginPage", () => {
       error: null,
     } as any);
 
-    renderWithRouter(<LoginPage />);
+    renderWithRouter(React.createElement(LoginPage));
     const emailInput = screen.getByPlaceholderText("arquitecto@obsidian.pro");
     const passwordInput = screen.getByPlaceholderText("••••••••");
     const submitBtn = screen.getByRole("button", { name: /ingresar/i });

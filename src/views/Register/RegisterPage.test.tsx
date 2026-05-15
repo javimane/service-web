@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import RegisterPage from "./RegisterPage";
@@ -28,14 +29,14 @@ describe("RegisterPage", () => {
   };
 
   it("se renderiza correctamente", () => {
-    renderWithRouter(<RegisterPage />);
+    renderWithRouter(React.createElement(RegisterPage));
     expect(screen.getByText("Crear Cuenta")).toBeInTheDocument();
     expect(screen.getByLabelText(/NOMBRE COMPLETO/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/CONFIRMAR/i)).toBeInTheDocument();
   });
 
   it("muestra errores de validación si se envía vacío", () => {
-    renderWithRouter(<RegisterPage />);
+    renderWithRouter(React.createElement(RegisterPage));
     const submitBtn = screen.getByRole("button", { name: /registrarse/i });
 
     fireEvent.click(submitBtn);
@@ -47,7 +48,7 @@ describe("RegisterPage", () => {
   });
 
   it("valida que las contraseñas coincidan", () => {
-    renderWithRouter(<RegisterPage />);
+    renderWithRouter(React.createElement(RegisterPage));
     const passwordInput = screen.getAllByPlaceholderText("••••••••")[0];
     const confirmInput = screen.getAllByPlaceholderText("••••••••")[1];
     const submitBtn = screen.getByRole("button", { name: /registrarse/i });
@@ -67,7 +68,7 @@ describe("RegisterPage", () => {
       error: null,
     } as any);
 
-    renderWithRouter(<RegisterPage />);
+    renderWithRouter(React.createElement(RegisterPage));
     const nameInput = screen.getByPlaceholderText("Ej. Juan Pérez");
     const emailInput = screen.getByPlaceholderText("arquitecto@obsidian.pro");
     const passwordInput = screen.getAllByPlaceholderText("••••••••")[0];

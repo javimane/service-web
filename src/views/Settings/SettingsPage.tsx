@@ -14,12 +14,16 @@ import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ActionsSection from "./sections/ActionsSection";
 import CompanyDisplaySection from "./sections/CompanyDisplaySection";
 import { useAuth } from "../../context/AuthContext";
-import { professionalService } from "../../services/professionalService";
+import { getProfessionalDetailAction } from "../../app/actions/professionals";
 import {
-  companyArcaService,
-  companyService,
-} from "../../services/companyService";
-import { locationService } from "../../services/locationService";
+  createCompanyAction,
+  getArcaCompanyAction,
+  getCompanyByProfessionalAction,
+  updateCompanyAction,
+} from "../../app/actions/companies";
+import { updateProfessionalAction } from "../../app/actions/professionals";
+import { getDepartmentsAction } from "../../app/actions/locations";
+import { getProvincesAction } from "../../app/actions/provinces";
 import { ROUTES } from "../../routes/paths";
 import "../Dashboard/DashboardPage.css";
 import "./SettingsPage.css";
@@ -67,14 +71,20 @@ export default function SettingsPage() {
   // 1. Fetch Provinces
   const { data: provinceList = [] } = useQuery({
     queryKey: ["provinces"],
-    queryFn: locationService.getProvinces,
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
     staleTime: 1000 * 60 * 60,
   });
 
   // 2. Fetch Professional Detail
   const { data: prof, isLoading: loadingProf } = useQuery({
     queryKey: ["professional-detail", professionalId],
-    queryFn: () => professionalService.getDetail(professionalId!),
+    queryFn: async () => {
+      const result = await getProfessionalDetailAction({ id: professionalId! });
+      return result?.data ?? null;
+    },
     enabled: !!professionalId,
     staleTime: 1000 * 60 * 5,
   });
@@ -82,8 +92,15 @@ export default function SettingsPage() {
   // 2.1 Fetch Company Detail
   const { data: company, isLoading: loadingCompany } = useQuery({
     queryKey: ["company", professionalId],
-    queryFn: () => companyService.getByProfessional(professionalId!),
+    queryFn: async () => {
+      const result = await getCompanyByProfessionalAction({
+        professionalId: professionalId!,
+      });
+      return result?.data ?? null;
+    },
     enabled: !!professionalId,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    gcTime: 1000 * 60 * 15,
   });
 
   // 2.2 Consolidate the actual company data (handling array or single object)
@@ -93,7 +110,10 @@ export default function SettingsPage() {
   // Lifted ARCA status query for global caching in SettingsPage
   const { data: arcaStatus, isLoading: loadingArca } = useQuery({
     queryKey: ["arca-status", actualCompany?.id || "none"],
-    queryFn: () => companyArcaService.findByCompanyId(actualCompany!.id),
+    queryFn: async () => {
+      const result = await getArcaCompanyAction({ id: actualCompany!.id });
+      return result?.data ?? null;
+    },
     enabled: !!actualCompany?.id,
     staleTime: Infinity,
     gcTime: 1000 * 60 * 60,
@@ -197,7 +217,10 @@ export default function SettingsPage() {
     queryFn: async () => {
       if (selectedProvIds.length === 0) return [];
       const allDeps = await Promise.all(
-        selectedProvIds.map((id) => locationService.getDepartments(id)),
+        selectedProvIds.map(async (id) => {
+          const result = await getDepartmentsAction({ provinceId: id });
+          return result?.data ?? [];
+        }),
       );
       return allDeps.flat();
     },
@@ -208,7 +231,12 @@ export default function SettingsPage() {
   // 4. Fetch Departments for store province
   const { data: storeDepartmentList = [] } = useQuery({
     queryKey: ["departments-store", storeProvinceId],
-    queryFn: () => locationService.getDepartments(storeProvinceId!),
+    queryFn: async () => {
+      const result = await getDepartmentsAction({
+        provinceId: storeProvinceId!,
+      });
+      return result?.data ?? [];
+    },
     enabled: !!storeProvinceId,
     staleTime: 1000 * 60 * 30,
   });
@@ -218,9 +246,13 @@ export default function SettingsPage() {
     mutationFn: async () => {
       if (!professionalId) return;
 
-      await professionalService.update(professionalId, {
-        account_type: businessType,
+      const profResult = await updateProfessionalAction({
+        id: professionalId,
+        data: {
+          account_type: businessType,
+        },
       });
+      if (profResult?.serverError) throw new Error(profResult.serverError);
 
       const companyData: any = {
         professional_id: professionalId,
@@ -252,9 +284,16 @@ export default function SettingsPage() {
       };
 
       if (companyId) {
-        return companyService.update(companyId, companyData);
+        const result = await updateCompanyAction({
+          id: companyId,
+          data: companyData,
+        });
+        if (result?.serverError) throw new Error(result.serverError);
+        return result?.data;
       } else {
-        return companyService.create(companyData);
+        const result = await createCompanyAction(companyData);
+        if (result?.serverError) throw new Error(result.serverError);
+        return result?.data;
       }
     },
     onSuccess: (data) => {

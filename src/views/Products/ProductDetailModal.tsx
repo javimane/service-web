@@ -16,7 +16,6 @@ import {
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { productService } from "../../services/productService";
 import { getProfilePath } from "../../utils/utils";
 import "./ProductDetailModal.css";
 
