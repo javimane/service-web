@@ -15,8 +15,14 @@ import Footer from "../../components/Footer/Footer";
 import { categories } from "../../data/categories";
 import { ROUTES } from "../../routes/paths";
 import { locationService } from "../../services/locationService";
-import { getProfessionalsAction, incrementProfessionalViewsAction } from "../../app/actions/professionals";
-import { getProvincesAction, getDepartmentsAction } from "../../app/actions/locations";
+import {
+  getProfessionalsAction,
+  incrementProfessionalViewsAction,
+} from "../../app/actions/professionals";
+import {
+  getProvincesAction,
+  getDepartmentsAction,
+} from "../../app/actions/locations";
 import SEO from "../../components/SEO/SEO";
 import "./CategoriesPage.css";
 
@@ -32,6 +38,7 @@ type CategoryProfile = {
   accountType: Exclude<AccountType, "Todos">;
   emergency: boolean;
   verified: boolean;
+  matriculated: boolean;
   rating: number;
   jobs: number;
   priceLabel: string;
@@ -76,6 +83,7 @@ export default function CategoriesPage() {
     useState<AccountType>("Todos");
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [matriculatedOnly, setMatriculatedOnly] = useState(false);
   const [publicStoreOnly, setPublicStoreOnly] = useState(false);
 
   const { data: professionalsData, isLoading } = useQuery({
@@ -85,6 +93,7 @@ export default function CategoriesPage() {
       selectedProvince,
       urgentOnly,
       verifiedOnly,
+      matriculatedOnly,
       publicStoreOnly,
       searchTerm,
     ],
@@ -104,7 +113,8 @@ export default function CategoriesPage() {
       const result = await getProfessionalsAction({
         categoryId: categoryId?.toString(),
         provinceId: provinceId?.toString(),
-        isMatriculate: verifiedOnly ? "true" : undefined,
+        isMatriculate: matriculatedOnly ? "true" : undefined,
+        isVerified: verifiedOnly ? "true" : undefined,
         emergency: urgentOnly ? "true" : undefined,
         publicTrade: publicStoreOnly ? "true" : undefined,
         query: searchTerm.length >= 3 ? searchTerm : undefined,
@@ -126,7 +136,7 @@ export default function CategoriesPage() {
         prof.CategoryServices?.[0]?.CategoryService?.name ||
         prof.category ||
         "General";
-      
+
       const catInfo =
         categoryOptions.find((c) => c.label === profCategoryName) ||
         categoryOptions[0];
@@ -139,37 +149,44 @@ export default function CategoriesPage() {
       }
 
       const acceptedJobs = prof.accepted_proposals_count || 0;
-      
-      const isCompany = prof.accountType === "company" || prof.account_type === "company";
-      const companyData = prof.company?.[0] || prof.Company?.[0] || prof.company_arca;
-      const hasPublicStore = isCompany && (companyData?.public_trade === true || prof.publicTrade === true);
+
+      const isCompany =
+        prof.accountType === "company" || prof.account_type === "company";
+      const companyData =
+        prof.company?.[0] || prof.Company?.[0] || prof.company_arca;
+      const hasPublicStore =
+        isCompany &&
+        (companyData?.public_trade === true || prof.publicTrade === true);
 
       // Extract location info from address array
       const mainAddress = prof.address?.[0] || prof.Addresses?.[0];
 
       return {
         id: prof.id,
-        companyName: prof.name || prof.Profile?.display_name || "Profesional",
+        companyName: prof.company_name || "Profesional",
         specialty: prof.specialty || profCategoryName,
         category: profCategoryName,
         province:
-          mainAddress?.Province?.name || 
-          prof.company_provinces?.[0]?.Province?.name || 
+          mainAddress?.Province?.name ||
+          prof.company_provinces?.[0]?.Province?.name ||
           "Desconocida",
-        city:
-          mainAddress?.Department?.name || 
-          prof.city || 
-          "Desconocida",
+        city: mainAddress?.Department?.name || prof.city || "Desconocida",
         accountType: isCompany ? "Comercio" : "Autónomo",
         emergency: prof.emergency || false,
-        verified: prof.is_matriculate || prof.isMatriculate || false,
+        verified:
+          prof.is_verified ||
+          prof.isVerified ||
+          prof.company_arca?.is_verified ||
+          false,
+        matriculated: prof.is_matriculate || prof.isMatriculate || false,
         rating: prof.ratingAvg || prof.rating_avg || 0,
         jobs: acceptedJobs,
         priceLabel:
           minPrice > 0
             ? `Desde $${minPrice.toLocaleString("es-AR")}`
             : "Consultar precio",
-        avatar: prof.profile?.avatar_url || prof.Profile?.avatar_url || fallbackImage,
+        avatar:
+          prof.profile?.avatar_url || prof.Profile?.avatar_url || fallbackImage,
         coverImage: catInfo.image,
         description: prof.bio || prof.description || "Sin descripción",
         hasPublicStore,
@@ -197,7 +214,9 @@ export default function CategoriesPage() {
   const { data: departments = [] } = useQuery({
     queryKey: ["categories-departments", selectedProvinceId],
     queryFn: async () => {
-      const result = await getDepartmentsAction({ provinceId: selectedProvinceId as number });
+      const result = await getDepartmentsAction({
+        provinceId: selectedProvinceId as number,
+      });
       return result?.data || [];
     },
     enabled: !!selectedProvinceId,
@@ -231,6 +250,7 @@ export default function CategoriesPage() {
     setSelectedAccountType("Todos");
     setUrgentOnly(false);
     setVerifiedOnly(false);
+    setMatriculatedOnly(false);
     setPublicStoreOnly(false);
   };
 
@@ -244,7 +264,7 @@ export default function CategoriesPage() {
       const matchesAccount =
         selectedAccountType === "Todos" ||
         profile.accountType === selectedAccountType;
-      
+
       // If query is short, we might want to still filter on client if server didn't handle it
       const matchesQuery =
         normalizedQuery.length === 0 ||
@@ -270,6 +290,7 @@ export default function CategoriesPage() {
     selectedAccountType,
     urgentOnly,
     verifiedOnly,
+    matriculatedOnly,
     publicStoreOnly,
   ]);
 
@@ -444,6 +465,18 @@ export default function CategoriesPage() {
                     </label>
                     <span className="pref-label">SOLO VERIFICADOS</span>
                   </div>
+
+                  <div className="pref-row">
+                    <label className="ios-toggle">
+                      <input
+                        type="checkbox"
+                        checked={matriculatedOnly}
+                        onChange={() => setMatriculatedOnly((v) => !v)}
+                      />
+                      <span className="ios-toggle__slider" />
+                    </label>
+                    <span className="pref-label">SOLO MATRICULADOS</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -540,6 +573,11 @@ export default function CategoriesPage() {
                             <ShieldCheck size={14} /> Verificado
                           </span>
                         )}
+                        {profile.matriculated && (
+                          <span className="tag tag--matriculated">
+                            <ShieldCheck size={14} /> Matriculado
+                          </span>
+                        )}
                       </div>
 
                       <p className="profile-result-card__description">
@@ -557,7 +595,9 @@ export default function CategoriesPage() {
                           className="profile-result-card__button"
                           onClick={(event) => {
                             event.stopPropagation();
-                            incrementProfessionalViewsAction({ id: profile.id });
+                            incrementProfessionalViewsAction({
+                              id: profile.id,
+                            });
                             router.push(`${ROUTES.profile}/${profile.seoPath}`);
                           }}
                         >

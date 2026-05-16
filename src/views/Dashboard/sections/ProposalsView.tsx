@@ -13,6 +13,7 @@ import {
   getReceivedProposalsAction,
   getSentProposalsAction,
 } from "../../../app/actions/proposals";
+import { getAccessToken } from "../../../utils/auth";
 import type { ProfessionalProposalRow } from "../../../types/database.types";
 import "./ProposalsView.css";
 
@@ -39,13 +40,18 @@ export default function ProposalsView() {
     setIsLoading(true);
     try {
       // Always fetch received proposals
-      const receivedResult = await getReceivedProposalsAction();
+      const token = getAccessToken();
+      const receivedResult = await getReceivedProposalsAction(
+        token ? { token } : undefined,
+      );
       setReceivedProposals(receivedResult?.data ?? []);
 
       // Only fetch sent proposals if they are a professional
       if (hasProfessionalSubscription) {
         try {
-          const sentResult = await getSentProposalsAction();
+          const sentResult = await getSentProposalsAction(
+            token ? { token } : undefined,
+          );
           setSentProposals(sentResult?.data ?? []);
         } catch (error) {
           console.error("Error fetching sent proposals:", error);
@@ -62,7 +68,10 @@ export default function ProposalsView() {
   const handleAccept = async (id: string) => {
     try {
       setAcceptingId(id);
-      const result = await acceptProposalAction({ id });
+      const result = await acceptProposalAction({
+        id,
+        token: getAccessToken(),
+      });
       if (result?.serverError) throw new Error(result.serverError);
 
       // Update local state to reflect accepted status

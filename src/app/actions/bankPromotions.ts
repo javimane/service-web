@@ -4,8 +4,10 @@ import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
 import axios from "axios";
+import { buildActionHeaders } from "./_utils/authHeaders";
 
 const bankPromotionListSchema = z.record(z.string(), z.any()).optional();
+const authTokenSchema = z.string().optional();
 
 export const getBankPromotionsAction = publicAction
   .schema(bankPromotionListSchema)
@@ -24,9 +26,7 @@ export const getBankPromotionsAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: {
-          ...ctx.headers,
-        },
+        headers: buildActionHeaders(ctx),
       });
 
       return response.data;
@@ -45,9 +45,7 @@ export const getBankPromotionDetailAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: {
-          ...ctx.headers,
-        },
+        headers: buildActionHeaders(ctx),
       });
 
       return response.data;
@@ -66,9 +64,7 @@ export const getBanksAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: {
-          ...ctx.headers,
-        },
+        headers: buildActionHeaders(ctx),
       });
 
       return response.data;
@@ -79,15 +75,19 @@ export const getBanksAction = publicAction
   });
 
 export const getMyBankPromotionsAction = publicAction
-  .schema(z.void())
-  .action(async ({ ctx }) => {
+  .schema(
+    z
+      .object({
+        token: authTokenSchema,
+      })
+      .optional(),
+  )
+  .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/bank-promotions/my-promotions`;
 
     try {
       const response = await axios.get(url, {
-        headers: {
-          ...ctx.headers,
-        },
+        headers: buildActionHeaders(ctx, parsedInput?.token),
       });
 
       return response.data;
@@ -99,13 +99,18 @@ export const getMyBankPromotionsAction = publicAction
   });
 
 export const createBankPromotionAction = publicAction
-  .schema(z.record(z.string(), z.any()))
+  .schema(
+    z.object({
+      data: z.record(z.string(), z.any()),
+      token: authTokenSchema,
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/bank-promotions`;
 
     try {
-      const response = await axios.post(url, parsedInput, {
-        headers: { ...ctx.headers },
+      const response = await axios.post(url, parsedInput.data, {
+        headers: buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -120,6 +125,7 @@ export const updateBankPromotionAction = publicAction
     z.object({
       id: z.string().or(z.number()),
       data: z.record(z.string(), z.any()),
+      token: authTokenSchema,
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
@@ -127,7 +133,7 @@ export const updateBankPromotionAction = publicAction
 
     try {
       const response = await axios.patch(url, parsedInput.data, {
-        headers: { ...ctx.headers },
+        headers: buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -138,13 +144,18 @@ export const updateBankPromotionAction = publicAction
   });
 
 export const deleteBankPromotionAction = publicAction
-  .schema(z.object({ id: z.string().or(z.number()) }))
+  .schema(
+    z.object({
+      id: z.string().or(z.number()),
+      token: authTokenSchema,
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/bank-promotions/${parsedInput.id}`;
 
     try {
       await axios.delete(url, {
-        headers: { ...ctx.headers },
+        headers: buildActionHeaders(ctx, parsedInput.token),
       });
       return { success: true };
     } catch (error: any) {

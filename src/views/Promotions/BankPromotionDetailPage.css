@@ -90,9 +90,43 @@
   font-size: 1.8rem;
   font-weight: 700;
 }
+.stat-value--installments {
+  font-size: 2.5rem;
+  color: var(--brand-blue);
+  line-height: 1;
+  margin: 4px 0;
+}
 .stat-label {
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.bank-promo-stat--installments {
+  border-color: coral;
+  background: rgba(255, 127, 80, 0.05);
+  min-width: 140px;
+}
+
+.interest-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+.interest-badge--no {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.interest-badge--yes {
+  background: #f59e0b;
+  color: white;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
 
 .bank-promo-banks h3,

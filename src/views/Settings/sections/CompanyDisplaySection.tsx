@@ -1,4 +1,11 @@
-import { Edit2, MapPin, CreditCard, Globe, Building2, Store } from "lucide-react";
+import {
+  Edit2,
+  MapPin,
+  CreditCard,
+  Globe,
+  Building2,
+  Store,
+} from "lucide-react";
 import "./CompanyDisplaySection.css";
 import ArcaVerificationSection from "./ArcaVerificationSection";
 
@@ -11,41 +18,56 @@ interface CompanyDisplaySectionProps {
   loadingArca?: boolean;
 }
 
-export default function CompanyDisplaySection({ 
-  prof, 
-  onEdit, 
-  provinceList = [], 
+export default function CompanyDisplaySection({
+  prof,
+  onEdit,
+  provinceList = [],
   departmentList = [],
   arcaStatus,
-  loadingArca
+  loadingArca,
 }: CompanyDisplaySectionProps) {
   // Normalize company: handle if it's an array or object
   let company = prof?.Company;
   if (Array.isArray(company)) company = company[0];
-  
+
   if (!company) return null;
 
   const address = company.Address;
-  
+
   // Robust data extraction with fallbacks
-  const streetName = address?.street_name || company.street_name || company.streetName;
-  const streetNumber = address?.street_number || company.street_number || company.streetNumber;
-  const floorApartment = address?.floor_apartment || company.floor_apartment || company.floorApartment;
+  const streetName =
+    address?.street_name || company.street_name || company.streetName;
+  const streetNumber =
+    address?.street_number || company.street_number || company.streetNumber;
+  const floorApartment =
+    address?.floor_apartment ||
+    company.floor_apartment ||
+    company.floorApartment;
   const zipCode = address?.zip_code || company.zip_code || company.zipCode;
-  const provinceId = address?.province_id || company.province_id || company.provinceId;
-  const departmentId = address?.department_id || company.department_id || company.departmentId;
+  const provinceId =
+    address?.province_id || company.province_id || company.provinceId;
+  const departmentId =
+    address?.department_id || company.department_id || company.departmentId;
 
   // Resolve address names
-  const addressProvinceName = address?.Province?.name || 
-    provinceList.find(p => p.id === provinceId)?.name;
-    
-  const addressDepartmentName = address?.Department?.name || 
-    departmentList.find(d => d.id === departmentId)?.name;
+  const addressProvinceName =
+    address?.Province?.name ||
+    provinceList.find((p) => p.id === provinceId)?.name;
+
+  const addressDepartmentName =
+    address?.Department?.name ||
+    departmentList.find((d) => d.id === departmentId)?.name;
 
   // Improve coverage name resolution
-  const provinceNames = company.CompanyProvinces?.map((p: any) => p.Province?.name || p.name).filter(Boolean) || [];
-  const departmentNames = company.CompanyDepartments?.map((d: any) => d.Department?.name || d.name).filter(Boolean) || [];
-  
+  const provinceNames =
+    company.CompanyProvinces?.map(
+      (p: any) => p.Province?.name || p.name,
+    ).filter(Boolean) || [];
+  const departmentNames =
+    company.CompanyDepartments?.map(
+      (d: any) => d.Department?.name || d.name,
+    ).filter(Boolean) || [];
+
   // Normalize Tax Code / CUIT
   const displayTaxCode = company.tax_code || company.taxCode || company.cuit;
 
@@ -55,7 +77,9 @@ export default function CompanyDisplaySection({
     company.credit && "Crédito",
     company.debit && "Débito",
     company.cheque && "Cheque",
-  ].filter(Boolean).join(" • ");
+  ]
+    .filter(Boolean)
+    .join(" • ");
 
   return (
     <div className="company-display-container">
@@ -77,9 +101,9 @@ export default function CompanyDisplaySection({
         </button>
       </div>
 
-      <ArcaVerificationSection 
-        professionalId={prof.id} 
-        companyId={company.id} 
+      <ArcaVerificationSection
+        professionalId={prof.id}
+        companyId={company[0].company_id}
         arcaStatus={arcaStatus}
         loadingArca={loadingArca}
       />
@@ -91,11 +115,13 @@ export default function CompanyDisplaySection({
           </div>
           <div className="display-card-content">
             <h3>Punto de Venta</h3>
-            {(company.public_trade || streetName) ? (
+            {company.public_trade || streetName ? (
               <div className="address-details-stack">
                 <div className="address-item">
                   <span className="address-label">Calle y Número</span>
-                  <span className="address-value">{streetName} {streetNumber}</span>
+                  <span className="address-value">
+                    {streetName} {streetNumber}
+                  </span>
                 </div>
                 {floorApartment && (
                   <div className="address-item">
@@ -105,7 +131,9 @@ export default function CompanyDisplaySection({
                 )}
                 <div className="address-item">
                   <span className="address-label">Localidad / Provincia</span>
-                  <span className="address-value">{addressDepartmentName}, {addressProvinceName}</span>
+                  <span className="address-value">
+                    {addressDepartmentName}, {addressProvinceName}
+                  </span>
                 </div>
                 <div className="address-item">
                   <span className="address-label">Código Postal</span>
@@ -128,14 +156,18 @@ export default function CompanyDisplaySection({
               <div className="address-item">
                 <span className="address-label">Provincias</span>
                 <span className="address-value">
-                  {provinceNames.length > 0 ? provinceNames.join(" • ") : "Sin zonas definidas"}
+                  {provinceNames.length > 0
+                    ? provinceNames.join(" • ")
+                    : "Sin zonas definidas"}
                 </span>
               </div>
-              
+
               {departmentNames.length > 0 && (
                 <div className="address-item">
                   <span className="address-label">Localidades Específicas</span>
-                  <span className="address-value">{departmentNames.join(" • ")}</span>
+                  <span className="address-value">
+                    {departmentNames.join(" • ")}
+                  </span>
                 </div>
               )}
             </div>
@@ -150,12 +182,18 @@ export default function CompanyDisplaySection({
             <h3>Información Adicional</h3>
             <div className="address-details-stack">
               <div className="address-item">
-                <span className="address-label">Identificación Tributaria (CUIT)</span>
-                <span className="address-value">{displayTaxCode || "No registrado"}</span>
+                <span className="address-label">
+                  Identificación Tributaria (CUIT)
+                </span>
+                <span className="address-value">
+                  {displayTaxCode || "No registrado"}
+                </span>
               </div>
               <div className="address-item">
                 <span className="address-label">Métodos de Pago Aceptados</span>
-                <span className="address-value">{payments || "No definidos"}</span>
+                <span className="address-value">
+                  {payments || "No definidos"}
+                </span>
               </div>
             </div>
           </div>

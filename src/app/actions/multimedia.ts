@@ -4,14 +4,28 @@ import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
 import axios from "axios";
+import { buildActionHeaders } from "./_utils/authHeaders";
+
+const authTokenSchema = z.string().optional();
+const tokenizedRecordSchema = z
+  .object({ token: authTokenSchema })
+  .catchall(z.any());
 
 // Videos
 export const getVideosAction = publicAction
-  .schema(z.void())
-  .action(async ({ ctx }) => {
+  .schema(
+    z
+      .object({
+        token: authTokenSchema,
+      })
+      .optional(),
+  )
+  .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-videos`;
     try {
-      const response = await axios.get(url, { headers: ctx.headers });
+      const response = await axios.get(url, {
+        headers: buildActionHeaders(ctx, parsedInput?.token),
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Error fetching videos");
@@ -74,12 +88,13 @@ export const getImagesByProfessionalAction = publicAction
   });
 
 export const createVideoAction = publicAction
-  .schema(z.record(z.string(), z.any()))
+  .schema(tokenizedRecordSchema)
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-videos`;
+    const { token, ...data } = parsedInput;
     try {
-      const response = await axios.post(url, parsedInput, {
-        headers: ctx.headers,
+      const response = await axios.post(url, data, {
+        headers: buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -102,11 +117,18 @@ export const getVideoDetailAction = publicAction
   });
 
 export const deleteVideoAction = publicAction
-  .schema(z.object({ id: z.string().or(z.number()) }))
+  .schema(
+    z.object({
+      id: z.string().or(z.number()),
+      token: authTokenSchema,
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-videos/${parsedInput.id}`;
     try {
-      await axios.delete(url, { headers: ctx.headers });
+      await axios.delete(url, {
+        headers: buildActionHeaders(ctx, parsedInput.token),
+      });
       return { success: true };
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Error deleting video");
@@ -114,12 +136,13 @@ export const deleteVideoAction = publicAction
   });
 
 export const createProfessionalImageAction = publicAction
-  .schema(z.record(z.string(), z.any()))
+  .schema(tokenizedRecordSchema)
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-images`;
+    const { token, ...data } = parsedInput;
     try {
-      const response = await axios.post(url, parsedInput, {
-        headers: ctx.headers,
+      const response = await axios.post(url, data, {
+        headers: buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -130,11 +153,18 @@ export const createProfessionalImageAction = publicAction
   });
 
 export const deleteProfessionalImageAction = publicAction
-  .schema(z.object({ id: z.string().or(z.number()) }))
+  .schema(
+    z.object({
+      id: z.string().or(z.number()),
+      token: authTokenSchema,
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-images/${parsedInput.id}`;
     try {
-      await axios.delete(url, { headers: ctx.headers });
+      await axios.delete(url, {
+        headers: buildActionHeaders(ctx, parsedInput.token),
+      });
       return { success: true };
     } catch (error: any) {
       throw new Error(
@@ -150,13 +180,15 @@ export const getMultimediaUploadUrlAction = publicAction
       fileName: z.string(),
       fileType: z.string(),
       type: z.enum(["REEL", "PROFILE"]),
+      token: authTokenSchema,
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/videos/upload-url`;
+    const { token, ...data } = parsedInput;
     try {
-      const response = await axios.post(url, parsedInput, {
-        headers: ctx.headers,
+      const response = await axios.post(url, data, {
+        headers: buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {

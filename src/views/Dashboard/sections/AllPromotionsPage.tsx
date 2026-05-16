@@ -181,6 +181,26 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
     });
   }, [promosList, search, filter]);
 
+  const PromoSkeleton = () => (
+    <div className="promo-skeleton">
+      <div className="promo-skeleton__image shimmer" />
+      <div className="promo-skeleton__body">
+        <div className="promo-skeleton__title shimmer" />
+        <div className="promo-skeleton__desc shimmer" />
+        <div className="promo-skeleton__desc shimmer" style={{ width: '60%' }} />
+        <div className="promo-skeleton__meta">
+          <div className="promo-skeleton__date shimmer" />
+          <div className="promo-skeleton__code shimmer" />
+        </div>
+      </div>
+      <div className="promo-skeleton__actions">
+        <div className="promo-skeleton__btn shimmer" />
+        <div className="promo-skeleton__btn shimmer" />
+        <div className="promo-skeleton__btn shimmer" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="all-promos">
       {/* Header */}
@@ -228,37 +248,42 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
 
       {/* Stats Row */}
       <div className="all-promos__stats">
-        <div className="promo-stat-card">
-          <span className="promo-stat-card__value">{promosList.length}</span>
-          <span className="promo-stat-card__label">Total</span>
-        </div>
-        <div className="promo-stat-card promo-stat-card--active">
-          <span className="promo-stat-card__value">
-            {promosList.filter((p) => p.status === "active").length}
-          </span>
-          <span className="promo-stat-card__label">Activas</span>
-        </div>
-        <div className="promo-stat-card promo-stat-card--expired">
-          <span className="promo-stat-card__value">
-            {promosList.filter((p) => p.status === "expired").length}
-          </span>
-          <span className="promo-stat-card__label">Expiradas</span>
-        </div>
-        <div className="promo-stat-card promo-stat-card--draft">
-          <span className="promo-stat-card__value">
-            {promosList.filter((p) => p.status === "draft").length}
-          </span>
-          <span className="promo-stat-card__label">Borradores</span>
-        </div>
+        {isLoading ? (
+          Array(4).fill(0).map((_, i) => (
+            <div key={i} className="promo-stat-card promo-stat-card--skeleton shimmer" />
+          ))
+        ) : (
+          <>
+            <div className="promo-stat-card">
+              <span className="promo-stat-card__value">{promosList.length}</span>
+              <span className="promo-stat-card__label">Total</span>
+            </div>
+            <div className="promo-stat-card promo-stat-card--active">
+              <span className="promo-stat-card__value">
+                {promosList.filter((p) => p.status === "active").length}
+              </span>
+              <span className="promo-stat-card__label">Activas</span>
+            </div>
+            <div className="promo-stat-card promo-stat-card--expired">
+              <span className="promo-stat-card__value">
+                {promosList.filter((p) => p.status === "expired").length}
+              </span>
+              <span className="promo-stat-card__label">Expiradas</span>
+            </div>
+            <div className="promo-stat-card promo-stat-card--draft">
+              <span className="promo-stat-card__value">
+                {promosList.filter((p) => p.status === "draft").length}
+              </span>
+              <span className="promo-stat-card__label">Borradores</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Promotions Grid */}
       <div className="all-promos__grid">
         {isLoading ? (
-          <div className="all-promos__loading">
-            <Loader2 className="animate-spin" size={32} />
-            <p>Cargando promociones...</p>
-          </div>
+          Array(6).fill(0).map((_, i) => <PromoSkeleton key={i} />)
         ) : (
           filtered.map((promo) => (
             <article
@@ -338,7 +363,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
           ))
         )}
 
-        {filtered.length === 0 && (
+        {!isLoading && filtered.length === 0 && (
           <div className="all-promos__empty">
             <Ticket size={48} />
             <p>No se encontraron promociones</p>

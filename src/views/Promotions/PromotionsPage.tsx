@@ -521,6 +521,16 @@ export default function PromotionsPage() {
                               {discount.description ||
                                 `Ahorrá hasta $${discount.refund} en tus compras.`}
                             </p>
+                            {discount.installments != null && discount.installments > 0 && (
+                              <div className="promo-installments-badge">
+                                <span className="promo-installments-num">
+                                  {discount.installments} cuotas
+                                </span>
+                                <span className={`promo-interest-label ${discount.with_interest === false ? 'no-interest' : 'with-interest'}`}>
+                                  {discount.with_interest === false ? 'sin interés' : 'con interés'}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="promo-meta">
                             <span className="promo-meta-item">

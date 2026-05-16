@@ -25,6 +25,7 @@ import { updateProfessionalAction } from "../../app/actions/professionals";
 import { getDepartmentsAction } from "../../app/actions/locations";
 import { getProvincesAction } from "../../app/actions/provinces";
 import { ROUTES } from "../../routes/paths";
+import { getAccessToken } from "../../utils/auth";
 import "../Dashboard/DashboardPage.css";
 import "./SettingsPage.css";
 
@@ -106,13 +107,22 @@ export default function SettingsPage() {
   // 2.2 Consolidate the actual company data (handling array or single object)
   const companyData = Array.isArray(company) ? company[0] : company;
   const actualCompany = companyData?.id ? companyData : (prof?.Company as any);
+  const arcaCompanyKey = String(actualCompany?.id ?? "none");
 
   // Lifted ARCA status query for global caching in SettingsPage
   const { data: arcaStatus, isLoading: loadingArca } = useQuery({
-    queryKey: ["arca-status", actualCompany?.id || "none"],
+    queryKey: ["arca-status", arcaCompanyKey],
     queryFn: async () => {
-      const result = await getArcaCompanyAction({ id: actualCompany!.id });
-      return result?.data ?? null;
+      const result = await getArcaCompanyAction({
+        id: actualCompany!.id,
+        token: getAccessToken(),
+      });
+      const payload = result?.data;
+
+      // Some API handlers return nested payloads; normalize before exposing it.
+      if (payload?.data !== undefined) return payload.data;
+      if (payload?.company !== undefined) return payload.company;
+      return payload ?? null;
     },
     enabled: !!actualCompany?.id,
     staleTime: Infinity,
@@ -121,6 +131,17 @@ export default function SettingsPage() {
     refetchOnMount: false,
     retry: false,
   });
+
+  const fallbackArcaStatus = useMemo(() => {
+    const companyArca =
+      actualCompany?.CompanyArca?.[0] ||
+      actualCompany?.companies_arca?.[0] ||
+      null;
+
+    return companyArca;
+  }, [actualCompany]);
+
+  const effectiveArcaStatus = arcaStatus ?? fallbackArcaStatus;
 
   // Sync state when data is loaded
   useEffect(() => {
@@ -251,6 +272,7 @@ export default function SettingsPage() {
         data: {
           account_type: businessType,
         },
+        token: getAccessToken(),
       });
       if (profResult?.serverError) throw new Error(profResult.serverError);
 
@@ -287,11 +309,15 @@ export default function SettingsPage() {
         const result = await updateCompanyAction({
           id: companyId,
           data: companyData,
+          token: getAccessToken(),
         });
         if (result?.serverError) throw new Error(result.serverError);
         return result?.data;
       } else {
-        const result = await createCompanyAction(companyData);
+        const result = await createCompanyAction({
+          ...companyData,
+          token: getAccessToken(),
+        });
         if (result?.serverError) throw new Error(result.serverError);
         return result?.data;
       }
@@ -387,7 +413,7 @@ export default function SettingsPage() {
                   onEdit={() => setIsEditingCompany(true)}
                   provinceList={provinceList}
                   departmentList={storeDepartmentList}
-                  arcaStatus={arcaStatus}
+                  arcaStatus={effectiveArcaStatus}
                   loadingArca={loadingArca}
                 />
               )}

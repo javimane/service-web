@@ -22,6 +22,7 @@ import { getProposalsCountAction } from "../../app/actions/proposals";
 import { getProfessionalReelStatsAction } from "../../app/actions/reels";
 import { getVideosByProfessionalAction } from "../../app/actions/multimedia";
 import type { CountViewsReelsRow } from "../../types/database.types";
+import { getAccessToken } from "../../utils/auth";
 import ProposalCreator from "./sections/ProposalCreator";
 import ProposalsView from "./sections/ProposalsView";
 import PromotionCreator from "./sections/PromotionCreator";
@@ -55,7 +56,10 @@ export default function DashboardPage() {
   const { data: myProfessional } = useQuery({
     queryKey: ["professional-me"],
     queryFn: async () => {
-      const result = await getProfessionalMeAction();
+      const token = getAccessToken();
+      const result = await getProfessionalMeAction(
+        token ? { token } : undefined,
+      );
       return result?.data ?? null;
     },
     staleTime: 5 * 60 * 1000,

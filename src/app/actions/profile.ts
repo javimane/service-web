@@ -4,6 +4,9 @@ import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
 import axios from "axios";
+import { buildActionHeaders } from "./_utils/authHeaders";
+
+const authTokenSchema = z.string().optional();
 
 export const getProfileAction = publicAction
   .schema(z.object({ id: z.string() }))
@@ -25,6 +28,7 @@ export const updateProfileAction = publicAction
     z.object({
       id: z.string(),
       data: z.record(z.string(), z.any()),
+      token: authTokenSchema,
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
@@ -32,7 +36,7 @@ export const updateProfileAction = publicAction
 
     try {
       const response = await axios.put(url, parsedInput.data, {
-        headers: ctx.headers,
+        headers: buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {

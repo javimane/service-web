@@ -9,6 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { arcaVerifyAction } from "../../../app/actions/companies";
+import { getAccessToken } from "@/utils/auth";
 
 type VerificationStatus = "idle" | "loading" | "success" | "error";
 
@@ -40,7 +41,18 @@ const ArcaVerificationSection = React.memo(
       [cuit],
     );
 
-    const isVerified = arcaStatus?.is_verified || false;
+    const normalizedArcaStatus = useMemo(
+      () => arcaStatus?.data ?? arcaStatus?.company ?? arcaStatus,
+      [arcaStatus],
+    );
+
+    const isVerified = Boolean(
+      normalizedArcaStatus?.is_verified ??
+      normalizedArcaStatus?.isVerified ??
+      normalizedArcaStatus?.verified ??
+      normalizedArcaStatus?.CompanyArca?.[0]?.is_verified ??
+      normalizedArcaStatus?.companies_arca?.[0]?.is_verified,
+    );
 
     const handleVerifyArca = async () => {
       if (!normalizedCuit || normalizedCuit.length < 11) {
@@ -69,8 +81,9 @@ const ArcaVerificationSection = React.memo(
       try {
         const result = await arcaVerifyAction({
           cuit: normalizedCuit,
-          company_name: companyName,
-          professional_id: Number(professionalId),
+          companyName: companyName,
+          professionalId: Number(professionalId),
+          token: getAccessToken(),
         });
         if (result?.serverError) throw new Error(result.serverError);
         setVerificationStatus("success");
@@ -78,14 +91,25 @@ const ArcaVerificationSection = React.memo(
           "¡Validación exitosa! Tu empresa ha sido verificada en ARCA.",
         );
 
-        // Manually update cache in SettingsPage query
-        queryClient.setQueryData(
-          ["arca-status", companyId],
-          (oldData: any) => ({
+        // Keep the ARCA status cache in sync for both key variants
+        const arcaKey = ["arca-status", String(companyId ?? "none")];
+        queryClient.setQueryData(arcaKey, (oldData: any) => {
+          if (!oldData) return { is_verified: true };
+          if (oldData?.data) {
+            return {
+              ...oldData,
+              data: {
+                ...oldData.data,
+                is_verified: true,
+              },
+            };
+          }
+
+          return {
             ...oldData,
             is_verified: true,
-          }),
-        );
+          };
+        });
 
         setTimeout(() => setShowForm(false), 2000);
       } catch (error: any) {

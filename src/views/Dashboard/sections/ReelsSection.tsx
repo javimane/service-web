@@ -21,6 +21,7 @@ import {
 } from "../../../app/actions/reels";
 import { getMultimediaUploadUrlAction } from "../../../app/actions/multimedia";
 import { useAuth } from "../../../context/AuthContext";
+import { getAccessToken } from "../../../utils/auth";
 import "./ReelsSection.css";
 
 type ReelItem = {
@@ -117,6 +118,7 @@ export default function ReelsSection() {
         fileName: selectedFile.name,
         fileType: selectedFile.type,
         type: "REEL",
+        token: getAccessToken(),
       });
       if (uploadUrlResult?.serverError)
         throw new Error(uploadUrlResult.serverError);

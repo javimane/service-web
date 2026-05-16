@@ -4,6 +4,9 @@ import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
 import axios from "axios";
+import { buildActionHeaders } from "./_utils/authHeaders";
+
+const authTokenSchema = z.string().optional();
 
 export const getCompaniesAction = publicAction
   .schema(z.void())
@@ -34,7 +37,7 @@ export const getCompanyDetailAction = publicAction
   });
 
 export const getCompanyByProfessionalAction = publicAction
-  .schema(z.object({ professionalId: z.string().or(z.number()) }))
+  .schema(z.object({ professionalId: z.coerce.number() }))
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/companies/professional/${parsedInput.professionalId}`;
     try {
@@ -49,11 +52,18 @@ export const getCompanyByProfessionalAction = publicAction
   });
 
 export const getArcaCompanyAction = publicAction
-  .schema(z.object({ id: z.number() }))
+  .schema(
+    z.object({
+      id: z.number(),
+      token: authTokenSchema,
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/arca/company/${parsedInput.id}`;
     try {
-      const response = await axios.get(url, { headers: ctx.headers });
+      const response = await axios.get(url, {
+        headers: buildActionHeaders(ctx, parsedInput.token),
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -68,12 +78,15 @@ export const arcaVerifyAction = publicAction
       cuit: z.string(),
       companyName: z.string(),
       professionalId: z.string().or(z.number()),
+      token: authTokenSchema,
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/arca/verify/${parsedInput.cuit}/${encodeURIComponent(parsedInput.companyName)}/${parsedInput.professionalId}`;
     try {
-      const response = await axios.get(url, { headers: ctx.headers });
+      const response = await axios.get(url, {
+        headers: buildActionHeaders(ctx, parsedInput.token),
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Error verifying ARCA");
@@ -81,12 +94,19 @@ export const arcaVerifyAction = publicAction
   });
 
 export const createCompanyAction = publicAction
-  .schema(z.record(z.string(), z.any()))
+  .schema(
+    z
+      .object({
+        token: authTokenSchema,
+      })
+      .catchall(z.any()),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/companies`;
+    const { token, ...data } = parsedInput;
     try {
-      const response = await axios.post(url, parsedInput, {
-        headers: ctx.headers,
+      const response = await axios.post(url, data, {
+        headers: buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -101,13 +121,14 @@ export const updateCompanyAction = publicAction
     z.object({
       id: z.string().or(z.number()),
       data: z.record(z.string(), z.any()),
+      token: authTokenSchema,
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/companies/${parsedInput.id}`;
     try {
       const response = await axios.put(url, parsedInput.data, {
-        headers: ctx.headers,
+        headers: buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {

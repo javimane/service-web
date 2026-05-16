@@ -36,6 +36,7 @@ import {
   updateProfessionalProductAction,
 } from "../../../app/actions/products";
 import { getProductCategoriesAction } from "../../../app/actions/categories";
+import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
 import "./DashboardProducts.css";
 
@@ -300,7 +301,11 @@ export default function DashboardProducts() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const result = await createProductAction(data);
+      const token = getAccessToken();
+      const result = await createProductAction({
+        ...data,
+        ...(token ? { token } : {}),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },
@@ -313,7 +318,11 @@ export default function DashboardProducts() {
 
   const assignMutation = useMutation({
     mutationFn: async (data: any) => {
-      const result = await assignProductToProfessionalAction(data);
+      const token = getAccessToken();
+      const result = await assignProductToProfessionalAction({
+        ...data,
+        ...(token ? { token } : {}),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },
@@ -336,6 +345,7 @@ export default function DashboardProducts() {
         professionalId,
         productId,
         updates: data,
+        token: getAccessToken(),
       });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
@@ -351,6 +361,7 @@ export default function DashboardProducts() {
       const result = await unassignProductFromProfessionalAction({
         productId,
         professionalId,
+        token: getAccessToken(),
       });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
@@ -362,7 +373,11 @@ export default function DashboardProducts() {
 
   const massUpdateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const result = await massUpdateProductPricesAction(data);
+      const token = getAccessToken();
+      const result = await massUpdateProductPricesAction({
+        ...data,
+        ...(token ? { token } : {}),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },

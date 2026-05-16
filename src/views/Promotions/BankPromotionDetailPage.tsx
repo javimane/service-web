@@ -194,6 +194,18 @@ export default function BankPromotionDetailPage() {
                     <span className="stat-label">Tope Reintegro</span>
                   </div>
                 )}
+                {promo.installments != null && promo.installments > 0 && (
+                  <div className="bank-promo-stat bank-promo-stat--installments">
+                    <CreditCard size={20} />
+                    <span className="stat-value stat-value--installments">
+                      {promo.installments}
+                    </span>
+                    <span className="stat-label">Cuotas</span>
+                    <span className={`interest-badge ${promo.with_interest === false ? 'interest-badge--no' : 'interest-badge--yes'}`}>
+                      {promo.with_interest === false ? 'Sin interés' : 'Con interés'}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Banks */}

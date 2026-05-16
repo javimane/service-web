@@ -28,6 +28,8 @@ export interface BankPromotion {
   payment_method?: string | null;
   terms_conditions?: string | null;
   minimum_amount?: number | null;
+  with_interest?: boolean | null;
+  installments?: number | null;
   Bank?: Bank;
   bank_promotions_banks?: Array<{
     bank_id: number;

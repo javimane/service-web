@@ -145,7 +145,7 @@ export default function MapPage() {
           `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || company?.name || "P")}&background=random`;
 
         const name =
-          company?.name || profile?.display_name || p.name || "Profesional";
+          p.company_name || profile?.display_name || p.name || "Profesional";
 
         const seoPath = p.seo_path || p.seoPath || null;
         const profileUrl = seoPath
@@ -155,7 +155,7 @@ export default function MapPage() {
         return {
           id: p.user_id || p.id,
           name,
-          companyName: company?.name || "Sin empresa",
+          companyName: p.company_name || "Sin nombre empresa",
           specialty: p.specialty || p.bio || "Servicios",
           rating: p.ratingAvg || p.rating_avg || 0,
           isVerified,

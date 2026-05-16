@@ -19,6 +19,7 @@ import {
   getProfileAction,
   updateProfileAction,
 } from "../../../app/actions/profile";
+import { getAccessToken } from "../../../utils/auth";
 import { getFirebaseMessagingToken } from "../../../services/firebaseMessaging";
 import "./PersonalInfoSection.css";
 
@@ -94,6 +95,7 @@ export default function PersonalInfoSection({
       const result = await updateProfileAction({
         id: userId,
         data: { display_name: newName },
+        token: getAccessToken(),
       });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;

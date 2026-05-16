@@ -19,6 +19,7 @@ import {
   getMyUserDataBankAction,
   upsertUserDataBankAction,
 } from "../../../app/actions/userDataBank";
+import { getAccessToken } from "../../../utils/auth";
 import "./DashboardReferrals.css";
 
 export default function DashboardReferrals() {
@@ -40,7 +41,10 @@ export default function DashboardReferrals() {
   const { data: bankDataFetched, isLoading: loadingBank } = useQuery({
     queryKey: ["user-bank-data"],
     queryFn: async () => {
-      const result = await getMyUserDataBankAction();
+      const token = getAccessToken();
+      const result = await getMyUserDataBankAction(
+        token ? { token } : undefined,
+      );
       return result?.data ?? null;
     },
     retry: (failureCount, error: any) => {
@@ -74,7 +78,11 @@ export default function DashboardReferrals() {
   // Mutations
   const bankMutation = useMutation({
     mutationFn: async (data: { cbu: string; alias: string }) => {
-      const result = await upsertUserDataBankAction(data);
+      const token = getAccessToken();
+      const result = await upsertUserDataBankAction({
+        ...data,
+        ...(token ? { token } : {}),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
 import axios from "axios";
+import { buildActionHeaders } from "./_utils/authHeaders";
 
 const productListSchema = z.object({
   page: z.number().optional(),
@@ -23,6 +24,10 @@ const productListSchema = z.object({
   brand: z.string().optional(),
   ean: z.string().optional(),
 });
+const authTokenSchema = z.string().optional();
+const tokenizedRecordSchema = z
+  .object({ token: authTokenSchema })
+  .catchall(z.any());
 
 export const getProductsAction = publicAction
   .schema(productListSchema)
@@ -129,13 +134,14 @@ export const getProductByEanAction = publicAction
   });
 
 export const createProductAction = publicAction
-  .schema(z.record(z.string(), z.any()))
+  .schema(tokenizedRecordSchema)
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products`;
+    const { token, ...data } = parsedInput;
 
     try {
-      const response = await axios.post(url, parsedInput, {
-        headers: { ...ctx.headers },
+      const response = await axios.post(url, data, {
+        headers: buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -146,13 +152,14 @@ export const createProductAction = publicAction
   });
 
 export const assignProductToProfessionalAction = publicAction
-  .schema(z.record(z.string(), z.any()))
+  .schema(tokenizedRecordSchema)
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/assign-professional`;
+    const { token, ...data } = parsedInput;
 
     try {
-      const response = await axios.post(url, parsedInput, {
-        headers: { ...ctx.headers },
+      const response = await axios.post(url, data, {
+        headers: buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -168,6 +175,7 @@ export const updateProfessionalProductAction = publicAction
       professionalId: z.number(),
       productId: z.string().or(z.number()),
       updates: z.record(z.string(), z.any()),
+      token: authTokenSchema,
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
@@ -175,7 +183,7 @@ export const updateProfessionalProductAction = publicAction
 
     try {
       const response = await axios.put(url, parsedInput.updates, {
-        headers: { ...ctx.headers },
+        headers: buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -190,13 +198,16 @@ export const unassignProductFromProfessionalAction = publicAction
     z.object({
       productId: z.string(),
       professionalId: z.number(),
+      token: authTokenSchema,
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/${parsedInput.productId}/professional/${parsedInput.professionalId}`;
 
     try {
-      await axios.delete(url, { headers: { ...ctx.headers } });
+      await axios.delete(url, {
+        headers: buildActionHeaders(ctx, parsedInput.token),
+      });
       return { success: true };
     } catch (error: any) {
       throw new Error(
@@ -206,13 +217,14 @@ export const unassignProductFromProfessionalAction = publicAction
   });
 
 export const massUpdateProductPricesAction = publicAction
-  .schema(z.record(z.string(), z.any()))
+  .schema(tokenizedRecordSchema)
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/mass-update-prices`;
+    const { token, ...data } = parsedInput;
 
     try {
-      const response = await axios.put(url, parsedInput, {
-        headers: { ...ctx.headers },
+      const response = await axios.put(url, data, {
+        headers: buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {

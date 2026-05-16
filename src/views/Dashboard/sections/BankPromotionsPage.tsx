@@ -47,11 +47,18 @@ const PAYMENT_METHODS = [
 
 export default function BankPromotionsPage() {
   const queryClient = useQueryClient();
+  const getAccessToken = () =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("access_token") || undefined
+      : undefined;
 
   // Mutaciones
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const result = await createBankPromotionAction(data);
+      const result = await createBankPromotionAction({
+        data,
+        token: getAccessToken(),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },
@@ -65,7 +72,11 @@ export default function BankPromotionsPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const result = await updateBankPromotionAction({ id, data });
+      const result = await updateBankPromotionAction({
+        id,
+        data,
+        token: getAccessToken(),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },
@@ -79,7 +90,10 @@ export default function BankPromotionsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const result = await deleteBankPromotionAction({ id });
+      const result = await deleteBankPromotionAction({
+        id,
+        token: getAccessToken(),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },
@@ -110,7 +124,11 @@ export default function BankPromotionsPage() {
   } = useQuery({
     queryKey: ["bank-promotions"],
     queryFn: async () => {
-      const result = await getMyBankPromotionsAction();
+      const token = getAccessToken();
+      const result = await getMyBankPromotionsAction(
+        token ? { token } : undefined,
+      );
+      if (result?.serverError) throw new Error(result.serverError);
       return result?.data ?? [];
     },
   });
@@ -183,6 +201,8 @@ export default function BankPromotionsPage() {
     payment_method: "[]",
     terms_conditions: "",
     minimum_amount: 0,
+    with_interest: false as boolean | null,
+    installments: null as number | null,
   });
 
   const handleOpenModal = (promo: BankPromotion | null = null) => {
@@ -204,6 +224,8 @@ export default function BankPromotionsPage() {
         payment_method: promo.payment_method || "[]",
         terms_conditions: promo.terms_conditions || "",
         minimum_amount: promo.minimum_amount || 0,
+        with_interest: promo.with_interest ?? false,
+        installments: promo.installments ?? null,
       });
       setSelectedBankIds(getPromoBankIds(promo));
     } else {
@@ -228,6 +250,8 @@ export default function BankPromotionsPage() {
         payment_method: "[]",
         terms_conditions: "",
         minimum_amount: 0,
+        with_interest: false,
+        installments: null,
       });
       setSelectedBankIds([]);
     }
@@ -476,6 +500,23 @@ export default function BankPromotionsPage() {
                           </span>
                         </div>
                       )}
+                      {promo.installments != null && promo.installments > 0 && (
+                        <div className="bank-promo-card__detail-row">
+                          <span className="bank-promo-card__detail-label">
+                            <CreditCard size={14} /> Cuotas
+                          </span>
+                          <span className="bank-promo-card__detail-value bank-promo-card__installments-value">
+                            {promo.installments} cuotas
+                            <span
+                              className={`bank-promo-card__interest-badge ${promo.with_interest === false ? "no-interest" : "with-interest"}`}
+                            >
+                              {promo.with_interest === false
+                                ? "Sin interés"
+                                : "Con interés"}
+                            </span>
+                          </span>
+                        </div>
+                      )}
                       <div className="bank-promo-card__detail-row">
                         <span className="bank-promo-card__detail-label">
                           <CalendarDays size={14} /> Vigencia
@@ -659,6 +700,46 @@ export default function BankPromotionsPage() {
                         }))
                       }
                     />
+                  </div>
+                </div>
+                <div className="bank-promo-field">
+                  <label>Número de Cuotas</label>
+                  <div className="bank-promo-input-wrapper">
+                    <CreditCard size={18} className="field-icon" />
+                    <input
+                      type="number"
+                      min="1"
+                      max="48"
+                      placeholder="Ej. 12"
+                      value={form.installments ?? ""}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          installments: e.target.value
+                            ? Number(e.target.value)
+                            : null,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="bank-promo-field">
+                  <label>Tipo de Interés</label>
+                  <div
+                    className={`bank-promo-interest-toggle ${form.with_interest ? "with-interest" : "no-interest"}`}
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        with_interest: !prev.with_interest,
+                      }))
+                    }
+                  >
+                    <div className="interest-toggle-track">
+                      <div className="interest-toggle-thumb" />
+                    </div>
+                    <span className="interest-toggle-label">
+                      {form.with_interest ? "Con interés" : "Sin interés"}
+                    </span>
                   </div>
                 </div>
                 <div className="bank-promo-field">

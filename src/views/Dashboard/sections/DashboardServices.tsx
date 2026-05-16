@@ -21,6 +21,7 @@ import {
   deleteServiceAction,
   updateServiceAction,
 } from "../../../app/actions/services";
+import { getAccessToken } from "../../../utils/auth";
 import "./DashboardServices.css";
 
 export default function DashboardServices() {
@@ -79,7 +80,11 @@ export default function DashboardServices() {
   // Mutations
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const result = await createServiceAction(data);
+      const token = getAccessToken();
+      const result = await createServiceAction({
+        ...data,
+        ...(token ? { token } : {}),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },
@@ -100,7 +105,11 @@ export default function DashboardServices() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const result = await updateServiceAction({ id, data });
+      const result = await updateServiceAction({
+        id,
+        data,
+        token: getAccessToken(),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },
@@ -121,7 +130,10 @@ export default function DashboardServices() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const result = await deleteServiceAction({ id });
+      const result = await deleteServiceAction({
+        id,
+        token: getAccessToken(),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
     },

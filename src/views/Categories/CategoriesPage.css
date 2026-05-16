@@ -476,6 +476,11 @@ input:checked + .ios-toggle__slider:before {
   background: #f0fff4;
 }
 
+.tag--matriculated {
+  color: #0984e3;
+  background: #ebf5ff;
+}
+
 .profile-result-card__description {
   color: #636e72;
   font-size: 1rem;

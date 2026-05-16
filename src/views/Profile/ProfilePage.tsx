@@ -15,10 +15,14 @@ import {
   ChevronUp,
   CheckCircle,
   ShoppingBag,
+  MapPin,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ROUTES } from "../../routes/paths";
-import { getProfessionalDetailAction } from "../../app/actions/professionals";
+import {
+  getProfessionalDetailAction,
+  getCompanyLocationsAction,
+} from "../../app/actions/professionals";
 import { getServicesByProfessionalAction } from "../../app/actions/services";
 import {
   getImagesByProfessionalAction,
@@ -313,6 +317,16 @@ export default function ProfilePage() {
     enabled: !!id && !isNaN(Number(id)),
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
+  });
+
+  const { data: companyLocations } = useQuery({
+    queryKey: ["company-locations", id],
+    queryFn: async () => {
+      const result = await getCompanyLocationsAction({ id: id! });
+      return result?.data ?? null;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 60, // 1 hora
   });
 
   const profBankPromos = useMemo(() => {
@@ -631,6 +645,40 @@ export default function ProfilePage() {
             <p className="bio">
               {professional.bio || "Sin biografía disponible."}
             </p>
+
+            {companyLocations && (
+              <div className="scope-of-work">
+                <h3>ALCANCE DE TRABAJO / COBERTURA</h3>
+                <div className="scope-grid">
+                  {companyLocations.provinces?.map((p: any) => {
+                    const provinceId = p.Province?.id;
+                    const provinceDepartments = companyLocations.departments?.filter(
+                      (d: any) => d.Department?.province_id === provinceId
+                    );
+
+                    return (
+                      <div key={provinceId} className="scope-province">
+                        <div className="province-header">
+                          <MapPin size={14} />
+                          <strong>{p.Province?.name}</strong>
+                        </div>
+                        <div className="departments-list">
+                          {provinceDepartments && provinceDepartments.length > 0 ? (
+                            provinceDepartments.map((d: any) => (
+                              <span key={d.Department?.id} className="dept-tag">
+                                {d.Department?.name}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="all-province">Toda la provincia</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </header>
 
           <div className="profile-section">

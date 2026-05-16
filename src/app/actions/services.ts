@@ -4,8 +4,13 @@ import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
 import axios from "axios";
+import { buildActionHeaders } from "./_utils/authHeaders";
 
 const serviceListSchema = z.record(z.string(), z.any()).optional();
+const authTokenSchema = z.string().optional();
+const tokenizedRecordSchema = z
+  .object({ token: authTokenSchema })
+  .catchall(z.any());
 
 export const getServicesAction = publicAction
   .schema(serviceListSchema)
@@ -70,13 +75,14 @@ export const getServicesByProfessionalAction = publicAction
   });
 
 export const createServiceAction = publicAction
-  .schema(z.record(z.string(), z.any()))
+  .schema(tokenizedRecordSchema)
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/services`;
+    const { token, ...data } = parsedInput;
 
     try {
-      const response = await axios.post(url, parsedInput, {
-        headers: ctx.headers,
+      const response = await axios.post(url, data, {
+        headers: buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -91,6 +97,7 @@ export const updateServiceAction = publicAction
     z.object({
       id: z.string().or(z.number()),
       data: z.record(z.string(), z.any()),
+      token: authTokenSchema,
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
@@ -98,7 +105,7 @@ export const updateServiceAction = publicAction
 
     try {
       const response = await axios.put(url, parsedInput.data, {
-        headers: ctx.headers,
+        headers: buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -109,12 +116,19 @@ export const updateServiceAction = publicAction
   });
 
 export const deleteServiceAction = publicAction
-  .schema(z.object({ id: z.string().or(z.number()) }))
+  .schema(
+    z.object({
+      id: z.string().or(z.number()),
+      token: authTokenSchema,
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/services/${parsedInput.id}`;
 
     try {
-      await axios.delete(url, { headers: ctx.headers });
+      await axios.delete(url, {
+        headers: buildActionHeaders(ctx, parsedInput.token),
+      });
       return { success: true };
     } catch (error: any) {
       throw new Error(

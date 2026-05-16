@@ -44,6 +44,7 @@ import {
   upsertAvailabilityBulkAction,
 } from "../../../app/actions/availability";
 import { useAuth } from "../../../context/AuthContext";
+import { getAccessToken } from "../../../utils/auth";
 import "./ProfessionalProfileSection.css";
 
 type AvailabilityUpsertItem = {
@@ -304,6 +305,7 @@ export default function ProfessionalProfileSection() {
         data: {
           avatar_url: uploaded.publicUrl,
         },
+        token: getAccessToken(),
       });
       if (updateResult?.serverError) throw new Error(updateResult.serverError);
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
@@ -337,6 +339,7 @@ export default function ProfessionalProfileSection() {
             professional_id: professionalId,
             image_url: uploaded.publicUrl,
             display_order: currentOrder,
+            token: getAccessToken(),
           });
           if (imageResult?.serverError)
             throw new Error(imageResult.serverError);
@@ -369,7 +372,10 @@ export default function ProfessionalProfileSection() {
   // No se edita más la imagen, solo se elimina
   const removeImage = async (id: string) => {
     try {
-      const result = await deleteProfessionalImageAction({ id });
+      const result = await deleteProfessionalImageAction({
+        id,
+        token: getAccessToken(),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       queryClient.setQueryData(
         ["professionalImages", professionalId],
@@ -400,7 +406,10 @@ export default function ProfessionalProfileSection() {
   // Video: solo se edita título y descripción, no el archivo
   const removeVideo = async (id: string) => {
     try {
-      const result = await deleteVideoAction({ id });
+      const result = await deleteVideoAction({
+        id,
+        token: getAccessToken(),
+      });
       if (result?.serverError) throw new Error(result.serverError);
       queryClient.setQueryData(
         ["videos", professionalId],
@@ -447,6 +456,7 @@ export default function ProfessionalProfileSection() {
         fileName: newVideoFile.name,
         fileType: newVideoFile.type,
         type: "PROFILE",
+        token: getAccessToken(),
       });
       if (uploadUrlResult?.serverError)
         throw new Error(uploadUrlResult.serverError);
@@ -465,6 +475,7 @@ export default function ProfessionalProfileSection() {
         title: newVideoTitle.trim(),
         description: newVideoDescription.trim(),
         video_url: key,
+        token: getAccessToken(),
       });
       if (createVideoResult?.serverError) {
         throw new Error(createVideoResult.serverError);
@@ -536,6 +547,7 @@ export default function ProfessionalProfileSection() {
         data: {
           display_name: displayName || null,
         },
+        token: getAccessToken(),
       });
       if (profileResult?.serverError)
         throw new Error(profileResult.serverError);
@@ -549,6 +561,7 @@ export default function ProfessionalProfileSection() {
             emergency: attendsEmergency,
             web_url: webUrl || null,
           },
+          token: getAccessToken(),
         });
         if (professionalResult?.serverError) {
           throw new Error(professionalResult.serverError);

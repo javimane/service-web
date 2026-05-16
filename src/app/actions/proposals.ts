@@ -4,6 +4,9 @@ import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
 import axios from "axios";
+import { buildActionHeaders } from "./_utils/authHeaders";
+
+const authTokenSchema = z.string().optional();
 
 export const getProposalsCountAction = publicAction
   .schema(z.object({ professionalId: z.string().or(z.number()) }))
@@ -21,12 +24,20 @@ export const getProposalsCountAction = publicAction
   });
 
 export const getReceivedProposalsAction = publicAction
-  .schema(z.void())
-  .action(async ({ ctx }) => {
+  .schema(
+    z
+      .object({
+        token: authTokenSchema,
+      })
+      .optional(),
+  )
+  .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-proposals/received`;
 
     try {
-      const response = await axios.get(url, { headers: ctx.headers });
+      const response = await axios.get(url, {
+        headers: buildActionHeaders(ctx, parsedInput?.token),
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -36,12 +47,20 @@ export const getReceivedProposalsAction = publicAction
   });
 
 export const getSentProposalsAction = publicAction
-  .schema(z.void())
-  .action(async ({ ctx }) => {
+  .schema(
+    z
+      .object({
+        token: authTokenSchema,
+      })
+      .optional(),
+  )
+  .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-proposals/sent`;
 
     try {
-      const response = await axios.get(url, { headers: ctx.headers });
+      const response = await axios.get(url, {
+        headers: buildActionHeaders(ctx, parsedInput?.token),
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(
@@ -51,12 +70,23 @@ export const getSentProposalsAction = publicAction
   });
 
 export const acceptProposalAction = publicAction
-  .schema(z.object({ id: z.string().or(z.number()) }))
+  .schema(
+    z.object({
+      id: z.string().or(z.number()),
+      token: authTokenSchema,
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-proposals/${parsedInput.id}/accept`;
 
     try {
-      const response = await axios.patch(url, {}, { headers: ctx.headers });
+      const response = await axios.patch(
+        url,
+        {},
+        {
+          headers: buildActionHeaders(ctx, parsedInput.token),
+        },
+      );
       return response.data;
     } catch (error: any) {
       throw new Error(

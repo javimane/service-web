@@ -23,6 +23,7 @@ import {
   getUserRequestsAction,
   sendMessageAction,
 } from "../../app/actions/communications";
+import { getAccessToken } from "../../utils/auth";
 import "./MessagesPage.css";
 
 type UIConversation = {
@@ -89,7 +90,10 @@ export default function MessagesPage() {
   const { data: requestsData } = useQuery({
     queryKey: ["my-contact-requests", user?.id],
     queryFn: async () => {
-      const result = await getUserRequestsAction({ userId: user!.id });
+      const result = await getUserRequestsAction({
+        userId: user!.id,
+        token: getAccessToken(),
+      });
       return result?.data ?? [];
     },
     enabled: !!user?.id,
@@ -184,6 +188,7 @@ export default function MessagesPage() {
     queryFn: async () => {
       const result = await getRequestMessagesAction({
         requestId: activeRequestId!,
+        token: getAccessToken(),
       });
       return result?.data ?? [];
     },
@@ -226,6 +231,7 @@ export default function MessagesPage() {
         const result = await sendMessageAction({
           requestId: activeRequestId,
           content,
+          token: getAccessToken(),
         });
         return result?.data;
       }
@@ -237,6 +243,7 @@ export default function MessagesPage() {
       const createdResult = await createRequestAction({
         professional_id: activeConversation.professionalId,
         message: content,
+        token: getAccessToken(),
       });
       const created = createdResult?.data;
 

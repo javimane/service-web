@@ -315,6 +315,39 @@
   flex: 1;
 }
 
+.promo-installments-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  border-radius: 12px;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+.promo-installments-num {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.promo-interest-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.promo-interest-label.no-interest {
+  color: #10b981;
+}
+
+.promo-interest-label.with-interest {
+  color: #f59e0b;
+}
+
 .promo-meta {
   display: flex;
   align-items: center;
