@@ -1,5 +1,5 @@
 .settings-content {
-  max-width: 680px;
+  max-width: 960px; /* Capped for better readability and 2-column layout */
   width: 100%;
   margin: 0 auto;
   padding: 40px 24px;
@@ -38,6 +38,19 @@
   grid-template-columns: 1fr;
   gap: 24px;
   align-items: start;
+}
+
+@media (min-width: 930px) {
+  .settings-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .settings-card--wide,
+  .register-company-cta,
+  .personal-info-section,
+  .settings-actions-card {
+    grid-column: span 2;
+  }
 }
 
 .settings-card {

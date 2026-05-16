@@ -112,6 +112,30 @@ export const getProfessionalMeAction = publicAction
     }
   });
 
+export const getProfessionalSubscriptionAction = publicAction
+  .schema(
+    z
+      .object({
+        token: authTokenSchema,
+      })
+      .optional(),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professionals/me/subscription`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: buildActionHeaders(ctx, parsedInput?.token),
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message ||
+          "Error fetching professional subscription",
+      );
+    }
+  });
+
 export const incrementProfessionalViewsAction = publicAction
   .schema(z.object({ id: z.string().or(z.number()) }))
   .action(async ({ parsedInput, ctx }) => {

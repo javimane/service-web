@@ -14,13 +14,15 @@ import {
   ChevronUp,
 } from "lucide-react";
 import {
-  getPlansWithApiPrices,
   plans as staticPlans,
-  type Plan,
+  mergePlansWithSubscriptionPrices,
 } from "../../../data/plans";
 import { type Subscription } from "../../../data/subscription";
 import { useAuth } from "../../../context/AuthContext";
 import "./SubscriptionSection.css";
+import { getSubscriptionPricesAction } from "@/app/actions/plans";
+import { getProfessionalSubscriptionAction } from "@/app/actions/professionals";
+import { getAccessToken } from "@/utils/auth";
 
 // Mapeo de los nombres de plan del API a los IDs internos
 const planNameToId: Record<string, string> = {
@@ -28,12 +30,16 @@ const planNameToId: Record<string, string> = {
   premium: "profesional-premium",
 };
 
-function formatPrice(n: number) {
+function formatPrice(n: number | undefined | null) {
+  if (n === undefined || n === null) return "0";
   return n.toLocaleString("es-AR");
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("es-AR", {
+function formatDate(dateStr: string | undefined | null) {
+  if (!dateStr) return "—";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("es-AR", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -69,85 +75,92 @@ export default function SubscriptionSection() {
   const { sessionStatus } = useAuth();
   const [showPlans, setShowPlans] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [localSubscription, setLocalSubscription] = useState<any>(null);
   const plansRef = useRef<HTMLDivElement>(null);
+
+  const { data: apiSubscription, isLoading: loadingSub } = useQuery({
+    queryKey: ["professional-subscription"],
+    queryFn: async () => {
+      const token = await getAccessToken();
+      const result = await getProfessionalSubscriptionAction({ token });
+      return result?.data || result || null;
+    },
+    staleTime: 1000 * 60 * 60, // 1 hour cache
+  });
+
+  const subscription = apiSubscription;
 
   const { data: availablePlans = staticPlans } = useQuery({
     queryKey: ["subscription-plans"],
-    queryFn: getPlansWithApiPrices,
+    queryFn: async () => {
+      const result = await getSubscriptionPricesAction();
+      const apiPrices = Array.isArray(result?.data) ? result.data : [];
+      if (apiPrices.length > 0) {
+        return mergePlansWithSubscriptionPrices(staticPlans, apiPrices);
+      }
+      return staticPlans;
+    },
     staleTime: 1000 * 60 * 60, // 1 hour cache
   });
 
   const currentStatus = useMemo(
-    () =>
-      normalizeSubscriptionStatus(
-        subscription?.status ?? sessionStatus?.subscription?.status,
-      ),
-    [subscription?.status, sessionStatus?.subscription?.status],
+    () => normalizeSubscriptionStatus(subscription?.status),
+    [subscription?.status],
   );
 
-  const hasSubscription = useMemo(
-    () => Boolean(sessionStatus?.subscription),
-    [sessionStatus?.subscription],
-  );
+  const hasSubscription = useMemo(() => Boolean(subscription), [subscription]);
 
   const isActiveProPlan = useMemo(
-    () =>
-      Boolean(sessionStatus?.is_professional) &&
-      Boolean(sessionStatus?.professional_active) &&
-      currentStatus === "active",
-    [
-      sessionStatus?.is_professional,
-      sessionStatus?.professional_active,
-      currentStatus,
-    ],
+    () => Boolean(sessionStatus) && currentStatus === "active",
+    [sessionStatus, currentStatus],
   );
 
   // Plan activo según el API (null si no hay suscripción)
   const activePlanId = useMemo(
     () =>
-      sessionStatus?.subscription?.plan
-        ? (planNameToId[sessionStatus.subscription.plan] ?? null)
-        : null,
-    [sessionStatus?.subscription?.plan],
+      subscription?.plan ? (planNameToId[subscription.plan] ?? null) : null,
+    [subscription?.plan],
   );
 
   // Fechas desde el API cuando estén disponibles
   const displayStartDate = useMemo(
-    () =>
-      sessionStatus?.subscription?.started_at ?? subscription?.startDate ?? "",
-    [sessionStatus?.subscription?.started_at, subscription?.startDate],
+    () => subscription?.started_at || subscription?.startDate || "",
+    [subscription],
   );
 
   const displayNextPaymentDate = useMemo(
-    () =>
-      sessionStatus?.subscription?.expires_at ??
-      subscription?.nextPaymentDate ??
-      "",
-    [sessionStatus?.subscription?.expires_at, subscription?.nextPaymentDate],
-  );
-
-  const displayAmount = useMemo(
-    () => sessionStatus?.subscription?.amount_paid ?? subscription?.amount ?? 0,
-    [sessionStatus?.subscription?.amount_paid, subscription?.amount],
+    () => subscription?.expires_at || subscription?.nextPaymentDate || "",
+    [subscription],
   );
 
   const basicCheckoutUrl = process.env.NEXT_PUBLIC_MP_BASIC_CHECKOUT_URL;
   const premiumCheckoutUrl = process.env.NEXT_PUBLIC_MP_PREMIUM_CHECKOUT_URL;
 
-  const currentPlan = useMemo(
+  const currentPlan = useMemo(() => {
+    if (!hasSubscription) return null;
+
+    const planId =
+      activePlanId ||
+      (subscription?.plan ? planNameToId[subscription.plan] : null);
+    if (!planId) return null;
+
+    return availablePlans.find((p) => p.id === planId) || null;
+  }, [hasSubscription, activePlanId, subscription?.plan, availablePlans]);
+
+  const displayAmount = useMemo(
     () =>
-      (hasSubscription && activePlanId
-        ? availablePlans.find((p) => p.id === activePlanId)
-        : undefined) ??
-      (hasSubscription && subscription?.plan
-        ? availablePlans.find((p) => p.id === subscription.plan)
-        : undefined),
-    [hasSubscription, activePlanId, subscription?.plan, availablePlans],
+      subscription?.amount_paid ||
+      subscription?.amount ||
+      currentPlan?.price ||
+      0,
+    [subscription, currentPlan],
   );
 
   const handleCancelSubscription = () => {
-    setSubscription((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
+    setLocalSubscription((prev: any) => {
+      const current = prev || apiSubscription;
+      return current ? { ...current, status: "cancelled" } : current;
+    });
     setShowCancelConfirm(false);
   };
 
@@ -238,8 +251,7 @@ export default function SubscriptionSection() {
                     Próximo pago
                   </span>
                   <span className="subscription-detail__value">
-                    {currentStatus === "cancelled" ||
-                    !sessionStatus?.subscription
+                    {currentStatus === "cancelled" || !subscription
                       ? "—"
                       : formatDate(displayNextPaymentDate)}
                   </span>
@@ -255,9 +267,7 @@ export default function SubscriptionSection() {
                     Suscripto desde
                   </span>
                   <span className="subscription-detail__value">
-                    {sessionStatus?.subscription
-                      ? formatDate(displayStartDate)
-                      : "—"}
+                    {subscription ? formatDate(displayStartDate) : "—"}
                   </span>
                 </div>
               </div>
@@ -346,9 +356,10 @@ export default function SubscriptionSection() {
               type="button"
               className="subscription-btn subscription-btn--reactivate"
               onClick={() =>
-                setSubscription((prev) =>
-                  prev ? { ...prev, status: "active" } : prev,
-                )
+                setLocalSubscription((prev: any) => {
+                  const current = prev || apiSubscription;
+                  return current ? { ...current, status: "active" } : current;
+                })
               }
             >
               <Check size={18} />
