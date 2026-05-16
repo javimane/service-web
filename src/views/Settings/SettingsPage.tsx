@@ -14,14 +14,14 @@ import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ActionsSection from "./sections/ActionsSection";
 import CompanyDisplaySection from "./sections/CompanyDisplaySection";
 import { useAuth } from "../../context/AuthContext";
-import { getProfessionalDetailAction } from "../../app/actions/professionals";
+import {
+  getProfessionalMeAction,
+  updateProfessionalAction,
+} from "../../app/actions/professionals";
 import {
   createCompanyAction,
-  getArcaCompanyAction,
-  getCompanyByProfessionalAction,
   updateCompanyAction,
 } from "../../app/actions/companies";
-import { updateProfessionalAction } from "../../app/actions/professionals";
 import { getDepartmentsAction } from "../../app/actions/locations";
 import { getProvincesAction } from "../../app/actions/provinces";
 import { ROUTES } from "../../routes/paths";
@@ -79,80 +79,38 @@ export default function SettingsPage() {
     staleTime: 1000 * 60 * 60,
   });
 
-  // 2. Fetch Professional Detail
-  const { data: prof, isLoading: loadingProf } = useQuery({
-    queryKey: ["professional-detail", professionalId],
+  // 2. Fetch Professional Me (Consolidated)
+  const {
+    data: profMe,
+    isLoading: loadingProf,
+    refetch: refetchProfMe,
+  } = useQuery({
+    queryKey: ["professional-me"],
     queryFn: async () => {
-      const result = await getProfessionalDetailAction({ id: professionalId! });
+      const result = await getProfessionalMeAction({ token: getAccessToken() });
       return result?.data ?? null;
     },
-    enabled: !!professionalId,
     staleTime: 1000 * 60 * 5,
   });
 
-  // 2.1 Fetch Company Detail
-  const { data: company, isLoading: loadingCompany } = useQuery({
-    queryKey: ["company", professionalId],
-    queryFn: async () => {
-      const result = await getCompanyByProfessionalAction({
-        professionalId: professionalId!,
-      });
-      return result?.data ?? null;
-    },
-    enabled: !!professionalId,
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    gcTime: 1000 * 60 * 15,
-  });
+  const actualCompany = profMe?.companies;
+  const loadingCompany = loadingProf;
+  const loadingArca = loadingProf;
 
-  // 2.2 Consolidate the actual company data (handling array or single object)
-  const companyData = Array.isArray(company) ? company[0] : company;
-  const actualCompany = companyData?.id ? companyData : (prof?.Company as any);
-  const arcaCompanyKey = String(actualCompany?.id ?? "none");
-
-  // Lifted ARCA status query for global caching in SettingsPage
-  const { data: arcaStatus, isLoading: loadingArca } = useQuery({
-    queryKey: ["arca-status", arcaCompanyKey],
-    queryFn: async () => {
-      const result = await getArcaCompanyAction({
-        id: actualCompany!.id,
-        token: getAccessToken(),
-      });
-      const payload = result?.data;
-
-      // Some API handlers return nested payloads; normalize before exposing it.
-      if (payload?.data !== undefined) return payload.data;
-      if (payload?.company !== undefined) return payload.company;
-      return payload ?? null;
-    },
-    enabled: !!actualCompany?.id,
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 60,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    retry: false,
-  });
-
-  const fallbackArcaStatus = useMemo(() => {
-    const companyArca =
-      actualCompany?.CompanyArca?.[0] ||
-      actualCompany?.companies_arca?.[0] ||
-      null;
-
-    return companyArca;
+  const effectiveArcaStatus = useMemo(() => {
+    return actualCompany?.companies_arca?.[0] || null;
   }, [actualCompany]);
-
-  const effectiveArcaStatus = arcaStatus ?? fallbackArcaStatus;
 
   // Sync state when data is loaded
   useEffect(() => {
-    if (prof) {
-      setBusinessType(prof.account_type || "individual");
+    if (profMe) {
+      setBusinessType(profMe.account_type || "individual");
     }
 
     if (actualCompany) {
       setCompanyId(actualCompany.id);
       setTradeName(actualCompany.name || "");
-      setCuit(actualCompany.cuit || "");
+      setCuit(actualCompany.tax_code || ""); // tax_code instead of cuit based on new response
       setHasStorefront(actualCompany.public_trade ? "si" : "no");
 
       // Payments
@@ -165,34 +123,39 @@ export default function SettingsPage() {
       setSelectedPayments(payments);
 
       // Address
-      if (actualCompany.Address) {
-        const addr = actualCompany.Address;
-        setAddressId(addr.id);
-        setStoreStreet(addr.street_name || "");
-        setStoreNumber(addr.street_number || "");
-        setStoreFloor(addr.floor_apartment || "");
-        setStoreZip(addr.zip_code || "");
-        setStoreProvinceId(addr.province_id);
-        setStoreDepartmentId(addr.department_id);
-        setStoreLat(addr.latitude);
-        setStoreLng(addr.longitude);
+      const mainAddress =
+        actualCompany.address ||
+        (Array.isArray(profMe?.address)
+          ? profMe?.address.find((a: any) => a.is_main_address)
+          : profMe?.address);
+
+      if (mainAddress) {
+        setAddressId(mainAddress.id);
+        setStoreStreet(mainAddress.street_name || "");
+        setStoreNumber(mainAddress.street_number || "");
+        setStoreFloor(mainAddress.floor_apartment || "");
+        setStoreZip(mainAddress.zip_code || "");
+        setStoreProvinceId(mainAddress.province_id);
+        setStoreDepartmentId(mainAddress.department_id);
+        setStoreLat(mainAddress.latitude);
+        setStoreLng(mainAddress.longitude);
       }
 
       // Coverage
-      if (actualCompany.CompanyProvinces) {
-        const pNames = actualCompany.CompanyProvinces.map(
-          (cp: any) => cp.Province?.name,
-        ).filter(Boolean);
+      if (actualCompany.company_provinces) {
+        const pNames = actualCompany.company_provinces
+          .map((cp: any) => cp.Province?.name)
+          .filter(Boolean);
         setSelectedProvinces(pNames as string[]);
       }
-      if (actualCompany.CompanyDepartments) {
-        const dNames = actualCompany.CompanyDepartments.map(
-          (cd: any) => cd.Department?.name,
-        ).filter(Boolean);
+      if (actualCompany.company_departments) {
+        const dNames = actualCompany.company_departments
+          .map((cd: any) => cd.Department?.name)
+          .filter(Boolean);
         setSelectedDepartments(dNames as string[]);
       }
     }
-  }, [prof, company]);
+  }, [profMe, actualCompany]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -324,9 +287,8 @@ export default function SettingsPage() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
-        queryKey: ["professional-detail", professionalId],
+        queryKey: ["professional-me"],
       });
-      queryClient.invalidateQueries({ queryKey: ["company", professionalId] });
 
       setSaveStatus("success");
       setSaveMessage("Registro guardado correctamente ✨");
@@ -355,7 +317,7 @@ export default function SettingsPage() {
     );
   };
 
-  const showCTA = isProfessional && !company && !isEditingCompany;
+  const showCTA = isProfessional && !actualCompany && !isEditingCompany;
   const showSummary = isProfessional && actualCompany && !isEditingCompany;
   const showEditForms = isProfessional && isEditingCompany;
 
@@ -409,7 +371,7 @@ export default function SettingsPage() {
               {/* Business Sections */}
               {showSummary && (
                 <CompanyDisplaySection
-                  prof={{ ...prof, Company: actualCompany }}
+                  prof={{ ...profMe, companies: actualCompany }}
                   onEdit={() => setIsEditingCompany(true)}
                   provinceList={provinceList}
                   departmentList={storeDepartmentList}

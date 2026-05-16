@@ -27,12 +27,21 @@ export default function CompanyDisplaySection({
   loadingArca,
 }: CompanyDisplaySectionProps) {
   // Normalize company: handle if it's an array or object
-  let company = prof?.Company;
+  let company = prof?.companies || prof?.Company;
   if (Array.isArray(company)) company = company[0];
 
   if (!company) return null;
 
-  const address = company.Address;
+  const mainAddress =
+    company.address ||
+    company.Address ||
+    (Array.isArray(prof?.address)
+      ? prof?.address.find((a: any) => a.is_main_address)
+      : prof?.address);
+
+  const address = Array.isArray(mainAddress)
+    ? mainAddress.find((a: any) => a.is_main_address) || mainAddress[0]
+    : mainAddress;
 
   // Robust data extraction with fallbacks
   const streetName =
@@ -60,13 +69,13 @@ export default function CompanyDisplaySection({
 
   // Improve coverage name resolution
   const provinceNames =
-    company.CompanyProvinces?.map(
-      (p: any) => p.Province?.name || p.name,
-    ).filter(Boolean) || [];
+    (company.company_provinces || company.CompanyProvinces)
+      ?.map((p: any) => p.Province?.name || p.name)
+      .filter(Boolean) || [];
   const departmentNames =
-    company.CompanyDepartments?.map(
-      (d: any) => d.Department?.name || d.name,
-    ).filter(Boolean) || [];
+    (company.company_departments || company.CompanyDepartments)
+      ?.map((d: any) => d.Department?.name || d.name)
+      .filter(Boolean) || [];
 
   // Normalize Tax Code / CUIT
   const displayTaxCode = company.tax_code || company.taxCode || company.cuit;
@@ -103,7 +112,7 @@ export default function CompanyDisplaySection({
 
       <ArcaVerificationSection
         professionalId={prof.id}
-        companyId={company[0].company_id}
+        companyId={company.id}
         arcaStatus={arcaStatus}
         loadingArca={loadingArca}
       />

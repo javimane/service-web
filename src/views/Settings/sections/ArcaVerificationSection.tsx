@@ -41,10 +41,7 @@ const ArcaVerificationSection = React.memo(
       [cuit],
     );
 
-    const normalizedArcaStatus = useMemo(
-      () => arcaStatus?.data ?? arcaStatus?.company ?? arcaStatus,
-      [arcaStatus],
-    );
+    const normalizedArcaStatus = useMemo(() => arcaStatus, [arcaStatus]);
 
     const isVerified = Boolean(
       normalizedArcaStatus?.is_verified ??
@@ -91,25 +88,8 @@ const ArcaVerificationSection = React.memo(
           "¡Validación exitosa! Tu empresa ha sido verificada en ARCA.",
         );
 
-        // Keep the ARCA status cache in sync for both key variants
-        const arcaKey = ["arca-status", String(companyId ?? "none")];
-        queryClient.setQueryData(arcaKey, (oldData: any) => {
-          if (!oldData) return { is_verified: true };
-          if (oldData?.data) {
-            return {
-              ...oldData,
-              data: {
-                ...oldData.data,
-                is_verified: true,
-              },
-            };
-          }
-
-          return {
-            ...oldData,
-            is_verified: true,
-          };
-        });
+        // Invalidate the consolidated query to refresh the status
+        queryClient.invalidateQueries({ queryKey: ["professional-me"] });
 
         setTimeout(() => setShowForm(false), 2000);
       } catch (error: any) {
