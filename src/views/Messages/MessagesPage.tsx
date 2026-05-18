@@ -19,7 +19,7 @@ import { useAuth } from "../../context/AuthContext";
 import NavbarMessage from "../../components/Navbar/NavBar Messaje/NavbarMessage";
 import { getProfileAction } from "../../app/actions/profile";
 import { getProfessionalDetailAction } from "../../app/actions/professionals";
-import { getMessagesAction, sendMessageAction, markMessagesAsReadAction, getUserConversationsAction } from "../../app/actions/chat";
+import { getMessagesAction, sendMessageAction, markMessagesAsReadAction, getUserConversationsAction, getProfileByUserIdAction } from "../../app/actions/chat";
 import { supabase } from "../../services/supabaseClient";
 import "./MessagesPage.css";
 
@@ -46,6 +46,10 @@ type UIMessage = {
   time: string;
   date?: string;
   status?: string;
+  senderProfile?: {
+    display_name?: string;
+    avatar_url?: string | null;
+  } | null;
 };
 
 const getInitials = (name: string) =>
@@ -118,7 +122,7 @@ export default function MessagesPage() {
           let profileData = null;
           if (otherId && String(otherId) !== String(user.id)) {
             try {
-              const res = await getProfileAction({ id: String(otherId) });
+              const res = await getProfileByUserIdAction({ id: String(otherId) });
               profileData = res?.data || res;
             } catch (e) {
               console.error("Error fetching profile", e);
@@ -276,6 +280,9 @@ export default function MessagesPage() {
       if (user?.id) {
          await markMessagesAsReadAction({ userId: String(user.id), senderId: activeRequestId });
          setUnreadByRequest(prev => ({...prev, [activeRequestId]: 0}));
+         queryClient.invalidateQueries({
+           queryKey: ["unread-messages-count", user.id],
+         });
       }
       return result;
     },
@@ -301,6 +308,7 @@ export default function MessagesPage() {
         time: formatTime(msg.created_at),
         date: showDate ? msgDate : "",
         status: msg.is_read ? "Leído" : undefined,
+        senderProfile: msg.sender,
       };
     });
   }, [messagesData, user?.id]);
@@ -344,14 +352,16 @@ export default function MessagesPage() {
           const reqId = newMsg.sender_id === user.id ? newMsg.receiver_id : newMsg.sender_id;
           
           if (reqId === activeRequestId) {
-            queryClient.setQueryData(["chat-messages", activeRequestId], (oldData: any) => {
-              if (!oldData) return [newMsg];
-              if (oldData.some((m: any) => m.id === newMsg.id)) return oldData;
-              return [...oldData, newMsg];
+            queryClient.invalidateQueries({
+              queryKey: ["chat-messages", activeRequestId],
             });
             
             if (String(newMsg.sender_id) !== String(user.id)) {
-               markMessagesAsReadAction({ userId: String(user.id), senderId: reqId });
+               markMessagesAsReadAction({ userId: String(user.id), senderId: reqId }).then(() => {
+                 queryClient.invalidateQueries({
+                   queryKey: ["unread-messages-count", user.id],
+                 });
+               });
             }
           } else if (String(newMsg.sender_id) !== String(user.id)) {
             // Aumentar contador de no leídos para esa conversación
@@ -360,6 +370,10 @@ export default function MessagesPage() {
                [reqId]: (prev[reqId] || 0) + 1
             }));
           }
+          
+          queryClient.invalidateQueries({
+            queryKey: ["my-conversations", user?.id],
+          });
           
           setLastMessageByRequest((prev) => ({
              ...prev,
@@ -436,12 +450,15 @@ export default function MessagesPage() {
     }
   };
 
-  const handleSelectConversation = (conv: UIConversation) => {
+  const handleSelectConversation = async (conv: UIConversation) => {
     setActiveConversationId(conv.id);
     setMobileShowChat(true);
     setUnreadByRequest(prev => ({...prev, [conv.id]: 0}));
     if (conv.requestId && user?.id) {
-       markMessagesAsReadAction({ userId: String(user.id), senderId: conv.requestId });
+       await markMessagesAsReadAction({ userId: String(user.id), senderId: conv.requestId });
+       queryClient.invalidateQueries({
+         queryKey: ["unread-messages-count", user.id],
+       });
     }
   };
 
@@ -636,7 +653,7 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            <div className="msg-chat__messages bg-gray-50 flex-1 p-4 overflow-y-auto space-y-4">
+            <div className="msg-chat__messages flex-1 p-4 overflow-y-auto space-y-3" style={{ backgroundColor: '#efeae2', backgroundImage: 'url("https://w0.peakpx.com/wallpaper/818/148/HD-wallpaper-whatsapp-background-cool-dark-green-new-theme-whatsapp.jpg")', backgroundSize: 'cover', backgroundBlendMode: 'overlay' }}>
               {messages.map((msg) => {
                 const isMe = msg.sender === "me";
                 const profileName = isMe ? "Yo" : (activeConversation?.name || "Usuario");
@@ -645,51 +662,83 @@ export default function MessagesPage() {
                 return (
                   <div key={msg.id}>
                     {msg.date && (
-                      <div className="flex items-center justify-center py-2">
-                        <span className="text-[10px] font-bold text-gray-500 bg-white px-3 py-1 rounded-full border">
+                      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', padding: '12px 0' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#65676b', backgroundColor: '#e1e3e6', padding: '4px 14px', borderRadius: '12px', boxShadow: '0 1px 1px rgba(0,0,0,0.08)' }}>
                           {msg.date}
                         </span>
                       </div>
                     )}
-                    <div className={`flex gap-2.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      
-                      {!isMe && (
-                        <div className="flex-shrink-0 mt-0.5">
-                          {activeConversation?.avatarImage ? (
-                            <img
-                              src={profileAvatar}
-                              alt="avatar"
-                              className="w-8 h-8 rounded-full object-cover bg-gray-200"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
-                              {activeConversation?.avatar || "US"}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                    <div 
+                      style={{ 
+                        display: 'flex', 
+                        width: '100%', 
+                        justifyContent: isMe ? 'flex-end' : 'flex-start',
+                        marginBottom: '10px' 
+                      }}
+                    >
+                      <div 
+                        style={{
+                          position: 'relative',
+                          maxWidth: '75%',
+                          width: 'fit-content',
+                          backgroundColor: isMe ? '#FF7F50' : '#ffffff',
+                          color: isMe ? '#ffffff' : '#1f2937',
+                          borderTopRightRadius: isMe ? '0px' : '8px',
+                          borderTopLeftRadius: !isMe ? '0px' : '8px',
+                          borderRadius: '8px',
+                          border: isMe ? 'none' : '1px solid #e5e7eb',
+                          boxShadow: '0 1px 1px rgba(0,0,0,0.12)',
+                          padding: '6px 9px 8px 9px',
+                          display: 'flex',
+                          flexDirection: 'column'
+                        }}
+                      >
+                        {/* WhatsApp like Tail */}
+                        <div 
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            [isMe ? 'right' : 'left']: '-8px',
+                            width: '8px',
+                            height: '13px',
+                            backgroundColor: 'transparent',
+                            backgroundImage: isMe 
+                              ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13'%3E%3Cpath fill='%23FF7F50' d='M0,0 C3,0 8,0 8,0 L8,13 C8,13 4,4 0,0 Z'/%3E%3C/svg%3E")`
+                              : `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13'%3E%3Cpath fill='%23ffffff' d='M8,0 C5,0 0,0 0,0 L0,13 C0,13 4,4 8,0 Z'/%3E%3C/svg%3E")`,
+                            backgroundSize: 'contain',
+                            backgroundRepeat: 'no-repeat'
+                          }}
+                        />
+                        
                         {!isMe && (
-                          <span className="text-[11px] text-gray-500 mb-0.5 px-1">
-                            {profileName}
+                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#FF7F50', marginBottom: '2px', userSelect: 'none' }}>
+                            {msg.senderProfile?.display_name || profileName}
                           </span>
                         )}
                         
-                        <div className={`p-3 rounded-lg text-sm shadow-sm ${
-                          isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 border rounded-tl-none'
-                        }`}>
-                          <p className="break-words m-0">{msg.text}</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '4px 12px', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '14.5px', wordBreak: 'break-word', lineHeight: '1.4' }}>
+                            {msg.text}
+                          </span>
+                          <span style={{ 
+                            fontSize: '10px', 
+                            color: isMe ? 'rgba(255, 255, 255, 0.75)' : '#8e8e93', 
+                            marginLeft: 'auto',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            whiteSpace: 'nowrap',
+                            alignSelf: 'flex-end',
+                            paddingBottom: '1px'
+                          }}>
+                            {msg.time}
+                            {isMe && (
+                              <span style={{ fontSize: '11px', lineHeight: 1, color: msg.status === 'Leído' ? '#53bdeb' : 'inherit' }}>
+                                {msg.status === 'Leído' ? '✓✓' : '✓'}
+                              </span>
+                            )}
+                          </span>
                         </div>
-
-                        <span className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-                          {msg.time}
-                          {isMe && (
-                            <span className={msg.status === 'Leído' ? 'text-blue-500 font-bold' : ''}>
-                              {msg.status === 'Leído' ? '✓✓' : '✓'}
-                            </span>
-                          )}
-                        </span>
                       </div>
                     </div>
                   </div>

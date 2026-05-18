@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "../../services/supabaseClient";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
 import { useAuthModal } from "../../context/AuthModalContext";
@@ -92,6 +94,71 @@ export default function Navbar() {
   const notifRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const [setIsReelsModalOpen] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const { data: unreadMessagesCount = 0 } = useQuery({
+    queryKey: ["unread-messages-count", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { count, error } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_id", user.id)
+        .eq("is_read", false);
+      
+      if (error) {
+        console.error("Error fetching unread messages count:", error);
+        return 0;
+      }
+      return count || 0;
+    },
+    enabled: !!user?.id,
+  });
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel("navbar_messages_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const newMsg = payload.new;
+          if (newMsg.receiver_id === user.id && !newMsg.is_read) {
+            queryClient.invalidateQueries({
+              queryKey: ["unread-messages-count", user.id],
+            });
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const newMsg = payload.new;
+          if (newMsg.receiver_id === user.id || newMsg.sender_id === user.id) {
+            queryClient.invalidateQueries({
+              queryKey: ["unread-messages-count", user.id],
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
@@ -209,8 +276,14 @@ export default function Navbar() {
                 href={ROUTES.messages}
                 className="navbar__icon-btn"
                 aria-label="Mensajes"
+                style={{ position: 'relative' }}
               >
                 <MessageSquare size={20} />
+                {unreadMessagesCount > 0 && (
+                  <span className="navbar__notif-badge" style={{ position: 'absolute', top: '4px', right: '4px' }}>
+                    {unreadMessagesCount}
+                  </span>
+                )}
               </Link>
 
               <div className="navbar__notif-container" ref={notifRef}>
