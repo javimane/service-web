@@ -611,7 +611,11 @@ export default function ProfilePage() {
 
           <button
             className="cta-button message-btn"
-            onClick={() => router.push(`/messages?to=${rawId}`)}
+            onClick={() => {
+              const msg = `Hola, te contacto desde tu perfil profesional.`;
+              const encodedMsg = encodeURIComponent(msg);
+              router.push(`/mensajes?to=${rawId}&initialMessage=${encodedMsg}`);
+            }}
           >
             ENVIAR MENSAJE <MessageCircle size={18} />
           </button>

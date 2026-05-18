@@ -55,7 +55,10 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
 
   const handleContact = (professionalId) => {
     onClose();
-    window.location.assign(`/messages?professionalId=${professionalId}`);
+    const productUrl = window.location.href;
+    const msg = `Hola, qué tal, pregunto por el producto: ${product.title} - ${productUrl}`;
+    const encodedMsg = encodeURIComponent(msg);
+    window.location.assign(`/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`);
   };
 
   return (

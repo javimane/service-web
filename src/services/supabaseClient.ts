@@ -8,3 +8,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export const clearSupabaseSession = async () => {
+  if (typeof window !== "undefined") {
+    await supabase.auth.signOut().catch((err) =>
+      console.error("Error signing out Supabase:", err)
+    );
+  }
+};
+
+if (typeof window !== "undefined") {
+  // Escucha el evento session-expired emitido por tu componente SessionTimeoutOverlay u otros
+  window.addEventListener("session-expired", async () => {
+    await clearSupabaseSession();
+  });
+}

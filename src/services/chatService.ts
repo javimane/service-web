@@ -3,7 +3,7 @@ import { apiClient } from "./apiClient";
 import type { ContactRequestRow, MessageRow } from "../types/database.types";
 
 type CreateContactRequestPayload = {
-  professional_id: number;
+  receiver_id: string;
   message: string;
 };
 
@@ -39,5 +39,23 @@ export const chatService = {
     apiClient<MessageRow>(API_ENDPOINTS.chats.requestMessages(requestId), {
       method: "POST",
       body: JSON.stringify({ content } as SendMessagePayload),
+    }),
+
+  /**
+   * @route PATCH /api/chats/requests/:id/messages/read
+   * @auth Bearer
+   */
+  markMessagesAsRead: (requestId: string | number) =>
+    apiClient<{ count: number }>(`${API_ENDPOINTS.chats.requestMessages(requestId)}/read`, {
+      method: "PATCH",
+    }),
+
+  /**
+   * @route GET /api/chats/requests
+   * @auth Bearer
+   */
+  getUserRequests: () =>
+    apiClient<ContactRequestRow[]>(API_ENDPOINTS.chats.requests, {
+      method: "GET",
     }),
 };

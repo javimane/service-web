@@ -12,6 +12,7 @@ import {
   getFirebaseMessagingToken,
   subscribeToForegroundMessages,
 } from "../services/firebaseMessaging";
+import { clearSupabaseSession } from "../services/supabaseClient";
 
 type SessionStatus = {
   status?: boolean | string;
@@ -207,6 +208,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("registered_device_token");
+    
+    // Clear Supabase Session for chat functionality
+    await clearSupabaseSession();
+    
     setUser(null);
     setSessionStatus(null);
   };

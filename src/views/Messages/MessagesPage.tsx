@@ -17,18 +17,16 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import NavbarMessage from "../../components/Navbar/NavBar Messaje/NavbarMessage";
-import {
-  createRequestAction,
-  getRequestMessagesAction,
-  getUserRequestsAction,
-  sendMessageAction,
-} from "../../app/actions/communications";
-import { getAccessToken } from "../../utils/auth";
+import { getProfileAction } from "../../app/actions/profile";
+import { getProfessionalDetailAction } from "../../app/actions/professionals";
+import { getMessagesAction, sendMessageAction, markMessagesAsReadAction, getUserConversationsAction } from "../../app/actions/chat";
+import { supabase } from "../../services/supabaseClient";
 import "./MessagesPage.css";
 
 type UIConversation = {
   id: string;
   requestId?: string;
+  receiverId?: string;
   professionalId?: number;
   name: string;
   role: string;
@@ -36,6 +34,9 @@ type UIConversation = {
   online: boolean;
   time: string;
   lastMessage: string;
+  avatarImage?: string | null;
+  sortTs: number;
+  unreadCount: number;
 };
 
 type UIMessage = {
@@ -78,80 +79,161 @@ export default function MessagesPage() {
   const targetProfessional =
     searchParams?.get("to") || searchParams?.get("professionalId");
   const requestIdParam = searchParams?.get("requestId");
+  const initialMessage = searchParams?.get("initialMessage") || "";
 
   const [activeConversationId, setActiveConversationId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [newMessage, setNewMessage] = useState("");
+  const [newMessage, setNewMessage] = useState(initialMessage);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [lastMessageByRequest, setLastMessageByRequest] = useState<
+    Record<string, string>
+  >({});
+  const [lastActivityByRequest, setLastActivityByRequest] = useState<
+    Record<string, string>
+  >({});
+  const [unreadByRequest, setUnreadByRequest] = useState<
+    Record<string, number>
+  >({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: requestsData } = useQuery({
-    queryKey: ["my-contact-requests", user?.id],
+    queryKey: ["my-conversations", user?.id],
     queryFn: async () => {
-      const result = await getUserRequestsAction({
-        userId: user!.id,
-        token: getAccessToken(),
-      });
-      return result?.data ?? [];
+      const res = await getUserConversationsAction({ userId: String(user.id) });
+      const result = res?.data || res || [];
+
+      if (!Array.isArray(result)) {
+        return [];
+      }
+
+      const enriched = await Promise.all(
+        result.map(async (req: any) => {
+          // Identify the other user's ID
+          const otherId = String(req.user_id) === String(user.id)
+            ? req.receiver_id
+            : req.user_id;
+
+          let profileData = null;
+          if (otherId && String(otherId) !== String(user.id)) {
+            try {
+              const res = await getProfileAction({ id: String(otherId) });
+              profileData = res?.data || res;
+            } catch (e) {
+              console.error("Error fetching profile", e);
+            }
+          }
+          return { ...req, ProfileData: profileData };
+        })
+      );
+
+      return enriched;
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 30, // 30 segundos (datos en tiempo real)
+    staleTime: 1000 * 30, // 30 segundos
     gcTime: 1000 * 60 * 2,
+  });
+
+  const { data: targetProfData } = useQuery({
+    queryKey: ["professional-detail-chat", targetProfessional],
+    queryFn: async () => {
+      if (!targetProfessional) return null;
+      try {
+        const res = await getProfessionalDetailAction({ id: targetProfessional });
+        return res?.data || res;
+      } catch (e) {
+        console.error("Error fetching target professional", e);
+        return null;
+      }
+    },
+    enabled: !!targetProfessional,
   });
 
   const requests = useMemo(() => {
     if (!requestsData) return [] as any[];
-    if (Array.isArray(requestsData)) return requestsData;
-    const payload = requestsData as any;
-    if (Array.isArray(payload.data)) return payload.data;
-    return [] as any[];
+    return requestsData;
   }, [requestsData]);
 
   const conversations = useMemo<UIConversation[]>(() => {
-    const mapped = requests.map((req: any) => {
-      const professional = req.Professional as any;
-      const companyData =
-        professional?.Company ||
-        professional?.Companies ||
-        professional?.company ||
-        professional?.companies;
+    const mapped: UIConversation[] = requests.map((req: any) => {
+      const otherId = String(req.user_id) === String(user?.id) 
+        ? req.receiver_id 
+        : req.user_id;
+      
+      const profileData = req.ProfileData || {};
+      
+      // Validamos si profileData tiene alguna propiedad relacionada a company
+      const companyData = profileData?.companies_arca || profileData?.companies || profileData?.Company || profileData?.company;
       const company = Array.isArray(companyData) ? companyData[0] : companyData;
-      const name =
-        company?.name ||
-        professional?.Profile?.display_name ||
-        `Profesional ${req.professional_id ?? ""}`;
+      
+      // Tiene professional_id si el req lo tiene, o si su perfil lo indica
+      const hasProfessionalId = !!req.professional_id || !!profileData?.professional_id || !!company;
+      
+      const name = hasProfessionalId 
+        ? (company?.name || profileData?.display_name || `Profesional ${req.professional_id ?? ""}`) 
+        : (profileData?.display_name || "Usuario");
+
+      const avatarImage = profileData?.avatar_url || company?.logo || company?.logo_url || null;
+
+      const activityAt =
+        lastActivityByRequest[String(req.id)] ||
+        req.updated_at ||
+        req.created_at;
+      const activityTs = activityAt ? new Date(activityAt).getTime() : 0;
 
       return {
         id: String(req.id),
         requestId: String(req.id),
-        professionalId: Number(req.professional_id),
+        receiverId: otherId,
+        professionalId: Number(req.professional_id) || undefined,
         name,
-        role: "Profesional",
+        role: hasProfessionalId ? "Profesional" : "Usuario",
         avatar: getInitials(name),
+        avatarImage,
         online: false,
-        time: formatTime(req.updated_at || req.created_at),
-        lastMessage: req.message || "Abri la conversacion para ver mensajes",
+        time: formatTime(activityAt),
+        lastMessage:
+          lastMessageByRequest[String(req.id)] ||
+          req.message ||
+          "Abri la conversacion para ver mensajes",
+        sortTs: Number.isFinite(activityTs) ? activityTs : 0,
+        unreadCount: unreadByRequest[String(req.id)] || 0,
       };
     });
 
     if (mapped.length === 0 && targetProfessional) {
-      const name = `Profesional ${targetProfessional}`;
+      const company = targetProfData?.companies_arca || targetProfData?.companies || targetProfData?.company;
+      const name = company?.name || `Profesional ${targetProfessional}`;
+      const avatarImage = company?.logo || company?.logo_url || null;
+      
       mapped.push({
         id: `draft-${targetProfessional}`,
+        receiverId: targetProfData?.user_id,
         professionalId: Number(targetProfessional),
         name,
         role: "Profesional",
         avatar: getInitials(name),
+        avatarImage,
         online: false,
         time: "",
         lastMessage: "Envia el primer mensaje para iniciar el chat",
+        sortTs: -1,
+        unreadCount: 0,
       });
     }
 
+    mapped.sort((a, b) => b.sortTs - a.sortTs);
+
     return mapped;
-  }, [requests, targetProfessional]);
+  }, [
+    requests,
+    targetProfessional,
+    lastMessageByRequest,
+    lastActivityByRequest,
+    unreadByRequest,
+    targetProfData
+  ]);
 
   const activeConversation =
     conversations.find((c) => c.id === activeConversationId) ||
@@ -186,23 +268,25 @@ export default function MessagesPage() {
   const { data: messagesData = [] } = useQuery({
     queryKey: ["chat-messages", activeRequestId],
     queryFn: async () => {
-      const result = await getRequestMessagesAction({
-        requestId: activeRequestId!,
-        token: getAccessToken(),
-      });
-      return result?.data ?? [];
+      if (!activeRequestId) return [];
+      const res = await getMessagesAction({ userId: String(user.id), receiverId: activeRequestId });
+      const result = res?.data || res || [];
+      
+      // Marcar como leídos
+      if (user?.id) {
+         await markMessagesAsReadAction({ userId: String(user.id), senderId: activeRequestId });
+         setUnreadByRequest(prev => ({...prev, [activeRequestId]: 0}));
+      }
+      return result;
     },
     enabled: !!activeRequestId,
-    staleTime: 1000 * 30, // 30 segundos (datos en tiempo real)
+    staleTime: 1000 * 30, // 30 segundos
     gcTime: 1000 * 60 * 2,
   });
 
   const messages = useMemo<UIMessage[]>(() => {
-    const list = Array.isArray(messagesData)
-      ? messagesData
-      : Array.isArray((messagesData as any)?.data)
-        ? (messagesData as any).data
-        : [];
+    const dataObj = messagesData as any;
+    const list = Array.isArray(dataObj) ? dataObj : Array.isArray(dataObj?.messages) ? dataObj.messages : [];
 
     let lastDate = "";
     return list.map((msg: any) => {
@@ -212,54 +296,124 @@ export default function MessagesPage() {
 
       return {
         id: String(msg.id),
-        sender: msg.sender_id === user?.id ? "me" : "other",
+        sender: String(msg.sender_id) === String(user?.id) ? "me" : "other",
         text: msg.content,
         time: formatTime(msg.created_at),
         date: showDate ? msgDate : "",
-        status: msg.is_read ? "Leido" : undefined,
+        status: msg.is_read ? "Leído" : undefined,
       };
     });
   }, [messagesData, user?.id]);
 
   useEffect(() => {
+    if (!activeRequestId || messages.length === 0) return;
+
+    const latest = messages[messages.length - 1]?.text?.trim();
+    if (!latest) return;
+
+    setLastMessageByRequest((prev) =>
+      prev[activeRequestId] === latest
+        ? prev
+        : { ...prev, [activeRequestId]: latest },
+    );
+  }, [activeRequestId, messages]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessageMutation = useMutation({
+  // Supabase Realtime Subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('messages_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          const newMsg = payload.new;
+          
+          const isRelevant = newMsg.sender_id === user.id || newMsg.receiver_id === user.id;
+          if (!isRelevant) return;
+
+          const reqId = newMsg.sender_id === user.id ? newMsg.receiver_id : newMsg.sender_id;
+          
+          if (reqId === activeRequestId) {
+            queryClient.setQueryData(["chat-messages", activeRequestId], (oldData: any) => {
+              if (!oldData) return [newMsg];
+              if (oldData.some((m: any) => m.id === newMsg.id)) return oldData;
+              return [...oldData, newMsg];
+            });
+            
+            if (String(newMsg.sender_id) !== String(user.id)) {
+               markMessagesAsReadAction({ userId: String(user.id), senderId: reqId });
+            }
+          } else if (String(newMsg.sender_id) !== String(user.id)) {
+            // Aumentar contador de no leídos para esa conversación
+            setUnreadByRequest(prev => ({
+               ...prev,
+               [reqId]: (prev[reqId] || 0) + 1
+            }));
+          }
+          
+          setLastMessageByRequest((prev) => ({
+             ...prev,
+             [reqId]: newMsg.content
+          }));
+          setLastActivityByRequest((prev) => ({
+             ...prev,
+             [reqId]: newMsg.created_at
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, activeRequestId, queryClient]);
+
+  const sendMessageMutation = useMutation<
+    { requestId: string; content: string },
+    Error,
+    string
+  >({
     mutationFn: async (content: string) => {
-      if (activeRequestId) {
-        const result = await sendMessageAction({
-          requestId: activeRequestId,
-          content,
-          token: getAccessToken(),
-        });
-        return result?.data;
+      if (!user?.id) throw new Error("No authententicated user");
+
+      const receiverId = activeRequestId || activeConversation?.receiverId;
+      if (!receiverId) {
+        throw new Error("No se pudo determinar el destinatario. Asegurese de que la info haya cargado.");
       }
 
-      if (!activeConversation?.professionalId) {
-        throw new Error("No se pudo determinar el profesional destino.");
-      }
-
-      const createdResult = await createRequestAction({
-        professional_id: activeConversation.professionalId,
-        message: content,
-        token: getAccessToken(),
-      });
-      const created = createdResult?.data;
-
-      const createdId = String(
-        (created as any)?.id || (created as any)?.data?.id || "",
-      );
-      if (createdId) {
-        setActiveConversationId(createdId);
-      }
-
-      return created;
+      await sendMessageAction({ senderId: String(user.id), receiverId, content });
+      
+      return { requestId: receiverId, content };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({
-        queryKey: ["my-contact-requests", user?.id],
+        queryKey: ["my-conversations", user?.id],
       });
+      if (result.requestId) {
+        const nowIso = new Date().toISOString();
+        queryClient.invalidateQueries({
+          queryKey: ["chat-messages", result.requestId],
+        });
+        setLastMessageByRequest((prev) => ({
+          ...prev,
+          [result.requestId]: result.content,
+        }));
+        setLastActivityByRequest((prev) => ({
+          ...prev,
+          [result.requestId]: nowIso,
+        }));
+      }
+
       if (activeRequestId) {
         queryClient.invalidateQueries({
           queryKey: ["chat-messages", activeRequestId],
@@ -285,6 +439,10 @@ export default function MessagesPage() {
   const handleSelectConversation = (conv: UIConversation) => {
     setActiveConversationId(conv.id);
     setMobileShowChat(true);
+    setUnreadByRequest(prev => ({...prev, [conv.id]: 0}));
+    if (conv.requestId && user?.id) {
+       markMessagesAsReadAction({ userId: String(user.id), senderId: conv.requestId });
+    }
   };
 
   return (
@@ -367,7 +525,15 @@ export default function MessagesPage() {
                     onClick={() => handleSelectConversation(conv)}
                   >
                     <div className="msg-conv__avatar">
-                      {conv.avatar}
+                      {conv.avatarImage ? (
+                        <img
+                          src={conv.avatarImage}
+                          alt={conv.name}
+                          className="msg-avatar-img"
+                        />
+                      ) : (
+                        conv.avatar
+                      )}
                       {conv.online && <span className="msg-online-dot" />}
                     </div>
                     <div className="msg-conv__body">
@@ -375,7 +541,12 @@ export default function MessagesPage() {
                         <span className="msg-conv__name">{conv.name}</span>
                         <span className="msg-conv__time">{conv.time}</span>
                       </div>
-                      <p className="msg-conv__preview">{conv.lastMessage}</p>
+                      <div className="msg-conv__row" style={{ marginTop: '2px' }}>
+                        <p className="msg-conv__preview" style={{ flex: 1, marginRight: '8px' }}>{conv.lastMessage}</p>
+                        {conv.unreadCount > 0 && (
+                          <span className="msg-unread-badge">{conv.unreadCount}</span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -390,10 +561,22 @@ export default function MessagesPage() {
                     className={`msg-avatar-btn ${activeConversation?.id === conv.id ? "msg-avatar-btn--active" : ""}`}
                     onClick={() => handleSelectConversation(conv)}
                     title={conv.name}
+                    style={{ position: 'relative' }}
                   >
                     <div className="msg-conv__avatar">
-                      {conv.avatar}
+                      {conv.avatarImage ? (
+                        <img
+                          src={conv.avatarImage}
+                          alt={conv.name}
+                          className="msg-avatar-img"
+                        />
+                      ) : (
+                        conv.avatar
+                      )}
                       {conv.online && <span className="msg-online-dot" />}
+                      {conv.unreadCount > 0 && (
+                        <span className="msg-unread-badge" style={{ position: 'absolute', top: -4, right: -4, zIndex: 10 }}>{conv.unreadCount}</span>
+                      )}
                     </div>
                   </button>
                 ))}
@@ -411,7 +594,15 @@ export default function MessagesPage() {
                 <ArrowLeft size={18} />
               </button>
               <div className="msg-chat__header-avatar">
-                {activeConversation?.avatar || "--"}
+                {activeConversation?.avatarImage ? (
+                  <img
+                    src={activeConversation.avatarImage}
+                    alt="Avatar"
+                    className="msg-avatar-img"
+                  />
+                ) : (
+                  activeConversation?.avatar || "--"
+                )}
                 {activeConversation?.online && (
                   <span className="msg-online-dot" />
                 )}
@@ -445,32 +636,70 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            <div className="msg-chat__messages">
-              {messages.map((msg) => (
-                <div key={msg.id}>
-                  {msg.date && (
-                    <div className="msg-date-sep">
-                      <span>{msg.date}</span>
+            <div className="msg-chat__messages bg-gray-50 flex-1 p-4 overflow-y-auto space-y-4">
+              {messages.map((msg) => {
+                const isMe = msg.sender === "me";
+                const profileName = isMe ? "Yo" : (activeConversation?.name || "Usuario");
+                const profileAvatar = !isMe ? (activeConversation?.avatarImage || "https://via.placeholder.com/32") : "";
+
+                return (
+                  <div key={msg.id}>
+                    {msg.date && (
+                      <div className="flex items-center justify-center py-2">
+                        <span className="text-[10px] font-bold text-gray-500 bg-white px-3 py-1 rounded-full border">
+                          {msg.date}
+                        </span>
+                      </div>
+                    )}
+                    <div className={`flex gap-2.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      
+                      {!isMe && (
+                        <div className="flex-shrink-0 mt-0.5">
+                          {activeConversation?.avatarImage ? (
+                            <img
+                              src={profileAvatar}
+                              alt="avatar"
+                              className="w-8 h-8 rounded-full object-cover bg-gray-200"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                              {activeConversation?.avatar || "US"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                        {!isMe && (
+                          <span className="text-[11px] text-gray-500 mb-0.5 px-1">
+                            {profileName}
+                          </span>
+                        )}
+                        
+                        <div className={`p-3 rounded-lg text-sm shadow-sm ${
+                          isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 border rounded-tl-none'
+                        }`}>
+                          <p className="break-words m-0">{msg.text}</p>
+                        </div>
+
+                        <span className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                          {msg.time}
+                          {isMe && (
+                            <span className={msg.status === 'Leído' ? 'text-blue-500 font-bold' : ''}>
+                              {msg.status === 'Leído' ? '✓✓' : '✓'}
+                            </span>
+                          )}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  <div
-                    className={`msg-bubble-wrap ${msg.sender === "me" ? "msg-bubble-wrap--sent" : "msg-bubble-wrap--received"}`}
-                  >
-                    <div
-                      className={`msg-bubble ${msg.sender === "me" ? "msg-bubble--sent" : "msg-bubble--received"}`}
-                    >
-                      <p>{msg.text}</p>
-                    </div>
-                    <span className="msg-bubble__time">
-                      {msg.time}
-                      {msg.status && ` · ${msg.status}`}
-                    </span>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {!messages.length && (
-                <div className="msg-date-sep">
-                  <span>Sin mensajes todavia</span>
+                <div className="flex items-center justify-center py-4">
+                  <span className="text-xs text-gray-500 bg-white px-4 py-2 rounded-full border shadow-sm">
+                    Envía un mensaje para iniciar la conversación
+                  </span>
                 </div>
               )}
               <div ref={messagesEndRef} />

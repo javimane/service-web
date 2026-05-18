@@ -114,7 +114,10 @@ export default function ServiceDetailPage() {
   const professionalId = service.professional_id || professional?.id || "";
 
   const handleContact = () => {
-    router.push(`/messages?professionalId=${professionalId}`);
+    const serviceUrl = window.location.href;
+    const msg = `Hola, qué tal, pregunto por el servicio: ${service.name} - ${serviceUrl}`;
+    const encodedMsg = encodeURIComponent(msg);
+    router.push(`/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`);
   };
 
   return (

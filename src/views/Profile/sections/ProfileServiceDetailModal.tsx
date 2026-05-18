@@ -27,7 +27,10 @@ export default function ProfileServiceDetailModal({
 
   const handleContact = () => {
     onClose();
-    router.push(`/messages?to=${professionalId}`);
+    const serviceUrl = `${window.location.origin}/servicios/${service.seo_path || 'detalle'}?id=${service.id}`;
+    const msg = `Hola, qué tal, pregunto por el servicio: ${service.name} - ${serviceUrl}`;
+    const encodedMsg = encodeURIComponent(msg);
+    router.push(`/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`);
   };
 
   return (

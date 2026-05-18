@@ -140,7 +140,10 @@ export default function ProductDetailPage() {
   const hasDiscount = !!offerPrice;
 
   const handleContact = () => {
-    router.push(`/messages?professionalId=${professionalId}`);
+    const productUrl = window.location.href;
+    const msg = `Hola, qué tal, pregunto por el producto: ${productName} - ${productUrl}`;
+    const encodedMsg = encodeURIComponent(msg);
+    router.push(`/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`);
   };
 
   const nextImage = () => {

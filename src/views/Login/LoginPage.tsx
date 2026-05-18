@@ -6,6 +6,7 @@ import { ROUTES } from "../../routes/paths";
 import { authService } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
+import { supabase } from "../../services/supabaseClient";
 import "./LoginPage.css";
 
 type LoginPageProps = {
@@ -69,6 +70,17 @@ export default function LoginPage({
         email: formData.email,
         password: formData.password,
       });
+
+      // Sincronizar login con la base de datos de Chat (Supabase)
+      const { error: chatLoginError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      if (chatLoginError) {
+        console.error("Error al iniciar sesión en el chat:", chatLoginError.message);
+        // Opcional: Decidir si el login general falla si el chat falla.
+      }
 
       if (response?.sessionStatus) {
         setSessionStatus(response.sessionStatus);
