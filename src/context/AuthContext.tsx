@@ -13,6 +13,10 @@ import {
   subscribeToForegroundMessages,
 } from "../services/firebaseMessaging";
 import { clearSupabaseSession } from "../services/supabaseClient";
+import {
+  notificationStorage,
+  mapFirebasePayloadToNotification,
+} from "../services/notificationStorage";
 
 type SessionStatus = {
   status?: boolean | string;
@@ -157,6 +161,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       unsubscribe = await subscribeToForegroundMessages((payload: any) => {
         const title = payload?.notification?.title || "Nueva notificacion";
         const body = payload?.notification?.body || "Tenes un nuevo mensaje.";
+
+        // Map and save to local storage notifications list
+        const mapped = mapFirebasePayloadToNotification(payload);
+        notificationStorage.addNotification(mapped);
 
         setForegroundNotification({ title, body });
         if (clearToastTimer) {

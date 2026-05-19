@@ -15,4 +15,5 @@ export const ROUTES = {
   planPayment: "/plan",
   favorites: "/favoritos",
   professionalStore: "/perfil/:id/tienda",
+  reels: "/reels",
 };

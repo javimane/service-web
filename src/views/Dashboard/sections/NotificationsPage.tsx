@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Bell,
   FileText,
@@ -11,128 +11,18 @@ import {
   CheckCheck,
   Filter,
 } from "lucide-react";
+import { notificationStorage } from "../../../services/notificationStorage";
 import "./NotificationsPage.css";
 
-const allNotifications = [
-  {
-    id: 1,
-    icon: FileText,
-    iconColor: "blue",
-    category: "proposals",
-    title: "Propuesta aceptada",
-    description:
-      'Tu propuesta "Remodelación Terraza" fue aprobada por el cliente. Puedes proceder con la planificación.',
-    time: "Hace 5 min",
-    date: "Hoy",
-    unread: true,
-  },
-  {
-    id: 2,
-    icon: MessageSquare,
-    iconColor: "green",
-    category: "messages",
-    title: "Nuevo mensaje de Julian Vargas",
-    description:
-      "Julian te envió los planos del proyecto Obsidian Tower para tu revisión.",
-    time: "Hace 30 min",
-    date: "Hoy",
-    unread: true,
-  },
-  {
-    id: 3,
-    icon: Ticket,
-    iconColor: "orange",
-    category: "promotions",
-    title: "Promoción por vencer",
-    description:
-      'Tu promoción "Descuento 20% en consultas" expira en 2 días. Considera renovarla.',
-    time: "Hace 1 hora",
-    date: "Hoy",
-    unread: true,
-  },
-  {
-    id: 4,
-    icon: TrendingUp,
-    iconColor: "purple",
-    category: "analytics",
-    title: "Estadísticas semanales disponibles",
-    description:
-      "Tu perfil creció un +12.4% esta semana. Revisa el reporte completo en Analytics.",
-    time: "Hace 3 horas",
-    date: "Hoy",
-    unread: false,
-  },
-  {
-    id: 5,
-    icon: Star,
-    iconColor: "yellow",
-    category: "reviews",
-    title: "Nueva reseña de 5 estrellas",
-    description:
-      'Elena Rossi dejó una reseña: "Excelente trabajo, muy profesional y detallista."',
-    time: "Hace 6 horas",
-    date: "Hoy",
-    unread: false,
-  },
-  {
-    id: 6,
-    icon: UserPlus,
-    iconColor: "green",
-    category: "followers",
-    title: "Nuevo seguidor",
-    description: "Marcus Chen comenzó a seguir tu perfil profesional.",
-    time: "Ayer",
-    date: "Ayer",
-    unread: false,
-  },
-  {
-    id: 7,
-    icon: FileText,
-    iconColor: "blue",
-    category: "proposals",
-    title: "Propuesta enviada",
-    description:
-      'Tu propuesta "Diseño de interiores Studio Loft" fue enviada correctamente al cliente.',
-    time: "Ayer",
-    date: "Ayer",
-    unread: false,
-  },
-  {
-    id: 8,
-    icon: Ticket,
-    iconColor: "orange",
-    category: "promotions",
-    title: "Promoción activada",
-    description:
-      'Tu nueva promoción "Pack Consulta + Diseño" ya está visible en la plataforma.',
-    time: "Hace 2 días",
-    date: "14 Abr",
-    unread: false,
-  },
-  {
-    id: 9,
-    icon: MessageSquare,
-    iconColor: "green",
-    category: "messages",
-    title: "Mensaje de Sarah Jenkins",
-    description:
-      "Sarah confirmó que el contrato fue firmado y registrado correctamente.",
-    time: "Hace 2 días",
-    date: "14 Abr",
-    unread: false,
-  },
-  {
-    id: 10,
-    icon: TrendingUp,
-    iconColor: "purple",
-    category: "analytics",
-    title: "Hito alcanzado: 1000 visitas",
-    description: "Tu perfil alcanzó las 1000 visitas este mes. ¡Felicidades!",
-    time: "Hace 3 días",
-    date: "13 Abr",
-    unread: false,
-  },
-];
+const CATEGORY_ICONS = {
+  proposals: FileText,
+  messages: MessageSquare,
+  promotions: Ticket,
+  analytics: TrendingUp,
+  reviews: Star,
+  followers: UserPlus,
+  all: Bell,
+};
 
 const filterOptions = [
   { key: "all", label: "Todas" },
@@ -145,24 +35,40 @@ const filterOptions = [
 
 export default function NotificationsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [notificationsList, setNotificationsList] = useState<any[]>([]);
 
-  const filtered = allNotifications.filter((n) => {
+  useEffect(() => {
+    return notificationStorage.subscribe((notifs) => {
+      setNotificationsList(notifs);
+    });
+  }, []);
+
+  const filtered = notificationsList.filter((n) => {
     if (activeFilter === "all") return true;
     if (activeFilter === "unread") return n.unread;
     return n.category === activeFilter;
   });
 
-  const unreadCount = allNotifications.filter((n) => n.unread).length;
+  const unreadCount = notificationsList.filter((n) => n.unread).length;
 
   // Group by date
-  const grouped = filtered.reduce<Record<string, typeof allNotifications>>(
+  const grouped = filtered.reduce<Record<string, typeof notificationsList>>(
     (acc, n) => {
-      if (!acc[n.date]) acc[n.date] = [];
-      acc[n.date].push(n);
+      const dateKey = n.date || "Hoy";
+      if (!acc[dateKey]) acc[dateKey] = [];
+      acc[dateKey].push(n);
       return acc;
     },
     {},
   );
+
+  const handleMarkAllAsRead = () => {
+    notificationStorage.markAllAsRead();
+  };
+
+  const handleMarkSingleAsRead = (id: string | number) => {
+    notificationStorage.markAsRead(id);
+  };
 
   return (
     <div className="notifications-page">
@@ -175,7 +81,11 @@ export default function NotificationsPage() {
               <span className="notifications-page__badge">{unreadCount}</span>
             )}
           </div>
-          <button type="button" className="notifications-page__mark-all">
+          <button 
+            type="button" 
+            className="notifications-page__mark-all"
+            onClick={handleMarkAllAsRead}
+          >
             <CheckCheck size={16} />
             <span>Marcar todas como leídas</span>
           </button>
@@ -208,14 +118,16 @@ export default function NotificationsPage() {
               <h3 className="notifications-group__date">{date}</h3>
               <div className="notifications-group__list">
                 {items.map((notif) => {
-                  const IconComp = notif.icon;
+                  const IconComp = CATEGORY_ICONS[notif.category as keyof typeof CATEGORY_ICONS] || Bell;
                   return (
                     <div
                       key={notif.id}
                       className={`notification-card ${notif.unread ? "notification-card--unread" : ""}`}
+                      onClick={() => handleMarkSingleAsRead(notif.id)}
+                      style={{ cursor: "pointer" }}
                     >
                       <div
-                        className={`notification-card__icon notification-card__icon--${notif.iconColor}`}
+                        className={`notification-card__icon notification-card__icon--${notif.iconColor || "blue"}`}
                       >
                         <IconComp size={20} />
                       </div>

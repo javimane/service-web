@@ -165,6 +165,7 @@ export default function Navbar() {
   const navLinks = [
     { label: "Profesionales/Comercios", path: ROUTES.categories },
     { label: "Mapa", path: ROUTES.map },
+    { label: "Reels", path: ROUTES.reels },
     { label: "Servicios", path: ROUTES.services },
     { label: "Productos", path: ROUTES.products },
     { label: "Promociones", path: ROUTES.promotions },

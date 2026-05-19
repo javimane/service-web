@@ -108,7 +108,7 @@ export default function AddItemModal({
         });
         data = result?.data ?? [];
       } else {
-        const result = await getProductsAction();
+        const result = await getProductsAction(professionalId);
         data = result?.data || [];
       }
 

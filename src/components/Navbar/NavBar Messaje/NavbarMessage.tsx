@@ -16,58 +16,23 @@ import {
   Package,
   BarChart3,
   ArrowLeft,
+  Star,
+  UserPlus,
 } from "lucide-react";
 import "./NavbarMessaje.css";
 import { useAuth } from "../../../context/AuthContext";
 import { ROUTES } from "../../../routes/paths";
+import { notificationStorage } from "../../../services/notificationStorage";
 
-const notifications = [
-  {
-    id: 1,
-    icon: FileText,
-    iconColor: "blue",
-    title: "Propuesta aceptada",
-    description: 'Tu propuesta "Remodelación Terraza" fue aprobada.',
-    time: "Hace 5 min",
-    unread: true,
-  },
-  {
-    id: 2,
-    icon: MessageSquare,
-    iconColor: "green",
-    title: "Nuevo mensaje",
-    description: "Julian Vargas te envió un mensaje.",
-    time: "Hace 30 min",
-    unread: true,
-  },
-  {
-    id: 3,
-    icon: Ticket,
-    iconColor: "orange",
-    title: "Promoción por vencer",
-    description: '"Descuento 20%" expira en 2 días.',
-    time: "Hace 1 hora",
-    unread: true,
-  },
-  {
-    id: 4,
-    icon: TrendingUp,
-    iconColor: "purple",
-    title: "Estadísticas semanales",
-    description: "Tu perfil creció un +12.4% esta semana.",
-    time: "Hace 3 horas",
-    unread: false,
-  },
-  {
-    id: 5,
-    icon: FileText,
-    iconColor: "blue",
-    title: "Nueva reseña",
-    description: "Elena Rossi dejó una reseña de 5 estrellas.",
-    time: "Ayer",
-    unread: false,
-  },
-];
+const CATEGORY_ICONS = {
+  proposals: FileText,
+  messages: MessageSquare,
+  promotions: Ticket,
+  analytics: TrendingUp,
+  reviews: Star,
+  followers: UserPlus,
+  all: Bell,
+};
 
 export default function NavbarMessage() {
   const router = useRouter();
@@ -76,8 +41,15 @@ export default function NavbarMessage() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const notifRef = useRef<HTMLDivElement | null>(null);
+  const [notificationsList, setNotificationsList] = useState<any[]>([]);
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  useEffect(() => {
+    return notificationStorage.subscribe((notifs) => {
+      setNotificationsList(notifs);
+    });
+  }, []);
+
+  const unreadCount = notificationsList.filter((n) => n.unread).length;
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -143,20 +115,23 @@ export default function NavbarMessage() {
                     type="button"
                     className="notif-dropdown__mark-all"
                     aria-label="Marcar todas como leídas"
+                    onClick={() => notificationStorage.markAllAsRead()}
                   >
                     <CheckCheck size={16} />
                   </button>
                 </div>
                 <div className="notif-dropdown__list">
-                  {notifications.map((notif) => {
-                    const IconComp = notif.icon;
+                  {notificationsList.slice(0, 5).map((notif) => {
+                    const IconComp = CATEGORY_ICONS[notif.category as keyof typeof CATEGORY_ICONS] || Bell;
                     return (
                       <div
                         key={notif.id}
                         className={`notif-item ${notif.unread ? "notif-item--unread" : ""}`}
+                        onClick={() => notificationStorage.markAsRead(notif.id)}
+                        style={{ cursor: "pointer" }}
                       >
                         <div
-                          className={`notif-item__icon notif-item__icon--${notif.iconColor}`}
+                          className={`notif-item__icon notif-item__icon--${notif.iconColor || "blue"}`}
                         >
                           <IconComp size={16} />
                         </div>

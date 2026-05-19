@@ -13,6 +13,8 @@ import {
   MapPin,
 } from "lucide-react";
 import { useQuery, useQueries } from "@tanstack/react-query";
+import Link from "next/link";
+import { ROUTES } from "../../../routes/paths";
 import {
   getReelsAction,
   updateReelStatsAction,
@@ -217,9 +219,9 @@ export default function ProfessionalReelsSection({ userProvince = "Buenos Aires"
               {userProvince}
             </span>
           </div>
-          <button className="section-link">
-            View all <span>&gt;</span>
-          </button>
+          <Link href={ROUTES.reels} className="section-link">
+            Ver todo <span>&gt;</span>
+          </Link>
         </div>
       </div>
 
