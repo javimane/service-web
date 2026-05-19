@@ -1,7 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Search, ArrowRight } from "lucide-react";
+import { Search, ArrowRight, MapPin } from "lucide-react";
+import Modal from "../../components/Modal/Modal";
+import { getProvincesAction } from "@/app/actions/provinces";
 import Navbar from "../../components/Navbar/Navbar";
 import CategoriesSection from "./sections/CategoriesSection";
 import BannerCarousel from "./sections/BannerCarousel";
@@ -29,6 +32,34 @@ const quickTags = [
 export default function HomePage() {
   const router = useRouter();
   const [heroQuery, setHeroQuery] = useState("");
+  const [userProvince, setUserProvince] = useState("Buenos Aires");
+  const [isProvinceModalOpen, setIsProvinceModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("userProvince");
+      if (stored) {
+        setUserProvince(stored);
+      }
+    }
+  }, []);
+
+  const { data: provinces = [] } = useQuery({
+    queryKey: ["provinces"],
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+  });
+
+  const handleProvinceSelect = (provinceName) => {
+    setUserProvince(provinceName);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("userProvince", provinceName);
+    }
+    setIsProvinceModalOpen(false);
+  };
 
   const handleHeroSearch = (e) => {
     e.preventDefault();
@@ -72,6 +103,14 @@ export default function HomePage() {
                 value={heroQuery}
                 onChange={(e) => setHeroQuery(e.target.value)}
               />
+              <button
+                type="button"
+                className="home-hero__location-btn"
+                onClick={() => setIsProvinceModalOpen(true)}
+              >
+                <MapPin size={16} />
+                <span className="home-hero__location-text">{userProvince}</span>
+              </button>
               <button type="submit" className="home-hero__search-btn">
                 Buscar
                 <ArrowRight size={16} />
@@ -96,16 +135,48 @@ export default function HomePage() {
 
         <BannerCarousel />
         <CategoriesSection />
-        <PromotionsSection />
-        <NearbyServicesSection />
-        <FeaturedSpecialists />
-        <NearbyProductsSection />
-        <ProfessionalReelsSection />
+        <PromotionsSection userProvince={userProvince} />
+        <NearbyServicesSection userProvince={userProvince} />
+        <FeaturedSpecialists userProvince={userProvince} />
+        <NearbyProductsSection userProvince={userProvince} />
+        <ProfessionalReelsSection userProvince={userProvince} />
         <ProductsCarousel />
         <JoinCTASection />
       </main>
 
       <Footer />
+
+      <Modal
+        isOpen={isProvinceModalOpen}
+        onClose={() => setIsProvinceModalOpen(false)}
+        title="Seleccionar Ubicación"
+      >
+        <div className="province-selector" style={{ padding: "1rem" }}>
+          <p className="province-selector__hint" style={{ marginBottom: "1rem", color: "var(--text-secondary)" }}>
+            Mostraremos contenido destacado disponible en la provincia que elijas.
+          </p>
+          <div className="province-selector__grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "0.5rem" }}>
+            {provinces.map((prov: any) => (
+              <button
+                key={prov.id}
+                className={`province-chip ${userProvince === prov.name ? "active" : ""}`}
+                onClick={() => handleProvinceSelect(prov.name)}
+                style={{
+                  padding: "0.5rem",
+                  border: userProvince === prov.name ? "1px solid var(--highlight)" : "1px solid var(--border)",
+                  borderRadius: "8px",
+                  background: userProvince === prov.name ? "var(--highlight-alpha)" : "transparent",
+                  color: userProvince === prov.name ? "var(--highlight)" : "var(--text-primary)",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                {prov.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

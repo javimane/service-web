@@ -158,10 +158,13 @@ export const API_ENDPOINTS = {
     promotions: `${API_BASE_URL}/api/storage/promotions`,
     profile: `${API_BASE_URL}/api/storage/profile`,
     portfolio: `${API_BASE_URL}/api/storage/portfolio`,
+    proposals: `${API_BASE_URL}/api/storage/proposals`,
     chat: (fileName: string) =>
       `${API_BASE_URL}/api/storage/chat?fileName=${encodeURIComponent(fileName)}`,
     getSignedUrl: (path: string) =>
       `${API_BASE_URL}/api/storage/chat/view-url?path=${encodeURIComponent(path)}`,
+    getProposalSignedUrl: (path: string) =>
+      `${API_BASE_URL}/api/storage/proposals/view-url?path=${encodeURIComponent(path)}`,
   },
   profiles: {
     base: `${API_BASE_URL}/api/profiles`,

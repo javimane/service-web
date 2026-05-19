@@ -80,7 +80,7 @@ export const acceptProposalAction = publicAction
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-proposals/${parsedInput.id}/accept`;
 
     try {
-      const response = await axios.patch(
+      const response = await axios.post(
         url,
         {},
         {
@@ -91,6 +91,28 @@ export const acceptProposalAction = publicAction
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || "Error accepting proposal",
+      );
+    }
+  });
+
+export const createProposalAction = publicAction
+  .schema(
+    z.object({
+      data: z.any(),
+      token: authTokenSchema,
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-proposals`;
+
+    try {
+      const response = await axios.post(url, parsedInput.data, {
+        headers: buildActionHeaders(ctx, parsedInput.token),
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Error creating proposal",
       );
     }
   });

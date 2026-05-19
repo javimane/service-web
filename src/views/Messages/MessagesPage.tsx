@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import NavbarMessage from "../../components/Navbar/NavBar Messaje/NavbarMessage";
 import { getProfessionalDetailAction } from "../../app/actions/professionals";
+import { getProfilePath } from "../../utils/utils";
 import {
   getMessagesAction,
   sendMessageAction,
@@ -32,6 +33,7 @@ type UIConversation = {
   requestId?: string;
   receiverId?: string;
   professionalId?: number;
+  seoPath?: string;
   name: string;
   role: string;
   avatar: string;
@@ -498,7 +500,8 @@ export default function MessagesPage() {
         id: String(req.id),
         requestId: String(req.id),
         receiverId: otherId,
-        professionalId: Number(req.professional_id) || undefined,
+        professionalId: Number(professional?.id || req.professional_id) || undefined,
+        seoPath: professional?.seo_path || undefined,
         name,
         role: hasProfessionalId ? "Profesional" : "Usuario",
         avatar: getInitials(name),
@@ -526,6 +529,7 @@ export default function MessagesPage() {
         id: `draft-${targetProfessional}`,
         receiverId: targetProfData?.user_id,
         professionalId: Number(targetProfessional),
+        seoPath: targetProfData?.seo_path || undefined,
         name,
         role: "Profesional",
         avatar: getInitials(name),
@@ -801,6 +805,46 @@ export default function MessagesPage() {
     }
   };
 
+  const handleHeaderClick = async () => {
+    if (!activeConversation) return;
+
+    let professionalId = activeConversation.professionalId;
+    let seoPath = activeConversation.seoPath;
+
+    // Si no tenemos professionalId, pero es un Profesional o tiene un receiverId, intentamos buscarlo dinámicamente
+    if (!professionalId && activeConversation.receiverId) {
+      try {
+        const res = await getProfileByUserIdAction({ id: activeConversation.receiverId });
+        const profileData = res?.data || res;
+        const professional = Array.isArray(profileData?.professionals)
+          ? profileData.professionals[0]
+          : profileData?.professionals;
+
+        if (professional?.id) {
+          professionalId = Number(professional.id);
+          seoPath = professional.seo_path || undefined;
+        }
+      } catch (err) {
+        console.error("Error al buscar el perfil profesional dinámicamente:", err);
+      }
+    }
+
+    if (seoPath) {
+      const path = seoPath.startsWith("/perfil")
+        ? seoPath
+        : `/perfil${seoPath.startsWith("/") ? seoPath : `/${seoPath}`}`;
+      router.push(path);
+    } else if (professionalId) {
+      router.push(`/perfil/${professionalId}`);
+    } else {
+      // De respaldo, si tenemos el targetProfessional en la URL o guardado
+      const backupId = targetProfessional || activeConversation.professionalId;
+      if (backupId) {
+        router.push(`/perfil/${backupId}`);
+      }
+    }
+  };
+
   return (
     <div className="msg-app">
       <NavbarMessage />
@@ -969,7 +1013,13 @@ export default function MessagesPage() {
               >
                 <ArrowLeft size={18} />
               </button>
-              <div className="msg-chat__header-avatar">
+              <div
+                className="msg-chat__header-avatar"
+                style={{
+                  cursor: (activeConversation?.role === "Profesional" || activeConversation?.professionalId) ? "pointer" : "default"
+                }}
+                onClick={handleHeaderClick}
+              >
                 {activeConversation?.avatarImage ? (
                   <img
                     src={activeConversation.avatarImage}
@@ -983,8 +1033,27 @@ export default function MessagesPage() {
                   <span className="msg-online-dot" />
                 )}
               </div>
-              <div className="msg-chat__header-info">
-                <span className="msg-chat__header-name">
+              <div
+                className="msg-chat__header-info"
+                style={{
+                  cursor: (activeConversation?.role === "Profesional" || activeConversation?.professionalId) ? "pointer" : "default"
+                }}
+                onClick={handleHeaderClick}
+              >
+                <span
+                  className="msg-chat__header-name"
+                  style={{
+                    display: "inline-block"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeConversation?.role === "Profesional" || activeConversation?.professionalId) {
+                      e.currentTarget.style.textDecoration = "underline";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.textDecoration = "none";
+                  }}
+                >
                   {activeConversation?.name || "Selecciona una conversacion"}
                 </span>
                 <span className="msg-chat__header-status">

@@ -101,7 +101,9 @@ export default function ProposalsView() {
         <div className="proposal-card__header">
           <div className="proposal-card__info">
             <h3 className="proposal-card__name">
-              {isReceived ? proposal.professional_name : "Presupuesto Enviado"}
+              {isReceived
+                ? `Recibido de: ${proposal.professional_name}`
+                : `Enviado a: ${proposal.sent_to || "Usuario"}`}
             </h3>
             <span className="proposal-card__date">Emitido el {date}</span>
           </div>

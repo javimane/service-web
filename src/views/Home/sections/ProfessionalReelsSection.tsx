@@ -41,21 +41,14 @@ function ReelThumbnail({ src }: { src: string }) {
   );
 }
 
-export default function ProfessionalReelsSection() {
-  const [userProvince, setUserProvince] = useState<string>("Buenos Aires");
+export default function ProfessionalReelsSection({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [likedReels, setLikedReels] = useState<number[]>([]);
   const sliderRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => {
-    const storedProvince = window.localStorage.getItem("userProvince");
-    if (storedProvince) {
-      setUserProvince(storedProvince);
-    }
-  }, []);
-
+  // Using userProvince from props
   // Fetch Provinces to get the ID for filtering
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],

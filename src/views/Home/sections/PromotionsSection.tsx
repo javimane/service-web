@@ -25,10 +25,9 @@ import "./PromotionsSection.css";
 import { getProfessionalPromotionsAction } from "@/app/actions/professionalPromotions";
 import { getProvincesAction } from "@/app/actions/provinces";
 
-export default function PromotionsSection() {
+export default function PromotionsSection({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
   const router = useRouter();
   const { sessionStatus } = useAuth();
-  const [userProvince, setUserProvince] = useState<string>("Buenos Aires");
   const [isProvinceModalOpen, setIsProvinceModalOpen] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState<any>(null);
   const sliderRef = useRef(null);
@@ -43,15 +42,7 @@ export default function PromotionsSection() {
     updateArrowVisibility,
   } = useCarouselDrag(sliderRef, ".promotion-card");
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const storedProvince = window.localStorage.getItem("userProvince");
-    if (storedProvince) {
-      setUserProvince(storedProvince);
-    }
-  }, []);
-
+  // Removed internal localStorage effect since HomePage handles it
   // Fetch Provinces for the selector
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],
@@ -77,17 +68,7 @@ export default function PromotionsSection() {
     gcTime: 1000 * 60 * 30,
   });
 
-  // Auto-detect province if authenticated and not set
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (
-      sessionStatus?.address?.Province?.name &&
-      !localStorage.getItem("userProvince")
-    ) {
-      setUserProvince(sessionStatus.address.Province.name);
-    }
-  }, [sessionStatus]);
-
+  // Auto-detect province handled by HomePage, or we can leave it to the user.
   const promosList = useMemo(() => {
     if (!promotionsData) return [];
     return promotionsData.map((p: any) => ({
@@ -123,11 +104,12 @@ export default function PromotionsSection() {
   };
 
   const handleProvinceSelect = (provinceName: string) => {
-    setUserProvince(provinceName);
+    // If the user uses the internal modal, we just update localStorage and reload or let the user use the main one.
+    // It's better to just redirect to the main page top or dispatch an event, but for now we'll just update localStorage and reload.
     if (typeof window !== "undefined") {
       localStorage.setItem("userProvince", provinceName);
+      window.location.reload();
     }
-    setIsProvinceModalOpen(false);
   };
 
   return (

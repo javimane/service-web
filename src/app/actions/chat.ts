@@ -94,3 +94,35 @@ export const getUserConversationsAction = async ({ userId }: { userId: string })
 
   return { data: Array.from(conversationsMap.values()) };
 };
+
+export const getChatClientsAction = async ({ userId }: { userId: string }) => {
+  // Fetch messages to get unique user IDs who have chatted with the user
+  const { data: messages, error: messagesError } = await supabase
+    .from("messages")
+    .select("sender_id, receiver_id")
+    .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+
+  if (messagesError) {
+    throw new Error(messagesError.message);
+  }
+
+  const otherUserIds = new Set<string>();
+  messages?.forEach(msg => {
+    const otherId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
+    otherUserIds.add(otherId);
+  });
+
+  if (otherUserIds.size === 0) return { data: [] };
+
+  // Fetch the profiles of these users
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("*")
+    .in("id", Array.from(otherUserIds));
+
+  if (profilesError) {
+    throw new Error(profilesError.message);
+  }
+
+  return { data: profiles };
+};

@@ -36,7 +36,7 @@ async function uploadFile(configEndpoint: string, input: UploadInput) {
 
 export async function uploadProposalPdf(input: UploadInput) {
   // Assuming a default or similar mechanism for PDFs if no endpoint yet
-  return uploadFile(API_ENDPOINTS.storage.products, input);
+  return uploadFile(API_ENDPOINTS.storage.proposals, input);
 }
 
 export async function uploadPromotionImage(input: UploadInput) {
@@ -63,6 +63,20 @@ export async function getFileSignedUrl(path: string) {
   try {
     const config = await apiClient<StorageConfig>(
       API_ENDPOINTS.storage.getSignedUrl(path),
+      {
+        method: "GET",
+      },
+    ); // URL válida por 60 segundos
+    return config.signedUrl || "";
+  } catch (error) {
+    throw new Error("No se pudo obtener la URL de visualización del archivo.");
+  }
+}
+
+export async function getProposalSignedUrl(path: string) {
+  try {
+    const config = await apiClient<StorageConfig>(
+      API_ENDPOINTS.storage.getProposalSignedUrl(path),
       {
         method: "GET",
       },

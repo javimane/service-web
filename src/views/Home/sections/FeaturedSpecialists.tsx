@@ -13,16 +13,10 @@ import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./FeaturedSpecialists.css";
 import { getProfessionalsAction } from "@/app/actions/professionals";
 
-export default function FeaturedSpecialists() {
-  const [userProvince, setUserProvince] = useState("Buenos Aires");
+export default function FeaturedSpecialists({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
   const sliderRef = useRef(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    setUserProvince(localStorage.getItem("userProvince") || "Buenos Aires");
-  }, []);
-
+  // Using userProvince from props
   const {
     showLeftArrow,
     showRightArrow,

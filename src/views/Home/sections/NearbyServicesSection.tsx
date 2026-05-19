@@ -24,7 +24,7 @@ type UserLocation = {
   lng: number;
 };
 
-export default function NearbyServicesSection() {
+export default function NearbyServicesSection({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
   const router = useRouter();
   const [selectedService, setSelectedService] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -56,11 +56,13 @@ export default function NearbyServicesSection() {
   }, []);
 
   const { data: services = [], isLoading } = useQuery({
-    queryKey: ["nearby-services", userLocation],
+    queryKey: ["nearby-services", userLocation, userProvince],
     queryFn: async () => {
       const result = await getServicesAction({
-        lat: userLocation!.lat,
-        lng: userLocation!.lng,
+        province: userProvince,
+        // we can still pass lat/lng for sorting by distance if getServicesAction supports it
+        lat: userLocation?.lat,
+        lng: userLocation?.lng,
         radius: 30, // 30km radius
         is_premium: true,
         limit: 25,
@@ -76,7 +78,6 @@ export default function NearbyServicesSection() {
 
       return null;
     },
-    enabled: !!userLocation,
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 15,
   });
@@ -97,7 +98,9 @@ export default function NearbyServicesSection() {
     <section className="nearby-services">
       <div className="home-section-container">
         <div className="nearby-services__header">
-          <h2 className="nearby-services__title">Servicios cerca de ti</h2>
+          <div className="nearby-services__title-group">
+            <h2 className="nearby-services__title">Servicios Destacados en {userProvince}</h2>
+          </div>
           <button
             className="section-link"
             onClick={() => router.push(ROUTES.map)}

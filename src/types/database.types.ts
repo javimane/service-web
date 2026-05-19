@@ -258,6 +258,7 @@ export interface ProfessionalProposalRow {
   readonly professional_id: number;
   readonly user_id: string;
   readonly created_at: string;
+  readonly sent_to?: string;
   // Relationships
   readonly Professional?: ProfessionalRow;
   readonly Profile?: ProfileRow;

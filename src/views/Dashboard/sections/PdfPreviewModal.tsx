@@ -8,7 +8,7 @@ import "./PdfPreviewModal.css";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { uploadProposalPdf } from "../../../services/storageUploads";
-import logoImage from "../../../images/Logo sin nombre y fondo.png";
+import logoImage from "../../../images/Logo solo nombre sin fondo.png";
 
 type PdfItem = {
   qty?: number;
@@ -33,8 +33,9 @@ type PdfClient = {
 type PdfProfessional = {
   name: string;
   email: string;
-  phone: string;
   address: string;
+  companyName?: string;
+  avatarUrl?: string;
 };
 
 type PdfPreviewModalProps = {
@@ -45,6 +46,7 @@ type PdfPreviewModalProps = {
   totals?: PdfTotals;
   client?: PdfClient;
   proposalNumber?: string;
+  currencySymbol?: string;
 };
 
 export default function PdfPreviewModal({
@@ -53,13 +55,15 @@ export default function PdfPreviewModal({
   professional = {
     name: "Profesional",
     email: "hola@sitioincreible.com.ar",
-    phone: "(55)1234-5678",
     address: "Calle Cualquiera 123, Cualquier Lugar",
+    companyName: "",
+    avatarUrl: "",
   },
   items = [],
   totals = { subtotal: 0, tax: 0, total: 0 },
   client = { name: "", phone: "", address: "", email: "" },
   proposalNumber = "01234",
+  currencySymbol = "$",
 }: PdfPreviewModalProps) {
   const router = useRouter();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -117,9 +121,40 @@ export default function PdfPreviewModal({
         doc.text("Tu logo aquí", 40, 70);
       }
 
+      // 2b. Professional Avatar & Company
+      let textX = 40;
+      if (professional.avatarUrl) {
+        try {
+          const img = new window.Image();
+          img.src = professional.avatarUrl;
+          img.crossOrigin = "anonymous";
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+          });
+          doc.addImage(img, "JPEG", 40, 110, 40, 40);
+          textX = 90;
+        } catch (err) {
+          console.error("Error loading professional avatar:", err);
+        }
+      }
+
+      doc.setFontSize(10);
+      doc.setTextColor("#000000");
+      if (professional.companyName) {
+        doc.setFont("helvetica", "bold");
+        doc.text(professional.companyName, textX, 125);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Prof: ${professional.name}`, textX, 140);
+      } else {
+        doc.setFont("helvetica", "bold");
+        doc.text(professional.name, textX, 135);
+      }
+
       // 3. Client details
       doc.setFontSize(10);
       doc.setTextColor("#000000");
+      doc.setFont("helvetica", "normal");
       const startY = 180;
       doc.text(`Cliente:     ${client.name || ""}`, 40, startY);
       doc.line(80, startY + 2, 260, startY + 2); // line for client
@@ -141,8 +176,8 @@ export default function PdfPreviewModal({
           ? items.map((item: any) => [
               item.qty?.toString() || "1",
               item.name || "Servicio",
-              `$${(item.rate || 0).toLocaleString()}`,
-              `$${(item.total || 0).toLocaleString()}`,
+              `${currencySymbol} ${(item.rate || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+              `${currencySymbol} ${(item.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
             ])
           : [];
 
@@ -180,17 +215,38 @@ export default function PdfPreviewModal({
       // 5. Total Block
       const finalY = (doc as any).lastAutoTable.finalY + 20;
 
-      doc.setFillColor(255, 204, 204); // light pink
-      doc.rect(pageWidth - 180, finalY, 140, 25, "F");
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
+      let blockHeight = 25;
+      const hasTax = totals.tax > 0;
+      if (hasTax) {
+        blockHeight = 65;
+      }
+
+      doc.setFillColor(255, 240, 240); // light grayish pink
+      doc.rect(pageWidth - 220, finalY, 180, blockHeight, "F");
+      doc.setFontSize(10);
       doc.setTextColor("#000000");
-      doc.text(`Total`, pageWidth - 170, finalY + 17);
-      doc.text(
-        `$${totals.total.toLocaleString()}`,
-        pageWidth - 100,
-        finalY + 17,
-      );
+
+      if (hasTax) {
+        doc.setFont("helvetica", "normal");
+        doc.text("Subtotal", pageWidth - 210, finalY + 17);
+        doc.text(`${currencySymbol} ${totals.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 50, finalY + 17, { align: "right" });
+        
+        // Calculate tax percentage safely
+        const taxPercent = totals.subtotal > 0 ? Math.round((totals.tax / totals.subtotal) * 1000) / 10 : 0;
+        doc.text(`IVA (${taxPercent}%)`, pageWidth - 210, finalY + 34);
+        doc.text(`${currencySymbol} ${totals.tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 50, finalY + 34, { align: "right" });
+        
+        doc.setDrawColor("#b8b8b8");
+        doc.line(pageWidth - 210, finalY + 42, pageWidth - 50, finalY + 42);
+        
+        doc.setFont("helvetica", "bold");
+        doc.text("Total", pageWidth - 210, finalY + 57);
+        doc.text(`${currencySymbol} ${totals.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 50, finalY + 57, { align: "right" });
+      } else {
+        doc.setFont("helvetica", "bold");
+        doc.text("Total", pageWidth - 210, finalY + 17);
+        doc.text(`${currencySymbol} ${totals.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 50, finalY + 17, { align: "right" });
+      }
 
       // 6. Footer (Red block)
       doc.setFillColor(255, 77, 79); // strong red
@@ -201,18 +257,13 @@ export default function PdfPreviewModal({
 
       // Icons text approximations (since images might not be loaded)
       doc.text(
-        `📍 ${professional.address || "Calle Cualquiera 123, Cualquier Lugar"}`,
+        `Dirección: ${professional.address || "Sin Dirección"}`,
         40,
         pageHeight - 40,
       );
       doc.text(
-        `✉ ${professional.email || "hola@sitioincreible.com.ar"}`,
+        `Correo: ${professional.email || "Sin Email"}`,
         pageWidth / 2 - 50,
-        pageHeight - 40,
-      );
-      doc.text(
-        `📞 ${professional.phone || "(55)1234-5678"}`,
-        pageWidth - 140,
         pageHeight - 40,
       );
 

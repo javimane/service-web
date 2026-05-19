@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getProductsAction } from "../../../app/actions/products";
+import { getProvincesAction } from "@/app/actions/provinces";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import NearbyProductDetailModal from "./NearbyProductDetailModal";
 import "./NearbyProductsSection.css";
@@ -24,7 +25,7 @@ type UserLocation = {
   lng: number;
 };
 
-export default function NearbyProductsSection() {
+export default function NearbyProductsSection({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
   const router = useRouter();
   const sliderRef = useRef<HTMLDivElement>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -54,12 +55,26 @@ export default function NearbyProductsSection() {
     );
   }, []);
 
+  const { data: provinces = [] } = useQuery({
+    queryKey: ["provinces"],
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+  });
+
+  const provinceId = useMemo(() => {
+    return provinces.find((p: any) => p.name === userProvince)?.id;
+  }, [provinces, userProvince]);
+
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ["nearby-products", userLocation],
+    queryKey: ["nearby-products", userLocation, provinceId],
     queryFn: async () => {
       const result = await getProductsAction({
-        lat: userLocation!.lat,
-        lng: userLocation!.lng,
+        provinceId: provinceId,
+        lat: userLocation?.lat,
+        lng: userLocation?.lng,
         radius: 30,
         limit: 20,
       });
@@ -74,7 +89,6 @@ export default function NearbyProductsSection() {
 
       return null;
     },
-    enabled: !!userLocation,
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 15,
   });
@@ -94,7 +108,9 @@ export default function NearbyProductsSection() {
     <section className="nearby-products">
       <div className="home-section-container">
         <div className="nearby-products__header">
-          <h2 className="nearby-products__title">Productos de la App</h2>
+          <div className="nearby-products__title-group">
+            <h2 className="nearby-products__title">Productos en {userProvince}</h2>
+          </div>
           <button
             className="section-link"
             onClick={() => router.push("/productos")}
