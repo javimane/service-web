@@ -4,23 +4,27 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   Paperclip,
-  Mic,
   Smile,
   Send,
   PanelLeftClose,
   PanelLeftOpen,
   ArrowLeft,
-  Phone,
-  Video,
   MoreVertical,
+  Loader2,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import NavbarMessage from "../../components/Navbar/NavBar Messaje/NavbarMessage";
-import { getProfileAction } from "../../app/actions/profile";
 import { getProfessionalDetailAction } from "../../app/actions/professionals";
-import { getMessagesAction, sendMessageAction, markMessagesAsReadAction, getUserConversationsAction, getProfileByUserIdAction } from "../../app/actions/chat";
+import {
+  getMessagesAction,
+  sendMessageAction,
+  markMessagesAsReadAction,
+  getUserConversationsAction,
+  getProfileByUserIdAction,
+} from "../../app/actions/chat";
 import { supabase } from "../../services/supabaseClient";
+import { getFileSignedUrl, uploadChatImage } from "../../services/storageUploads";
 import "./MessagesPage.css";
 
 type UIConversation = {
@@ -50,6 +54,7 @@ type UIMessage = {
     display_name?: string;
     avatar_url?: string | null;
   } | null;
+  fileUrl?: string;
 };
 
 const getInitials = (name: string) =>
@@ -72,6 +77,226 @@ const formatDate = (value?: string | null) => {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" });
+};
+
+const emojiCategories = {
+  Caritas: [
+    "😀",
+    "😃",
+    "😄",
+    "😁",
+    "😆",
+    "😅",
+    "😂",
+    "🤣",
+    "😊",
+    "😇",
+    "🙂",
+    "🙃",
+    "😉",
+    "😌",
+    "😍",
+    "🥰",
+    "😘",
+    "😗",
+    "😙",
+    "😚",
+    "😋",
+    "😛",
+    "😝",
+    "😜",
+    "🤪",
+    "🤨",
+    "🧐",
+    "🤓",
+    "😎",
+    "🥳",
+    "😏",
+    "😒",
+    "😞",
+    "😔",
+    "😟",
+    "😕",
+    "🙁",
+    "☹️",
+    "😣",
+    "😖",
+    "😫",
+    "😩",
+    "🥺",
+    "😢",
+    "😭",
+    "😤",
+    "😠",
+    "😡",
+    "🤬",
+    "🤯",
+    "😳",
+    "🥵",
+    "🥶",
+    "😱",
+    "😨",
+    "😰",
+    "😥",
+    "😓",
+    "🤗",
+    "🤔",
+    "🫣",
+    "🤫",
+    "🤥",
+    "😐",
+    "😑",
+    "😬",
+    "🫠",
+  ],
+  Gestos: [
+    "👋",
+    "🤚",
+    "🖐️",
+    "✋",
+    "🖖",
+    "👌",
+    "🤌",
+    "🤏",
+    "✌️",
+    "🤞",
+    "🤟",
+    "🤘",
+    "🤙",
+    "👈",
+    "👉",
+    "👆",
+    "🖕",
+    "👇",
+    "☝️",
+    "👍",
+    "👎",
+    "✊",
+    "👊",
+    "👏",
+    "🙌",
+    "👐",
+    "🤲",
+    "🤝",
+    "🙏",
+    "✍️",
+    "💅",
+    "🤳",
+    "💪",
+  ],
+  Amor: [
+    "❤️",
+    "🧡",
+    "💛",
+    "💚",
+    "💙",
+    "💜",
+    "🖤",
+    "🤍",
+    "🤎",
+    "💔",
+    "❤️‍🔥",
+    "❤️‍🩹",
+    "❣️",
+    "💕",
+    "💞",
+    "💓",
+    "💗",
+    "💖",
+    "💘",
+    "💝",
+    "💟",
+  ],
+  Animal: [
+    "🐶",
+    "🐱",
+    "🐭",
+    "🐹",
+    "🐰",
+    "🦊",
+    "🐻",
+    "🐼",
+    "🐨",
+    "🐯",
+    "🦁",
+    "🐮",
+    "🐷",
+    "🐸",
+    "🐵",
+    "🐔",
+    "🐧",
+    "🐦",
+    "🐤",
+    "🦆",
+    "🦅",
+    "🦉",
+    "🦇",
+    "🦄",
+    "🐝",
+    "🦋",
+    "🐌",
+    "🐞",
+    "🐜",
+    "🕸️",
+    "🐢",
+    "🐍",
+    "🐙",
+    "🦀",
+    "🐬",
+    "🐳",
+    "🦈",
+  ],
+  Comida: [
+    "🍏",
+    "🍎",
+    "🍐",
+    "🍊",
+    "🍋",
+    "🍌",
+    "🍉",
+    "🍇",
+    "🍓",
+    "🫐",
+    "🍒",
+    "🍑",
+    "🥭",
+    "🍍",
+    "🥥",
+    "🥝",
+    "🍅",
+    "🍆",
+    "🥑",
+    "🥦",
+    "🌽",
+    "🥕",
+    "🍞",
+    "🧀",
+    "🍳",
+    "🥓",
+    "🥩",
+    "🍔",
+    "🍟",
+    "🍕",
+    "🌭",
+    "🥪",
+    "🌮",
+    "🍿",
+    "🍩",
+    "🍪",
+    "🎂",
+    "🧁",
+    "🍫",
+    "🍬",
+    "🍭",
+    "☕",
+    "🍵",
+    "🍺",
+    "🍻",
+    "🥂",
+    "🍷",
+    "🍹",
+    "🥤",
+  ],
 };
 
 export default function MessagesPage() {
@@ -102,6 +327,68 @@ export default function MessagesPage() {
   >({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [activeEmojiCat, setActiveEmojiCat] = useState("Caritas");
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+  const handleAddEmoji = (emoji: string) => {
+    setNewMessage((prev) => prev + emoji);
+  };
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
+        setEmojiPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const MAX_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      alert("El archivo excede el límite máximo permitido de 50MB.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const uploadResult = await uploadChatImage({
+        file: file,
+        fileName: file.name,
+        contentType: file.type,
+      });
+
+      if (!uploadResult.publicUrl) {
+        throw new Error("No se pudo obtener la ruta del archivo subido.");
+      }
+
+      const publicUrl = await getFileSignedUrl(uploadResult.publicUrl);
+
+      sendMessageMutation.mutate({
+        content: `Archivo adjunto: ${file.name}`,
+        fileUrl: publicUrl,
+      });
+    } catch (err: any) {
+      console.error("Error al subir archivo", err);
+      alert(err.message || "Error al subir el archivo. Intente de nuevo.");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const { data: requestsData } = useQuery({
     queryKey: ["my-conversations", user?.id],
     queryFn: async () => {
@@ -115,21 +402,24 @@ export default function MessagesPage() {
       const enriched = await Promise.all(
         result.map(async (req: any) => {
           // Identify the other user's ID
-          const otherId = String(req.user_id) === String(user.id)
-            ? req.receiver_id
-            : req.user_id;
+          const otherId =
+            String(req.user_id) === String(user.id)
+              ? req.receiver_id
+              : req.user_id;
 
           let profileData = null;
           if (otherId && String(otherId) !== String(user.id)) {
             try {
-              const res = await getProfileByUserIdAction({ id: String(otherId) });
+              const res = await getProfileByUserIdAction({
+                id: String(otherId),
+              });
               profileData = res?.data || res;
             } catch (e) {
               console.error("Error fetching profile", e);
             }
           }
           return { ...req, ProfileData: profileData };
-        })
+        }),
       );
 
       return enriched;
@@ -144,7 +434,9 @@ export default function MessagesPage() {
     queryFn: async () => {
       if (!targetProfessional) return null;
       try {
-        const res = await getProfessionalDetailAction({ id: targetProfessional });
+        const res = await getProfessionalDetailAction({
+          id: targetProfessional,
+        });
         return res?.data || res;
       } catch (e) {
         console.error("Error fetching target professional", e);
@@ -161,24 +453,40 @@ export default function MessagesPage() {
 
   const conversations = useMemo<UIConversation[]>(() => {
     const mapped: UIConversation[] = requests.map((req: any) => {
-      const otherId = String(req.user_id) === String(user?.id) 
-        ? req.receiver_id 
-        : req.user_id;
-      
-      const profileData = req.ProfileData || {};
-      
-      // Validamos si profileData tiene alguna propiedad relacionada a company
-      const companyData = profileData?.companies_arca || profileData?.companies || profileData?.Company || profileData?.company;
-      const company = Array.isArray(companyData) ? companyData[0] : companyData;
-      
-      // Tiene professional_id si el req lo tiene, o si su perfil lo indica
-      const hasProfessionalId = !!req.professional_id || !!profileData?.professional_id || !!company;
-      
-      const name = hasProfessionalId 
-        ? (company?.name || profileData?.display_name || `Profesional ${req.professional_id ?? ""}`) 
-        : (profileData?.display_name || "Usuario");
+      const otherId =
+        String(req.user_id) === String(user?.id)
+          ? req.receiver_id
+          : req.user_id;
 
-      const avatarImage = profileData?.avatar_url || company?.logo || company?.logo_url || null;
+      const profileData = req.ProfileData || {};
+      const professional = Array.isArray(profileData?.professionals)
+        ? profileData.professionals[0]
+        : profileData?.professionals;
+
+      // Validamos si profileData tiene alguna propiedad relacionada a company o anidada en professionals
+      const companyData =
+        profileData?.companies_arca ||
+        profileData?.companies ||
+        profileData?.Company ||
+        profileData?.company ||
+        professional?.companies;
+      const company = Array.isArray(companyData) ? companyData[0] : companyData;
+
+      // Tiene professional_id si el req lo tiene, o si su perfil/relaciones lo indica
+      const hasProfessionalId =
+        !!req.professional_id ||
+        !!profileData?.professional_id ||
+        !!professional ||
+        !!company;
+
+      const name = hasProfessionalId
+        ? company?.name ||
+          profileData?.display_name ||
+          `Profesional ${req.professional_id ?? ""}`
+        : profileData?.display_name || "Usuario";
+
+      const avatarImage =
+        profileData?.avatar_url || company?.logo || company?.logo_url || null;
 
       const activityAt =
         lastActivityByRequest[String(req.id)] ||
@@ -207,10 +515,13 @@ export default function MessagesPage() {
     });
 
     if (mapped.length === 0 && targetProfessional) {
-      const company = targetProfData?.companies_arca || targetProfData?.companies || targetProfData?.company;
+      const company =
+        targetProfData?.companies_arca ||
+        targetProfData?.companies ||
+        targetProfData?.company;
       const name = company?.name || `Profesional ${targetProfessional}`;
       const avatarImage = company?.logo || company?.logo_url || null;
-      
+
       mapped.push({
         id: `draft-${targetProfessional}`,
         receiverId: targetProfData?.user_id,
@@ -236,7 +547,7 @@ export default function MessagesPage() {
     lastMessageByRequest,
     lastActivityByRequest,
     unreadByRequest,
-    targetProfData
+    targetProfData,
   ]);
 
   const activeConversation =
@@ -273,16 +584,22 @@ export default function MessagesPage() {
     queryKey: ["chat-messages", activeRequestId],
     queryFn: async () => {
       if (!activeRequestId) return [];
-      const res = await getMessagesAction({ userId: String(user.id), receiverId: activeRequestId });
+      const res = await getMessagesAction({
+        userId: String(user.id),
+        receiverId: activeRequestId,
+      });
       const result = res?.data || res || [];
-      
+
       // Marcar como leídos
       if (user?.id) {
-         await markMessagesAsReadAction({ userId: String(user.id), senderId: activeRequestId });
-         setUnreadByRequest(prev => ({...prev, [activeRequestId]: 0}));
-         queryClient.invalidateQueries({
-           queryKey: ["unread-messages-count", user.id],
-         });
+        await markMessagesAsReadAction({
+          userId: String(user.id),
+          senderId: activeRequestId,
+        });
+        setUnreadByRequest((prev) => ({ ...prev, [activeRequestId]: 0 }));
+        queryClient.invalidateQueries({
+          queryKey: ["unread-messages-count", user.id],
+        });
       }
       return result;
     },
@@ -293,7 +610,11 @@ export default function MessagesPage() {
 
   const messages = useMemo<UIMessage[]>(() => {
     const dataObj = messagesData as any;
-    const list = Array.isArray(dataObj) ? dataObj : Array.isArray(dataObj?.messages) ? dataObj.messages : [];
+    const list = Array.isArray(dataObj)
+      ? dataObj
+      : Array.isArray(dataObj?.messages)
+        ? dataObj.messages
+        : [];
 
     let lastDate = "";
     return list.map((msg: any) => {
@@ -309,6 +630,7 @@ export default function MessagesPage() {
         date: showDate ? msgDate : "",
         status: msg.is_read ? "Leído" : undefined,
         senderProfile: msg.sender,
+        fileUrl: msg.file_url || undefined,
       };
     });
   }, [messagesData, user?.id]);
@@ -335,55 +657,62 @@ export default function MessagesPage() {
     if (!user?.id) return;
 
     const channel = supabase
-      .channel('messages_changes')
+      .channel("messages_changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
         },
         (payload) => {
           const newMsg = payload.new;
-          
-          const isRelevant = newMsg.sender_id === user.id || newMsg.receiver_id === user.id;
+
+          const isRelevant =
+            newMsg.sender_id === user.id || newMsg.receiver_id === user.id;
           if (!isRelevant) return;
 
-          const reqId = newMsg.sender_id === user.id ? newMsg.receiver_id : newMsg.sender_id;
-          
+          const reqId =
+            newMsg.sender_id === user.id
+              ? newMsg.receiver_id
+              : newMsg.sender_id;
+
           if (reqId === activeRequestId) {
             queryClient.invalidateQueries({
               queryKey: ["chat-messages", activeRequestId],
             });
-            
+
             if (String(newMsg.sender_id) !== String(user.id)) {
-               markMessagesAsReadAction({ userId: String(user.id), senderId: reqId }).then(() => {
-                 queryClient.invalidateQueries({
-                   queryKey: ["unread-messages-count", user.id],
-                 });
-               });
+              markMessagesAsReadAction({
+                userId: String(user.id),
+                senderId: reqId,
+              }).then(() => {
+                queryClient.invalidateQueries({
+                  queryKey: ["unread-messages-count", user.id],
+                });
+              });
             }
           } else if (String(newMsg.sender_id) !== String(user.id)) {
             // Aumentar contador de no leídos para esa conversación
-            setUnreadByRequest(prev => ({
-               ...prev,
-               [reqId]: (prev[reqId] || 0) + 1
+            setUnreadByRequest((prev) => ({
+              ...prev,
+              [reqId]: (prev[reqId] || 0) + 1,
             }));
           }
-          
+
           queryClient.invalidateQueries({
             queryKey: ["my-conversations", user?.id],
           });
-          
+
           setLastMessageByRequest((prev) => ({
-             ...prev,
-             [reqId]: newMsg.content
+            ...prev,
+            [reqId]: newMsg.content,
           }));
           setLastActivityByRequest((prev) => ({
-             ...prev,
-             [reqId]: newMsg.created_at
+            ...prev,
+            [reqId]: newMsg.created_at,
           }));
-        }
+        },
       )
       .subscribe();
 
@@ -393,21 +722,28 @@ export default function MessagesPage() {
   }, [user?.id, activeRequestId, queryClient]);
 
   const sendMessageMutation = useMutation<
-    { requestId: string; content: string },
+    { requestId: string; content: string; fileUrl?: string },
     Error,
-    string
+    { content: string; fileUrl?: string }
   >({
-    mutationFn: async (content: string) => {
-      if (!user?.id) throw new Error("No authententicated user");
+    mutationFn: async ({ content, fileUrl }) => {
+      if (!user?.id) throw new Error("No authenticated user");
 
       const receiverId = activeRequestId || activeConversation?.receiverId;
       if (!receiverId) {
-        throw new Error("No se pudo determinar el destinatario. Asegurese de que la info haya cargado.");
+        throw new Error(
+          "No se pudo determinar el destinatario. Asegurese de que la info haya cargado.",
+        );
       }
 
-      await sendMessageAction({ senderId: String(user.id), receiverId, content });
-      
-      return { requestId: receiverId, content };
+      await sendMessageAction({
+        senderId: String(user.id),
+        receiverId,
+        content,
+        fileUrl,
+      });
+
+      return { requestId: receiverId, content, fileUrl };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({
@@ -420,7 +756,7 @@ export default function MessagesPage() {
         });
         setLastMessageByRequest((prev) => ({
           ...prev,
-          [result.requestId]: result.content,
+          [result.requestId]: result.content || "Archivo adjunto",
         }));
         setLastActivityByRequest((prev) => ({
           ...prev,
@@ -439,7 +775,7 @@ export default function MessagesPage() {
   const handleSend = () => {
     const content = newMessage.trim();
     if (!content) return;
-    sendMessageMutation.mutate(content);
+    sendMessageMutation.mutate({ content });
     setNewMessage("");
   };
 
@@ -453,12 +789,15 @@ export default function MessagesPage() {
   const handleSelectConversation = async (conv: UIConversation) => {
     setActiveConversationId(conv.id);
     setMobileShowChat(true);
-    setUnreadByRequest(prev => ({...prev, [conv.id]: 0}));
+    setUnreadByRequest((prev) => ({ ...prev, [conv.id]: 0 }));
     if (conv.requestId && user?.id) {
-       await markMessagesAsReadAction({ userId: String(user.id), senderId: conv.requestId });
-       queryClient.invalidateQueries({
-         queryKey: ["unread-messages-count", user.id],
-       });
+      await markMessagesAsReadAction({
+        userId: String(user.id),
+        senderId: conv.requestId,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["unread-messages-count", user.id],
+      });
     }
   };
 
@@ -558,10 +897,20 @@ export default function MessagesPage() {
                         <span className="msg-conv__name">{conv.name}</span>
                         <span className="msg-conv__time">{conv.time}</span>
                       </div>
-                      <div className="msg-conv__row" style={{ marginTop: '2px' }}>
-                        <p className="msg-conv__preview" style={{ flex: 1, marginRight: '8px' }}>{conv.lastMessage}</p>
+                      <div
+                        className="msg-conv__row"
+                        style={{ marginTop: "2px" }}
+                      >
+                        <p
+                          className="msg-conv__preview"
+                          style={{ flex: 1, marginRight: "8px" }}
+                        >
+                          {conv.lastMessage}
+                        </p>
                         {conv.unreadCount > 0 && (
-                          <span className="msg-unread-badge">{conv.unreadCount}</span>
+                          <span className="msg-unread-badge">
+                            {conv.unreadCount}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -578,7 +927,7 @@ export default function MessagesPage() {
                     className={`msg-avatar-btn ${activeConversation?.id === conv.id ? "msg-avatar-btn--active" : ""}`}
                     onClick={() => handleSelectConversation(conv)}
                     title={conv.name}
-                    style={{ position: 'relative' }}
+                    style={{ position: "relative" }}
                   >
                     <div className="msg-conv__avatar">
                       {conv.avatarImage ? (
@@ -592,7 +941,17 @@ export default function MessagesPage() {
                       )}
                       {conv.online && <span className="msg-online-dot" />}
                       {conv.unreadCount > 0 && (
-                        <span className="msg-unread-badge" style={{ position: 'absolute', top: -4, right: -4, zIndex: 10 }}>{conv.unreadCount}</span>
+                        <span
+                          className="msg-unread-badge"
+                          style={{
+                            position: "absolute",
+                            top: -4,
+                            right: -4,
+                            zIndex: 10,
+                          }}
+                        >
+                          {conv.unreadCount}
+                        </span>
                       )}
                     </div>
                   </button>
@@ -635,15 +994,6 @@ export default function MessagesPage() {
                 </span>
               </div>
               <div className="msg-chat__header-actions">
-                <button className="msg-topbar__icon-btn" aria-label="Llamar">
-                  <Phone size={18} />
-                </button>
-                <button
-                  className="msg-topbar__icon-btn"
-                  aria-label="Videollamada"
-                >
-                  <Video size={18} />
-                </button>
                 <button
                   className="msg-topbar__icon-btn"
                   aria-label="Mas opciones"
@@ -653,88 +1003,255 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            <div className="msg-chat__messages flex-1 p-4 overflow-y-auto space-y-3" style={{ backgroundColor: '#efeae2', backgroundImage: 'url("https://w0.peakpx.com/wallpaper/818/148/HD-wallpaper-whatsapp-background-cool-dark-green-new-theme-whatsapp.jpg")', backgroundSize: 'cover', backgroundBlendMode: 'overlay' }}>
+            <div
+              className="msg-chat__messages flex-1 p-4 overflow-y-auto space-y-3"
+              style={{
+                backgroundColor: "#efeae2",
+                backgroundImage:
+                  'url("https://w0.peakpx.com/wallpaper/818/148/HD-wallpaper-whatsapp-background-cool-dark-green-new-theme-whatsapp.jpg")',
+                backgroundSize: "cover",
+                backgroundBlendMode: "overlay",
+              }}
+            >
               {messages.map((msg) => {
                 const isMe = msg.sender === "me";
-                const profileName = isMe ? "Yo" : (activeConversation?.name || "Usuario");
-                const profileAvatar = !isMe ? (activeConversation?.avatarImage || "https://via.placeholder.com/32") : "";
+                const profileName = isMe
+                  ? "Yo"
+                  : activeConversation?.name || "Usuario";
+                const profileAvatar = !isMe
+                  ? activeConversation?.avatarImage ||
+                    "https://via.placeholder.com/32"
+                  : "";
 
                 return (
                   <div key={msg.id}>
                     {msg.date && (
-                      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', padding: '12px 0' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#65676b', backgroundColor: '#e1e3e6', padding: '4px 14px', borderRadius: '12px', boxShadow: '0 1px 1px rgba(0,0,0,0.08)' }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          width: "100%",
+                          padding: "12px 0",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                            color: "#65676b",
+                            backgroundColor: "#e1e3e6",
+                            padding: "4px 14px",
+                            borderRadius: "12px",
+                            boxShadow: "0 1px 1px rgba(0,0,0,0.08)",
+                          }}
+                        >
                           {msg.date}
                         </span>
                       </div>
                     )}
-                    <div 
-                      style={{ 
-                        display: 'flex', 
-                        width: '100%', 
-                        justifyContent: isMe ? 'flex-end' : 'flex-start',
-                        marginBottom: '10px' 
+                    <div
+                      style={{
+                        display: "flex",
+                        width: "100%",
+                        justifyContent: isMe ? "flex-end" : "flex-start",
+                        marginBottom: "10px",
                       }}
                     >
-                      <div 
+                      <div
                         style={{
-                          position: 'relative',
-                          maxWidth: '75%',
-                          width: 'fit-content',
-                          backgroundColor: isMe ? '#FF7F50' : '#ffffff',
-                          color: isMe ? '#ffffff' : '#1f2937',
-                          borderTopRightRadius: isMe ? '0px' : '8px',
-                          borderTopLeftRadius: !isMe ? '0px' : '8px',
-                          borderRadius: '8px',
-                          border: isMe ? 'none' : '1px solid #e5e7eb',
-                          boxShadow: '0 1px 1px rgba(0,0,0,0.12)',
-                          padding: '6px 9px 8px 9px',
-                          display: 'flex',
-                          flexDirection: 'column'
+                          position: "relative",
+                          maxWidth: "75%",
+                          width: "fit-content",
+                          backgroundColor: isMe ? "#FF7F50" : "#ffffff",
+                          color: isMe ? "#ffffff" : "#1f2937",
+                          borderTopRightRadius: isMe ? "0px" : "8px",
+                          borderTopLeftRadius: !isMe ? "0px" : "8px",
+                          borderRadius: "8px",
+                          border: isMe ? "none" : "1px solid #e5e7eb",
+                          boxShadow: "0 1px 1px rgba(0,0,0,0.12)",
+                          padding: "6px 9px 8px 9px",
+                          display: "flex",
+                          flexDirection: "column",
                         }}
                       >
                         {/* WhatsApp like Tail */}
-                        <div 
+                        <div
                           style={{
-                            position: 'absolute',
+                            position: "absolute",
                             top: 0,
-                            [isMe ? 'right' : 'left']: '-8px',
-                            width: '8px',
-                            height: '13px',
-                            backgroundColor: 'transparent',
-                            backgroundImage: isMe 
+                            [isMe ? "right" : "left"]: "-8px",
+                            width: "8px",
+                            height: "13px",
+                            backgroundColor: "transparent",
+                            backgroundImage: isMe
                               ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13'%3E%3Cpath fill='%23FF7F50' d='M0,0 C3,0 8,0 8,0 L8,13 C8,13 4,4 0,0 Z'/%3E%3C/svg%3E")`
                               : `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13'%3E%3Cpath fill='%23ffffff' d='M8,0 C5,0 0,0 0,0 L0,13 C0,13 4,4 8,0 Z'/%3E%3C/svg%3E")`,
-                            backgroundSize: 'contain',
-                            backgroundRepeat: 'no-repeat'
+                            backgroundSize: "contain",
+                            backgroundRepeat: "no-repeat",
                           }}
                         />
-                        
+
                         {!isMe && (
-                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#FF7F50', marginBottom: '2px', userSelect: 'none' }}>
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                              color: "#FF7F50",
+                              marginBottom: "2px",
+                              userSelect: "none",
+                            }}
+                          >
                             {msg.senderProfile?.display_name || profileName}
                           </span>
                         )}
-                        
-                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '4px 12px', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '14.5px', wordBreak: 'break-word', lineHeight: '1.4' }}>
-                            {msg.text}
-                          </span>
-                          <span style={{ 
-                            fontSize: '10px', 
-                            color: isMe ? 'rgba(255, 255, 255, 0.75)' : '#8e8e93', 
-                            marginLeft: 'auto',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '3px',
-                            whiteSpace: 'nowrap',
-                            alignSelf: 'flex-end',
-                            paddingBottom: '1px'
-                          }}>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            alignItems: "flex-end",
+                            gap: "4px 12px",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              width: "100%",
+                            }}
+                          >
+                            {msg.fileUrl && (
+                              <div
+                                style={{
+                                  marginBottom: "4px",
+                                  borderRadius: "6px",
+                                  overflow: "hidden",
+                                  maxWidth: "100%",
+                                }}
+                              >
+                                {msg.fileUrl.match(
+                                  /\.(jpeg|jpg|gif|png|webp)/i,
+                                ) ||
+                                msg.text.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
+                                  <a
+                                    href={msg.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <img
+                                      src={msg.fileUrl}
+                                      alt="Imagen"
+                                      style={{
+                                        maxWidth: "240px",
+                                        maxHeight: "180px",
+                                        objectFit: "cover",
+                                        borderRadius: "6px",
+                                        display: "block",
+                                        cursor: "pointer",
+                                        transition: "opacity 0.2s",
+                                      }}
+                                      onMouseEnter={(e) =>
+                                        (e.currentTarget.style.opacity = "0.9")
+                                      }
+                                      onMouseLeave={(e) =>
+                                        (e.currentTarget.style.opacity = "1")
+                                      }
+                                    />
+                                  </a>
+                                ) : (
+                                  <a
+                                    href={msg.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "8px",
+                                      backgroundColor: isMe
+                                        ? "rgba(255,255,255,0.15)"
+                                        : "#f3f4f6",
+                                      padding: "8px 12px",
+                                      borderRadius: "6px",
+                                      textDecoration: "none",
+                                      color: isMe ? "#ffffff" : "#FF7F50",
+                                      fontWeight: "500",
+                                      fontSize: "13px",
+                                      transition: "background 0.2s",
+                                    }}
+                                    onMouseEnter={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        isMe
+                                          ? "rgba(255,255,255,0.25)"
+                                          : "#e5e7eb")
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        isMe
+                                          ? "rgba(255,255,255,0.15)"
+                                          : "#f3f4f6")
+                                    }
+                                  >
+                                    <Paperclip size={16} />
+                                    <span
+                                      style={{
+                                        textDecoration: "underline",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                        maxWidth: "180px",
+                                      }}
+                                    >
+                                      {msg.text.replace(
+                                        "Archivo adjunto: ",
+                                        "",
+                                      )}
+                                    </span>
+                                  </a>
+                                )}
+                              </div>
+                            )}
+
+                            {!msg.fileUrl && (
+                              <span
+                                style={{
+                                  fontSize: "14.5px",
+                                  wordBreak: "break-word",
+                                  lineHeight: "1.4",
+                                }}
+                              >
+                                {msg.text}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              color: isMe
+                                ? "rgba(255, 255, 255, 0.75)"
+                                : "#8e8e93",
+                              marginLeft: "auto",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "3px",
+                              whiteSpace: "nowrap",
+                              alignSelf: "flex-end",
+                              paddingBottom: "1px",
+                            }}
+                          >
                             {msg.time}
                             {isMe && (
-                              <span style={{ fontSize: '11px', lineHeight: 1, color: msg.status === 'Leído' ? '#53bdeb' : 'inherit' }}>
-                                {msg.status === 'Leído' ? '✓✓' : '✓'}
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  lineHeight: 1,
+                                  color:
+                                    msg.status === "Leído"
+                                      ? "#53bdeb"
+                                      : "inherit",
+                                }}
+                              >
+                                {msg.status === "Leído" ? "✓✓" : "✓"}
                               </span>
                             )}
                           </span>
@@ -755,8 +1272,28 @@ export default function MessagesPage() {
             </div>
 
             <div className="msg-input">
-              <button className="msg-input__icon" aria-label="Adjuntar archivo">
-                <Paperclip size={20} />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                style={{ display: "none" }}
+              />
+              <button
+                type="button"
+                className="msg-input__icon"
+                aria-label="Adjuntar archivo"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <Loader2
+                    size={20}
+                    className="animate-spin"
+                    style={{ color: "#FF7F50" }}
+                  />
+                ) : (
+                  <Paperclip size={20} />
+                )}
               </button>
               <input
                 type="text"
@@ -766,12 +1303,131 @@ export default function MessagesPage() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
-              <button className="msg-input__icon" aria-label="Mensaje de voz">
-                <Mic size={20} />
-              </button>
-              <button className="msg-input__icon" aria-label="Emoji">
-                <Smile size={20} />
-              </button>
+              <div
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                ref={emojiPickerRef}
+              >
+                <button
+                  type="button"
+                  className="msg-input__icon"
+                  aria-label="Emoji"
+                  onClick={() => setEmojiPickerOpen(!emojiPickerOpen)}
+                >
+                  <Smile
+                    size={20}
+                    style={{ color: emojiPickerOpen ? "#FF7F50" : "inherit" }}
+                  />
+                </button>
+
+                {emojiPickerOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "50px",
+                      right: "0px",
+                      width: "290px",
+                      height: "320px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "16px",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                      zIndex: 1000,
+                      display: "flex",
+                      flexDirection: "column",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* Header / Tabs */}
+                    <div
+                      style={{
+                        display: "flex",
+                        borderBottom: "1px solid #f3f4f6",
+                        backgroundColor: "#f9fafb",
+                        padding: "4px",
+                        gap: "2px",
+                      }}
+                    >
+                      {Object.keys(emojiCategories).map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setActiveEmojiCat(cat)}
+                          style={{
+                            flex: 1,
+                            padding: "6px 0",
+                            border: "none",
+                            background: "transparent",
+                            fontSize: "11px",
+                            fontWeight:
+                              activeEmojiCat === cat ? "bold" : "normal",
+                            color:
+                              activeEmojiCat === cat ? "#FF7F50" : "#6b7280",
+                            cursor: "pointer",
+                            borderRadius: "8px",
+                            backgroundColor:
+                              activeEmojiCat === cat ? "#fff" : "transparent",
+                            boxShadow:
+                              activeEmojiCat === cat
+                                ? "0 1px 2px rgba(0,0,0,0.05)"
+                                : "none",
+                          }}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Emojis Grid */}
+                    <div
+                      style={{
+                        flex: 1,
+                        overflowY: "auto",
+                        padding: "10px",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(6, 1fr)",
+                        gap: "4px",
+                        alignContent: "start",
+                      }}
+                    >
+                      {emojiCategories[
+                        activeEmojiCat as keyof typeof emojiCategories
+                      ].map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => handleAddEmoji(emoji)}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            fontSize: "20px",
+                            padding: "4px",
+                            cursor: "pointer",
+                            borderRadius: "8px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "background 0.2s",
+                            userSelect: "none",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 className="msg-input__send"
                 onClick={handleSend}

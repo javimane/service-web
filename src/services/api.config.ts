@@ -1,3 +1,5 @@
+import { get } from "node:http";
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
@@ -34,7 +36,8 @@ export const API_ENDPOINTS = {
     credentials: (professionalId: string) =>
       `${API_BASE_URL}/api/professional-details/${professionalId}/credentials`,
     detail: (id: string) => `${API_BASE_URL}/api/professionals/${id}`,
-    incrementViews: (id: string) => `${API_BASE_URL}/api/professionals/${id}/views`,
+    incrementViews: (id: string) =>
+      `${API_BASE_URL}/api/professionals/${id}/views`,
   },
   availability: {
     byProfessional: (professionalId: string | number) =>
@@ -122,8 +125,10 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/api/professional-videos/${id}`,
     byProfessional: (professionalId: string | number) =>
       `${API_BASE_URL}/api/professional-videos/professional/${professionalId}`,
-    like: (id: string | number) => `${API_BASE_URL}/api/professional-videos/${id}/like`,
-    view: (id: string | number) => `${API_BASE_URL}/api/professional-videos/${id}/view`,
+    like: (id: string | number) =>
+      `${API_BASE_URL}/api/professional-videos/${id}/like`,
+    view: (id: string | number) =>
+      `${API_BASE_URL}/api/professional-videos/${id}/view`,
   },
   professionalImages: {
     base: `${API_BASE_URL}/api/professional-images`,
@@ -153,6 +158,10 @@ export const API_ENDPOINTS = {
     promotions: `${API_BASE_URL}/api/storage/promotions`,
     profile: `${API_BASE_URL}/api/storage/profile`,
     portfolio: `${API_BASE_URL}/api/storage/portfolio`,
+    chat: (fileName: string) =>
+      `${API_BASE_URL}/api/storage/chat?fileName=${encodeURIComponent(fileName)}`,
+    getSignedUrl: (path: string) =>
+      `${API_BASE_URL}/api/storage/chat/view-url?path=${encodeURIComponent(path)}`,
   },
   profiles: {
     base: `${API_BASE_URL}/api/profiles`,

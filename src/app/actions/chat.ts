@@ -1,16 +1,12 @@
 import { supabase } from "@/services/supabaseClient";
+import { getProfileAction } from "./profile";
 
 export const getProfileByUserIdAction = async ({ id }: { id: string }) => {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
+  const res = await getProfileAction({ id });
+  if (res?.validationErrors || res?.serverError) {
+    throw new Error(res?.serverError || "Error fetching profile");
   }
-  return { data };
+  return { data: res?.data };
 };
 
 export const getMessagesAction = async ({ userId, receiverId }: { userId: string, receiverId: string }) => {
@@ -26,12 +22,13 @@ export const getMessagesAction = async ({ userId, receiverId }: { userId: string
   return { data };
 };
 
-export const sendMessageAction = async ({ senderId, receiverId, content }: { senderId: string, receiverId: string, content: string }) => {
+export const sendMessageAction = async ({ senderId, receiverId, content, fileUrl }: { senderId: string, receiverId: string, content: string, fileUrl?: string }) => {
   const messageToSend = {
     sender_id: senderId,
     receiver_id: receiverId,
     content: content,
     is_read: false,
+    file_url: fileUrl || null,
   };
 
   const { data, error } = await supabase

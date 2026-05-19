@@ -2,6 +2,7 @@ import { supabase } from "./supabaseClient";
 import { API_ENDPOINTS } from "./api.config";
 import { apiClient } from "./apiClient";
 import { multimediaService } from "./multimediaService";
+import { tryLoadManifestWithRetries } from "next/dist/server/load-components";
 
 type UploadInput = {
   file: Blob;
@@ -18,9 +19,7 @@ interface StorageConfig {
   bucket: string;
   path: string;
   signedUrl: string;
-  publicUrlData: {
-    publicUrl: string;
-  };
+  publicUrlData: string;
 }
 
 async function uploadFile(configEndpoint: string, input: UploadInput) {
@@ -31,7 +30,7 @@ async function uploadFile(configEndpoint: string, input: UploadInput) {
   await uploadToPresignedUrl(config.signedUrl, input.file);
 
   return {
-    publicUrl: config.publicUrlData.publicUrl,
+    publicUrl: config.publicUrlData,
   } satisfies UploadResult;
 }
 
@@ -54,6 +53,24 @@ export async function uploadProfileWorkImage(input: UploadInput) {
 
 export async function uploadProductImage(input: UploadInput) {
   return uploadFile(API_ENDPOINTS.storage.products, input);
+}
+
+export async function uploadChatImage(input: UploadInput) {
+  return uploadFile(API_ENDPOINTS.storage.chat(input.fileName || ""), input);
+}
+
+export async function getFileSignedUrl(path: string) {
+  try {
+    const config = await apiClient<StorageConfig>(
+      API_ENDPOINTS.storage.getSignedUrl(path),
+      {
+        method: "GET",
+      },
+    ); // URL válida por 60 segundos
+    return config.signedUrl || "";
+  } catch (error) {
+    throw new Error("No se pudo obtener la URL de visualización del archivo.");
+  }
 }
 
 async function uploadToPresignedUrl(uploadUrl: string, file: Blob) {
