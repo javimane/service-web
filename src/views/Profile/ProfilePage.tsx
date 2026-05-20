@@ -2,6 +2,8 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { extractIdFromSlug } from "../../utils/utils";
+import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../services/supabaseClient";
 import {
   Star,
   MessageCircle,
@@ -32,6 +34,7 @@ import {
 } from "../../app/actions/multimedia";
 import { getReelsAction, updateReelStatsAction } from "../../app/actions/reels";
 import { getProfessionalReviewsAction } from "../../app/actions/reviews";
+import ReviewModal from "./sections/ReviewModal";
 import { getPromotionsByProfessionalAction } from "../../app/actions/professionalPromotions";
 import { getBankPromotionsAction } from "../../app/actions/bankPromotions";
 import { getProductsByProfessionalAction } from "../../app/actions/products";
@@ -198,6 +201,10 @@ export default function ProfilePage() {
     useState<any>(null);
   const [selectedReel, setSelectedReel] = useState<any>(null);
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  const { user } = useAuth();
+  const accessToken = typeof window !== "undefined" ? localStorage.getItem("access_token") ?? undefined : undefined;
 
   const servicesScroll = useDraggableScroll();
   const videosScroll = useDraggableScroll();
@@ -317,6 +324,28 @@ export default function ProfilePage() {
     enabled: !!id && !isNaN(Number(id)),
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
+  });
+
+  // Check if the authenticated user has ever chatted with this professional
+  const { data: hasChattedWithProfessional = false } = useQuery({
+    queryKey: ["has-chatted", user?.id, id],
+    queryFn: async () => {
+      if (!user?.id || !id) return false;
+      // The professional's user_id is stored in professional.user_id
+      const professionalUserId = professional?.user_id;
+      if (!professionalUserId) return false;
+      const { data, error } = await supabase
+        .from("messages")
+        .select("id")
+        .or(
+          `and(sender_id.eq.${user.id},receiver_id.eq.${professionalUserId}),and(sender_id.eq.${professionalUserId},receiver_id.eq.${user.id})`
+        )
+        .limit(1);
+      if (error) return false;
+      return (data?.length ?? 0) > 0;
+    },
+    enabled: !!user?.id && !!id && !!professional,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: companyLocations } = useQuery({
@@ -619,6 +648,17 @@ export default function ProfilePage() {
           >
             ENVIAR MENSAJE <MessageCircle size={18} />
           </button>
+
+          {/* Review Button — only for authenticated users who've chatted with this professional */}
+          {user && hasChattedWithProfessional && (
+            <button
+              id="leave-review-btn"
+              className="cta-button review-btn"
+              onClick={() => setIsReviewModalOpen(true)}
+            >
+              DEJAR UNA OPINIÓN <Star size={18} />
+            </button>
+          )}
 
           {products.length > 0 && (
             <button
@@ -1149,6 +1189,21 @@ export default function ProfilePage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Review Modal */}
+      {user && (
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          professionalId={Number(id)}
+          userId={user.id}
+          token={accessToken}
+          onSuccess={() => {
+            // Invalidate reviews cache so the new one shows immediately
+            setIsReviewModalOpen(false);
+          }}
+        />
       )}
 
       <Footer />

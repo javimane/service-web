@@ -2024,3 +2024,319 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 20px var(--highlight-glow);
 }
+
+/* ── Review CTA Button (Sidebar) ─────────────────────────── */
+.cta-button.review-btn {
+  background: transparent;
+  color: var(--highlight);
+  border: 2px solid var(--highlight);
+  padding: 16px 20px;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  width: 100%;
+  cursor: pointer;
+}
+
+.cta-button.review-btn:hover {
+  background: var(--highlight);
+  color: #000;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px var(--highlight-glow);
+}
+
+/* ── Review Modal ─────────────────────────────────────────── */
+.review-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.review-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 28px;
+  padding: 40px;
+  width: 100%;
+  max-width: 520px;
+  position: relative;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.review-modal__close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.review-modal__close:hover {
+  background: var(--accent-transparent);
+  color: var(--text-primary);
+  border-color: var(--accent-color);
+}
+
+.review-modal__header {
+  margin-bottom: 32px;
+}
+
+.review-modal__header h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.review-modal__header p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.review-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.review-modal__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.review-modal__rating-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-modal__stars {
+  display: flex;
+  gap: 6px;
+}
+
+.review-modal__star-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  color: var(--highlight);
+}
+
+.review-modal__star-btn:hover {
+  transform: scale(1.2);
+}
+
+.review-star--active {
+  color: var(--highlight);
+  filter: drop-shadow(0 0 6px var(--highlight-glow));
+}
+
+.review-star--inactive {
+  color: var(--border-color);
+}
+
+.review-modal__rating-label {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--highlight);
+  letter-spacing: 0.03em;
+}
+
+.review-modal__field {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-modal__textarea {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+  font-family: inherit;
+}
+
+.review-modal__textarea:focus {
+  outline: none;
+  border-color: var(--highlight);
+  box-shadow: 0 0 0 3px var(--highlight-glow);
+}
+
+.review-modal__char-count {
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.review-modal__image-upload {
+  display: block;
+  border: 2px dashed var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 110px;
+}
+
+.review-modal__image-upload:hover {
+  border-color: var(--highlight);
+  background: var(--accent-transparent);
+}
+
+.review-modal__image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.review-modal__image-preview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.review-modal__remove-img {
+  margin-top: 8px;
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.review-modal__remove-img:hover {
+  color: var(--text-primary);
+}
+
+.review-modal__error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.review-modal__submit {
+  background: var(--highlight);
+  color: #000;
+  border: none;
+  padding: 18px;
+  border-radius: 18px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px var(--highlight-glow);
+}
+
+.review-modal__submit:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px var(--highlight-glow-strong);
+}
+
+.review-modal__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.review-modal__success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px 0;
+  text-align: center;
+}
+
+.review-modal__success-icon {
+  width: 72px;
+  height: 72px;
+  background: var(--highlight);
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.review-modal__success h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.review-modal__success p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}

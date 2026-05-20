@@ -333,6 +333,27 @@ export default function MessagesPage() {
   const [activeEmojiCat, setActiveEmojiCat] = useState("Caritas");
   const emojiPickerRef = useRef<HTMLDivElement>(null);
 
+  // Review reminder banner: track dismissed conversations
+  const [dismissedReviewBanners, setDismissedReviewBanners] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("dismissed_review_banners");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const dismissReviewBanner = (convId: string) => {
+    setDismissedReviewBanners((prev) => {
+      const next = new Set(prev);
+      next.add(convId);
+      try {
+        localStorage.setItem("dismissed_review_banners", JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
+
   const handleAddEmoji = (emoji: string) => {
     setNewMessage((prev) => prev + emoji);
   };
@@ -558,6 +579,11 @@ export default function MessagesPage() {
     conversations.find((c) => c.id === activeConversationId) ||
     conversations[0] ||
     null;
+
+  const showReviewBanner =
+    !!activeConversation &&
+    (activeConversation.role === "Profesional" || !!activeConversation.professionalId) &&
+    !dismissedReviewBanners.has(activeConversation.id);
 
   useEffect(() => {
     if (!conversations.length) return;
@@ -1071,6 +1097,28 @@ export default function MessagesPage() {
                 </button>
               </div>
             </div>
+
+            {/* Review reminder banner */}
+            {showReviewBanner && (
+              <div className="msg-review-banner" role="status">
+                <div className="msg-review-banner__icon">⭐</div>
+                <div className="msg-review-banner__text">
+                  <strong>¿Cómo resultó la atención?</strong>
+                  <span>
+                    Cuando termines de hablar con{" "}
+                    <strong>{activeConversation?.name}</strong>, podés dejar una
+                    reseña en su perfil para ayudar a otros usuarios.
+                  </span>
+                </div>
+                <button
+                  className="msg-review-banner__close"
+                  onClick={() => dismissReviewBanner(activeConversation!.id)}
+                  aria-label="Cerrar recordatorio"
+                >
+                  ×
+                </button>
+              </div>
+            )}
 
             <div
               className="msg-chat__messages flex-1 p-4 overflow-y-auto space-y-3"
