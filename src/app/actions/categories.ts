@@ -4,6 +4,9 @@ import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
 import axios from "axios";
+import { buildActionHeaders } from "./_utils/authHeaders";
+
+const authTokenSchema = z.string().optional();
 
 export const getProductCategoriesAction = publicAction
   .schema(z.void())
@@ -42,3 +45,28 @@ export const getServiceCategoriesAction = publicAction
       throw new Error(error.response?.data?.message || "Error fetching service categories");
     }
   });
+
+export const updateProfessionalCategoriesAction = publicAction
+  .schema(
+    z.object({
+      categories: z.array(z.number()),
+      token: authTokenSchema,
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professionals/categories`;
+
+    try {
+      const response = await axios.post(url, parsedInput.categories, {
+        headers: buildActionHeaders(ctx, parsedInput.token),
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error("Error updating professional categories:", error.message);
+      throw new Error(
+        error.response?.data?.message || "Error updating professional categories",
+      );
+    }
+  });
+

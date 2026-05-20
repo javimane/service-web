@@ -5,6 +5,7 @@ import {
   Globe,
   Building2,
   Store,
+  Tag,
 } from "lucide-react";
 import "./CompanyDisplaySection.css";
 import ArcaVerificationSection from "./ArcaVerificationSection";
@@ -16,6 +17,7 @@ interface CompanyDisplaySectionProps {
   departmentList?: any[];
   arcaStatus?: any;
   loadingArca?: boolean;
+  categoryList?: any[];
 }
 
 export default function CompanyDisplaySection({
@@ -25,6 +27,7 @@ export default function CompanyDisplaySection({
   departmentList = [],
   arcaStatus,
   loadingArca,
+  categoryList = [],
 }: CompanyDisplaySectionProps) {
   // Normalize company: handle if it's an array or object
   let company = prof?.companies || prof?.Company;
@@ -79,6 +82,11 @@ export default function CompanyDisplaySection({
 
   // Normalize Tax Code / CUIT
   const displayTaxCode = company.tax_code || company.taxCode || company.cuit;
+
+  const selectedCategoryIds = prof?.professional_categories?.map((pc: any) => pc.category_services_id) || [];
+  const selectedCategoryNames = selectedCategoryIds
+    .map((id: number) => categoryList?.find((c) => c.id === id)?.name)
+    .filter(Boolean);
 
   const payments = [
     company.cash && "Efectivo",
@@ -207,7 +215,26 @@ export default function CompanyDisplaySection({
             </div>
           </div>
         </div>
+
+        {selectedCategoryNames.length > 0 && (
+          <div className="display-card">
+            <div className="display-card-icon">
+              <Tag size={20} />
+            </div>
+            <div className="display-card-content">
+              <h3>Categorías de Servicios</h3>
+              <div className="categories-badge-list">
+                {selectedCategoryNames.map((name: string) => (
+                  <span key={name} className="category-display-badge">
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+

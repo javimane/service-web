@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import BusinessInfoSection from "./sections/BusinessInfoSection";
+import CategoriesSection from "./sections/CategoriesSection";
 import HeadquartersSection from "./sections/HeadquartersSection";
 import OperationsSection from "./sections/OperationsSection";
 import PaymentMethodsSection from "./sections/PaymentMethodsSection";
@@ -22,6 +23,10 @@ import {
   createCompanyAction,
   updateCompanyAction,
 } from "../../app/actions/companies";
+import {
+  getServiceCategoriesAction,
+  updateProfessionalCategoriesAction,
+} from "../../app/actions/categories";
 import { getDepartmentsAction } from "../../app/actions/locations";
 import { getProvincesAction } from "../../app/actions/provinces";
 import { ROUTES } from "../../routes/paths";
@@ -48,6 +53,7 @@ export default function SettingsPage() {
   const [selectedProvinces, setSelectedProvinces] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [addressId, setAddressId] = useState<number | null>(null);
 
@@ -155,6 +161,13 @@ export default function SettingsPage() {
         setSelectedDepartments(dNames as string[]);
       }
     }
+
+    if (profMe?.professional_categories) {
+      const catIds = profMe.professional_categories.map(
+        (pc: any) => pc.category_services_id,
+      );
+      setSelectedCategories(catIds);
+    }
   }, [profMe, actualCompany]);
 
   useEffect(() => {
@@ -225,7 +238,17 @@ export default function SettingsPage() {
     staleTime: 1000 * 60 * 30,
   });
 
-  // 5. Mutation for Saving
+  // 5. Fetch Service Categories
+  const { data: serviceCategoryList = [] } = useQuery({
+    queryKey: ["service-categories"],
+    queryFn: async () => {
+      const result = await getServiceCategoriesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60,
+  });
+
+  // 6. Mutation for Saving
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!professionalId) return;
@@ -275,6 +298,10 @@ export default function SettingsPage() {
           token: getAccessToken(),
         });
         if (result?.serverError) throw new Error(result.serverError);
+        await updateProfessionalCategoriesAction({
+          categories: selectedCategories,
+          token: getAccessToken(),
+        });
         return result?.data;
       } else {
         const result = await createCompanyAction({
@@ -282,6 +309,10 @@ export default function SettingsPage() {
           token: getAccessToken(),
         });
         if (result?.serverError) throw new Error(result.serverError);
+        await updateProfessionalCategoriesAction({
+          categories: selectedCategories,
+          token: getAccessToken(),
+        });
         return result?.data;
       }
     },
@@ -377,6 +408,7 @@ export default function SettingsPage() {
                   departmentList={storeDepartmentList}
                   arcaStatus={effectiveArcaStatus}
                   loadingArca={loadingArca}
+                  categoryList={serviceCategoryList}
                 />
               )}
 
@@ -389,6 +421,18 @@ export default function SettingsPage() {
                     setTradeName={setTradeName}
                     cuit={cuit}
                     setCuit={setCuit}
+                  />
+
+                  <CategoriesSection
+                    selectedCategories={selectedCategories}
+                    onToggleCategory={(id: number) =>
+                      setSelectedCategories((curr) =>
+                        curr.includes(id)
+                          ? curr.filter((c) => c !== id)
+                          : [...curr, id],
+                      )
+                    }
+                    categoryList={serviceCategoryList}
                   />
 
                   <HeadquartersSection

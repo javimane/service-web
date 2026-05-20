@@ -19,7 +19,7 @@ interface StorageConfig {
   bucket: string;
   path: string;
   signedUrl: string;
-  publicUrlData: string;
+  publicUrl: string;
 }
 
 async function uploadFile(configEndpoint: string, input: UploadInput) {
@@ -30,7 +30,7 @@ async function uploadFile(configEndpoint: string, input: UploadInput) {
   await uploadToPresignedUrl(config.signedUrl, input.file);
 
   return {
-    publicUrl: config.publicUrlData,
+    publicUrl: config.publicUrl,
   } satisfies UploadResult;
 }
 
@@ -57,6 +57,10 @@ export async function uploadProductImage(input: UploadInput) {
 
 export async function uploadChatImage(input: UploadInput) {
   return uploadFile(API_ENDPOINTS.storage.chat(input.fileName || ""), input);
+}
+
+export async function uploadReviewImage(input: UploadInput) {
+  return uploadFile(API_ENDPOINTS.storage.reviews, input);
 }
 
 export async function getFileSignedUrl(path: string) {

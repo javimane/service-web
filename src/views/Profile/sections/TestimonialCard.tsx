@@ -3,15 +3,15 @@ import { Star } from "lucide-react";
 export default function TestimonialCard({ name, text, rating = 5, photo, commentPhoto }) {
   return (
     <article className="testimonial-card">
-      <div className="testimonial-card__header">
+      <div className="testimonial-header">
         <img 
           src={photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`} 
           alt={name} 
-          className="testimonial-card__avatar" 
+          className="author-photo" 
         />
-        <div>
-          <h4 className="testimonial-card__author">{name}</h4>
-          <div className="testimonial-card__stars">
+        <div className="author-info">
+          <h3>{name}</h3>
+          <div className="rating">
             {Array.from({ length: 5 }, (_, index) => (
               <Star 
                 key={index} 
@@ -24,7 +24,7 @@ export default function TestimonialCard({ name, text, rating = 5, photo, comment
           </div>
         </div>
       </div>
-      <p className="testimonial-card__text">{text}</p>
+      <p className="testimonial-text">{text}</p>
       {commentPhoto && (
         <div className="testimonial-card__image-wrapper">
           <img src={commentPhoto} alt="Review attachment" className="testimonial-card__comment-image" />

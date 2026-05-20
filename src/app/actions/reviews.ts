@@ -20,7 +20,9 @@ export const getProfessionalReviewsAction = publicAction
       return response.data;
     } catch (error: any) {
       console.error("Error fetching professional reviews:", error.message);
-      throw new Error(error.response?.data?.message || "Error fetching reviews");
+      throw new Error(
+        error.response?.data?.message || "Error fetching reviews",
+      );
     }
   });
 
@@ -46,6 +48,8 @@ export const createReviewAction = publicAction
       return response.data;
     } catch (error: any) {
       console.error("Error creating review:", error.message);
-      throw new Error(error.response?.data?.message || "Error al enviar la opinión");
+      throw new Error(
+        error.response?.data?.message || "Error al enviar la opinión",
+      );
     }
   });

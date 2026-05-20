@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Star, X, ImagePlus, Loader2, Send } from "lucide-react";
 import { createReviewAction } from "../../../app/actions/reviews";
 import { supabase } from "../../../services/supabaseClient";
+import { uploadReviewImage } from "@/services/storageUploads";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -39,20 +40,6 @@ export default function ReviewModal({
     setImagePreview(URL.createObjectURL(file));
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    const ext = file.name.split(".").pop();
-    const path = `reviews/${userId}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("uploads")
-      .upload(path, file, { upsert: true });
-    if (error) {
-      console.error("Image upload error:", error.message);
-      return null;
-    }
-    const { data } = supabase.storage.from("uploads").getPublicUrl(path);
-    return data?.publicUrl ?? null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -70,8 +57,8 @@ export default function ReviewModal({
     try {
       let image_url: string | undefined;
       if (imageFile) {
-        const uploaded = await uploadImage(imageFile);
-        if (uploaded) image_url = uploaded;
+        const uploaded = await uploadReviewImage({ file: imageFile });
+        if (uploaded) image_url = uploaded.publicUrl;
       }
 
       const result = await createReviewAction({
@@ -146,7 +133,11 @@ export default function ReviewModal({
               {/* Star Rating */}
               <div className="review-modal__rating-section">
                 <label className="review-modal__label">Calificación</label>
-                <div className="review-modal__stars" role="group" aria-label="Calificación con estrellas">
+                <div
+                  className="review-modal__stars"
+                  role="group"
+                  aria-label="Calificación con estrellas"
+                >
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -159,7 +150,11 @@ export default function ReviewModal({
                     >
                       <Star
                         size={32}
-                        fill={(hoverRating || rating) >= star ? "currentColor" : "none"}
+                        fill={
+                          (hoverRating || rating) >= star
+                            ? "currentColor"
+                            : "none"
+                        }
                         className={
                           (hoverRating || rating) >= star
                             ? "review-star--active"
@@ -171,7 +166,11 @@ export default function ReviewModal({
                 </div>
                 {rating > 0 && (
                   <span className="review-modal__rating-label">
-                    {["", "Muy malo", "Malo", "Regular", "Bueno", "Excelente"][rating]}
+                    {
+                      ["", "Muy malo", "Malo", "Regular", "Bueno", "Excelente"][
+                        rating
+                      ]
+                    }
                   </span>
                 )}
               </div>
@@ -197,9 +196,7 @@ export default function ReviewModal({
 
               {/* Image Upload */}
               <div className="review-modal__field">
-                <label className="review-modal__label">
-                  Foto (opcional)
-                </label>
+                <label className="review-modal__label">Foto (opcional)</label>
                 <label
                   htmlFor="review-image"
                   className="review-modal__image-upload"
