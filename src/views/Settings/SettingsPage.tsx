@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import BusinessInfoSection from "./sections/BusinessInfoSection";
+import AvatarSection from "./sections/AvatarSection";
 import CategoriesSection from "./sections/CategoriesSection";
 import HeadquartersSection from "./sections/HeadquartersSection";
 import OperationsSection from "./sections/OperationsSection";
@@ -398,6 +399,11 @@ export default function SettingsPage() {
                   email: user?.email || "",
                 }}
               />
+
+              {/* Avatar (only for non-professionals) */}
+              {!isProfessional && user?.id && (
+                <AvatarSection userId={user.id} />
+              )}
 
               {/* Business Sections */}
               {showSummary && (
