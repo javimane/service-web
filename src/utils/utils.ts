@@ -30,16 +30,14 @@ export const getProfilePath = (
   return `/perfil/${id}`;
 };
 
-/**
- * Extracts the primary ID (numeric or UUID) from an SEO-friendly slug.
- * Example: "fd9480e2-6bcf-4506-822c-3d137c6ba9c9-service-name" -> "fd9480e2-6bcf-4506-822c-3d137c6ba9c9"
- * Example: "9-professional-name" -> "9"
- */
-export const extractIdFromSlug = (slug: string | undefined): string => {
+export const extractIdFromSlug = (slug: string | string[] | undefined): string => {
   if (!slug) return "";
 
+  // Handle array from Next.js catch-all routes
+  let cleanSlug = Array.isArray(slug) ? (slug[slug.length - 1] || "") : slug;
+  if (!cleanSlug) return "";
+
   // If it's a full path or has query params, try to get the part after the last / or =
-  let cleanSlug = slug;
   if (cleanSlug.includes("?id=")) {
     cleanSlug = cleanSlug.split("?id=")[1];
   } else if (cleanSlug.includes("/")) {

@@ -24,9 +24,9 @@ function formatPrice(n: number | null | undefined) {
 }
 
 export default function ProductDetailPage() {
-  const params = useParams<{ seoPath: string }>();
+  const params = useParams<{ seoPath: string | string[] }>();
   const searchParams = useSearchParams();
-  const seoPath = params?.seoPath as string;
+  const seoPath = params?.seoPath;
 
   // Try to get ID from query param first, then from slug
   const queryId = searchParams?.get("id");
