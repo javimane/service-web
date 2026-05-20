@@ -75,7 +75,8 @@ export default function ProductsCarousel() {
         title: product?.name || "Producto sin nombre",
         price: item.price || 0,
         originalPrice: item.original_price,
-        discount: item.discount_percentage || 0,
+        discount: item.percent_discount || item.discount_percentage || 0,
+        currencyCode: item.currency_code || "ARG",
         seller: item.Professional?.Company?.name || "Profesional",
         image: primaryImage,
         rating: item.Professional?.rating_avg || 5,
@@ -178,12 +179,12 @@ export default function ProductsCarousel() {
                       <div className="product-carousel-card__pricing">
                         {product.originalPrice && (
                           <span className="product-carousel-card__original">
-                            ${formatPrice(product.originalPrice)}
+                            {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.originalPrice)}
                           </span>
                         )}
                         <div className="product-carousel-card__price-row">
                           <span className="product-carousel-card__price">
-                            ${formatPrice(product.price)}
+                            {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.price)}
                           </span>
                           {product.discount > 0 && (
                             <span className="product-carousel-card__discount">

@@ -413,6 +413,13 @@
   display: block;
 }
 
+.dash-products__price-discount {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--highlight);
+  margin-top: 2px;
+}
+
 /* Stock */
 .dash-products__stock {
   font-weight: 700;

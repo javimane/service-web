@@ -137,7 +137,13 @@ export default function ProductDetailPage() {
   // Price logic
   const originalPrice = professionalProduct?.price || item.price;
   const offerPrice = professionalProduct?.offer_price;
-  const hasDiscount = !!offerPrice;
+  const currencyCode = professionalProduct?.currency_code || item.currency_code || itemAny.Product?.currency_code || "ARG";
+  const percentDiscount = professionalProduct?.percent_discount || item.percent_discount || itemAny.Product?.percent_discount || 0;
+  const hasDiscount = !!offerPrice || percentDiscount > 0;
+  const discountVal = percentDiscount > 0 
+    ? percentDiscount 
+    : (offerPrice && originalPrice ? Math.round((1 - offerPrice / originalPrice) * 100) : 0);
+  const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
 
   const handleContact = () => {
     const productUrl = window.location.href;
@@ -295,22 +301,21 @@ export default function ProductDetailPage() {
                     <div className="prices">
                       {hasDiscount && (
                         <span className="seller-original-price">
-                          ${formatPrice(originalPrice)}
+                          {currencySymbol}{formatPrice(originalPrice)}
                         </span>
                       )}
                       <div className="seller-current-price-row">
                         <span className="seller-price">
-                          $
+                          {currencySymbol}
                           {formatPrice(
-                            hasDiscount && offerPrice
+                            offerPrice
                               ? offerPrice
                               : originalPrice,
                           )}
                         </span>
-                        {hasDiscount && offerPrice && originalPrice && (
+                        {discountVal > 0 && (
                           <span className="seller-discount">
-                            {Math.round((1 - offerPrice / originalPrice) * 100)}
-                            % OFF
+                            {discountVal}% OFF
                           </span>
                         )}
                       </div>

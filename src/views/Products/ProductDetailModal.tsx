@@ -154,11 +154,15 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                   const userId = professionalAny?.user_id || professionalId;
 
                   // Determine Prices
-                  const hasDiscount =
-                    item.offer_price || item.discount_percentage > 0;
                   const originalPrice = item.price;
                   const offerPrice = item.offer_price;
-                  const discountPerc = item.discount_percentage;
+                  const percentDiscount = item.percent_discount || item.discount_percentage || 0;
+                  const hasDiscount = !!offerPrice || percentDiscount > 0;
+                  const discountVal = percentDiscount > 0
+                    ? percentDiscount
+                    : (offerPrice && originalPrice ? Math.round((1 - offerPrice / originalPrice) * 100) : 0);
+                  const currencyCode = item.currency_code || "ARG";
+                  const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
 
                   return (
                     <div key={item.id || idx} className="seller-card">
@@ -188,21 +192,21 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                         <div className="prices">
                           {hasDiscount && (
                             <span className="seller-original-price">
-                              ${formatPrice(originalPrice)}
+                              {currencySymbol}{formatPrice(originalPrice)}
                             </span>
                           )}
                           <div className="seller-current-price-row">
                             <span className="seller-price">
-                              $
+                              {currencySymbol}
                               {formatPrice(
-                                hasDiscount && offerPrice
+                                offerPrice
                                   ? offerPrice
                                   : originalPrice,
                               )}
                             </span>
-                            {hasDiscount && discountPerc > 0 && (
+                            {discountVal > 0 && (
                               <span className="seller-discount">
-                                {discountPerc}% OFF
+                                {discountVal}% OFF
                               </span>
                             )}
                           </div>

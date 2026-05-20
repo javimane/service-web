@@ -211,8 +211,9 @@ export default function ProductsPage() {
       const firstSeller = sellers[0] || {};
 
       const displayPrice = product.price || firstSeller.price || 0;
-      const displayDiscount = firstSeller.discount_percentage || 0;
+      const displayDiscount = product.percent_discount || firstSeller.percent_discount || firstSeller.discount_percentage || 0;
       const displayOriginalPrice = firstSeller.original_price;
+      const currencyCode = product.currency_code || firstSeller.currency_code || "ARG";
 
       // Extract company name handling array structure
       const companyData = firstSeller.Professional?.Company;
@@ -231,6 +232,7 @@ export default function ProductsPage() {
         price: displayPrice,
         originalPrice: displayOriginalPrice,
         discount: displayDiscount,
+        currencyCode: currencyCode,
         seller:
           sellers.length > 1
             ? `Varios vendedores (${sellers.length})`
@@ -606,12 +608,12 @@ export default function ProductsPage() {
                       <div className="product-card__pricing">
                         {product.originalPrice && (
                           <span className="product-card__original">
-                            ${formatPrice(product.originalPrice)}
+                            {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.originalPrice)}
                           </span>
                         )}
                         <div className="product-card__price-row">
                           <span className="product-card__price">
-                            ${formatPrice(product.price)}
+                            {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.price)}
                           </span>
                           {product.discount > 0 && (
                             <span className="product-card__discount">

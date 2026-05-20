@@ -42,12 +42,14 @@ import "./DashboardProducts.css";
 
 const MAX_PRODUCT_IMAGES = 4;
 
-const formatPrice = (n: number) =>
-  n.toLocaleString("es-AR", {
+const formatPrice = (n: number, currencyCode?: string) => {
+  const isUsd = currencyCode === "USD";
+  return n.toLocaleString("es-AR", {
     style: "currency",
-    currency: "ARS",
+    currency: isUsd ? "USD" : "ARS",
     minimumFractionDigits: 0,
   });
+};
 
 const normalizeImageUrls = (imageUrls: unknown, fallback?: string) => {
   if (Array.isArray(imageUrls)) {
@@ -192,6 +194,8 @@ export default function DashboardProducts() {
     ean: "",
     webUrl: "",
     offerPrice: "",
+    currency_code: "ARG",
+    percent_discount: "",
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -222,6 +226,8 @@ export default function DashboardProducts() {
     webUrl: string;
     offerPrice: string;
     images: string[];
+    currency_code: string;
+    percent_discount: string;
   } | null>(null);
   const [editImageItems, setEditImageItems] = useState<EditImageItem[]>([]);
   const [editOriginalImageUrls, setEditOriginalImageUrls] = useState<string[]>(
@@ -296,6 +302,11 @@ export default function DashboardProducts() {
       ean: item.Product?.ean || "",
       sale_type: item.sale_type,
       is_active: item.is_active,
+      currency_code: item.currency_code || item.Product?.currency_code || "ARG",
+      percent_discount:
+        item.percent_discount !== undefined
+          ? item.percent_discount
+          : item.Product?.percent_discount || 0,
     }));
   }, [productsData]);
 
@@ -638,6 +649,8 @@ export default function DashboardProducts() {
       ean: "",
       webUrl: "",
       offerPrice: "",
+      currency_code: "ARG",
+      percent_discount: "",
     });
     setFormPrice("");
     setFormStock("");
@@ -691,6 +704,8 @@ export default function DashboardProducts() {
       stock: Number(formStock),
       is_active: true,
       offer_price: Number(newProduct.offerPrice) || 0,
+      currency_code: newProduct.currency_code || "ARG",
+      percent_discount: Number(newProduct.percent_discount) || 0,
     });
   };
 
@@ -712,6 +727,12 @@ export default function DashboardProducts() {
       webUrl: "",
       offerPrice: String(product.offer_price || ""),
       images: product.images || (product.image ? [product.image] : []),
+      currency_code: product.currency_code || "ARG",
+      percent_discount:
+        product.percent_discount !== undefined &&
+        product.percent_discount !== null
+          ? String(product.percent_discount)
+          : "",
     });
     const initialImages: string[] = getOrderedProductImages(
       product.images,
@@ -806,6 +827,8 @@ export default function DashboardProducts() {
         images_to_save: finalImages,
         images_to_delete: imagesToDelete,
         display_order: finalImages.map((_, index) => index + 1),
+        currency_code: editProduct.currency_code || "ARG",
+        percent_discount: Number(editProduct.percent_discount) || 0,
       },
     });
   };
@@ -1023,11 +1046,17 @@ export default function DashboardProducts() {
                           product.offer_price > 0
                             ? product.offer_price
                             : product.price,
+                          product.currency_code,
                         )}
                       </span>
                       {product.offer_price > 0 && (
                         <span className="dash-products__price-original">
-                          {formatPrice(product.price)}
+                          {formatPrice(product.price, product.currency_code)}
+                        </span>
+                      )}
+                      {product.percent_discount > 0 && (
+                        <span className="dash-products__price-discount">
+                          {product.percent_discount}% OFF
                         </span>
                       )}
                     </div>
@@ -1433,7 +1462,7 @@ export default function DashboardProducts() {
                   </div>
 
                   <div className="dash-products__modal-field">
-                    <label>Precio (ARS) *</label>
+                    <label>Precio *</label>
                     <input
                       type="number"
                       min="0"
@@ -1444,7 +1473,7 @@ export default function DashboardProducts() {
                   </div>
 
                   <div className="dash-products__modal-field">
-                    <label>Precio de Oferta (ARS)</label>
+                    <label>Precio de Oferta</label>
                     <input
                       type="number"
                       min="0"
@@ -1454,6 +1483,40 @@ export default function DashboardProducts() {
                         setNewProduct({
                           ...newProduct,
                           offerPrice: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="dash-products__modal-field">
+                    <label>Moneda *</label>
+                    <select
+                      value={newProduct.currency_code}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          currency_code: e.target.value,
+                        })
+                      }
+                      className="dash-products__modal-select"
+                    >
+                      <option value="ARG">Pesos ($)</option>
+                      <option value="USD">Dólares (USD $)</option>
+                    </select>
+                  </div>
+
+                  <div className="dash-products__modal-field">
+                    <label>Porcentaje de Descuento (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      placeholder="Ej: 10"
+                      value={newProduct.percent_discount}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          percent_discount: e.target.value,
                         })
                       }
                     />
@@ -1678,7 +1741,7 @@ export default function DashboardProducts() {
               </div>
 
               <div className="dash-products__modal-field">
-                <label>Precio (ARS) *</label>
+                <label>Precio *</label>
                 <input
                   type="number"
                   min="0"
@@ -1691,7 +1754,7 @@ export default function DashboardProducts() {
               </div>
 
               <div className="dash-products__modal-field">
-                <label>Precio de Oferta (ARS)</label>
+                <label>Precio de Oferta</label>
                 <input
                   type="number"
                   min="0"
@@ -1701,6 +1764,40 @@ export default function DashboardProducts() {
                     setEditProduct({
                       ...editProduct,
                       offerPrice: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="dash-products__modal-field">
+                <label>Moneda *</label>
+                <select
+                  value={editProduct.currency_code}
+                  onChange={(e) =>
+                    setEditProduct({
+                      ...editProduct,
+                      currency_code: e.target.value,
+                    })
+                  }
+                  className="dash-products__modal-select"
+                >
+                  <option value="ARG">Pesos ($)</option>
+                  <option value="USD">Dólares (USD $)</option>
+                </select>
+              </div>
+
+              <div className="dash-products__modal-field">
+                <label>Porcentaje de Descuento (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="Ej: 10"
+                  value={editProduct.percent_discount}
+                  onChange={(e) =>
+                    setEditProduct({
+                      ...editProduct,
+                      percent_discount: e.target.value,
                     })
                   }
                 />

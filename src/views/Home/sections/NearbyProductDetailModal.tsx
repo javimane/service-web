@@ -149,63 +149,82 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
                 </div>
               ) : (
                 <div className="sellers-list">
-                  {allSellers.map((sellerRel) => (
-                    <div key={sellerRel.id} className="seller-item">
-                      <div
-                        className="seller-item__main"
-                        onClick={() =>
-                          handleViewProfile(sellerRel.Professional)
-                        }
-                      >
-                        <img
-                          src={
-                            sellerRel.Professional?.Profile?.avatar_url ||
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(sellerRel.Professional?.Profile?.display_name || "P")}`
-                          }
-                          alt="Seller"
-                        />
-                        <div className="seller-item__info">
-                          <span className="seller-item__name">
-                            {sellerRel.Professional?.Profile?.display_name ||
-                              sellerRel.Professional?.Company?.name}
-                          </span>
-                        </div>
-                      </div>
+                  {allSellers.map((sellerRel) => {
+                    const originalPrice = sellerRel.price;
+                    const offerPrice = sellerRel.offer_price;
+                    const percentDiscount = sellerRel.percent_discount || sellerRel.discount_percentage || 0;
+                    const hasDiscount = !!offerPrice || percentDiscount > 0;
+                    const discountVal = percentDiscount > 0
+                      ? percentDiscount
+                      : (offerPrice && originalPrice ? Math.round((1 - offerPrice / originalPrice) * 100) : 0);
+                    const currencyCode = sellerRel.currency_code || "ARG";
+                    const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
 
-                      <div className="seller-item__price-block">
-                        {sellerRel.offer_price && (
-                          <span className="seller-item__original">
-                            ${formatPrice(sellerRel.price)}
-                          </span>
-                        )}
-                        <span className="seller-item__current">
-                          $
-                          {formatPrice(
-                            sellerRel.offer_price || sellerRel.price,
-                          )}
-                        </span>
-                      </div>
-
-                      <div className="seller-item__actions">
-                        <button
-                          className="btn-msg"
-                          onClick={() =>
-                            handleDirectMessage(sellerRel.Professional?.id)
-                          }
-                        >
-                          <MessageCircle size={16} />
-                        </button>
-                        <button
-                          className="btn-prof"
+                    return (
+                      <div key={sellerRel.id} className="seller-item">
+                        <div
+                          className="seller-item__main"
                           onClick={() =>
                             handleViewProfile(sellerRel.Professional)
                           }
                         >
-                          <User size={16} />
-                        </button>
+                          <img
+                            src={
+                              sellerRel.Professional?.Profile?.avatar_url ||
+                              `https://ui-avatars.com/api/?name=${encodeURIComponent(sellerRel.Professional?.Profile?.display_name || "P")}`
+                            }
+                            alt="Seller"
+                          />
+                          <div className="seller-item__info">
+                            <span className="seller-item__name">
+                              {sellerRel.Professional?.Profile?.display_name ||
+                                sellerRel.Professional?.Company?.name}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="seller-item__price-block">
+                          {hasDiscount && (
+                            <span className="seller-item__original">
+                              {currencySymbol}{formatPrice(originalPrice)}
+                            </span>
+                          )}
+                          <div className="seller-item__price-current-row">
+                            <span className="seller-item__current">
+                              {currencySymbol}
+                              {formatPrice(
+                                offerPrice || originalPrice,
+                              )}
+                            </span>
+                            {discountVal > 0 && (
+                              <span className="seller-item__discount">
+                                {discountVal}% OFF
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="seller-item__actions">
+                          <button
+                            className="btn-msg"
+                            onClick={() =>
+                              handleDirectMessage(sellerRel.Professional?.id)
+                            }
+                          >
+                            <MessageCircle size={16} />
+                          </button>
+                          <button
+                            className="btn-prof"
+                            onClick={() =>
+                              handleViewProfile(sellerRel.Professional)
+                            }
+                          >
+                            <User size={16} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

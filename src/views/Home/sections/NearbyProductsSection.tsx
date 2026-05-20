@@ -165,7 +165,12 @@ export default function NearbyProductsSection({ userProvince = "Buenos Aires" }:
                   `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}`;
                 const price = item.price || profProduct?.price || 0;
                 const offerPrice = profProduct?.offer_price || 0;
-                const hasOffer = offerPrice > 0 && offerPrice < price;
+                const currencyCode = item.currency_code || profProduct?.currency_code || "ARG";
+                const percentDiscount = item.percent_discount || profProduct?.percent_discount || 0;
+                const discountVal = percentDiscount > 0
+                  ? percentDiscount
+                  : (offerPrice > 0 && price ? Math.round((1 - offerPrice / price) * 100) : 0);
+                const hasOffer = (offerPrice > 0 && offerPrice < price) || percentDiscount > 0;
 
                 return (
                   <article
@@ -214,13 +219,18 @@ export default function NearbyProductsSection({ userProvince = "Buenos Aires" }:
                       <div className="nearby-product-card__pricing">
                         {hasOffer && (
                           <span className="nearby-product-card__original">
-                            ${formatPrice(price)}
+                            {currencyCode === "USD" ? "USD $" : "$"}{formatPrice(price)}
                           </span>
                         )}
                         <div className="nearby-product-card__price-row">
                           <span className="nearby-product-card__price">
-                            ${formatPrice(hasOffer ? offerPrice : price)}
+                            {currencyCode === "USD" ? "USD $" : "$"}{formatPrice(hasOffer && offerPrice ? offerPrice : price)}
                           </span>
+                          {discountVal > 0 && (
+                            <span className="nearby-product-card__discount">
+                              {discountVal}% OFF
+                            </span>
+                          )}
                         </div>
                       </div>
 

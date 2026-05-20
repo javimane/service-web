@@ -144,7 +144,11 @@ export default function ProfessionalStorePage() {
       );
       const displayPrice = myEntry?.price ?? item.price ?? 0;
       const offerPrice = myEntry?.offer_price;
-      const discountPct = myEntry?.discount_percentage || 0;
+      const percentDiscount = item.percent_discount || myEntry?.percent_discount || myEntry?.discount_percentage || 0;
+      const currencyCode = item.currency_code || myEntry?.currency_code || "ARG";
+      const displayDiscount = percentDiscount > 0
+        ? percentDiscount
+        : (offerPrice && displayPrice ? Math.round((1 - offerPrice / displayPrice) * 100) : 0);
       const sortedSellers = myEntry
         ? [myEntry, ...sellers.filter((s: any) => s !== myEntry)]
         : sellers;
@@ -160,7 +164,8 @@ export default function ProfessionalStorePage() {
           .concat(item.image_url ? [item.image_url] : []),
         price: displayPrice,
         offerPrice,
-        discount: discountPct,
+        discount: displayDiscount,
+        currencyCode: currencyCode,
         rating: myEntry?.Professional?.rating_avg || 5,
         sellers: sortedSellers,
         is_foreign: item.is_foreign,
@@ -458,11 +463,11 @@ export default function ProfessionalStorePage() {
                         {product.offerPrice ? (
                           <>
                             <span className="store-price--original">
-                              ${formatPrice(product.price)}
+                              {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.price)}
                             </span>
                             <div className="store-price--row">
                               <span className="store-price--main">
-                                ${formatPrice(product.offerPrice)}
+                                {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.offerPrice)}
                               </span>
                               {product.discount > 0 && (
                                 <span className="store-price--off">
@@ -474,7 +479,7 @@ export default function ProfessionalStorePage() {
                         ) : (
                           <div className="store-price--row">
                             <span className="store-price--main">
-                              ${formatPrice(product.price)}
+                              {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.price)}
                             </span>
                           </div>
                         )}
