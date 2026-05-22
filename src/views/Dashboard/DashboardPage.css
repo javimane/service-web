@@ -674,6 +674,27 @@
   margin-right: 8px;
 }
 
+/* Simplified views badge */
+.views-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.views-count {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.views-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
 /* Conversion Card */
 .conversion-card {
   grid-column: 2;

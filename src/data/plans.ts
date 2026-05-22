@@ -20,22 +20,38 @@ const FALLBACK_PREMIUM_PRICE = 10000;
 
 export const plans: Plan[] = [
   {
+    id: "gratuito",
+    name: "Gratuito",
+    price: 0,
+    period: "mes",
+    description:
+      "Crea tu perfil profesional y comienza a ofrecer tus servicios en la plataforma sin costo alguno. Ideal para profesionales que están empezando y quieren probar la plataforma.",
+    features: [
+      { text: "Perfil profesional básico" },
+      { text: "Posicionamiento en la web" },
+      { text: "Publicación de productos" },
+      { text: "Publicación de servicios" },
+      { text: "Mensajes directos con clientes" },
+      { text: "Métricas de tráfico en tu perfil" },
+      { text: "Tienda de productos" },
+    ],
+  },
+  {
     id: "profesional-basico",
     name: "Profesional Básico",
     price: FALLBACK_BASIC_PRICE,
     period: "mes",
-    description:
-      "Todo lo que necesitás para empezar a ofrecer tus servicios profesionales en la plataforma.",
+    description: "Aumentá tu visibilidad con herramientas profesionales.",
     features: [
-      { text: "Perfil profesional completo" },
-      { text: "Publicación de productos" },
-      { text: "Videos reels de tu trabajo" },
-      { text: "Posicionamiento en la web" },
-      { text: "Creación de promociones" },
-      { text: "Publicación de servicios" },
-      { text: "Creación y envío de presupuestos" },
-      { text: "Mensajes directos con clientes" },
-      { text: "Métricas de tráfico en tu perfil" },
+      { text: "Todo lo del plan Gratuito" },
+      { text: "Videos reels de tu trabajo", highlighted: true },
+      { text: "Publicación de videos", highlighted: true },
+      {
+        text: "Creación de promociones y promociones bancarias",
+        highlighted: true,
+      },
+      { text: "Creación y envío de presupuestos", highlighted: true },
+      { text: "Gestión de citas y agenda", highlighted: true },
     ],
   },
   {
@@ -51,7 +67,7 @@ export const plans: Plan[] = [
         text: "Mejor posicionamiento en el ranking de profesionales",
         highlighted: true,
       },
-      { text: "Aparición en la sección de Destacados", highlighted: true },
+      { text: "Mejor posicionamiento en búsquedas", highlighted: true },
     ],
     recommended: true,
   },

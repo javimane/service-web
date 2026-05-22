@@ -58,7 +58,9 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
     const productUrl = window.location.href;
     const msg = `Hola, qué tal, pregunto por el producto: ${product.title} - ${productUrl}`;
     const encodedMsg = encodeURIComponent(msg);
-    window.location.assign(`/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`);
+    window.location.assign(
+      `/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`,
+    );
   };
 
   return (
@@ -156,11 +158,15 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                   // Determine Prices
                   const originalPrice = item.price;
                   const offerPrice = item.offer_price;
-                  const percentDiscount = item.percent_discount || item.discount_percentage || 0;
+                  const percentDiscount =
+                    item.percent_discount || item.discount_percentage || 0;
                   const hasDiscount = !!offerPrice || percentDiscount > 0;
-                  const discountVal = percentDiscount > 0
-                    ? percentDiscount
-                    : (offerPrice && originalPrice ? Math.round((1 - offerPrice / originalPrice) * 100) : 0);
+                  const discountVal =
+                    percentDiscount > 0
+                      ? percentDiscount
+                      : offerPrice && originalPrice
+                        ? Math.round((1 - offerPrice / originalPrice) * 100)
+                        : 0;
                   const currencyCode = item.currency_code || "ARG";
                   const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
 
@@ -192,16 +198,15 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                         <div className="prices">
                           {hasDiscount && (
                             <span className="seller-original-price">
-                              {currencySymbol}{formatPrice(originalPrice)}
+                              {currencySymbol}
+                              {formatPrice(originalPrice)}
                             </span>
                           )}
                           <div className="seller-current-price-row">
                             <span className="seller-price">
                               {currencySymbol}
                               {formatPrice(
-                                offerPrice
-                                  ? offerPrice
-                                  : originalPrice,
+                                offerPrice ? offerPrice : originalPrice,
                               )}
                             </span>
                             {discountVal > 0 && (
@@ -220,6 +225,33 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                           Contactar
                         </button>
                       </div>
+
+                      {item.link_url && (
+                        <a
+                          href={
+                            item.link_url.startsWith("http")
+                              ? item.link_url
+                              : `https://${item.link_url}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="seller-contact-btn"
+                          style={{
+                            marginTop: "12px",
+                            width: "100%",
+                            backgroundColor: "transparent",
+                            border: "1px solid var(--border-color)",
+                            color: "var(--text-primary)",
+                            textDecoration: "none",
+                            justifyContent: "center",
+                            display: "flex",
+                            gap: "8px",
+                          }}
+                        >
+                          <ExternalLink size={16} />
+                          Ver en sitio web
+                        </a>
+                      )}
                     </div>
                   );
                 })}

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
-import { categories } from "../../data/categories";
+import { getServiceCategoriesAction } from "../../app/actions/categories";
 import { ROUTES } from "../../routes/paths";
 import { locationService } from "../../services/locationService";
 import {
@@ -52,22 +52,6 @@ type CategoryProfile = {
 const fallbackImage =
   "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&q=80";
 
-const categoryOptions = [
-  {
-    label: "Todas",
-    subtitle: "Encontrá especialistas por rubro y ubicación",
-    description:
-      "Elegí una categoría y filtrá por provincia, ciudad, tipo de prestador y atención de urgencias.",
-    image: fallbackImage,
-  },
-  ...categories.map((category) => ({
-    label: category.label,
-    subtitle: category.type,
-    description: `Perfiles activos y verificados dentro de ${category.label}.`,
-    image: category.image || fallbackImage,
-  })),
-] as const;
-
 const accountTypes: AccountType[] = ["Todos", "Comercio", "Autónomo"];
 
 export default function CategoriesPage() {
@@ -86,6 +70,37 @@ export default function CategoriesPage() {
   const [matriculatedOnly, setMatriculatedOnly] = useState(false);
   const [publicStoreOnly, setPublicStoreOnly] = useState(false);
 
+  const { data: rawCategories = [], isLoading: isLoadingCategories } = useQuery(
+    {
+      queryKey: ["categories-list"],
+      queryFn: async () => {
+        const res = await getServiceCategoriesAction();
+        return Array.isArray(res) ? res : res?.data || [];
+      },
+      staleTime: 1000 * 60 * 60,
+    },
+  );
+
+  const categoryOptions = useMemo(() => {
+    return [
+      {
+        id: undefined,
+        label: "Todas",
+        subtitle: "Encontrá especialistas por rubro y ubicación",
+        description:
+          "Elegí una categoría y filtrá por provincia, ciudad, tipo de prestador y atención de urgencias.",
+        image: fallbackImage,
+      },
+      ...rawCategories.map((c: any) => ({
+        id: c.id,
+        label: c.name,
+        subtitle: c.name,
+        description: `Perfiles activos y verificados dentro de ${c.name}.`,
+        image: c.image_url, // Use the image from the new structure
+      })),
+    ];
+  }, [rawCategories]);
+
   const { data: professionalsData, isLoading } = useQuery({
     queryKey: [
       "categories-professionals",
@@ -102,7 +117,7 @@ export default function CategoriesPage() {
       const categoryId =
         selectedCategory === "Todas"
           ? undefined
-          : categories.find((c) => c.label === selectedCategory)?.id;
+          : categoryOptions.find((c) => c.label === selectedCategory)?.id;
 
       // Find province ID
       const provinceId =
@@ -326,9 +341,6 @@ export default function CategoriesPage() {
                 <div className="hero__stat-pill">
                   <span className="digit">{filteredProfiles.length}</span>
                   <span className="label">perfiles disponibles</span>
-                </div>
-                <div className="hero__stat-pill">
-                  <span className="label">{selectedCategoryInfo.subtitle}</span>
                 </div>
               </div>
             </div>

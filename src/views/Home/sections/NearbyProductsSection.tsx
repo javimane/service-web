@@ -25,7 +25,11 @@ type UserLocation = {
   lng: number;
 };
 
-export default function NearbyProductsSection({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
+export default function NearbyProductsSection({
+  userProvince = "Buenos Aires",
+}: {
+  userProvince?: string;
+}) {
   const router = useRouter();
   const sliderRef = useRef<HTMLDivElement>(null);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -109,7 +113,9 @@ export default function NearbyProductsSection({ userProvince = "Buenos Aires" }:
       <div className="home-section-container">
         <div className="nearby-products__header">
           <div className="nearby-products__title-group">
-            <h2 className="nearby-products__title">Productos en {userProvince}</h2>
+            <h2 className="nearby-products__title">
+              Productos en {userProvince}
+            </h2>
           </div>
           <button
             className="section-link"
@@ -149,7 +155,7 @@ export default function NearbyProductsSection({ userProvince = "Buenos Aires" }:
             ) : productsList.length === 0 ? (
               <div className="products-empty">
                 <Sparkles size={40} />
-                <p>No se encontraron productos premium cerca.</p>
+                <p>No se encontraron productos cerca.</p>
               </div>
             ) : (
               productsList.map((item: any) => {
@@ -165,12 +171,18 @@ export default function NearbyProductsSection({ userProvince = "Buenos Aires" }:
                   `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}`;
                 const price = item.price || profProduct?.price || 0;
                 const offerPrice = profProduct?.offer_price || 0;
-                const currencyCode = item.currency_code || profProduct?.currency_code || "ARG";
-                const percentDiscount = item.percent_discount || profProduct?.percent_discount || 0;
-                const discountVal = percentDiscount > 0
-                  ? percentDiscount
-                  : (offerPrice > 0 && price ? Math.round((1 - offerPrice / price) * 100) : 0);
-                const hasOffer = (offerPrice > 0 && offerPrice < price) || percentDiscount > 0;
+                const currencyCode =
+                  item.currency_code || profProduct?.currency_code || "ARG";
+                const percentDiscount =
+                  item.percent_discount || profProduct?.percent_discount || 0;
+                const discountVal =
+                  percentDiscount > 0
+                    ? percentDiscount
+                    : offerPrice > 0 && price
+                      ? Math.round((1 - offerPrice / price) * 100)
+                      : 0;
+                const hasOffer =
+                  (offerPrice > 0 && offerPrice < price) || percentDiscount > 0;
 
                 return (
                   <article
@@ -219,12 +231,16 @@ export default function NearbyProductsSection({ userProvince = "Buenos Aires" }:
                       <div className="nearby-product-card__pricing">
                         {hasOffer && (
                           <span className="nearby-product-card__original">
-                            {currencyCode === "USD" ? "USD $" : "$"}{formatPrice(price)}
+                            {currencyCode === "USD" ? "USD $" : "$"}
+                            {formatPrice(price)}
                           </span>
                         )}
                         <div className="nearby-product-card__price-row">
                           <span className="nearby-product-card__price">
-                            {currencyCode === "USD" ? "USD $" : "$"}{formatPrice(hasOffer && offerPrice ? offerPrice : price)}
+                            {currencyCode === "USD" ? "USD $" : "$"}
+                            {formatPrice(
+                              hasOffer && offerPrice ? offerPrice : price,
+                            )}
                           </span>
                           {discountVal > 0 && (
                             <span className="nearby-product-card__discount">

@@ -10,13 +10,14 @@
 }
 
 .cat-minimal-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
 }
 
 .cat-minimal-card__icon-box {
-  width: 80px;
-  height: 80px;
-  background: var(--surface-soft);
+  width: 80px !important;
+  height: 80px !important;
+  flex-shrink: 0;
+  background: #f0f2f5; /* Color diferenciado para que se note el cuadrado */
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -26,9 +27,9 @@
 }
 
 .cat-minimal-card:hover .cat-minimal-card__icon-box {
-  background: var(--bg-color);
+  background: #ffffff;
   border-color: var(--accent-color);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .cat-minimal-card__label {
@@ -36,8 +37,15 @@
   font-weight: 700;
   color: var(--text-primary);
   text-align: center;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 120px;
+  word-break: break-word;
+  line-height: 1.1rem;
 }
 
-/* Specific colors for icons can be handled via inline styles or classes if needed, 
-   but the box itself is clean as per reference. */
+.cat-label-line {
+  display: inline-block;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

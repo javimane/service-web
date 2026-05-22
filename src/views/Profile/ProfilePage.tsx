@@ -890,9 +890,7 @@ export default function ProfilePage() {
                           const pSeo =
                             p.seo_path || (p.Product && p.Product.seo_path);
                           if (pSeo) {
-                            const target = pSeo.startsWith("/")
-                              ? pSeo
-                              : `/profile/${rawId}/p/${pSeo}`;
+                            const target = `/productos${pSeo}`;
                             router.push(target);
                           } else {
                             setSelectedProductForDetail(p);

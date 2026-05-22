@@ -192,10 +192,10 @@ export default function DashboardProducts() {
     image: "",
     description: "",
     ean: "",
-    webUrl: "",
     offerPrice: "",
     currency_code: "ARG",
     percent_discount: "",
+    link_url: "", // Added link_url property
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -300,6 +300,7 @@ export default function DashboardProducts() {
           )[0] || "",
       description: item.Product?.description || "",
       ean: item.Product?.ean || "",
+      link_url: item.link_url || item.Product?.link_url || "",
       sale_type: item.sale_type,
       is_active: item.is_active,
       currency_code: item.currency_code || item.Product?.currency_code || "ARG",
@@ -647,10 +648,10 @@ export default function DashboardProducts() {
       image: "",
       description: "",
       ean: "",
-      webUrl: "",
       offerPrice: "",
       currency_code: "ARG",
       percent_discount: "",
+      link_url: "", // Added link_url property
     });
     setFormPrice("");
     setFormStock("");
@@ -706,6 +707,7 @@ export default function DashboardProducts() {
       offer_price: Number(newProduct.offerPrice) || 0,
       currency_code: newProduct.currency_code || "ARG",
       percent_discount: Number(newProduct.percent_discount) || 0,
+      link_url: newProduct.link_url.trim() || undefined,
     });
   };
 
@@ -724,7 +726,7 @@ export default function DashboardProducts() {
       image: product.image || "",
       description: product.description || "",
       ean: product.ean || "",
-      webUrl: "",
+      webUrl: product.link_url || "",
       offerPrice: String(product.offer_price || ""),
       images: product.images || (product.image ? [product.image] : []),
       currency_code: product.currency_code || "ARG",
@@ -829,6 +831,7 @@ export default function DashboardProducts() {
         display_order: finalImages.map((_, index) => index + 1),
         currency_code: editProduct.currency_code || "ARG",
         percent_discount: Number(editProduct.percent_discount) || 0,
+        link_url: editProduct.webUrl.trim() || undefined,
       },
     });
   };
@@ -1561,11 +1564,11 @@ export default function DashboardProducts() {
                       <input
                         type="url"
                         placeholder="https://www.ejemplo.com/producto"
-                        value={newProduct.webUrl}
+                        value={newProduct.link_url}
                         onChange={(e) =>
                           setNewProduct({
                             ...newProduct,
-                            webUrl: e.target.value,
+                            link_url: e.target.value,
                           })
                         }
                       />

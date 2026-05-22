@@ -9,12 +9,20 @@ import { buildActionHeaders } from "./_utils/authHeaders";
 const authTokenSchema = z.string().optional();
 
 export const getProposalsCountAction = publicAction
-  .schema(z.object({ professionalId: z.string().or(z.number()) }))
+  .schema(
+    z
+      .object({
+        token: authTokenSchema,
+      })
+      .optional(),
+  )
   .action(async ({ parsedInput, ctx }) => {
-    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-proposals/accepted/count/${parsedInput.professionalId}`;
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-proposals/accepted/count`;
 
     try {
-      const response = await axios.get(url, { headers: ctx.headers });
+      const response = await axios.get(url, {
+        headers: buildActionHeaders(ctx, parsedInput?.token),
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(

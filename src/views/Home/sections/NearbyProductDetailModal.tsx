@@ -10,6 +10,7 @@ import {
   User,
   ChevronLeft,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -152,13 +153,20 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
                   {allSellers.map((sellerRel) => {
                     const originalPrice = sellerRel.price;
                     const offerPrice = sellerRel.offer_price;
-                    const percentDiscount = sellerRel.percent_discount || sellerRel.discount_percentage || 0;
+                    const percentDiscount =
+                      sellerRel.percent_discount ||
+                      sellerRel.discount_percentage ||
+                      0;
                     const hasDiscount = !!offerPrice || percentDiscount > 0;
-                    const discountVal = percentDiscount > 0
-                      ? percentDiscount
-                      : (offerPrice && originalPrice ? Math.round((1 - offerPrice / originalPrice) * 100) : 0);
+                    const discountVal =
+                      percentDiscount > 0
+                        ? percentDiscount
+                        : offerPrice && originalPrice
+                          ? Math.round((1 - offerPrice / originalPrice) * 100)
+                          : 0;
                     const currencyCode = sellerRel.currency_code || "ARG";
-                    const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
+                    const currencySymbol =
+                      currencyCode === "USD" ? "USD $" : "$";
 
                     return (
                       <div key={sellerRel.id} className="seller-item">
@@ -186,15 +194,14 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
                         <div className="seller-item__price-block">
                           {hasDiscount && (
                             <span className="seller-item__original">
-                              {currencySymbol}{formatPrice(originalPrice)}
+                              {currencySymbol}
+                              {formatPrice(originalPrice)}
                             </span>
                           )}
                           <div className="seller-item__price-current-row">
                             <span className="seller-item__current">
                               {currencySymbol}
-                              {formatPrice(
-                                offerPrice || originalPrice,
-                              )}
+                              {formatPrice(offerPrice || originalPrice)}
                             </span>
                             {discountVal > 0 && (
                               <span className="seller-item__discount">

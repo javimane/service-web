@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import { getProductDetailAction } from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
@@ -108,6 +109,7 @@ export default function ProductDetailPage() {
 
   // Get seller info from the first ProfessionalProducts entry
   const professionalProduct = item.ProfessionalProducts?.[0];
+  const productLink = professionalProduct?.link_url; // Added link_url extraction
   const professional = professionalProduct?.Professional;
   const professionalAny = professional as any;
 
@@ -137,19 +139,32 @@ export default function ProductDetailPage() {
   // Price logic
   const originalPrice = professionalProduct?.price || item.price;
   const offerPrice = professionalProduct?.offer_price;
-  const currencyCode = professionalProduct?.currency_code || item.currency_code || itemAny.Product?.currency_code || "ARG";
-  const percentDiscount = professionalProduct?.percent_discount || item.percent_discount || itemAny.Product?.percent_discount || 0;
+  const currencyCode =
+    professionalProduct?.currency_code ||
+    item.currency_code ||
+    itemAny.Product?.currency_code ||
+    "ARG";
+  const percentDiscount =
+    professionalProduct?.percent_discount ||
+    item.percent_discount ||
+    itemAny.Product?.percent_discount ||
+    0;
   const hasDiscount = !!offerPrice || percentDiscount > 0;
-  const discountVal = percentDiscount > 0 
-    ? percentDiscount 
-    : (offerPrice && originalPrice ? Math.round((1 - offerPrice / originalPrice) * 100) : 0);
+  const discountVal =
+    percentDiscount > 0
+      ? percentDiscount
+      : offerPrice && originalPrice
+        ? Math.round((1 - offerPrice / originalPrice) * 100)
+        : 0;
   const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
 
   const handleContact = () => {
     const productUrl = window.location.href;
     const msg = `Hola, qué tal, pregunto por el producto: ${productName} - ${productUrl}`;
     const encodedMsg = encodeURIComponent(msg);
-    router.push(`/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`);
+    router.push(
+      `/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`,
+    );
   };
 
   const nextImage = () => {
@@ -301,17 +316,14 @@ export default function ProductDetailPage() {
                     <div className="prices">
                       {hasDiscount && (
                         <span className="seller-original-price">
-                          {currencySymbol}{formatPrice(originalPrice)}
+                          {currencySymbol}
+                          {formatPrice(originalPrice)}
                         </span>
                       )}
                       <div className="seller-current-price-row">
                         <span className="seller-price">
                           {currencySymbol}
-                          {formatPrice(
-                            offerPrice
-                              ? offerPrice
-                              : originalPrice,
-                          )}
+                          {formatPrice(offerPrice ? offerPrice : originalPrice)}
                         </span>
                         {discountVal > 0 && (
                           <span className="seller-discount">
@@ -329,6 +341,33 @@ export default function ProductDetailPage() {
                       Contactar
                     </button>
                   </div>
+
+                  {productLink && (
+                    <a
+                      href={
+                        productLink.startsWith("http")
+                          ? productLink
+                          : `https://${productLink}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="seller-contact-btn"
+                      style={{
+                        marginTop: "12px",
+                        width: "100%",
+                        backgroundColor: "transparent",
+                        border: "1px solid var(--border-color)",
+                        color: "var(--text-primary)",
+                        textDecoration: "none",
+                        justifyContent: "center",
+                        display: "flex",
+                        gap: "8px",
+                      }}
+                    >
+                      <ExternalLink size={16} />
+                      Ver en sitio web
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

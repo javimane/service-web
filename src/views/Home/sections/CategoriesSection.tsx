@@ -2,7 +2,8 @@
 import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { categories } from "../../../data/categories";
+import { useQuery } from "@tanstack/react-query";
+import { getServiceCategoriesAction } from "../../../app/actions/categories";
 import CategoryCard from "../../../components/Cards/CategoryCard";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import { ROUTES } from "../../../routes/paths";
@@ -21,12 +22,42 @@ export default function CategoriesSection() {
     updateArrowVisibility,
   } = useCarouselDrag(sliderRef, ".cat-minimal-card");
 
-  const goToCategories = (categoryLabel?: string) => {
-    if (categoryLabel) {
-      router.push(
-        `${ROUTES.categories}?category=${encodeURIComponent(categoryLabel)}`,
-      );
-      return;
+  const { data: rawCategories = [] } = useQuery({
+    queryKey: ["home-categories-list"],
+    queryFn: async () => {
+      const res = await getServiceCategoriesAction();
+      return Array.isArray(res) ? res : res?.data || [];
+    },
+    staleTime: 1000 * 60 * 60,
+  });
+
+  const categories = rawCategories.map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    label: c.name,
+    type: c.name,
+    seoPath: c.seo_path,
+    image: c.image_url || "",
+  }));
+
+  const goToCategories = (seoPath?: string) => {
+    if (seoPath) {
+      try {
+        // seoPath may be like "/categories?category=Aberturas" coming from API
+        const parts = seoPath.split("?");
+        const query = parts[1] ? new URLSearchParams(parts[1]) : null;
+        const categoryParam = query?.get("category");
+        if (categoryParam) {
+          router.push(
+            `${ROUTES.categories}?category=${encodeURIComponent(categoryParam)}`,
+          );
+          return;
+        }
+      } catch (e) {
+        // fallback to pushing raw seoPath if parsing fails
+        router.push(seoPath);
+        return;
+      }
     }
 
     router.push(ROUTES.categories);
@@ -72,7 +103,7 @@ export default function CategoriesSection() {
               <CategoryCard
                 key={category.id}
                 category={category}
-                onClick={() => goToCategories(category.label)}
+                onClick={() => goToCategories(category.seoPath)}
               />
             ))}
           </div>

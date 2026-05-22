@@ -54,21 +54,21 @@ export default function DashboardPage() {
   const routeView = searchParams.get("view");
 
   const { data: myProfessional } = useQuery({
-    queryKey: ["professional-me"],
+    queryKey: ["professional-me", professionalId],
     queryFn: async () => {
       const token = getAccessToken();
-      const result = await getProfessionalMeAction(
-        token ? { token } : undefined,
-      );
+      const result = await getProfessionalMeAction({ token });
       return result?.data ?? null;
     },
+    enabled: !!professionalId,
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: proposalsCountData } = useQuery({
     queryKey: ["proposals-count", professionalId],
     queryFn: async () => {
-      const result = await getProposalsCountAction({ professionalId });
+      const token = await getAccessToken();
+      const result = await getProposalsCountAction({ token });
       return result?.data ?? { count: 0 };
     },
     enabled: !!professionalId,
@@ -295,16 +295,16 @@ export default function DashboardPage() {
                   <div className="stat-card chart-card">
                     <div className="card-header">
                       <div className="label-group">
-                        <span className="card-label">IMPACT ANALYSIS</span>
-                        <h3>Profile Engagement</h3>
+                        <span className="card-label">ANÁLISIS DE IMPACTO</span>
+                        <h3>Cantidad de visitas a tu perfil</h3>
                       </div>
-                      <div className="trend-badge">
-                        <TrendingUp size={14} />
-                        <span>
-                          {/* {profileViews !== null
-                            ? `${profileViews.toLocaleString("es-AR")} VISTAS`
-                            : "SIN DATOS"} */}
-                        </span>
+                      <div className="views-badge">
+                        <div className="views-count">
+                          {profileViews !== null
+                            ? profileViews.toLocaleString("es-AR")
+                            : "--"}
+                        </div>
+                        <div className="views-label">VISTAS</div>
                       </div>
                     </div>
 
