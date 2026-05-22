@@ -78,12 +78,16 @@ export function mergePlansWithSubscriptionPrices(
   subscriptionPrices: SuscriptionPrice[],
 ): Plan[] {
   return currentPlans.map((plan) => {
-    if (plan.id === "profesional-basico") {
+    if (plan.id === "free" || plan.id === "gratuito") {
       return { ...plan, price: subscriptionPrices[0]?.amount ?? plan.price };
     }
 
-    if (plan.id === "profesional-premium") {
+    if (plan.id === "profesional-basico") {
       return { ...plan, price: subscriptionPrices[1]?.amount ?? plan.price };
+    }
+
+    if (plan.id === "profesional-premium") {
+      return { ...plan, price: subscriptionPrices[2]?.amount ?? plan.price };
     }
 
     return plan;

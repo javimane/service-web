@@ -13,6 +13,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
+import Modal from "../../components/Modal/Modal";
 import { useAuth } from "../../context/AuthContext";
 import { activities, clips } from "../../data/dashboardData";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
@@ -41,7 +42,8 @@ import DashboardReferrals from "./sections/DashboardReferrals";
 export default function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { hasProfessionalSubscription, sessionStatus } = useAuth();
+  const { hasProfessionalSubscription, sessionStatus, subscriptionPlan } =
+    useAuth();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
@@ -96,27 +98,88 @@ export default function DashboardPage() {
 
   const acceptedProposalsCount = proposalsCountData?.count ?? 0;
 
-  const handleShowProposalsCreate = () => setView("proposals-create");
-  const handleShowProposalsView = () => setView("proposals-view");
-  const handleGoBack = () => setView("overview");
-  const handleGoProfile = () => setView("profile");
+  const handleShowProposalsCreate = () =>
+    router.push(`${ROUTES.dashboard}?view=proposals-create`);
+  const handleShowProposalsView = () =>
+    router.push(`${ROUTES.dashboard}?view=proposals-view`);
+  const handleGoBack = () => router.push(ROUTES.dashboard);
+  const handleGoProfile = () => router.push(`${ROUTES.dashboard}?view=profile`);
   const handleGoServices = () => router.push(ROUTES.services);
   const handleGoSettings = () => router.push(ROUTES.settings);
-  const handleShowOverview = () => setView("overview");
+  const handleShowOverview = () => router.push(ROUTES.dashboard);
   const handleShowMessages = () => router.push(ROUTES.messages);
-  const handleShowNotifications = () => setView("notifications");
+  const handleShowNotifications = () =>
+    router.push(`${ROUTES.dashboard}?view=notifications`);
   const handleShowPromotionsCreate = (promo?: any) => {
     setEditingPromotion(promo || null);
-    setView("promotions-create");
+    router.push(`${ROUTES.dashboard}?view=promotions-create`);
   };
-  const handleShowPromotionsAll = () => setView("promotions-all");
-  const handleShowProducts = () => setView("products");
-  const handleShowServices = () => setView("services");
-  const handleShowSubscription = () => setView("subscription");
-  const handleShowCalendar = () => setView("calendar");
-  const handleShowBankPromos = () => setView("bank-promotions");
-  const handleShowProfile = () => setView("profile");
-  const handleShowReels = () => setView("reels");
+  const handleShowPromotionsAll = () =>
+    router.push(`${ROUTES.dashboard}?view=promotions-all`);
+  const handleShowProducts = () =>
+    router.push(`${ROUTES.dashboard}?view=products`);
+  const handleShowServices = () =>
+    router.push(`${ROUTES.dashboard}?view=services`);
+  const handleShowSubscription = () =>
+    router.push(`${ROUTES.dashboard}?view=subscription`);
+  const handleShowCalendar = () =>
+    router.push(`${ROUTES.dashboard}?view=calendar`);
+  const handleShowBankPromos = () =>
+    router.push(`${ROUTES.dashboard}?view=bank-promotions`);
+  const handleShowProfile = () =>
+    router.push(`${ROUTES.dashboard}?view=profile`);
+  const handleShowReels = () => router.push(`${ROUTES.dashboard}?view=reels`);
+
+  const isFreePlan = subscriptionPlan === "free";
+
+  const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
+
+  const openPromoModal = () => setIsPromoModalOpen(true);
+  const closePromoModal = () => setIsPromoModalOpen(false);
+  const handleUpgradeRedirect = () => {
+    setIsPromoModalOpen(false);
+    router.push(`${ROUTES.dashboard}?view=subscription`);
+  };
+
+  const redirectIfFree = (target?: string) => {
+    if (isFreePlan) {
+      openPromoModal();
+      return true;
+    }
+    if (target) router.push(`${ROUTES.dashboard}?view=${target}`);
+    return false;
+  };
+
+  const blockedForFree = new Set([
+    "proposals-create",
+    "proposals-view",
+    "promotions-create",
+    "promotions-all",
+    "bank-promotions",
+    "calendar",
+    "reels",
+  ]);
+
+  useEffect(() => {
+    if (isFreePlan && blockedForFree.has(view)) {
+      router.push(ROUTES.dashboard);
+      openPromoModal();
+    }
+  }, [isFreePlan, view]);
+
+  // Override handlers to block access for free plan
+  const handleShowProposalsCreateBlocked = () =>
+    redirectIfFree("proposals-create");
+  const handleShowProposalsViewBlocked = () => redirectIfFree("proposals-view");
+  const handleShowPromotionsCreateBlocked = (promo?: any) => {
+    if (isFreePlan) return redirectIfFree();
+    setEditingPromotion(promo || null);
+    router.push(`${ROUTES.dashboard}?view=promotions-create`);
+  };
+  const handleShowPromotionsAllBlocked = () => redirectIfFree("promotions-all");
+  const handleShowCalendarBlocked = () => redirectIfFree("calendar");
+  const handleShowBankPromosBlocked = () => redirectIfFree("bank-promotions");
+  const handleShowReelsBlocked = () => redirectIfFree("reels");
 
   const openViewsForInactiveSubscription = new Set([
     "subscription",
@@ -179,44 +242,26 @@ export default function DashboardPage() {
     <div className="dashboard-page-wrapper">
       <div className="dashboard-page">
         <DashboardSidebar
-          activeItem={
-            view === "proposals-create"
-              ? "proposals-create"
-              : view === "proposals-view"
-                ? "proposals-view"
-                : view === "notifications"
-                  ? "notifications"
-                  : view === "promotions-create"
-                    ? "promotions-create"
-                    : view === "promotions-all"
-                      ? "promotions-all"
-                      : view === "products"
-                        ? "products"
-                        : view === "reels"
-                          ? "reels"
-                          : view === "profile"
-                            ? "profile"
-                            : "dashboard"
-          }
+          activeItem={view === "overview" ? "dashboard" : view}
           isCollapsed={isMobileSidebarMode ? false : isSidebarCollapsed}
           isMobile={isMobileSidebarMode}
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
           onToggle={handleSidebarToggle}
-          onProposalsCreate={handleShowProposalsCreate}
-          onProposalsView={handleShowProposalsView}
+          onProposalsCreate={handleShowProposalsCreateBlocked}
+          onProposalsView={handleShowProposalsViewBlocked}
           onDashboardClick={handleShowOverview}
           onMessagesClick={handleShowMessages}
           onNotificationsClick={handleShowNotifications}
-          onPromotionsCreate={handleShowPromotionsCreate}
-          onPromotionsViewAll={handleShowPromotionsAll}
+          onPromotionsCreate={handleShowPromotionsCreateBlocked}
+          onPromotionsViewAll={handleShowPromotionsAllBlocked}
           onProductsClick={handleShowProducts}
           onServicesClick={handleShowServices}
           onSubscriptionClick={handleShowSubscription}
-          onCalendarClick={handleShowCalendar}
-          onBankPromosClick={handleShowBankPromos}
+          onCalendarClick={handleShowCalendarBlocked}
+          onBankPromosClick={handleShowBankPromosBlocked}
           onProfileClick={handleShowProfile}
-          onReelsClick={handleShowReels}
+          onReelsClick={handleShowReelsBlocked}
         />
 
         <main
@@ -445,7 +490,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           className="action-btn-main"
-                          onClick={handleShowProposalsCreate}
+                          onClick={handleShowProposalsCreateBlocked}
                         >
                           <div className="action-icon">
                             <Plus size={20} />
@@ -456,7 +501,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           className="action-btn"
-                          onClick={handleShowReels}
+                          onClick={handleShowReelsBlocked}
                         >
                           <Clapperboard size={18} />
                           <span>Gestionar Reels</span>
@@ -534,6 +579,39 @@ export default function DashboardPage() {
             )}
           </div>
         </main>
+        <Modal
+          isOpen={isPromoModalOpen}
+          onClose={closePromoModal}
+          title="Mejorá tu cuenta"
+        >
+          <p>
+            Para acceder a esta funcionalidad necesitás una suscripción
+            profesional.
+          </p>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              marginTop: 12,
+              justifyContent: "flex-end",
+            }}
+          >
+            <button
+              type="button"
+              className="action-btn"
+              onClick={closePromoModal}
+            >
+              Cerrar
+            </button>
+            <button
+              type="button"
+              className="action-btn-main"
+              onClick={handleUpgradeRedirect}
+            >
+              Ver planes
+            </button>
+          </div>
+        </Modal>
       </div>
     </div>
   );

@@ -202,3 +202,34 @@ export const getCompanyLocationsAction = publicAction
       );
     }
   });
+
+/**
+ * Crea o actualiza el perfil profesional del usuario autenticado (usualmente para el plan Free).
+ */
+export const createProfessionalMeAction = publicAction
+  .schema(
+    z
+      .object({
+        token: authTokenSchema,
+      })
+      .optional(),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professionals/me`;
+
+    try {
+      const response = await axios.post(
+        url,
+        {},
+        {
+          headers: buildActionHeaders(ctx, parsedInput?.token),
+        },
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message ||
+          "Error fetching professional subscription",
+      );
+    }
+  });

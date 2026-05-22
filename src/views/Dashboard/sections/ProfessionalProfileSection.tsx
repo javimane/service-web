@@ -15,6 +15,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
+import { useRouter } from "next/navigation";
+import { ROUTES } from "../../../routes/paths";
 import {
   uploadProfileImage,
   uploadProfileWorkImage,
@@ -95,7 +97,15 @@ const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80";
 
 export default function ProfessionalProfileSection() {
-  const { sessionStatus } = useAuth();
+  const { sessionStatus, subscriptionPlan } = useAuth();
+  const router = useRouter();
+  const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
+  const openPromoModal = () => setIsPromoModalOpen(true);
+  const closePromoModal = () => setIsPromoModalOpen(false);
+  const handleUpgradeRedirect = () => {
+    setIsPromoModalOpen(false);
+    router.push(`${ROUTES.dashboard}?view=subscription`);
+  };
   const userId = sessionStatus?.user?.id;
   const professionalId = Number(
     sessionStatus?.subscription?.professional_id ??
@@ -422,6 +432,11 @@ export default function ProfessionalProfileSection() {
   };
 
   const openVideoModal = () => {
+    if (subscriptionPlan === "free") {
+      openPromoModal();
+      return;
+    }
+
     setNewVideoFile(null);
     setNewVideoTitle("");
     setNewVideoDescription("");
@@ -1111,6 +1126,40 @@ export default function ProfessionalProfileSection() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={isPromoModalOpen}
+        onClose={closePromoModal}
+        title="Mejorá tu cuenta"
+      >
+        <p>
+          Tu plan actual no permite esta acción. Actualizá a profesional para
+          habilitarla.
+        </p>
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            marginTop: 12,
+            justifyContent: "flex-end",
+          }}
+        >
+          <button
+            type="button"
+            className="professional-profile__cancel-btn"
+            onClick={closePromoModal}
+          >
+            Cerrar
+          </button>
+          <button
+            type="button"
+            className="professional-profile__save-btn"
+            onClick={handleUpgradeRedirect}
+          >
+            Ver planes
+          </button>
+        </div>
       </Modal>
 
       {/* Modal para subir video */}

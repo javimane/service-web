@@ -39,6 +39,8 @@ type AuthContextValue = {
   user: any;
   sessionStatus: SessionStatus | null;
   hasProfessionalSubscription: boolean;
+  professionalPlanActive: boolean;
+  subscriptionPlan: string | null;
   loading: boolean;
   refreshSession: () => Promise<void>;
   logout: () => Promise<void>;
@@ -87,6 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStatus?.subscription?.status === "active" ||
       hasActiveStatusFlag),
   );
+
+  const professionalPlanActive =
+    sessionStatus?.subscription?.plan === "professional" &&
+    (sessionStatus?.subscription?.status === "active" || hasActiveStatusFlag);
+
+  const subscriptionPlan = sessionStatus?.subscription?.plan ?? null;
 
   const refreshSession = async () => {
     const token = localStorage.getItem("access_token");
@@ -216,10 +224,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("registered_device_token");
-    
+
     // Clear Supabase Session for chat functionality
     await clearSupabaseSession();
-    
+
     setUser(null);
     setSessionStatus(null);
   };
@@ -230,6 +238,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         sessionStatus,
         hasProfessionalSubscription,
+        professionalPlanActive,
+        subscriptionPlan,
         loading,
         refreshSession,
         logout,

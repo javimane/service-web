@@ -1,5 +1,5 @@
 "use client";
-import { X, Check, Crown, Star, Zap } from "lucide-react";
+import { X, Check, Crown, Star, Zap, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   plans,
@@ -7,6 +7,9 @@ import {
   type Plan,
 } from "../../data/plans";
 import { getSubscriptionPricesAction } from "../../app/actions/plans";
+import { createProfessionalMeAction } from "../../app/actions/professionals";
+import { useAuth } from "../../context/AuthContext";
+import { getAccessToken } from "../../utils/auth";
 import "./PlansModal.css";
 
 type PlansModalProps = {
@@ -22,6 +25,7 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
   const basicCheckoutUrl = process.env.NEXT_PUBLIC_MP_BASIC_CHECKOUT_URL;
   const premiumCheckoutUrl = process.env.NEXT_PUBLIC_MP_PREMIUM_CHECKOUT_URL;
   const [displayPlans, setDisplayPlans] = useState<Plan[]>(plans);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     getSubscriptionPricesAction()
@@ -49,7 +53,25 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
 
   if (!isOpen) return null;
 
-  const handleSelectPlan = (plan: Plan) => {
+  const { refreshSession } = useAuth();
+
+  const handleSelectPlan = async (plan: Plan) => {
+    if (plan.id === "free" || plan.id === "gratuito") {
+      setIsSubmitting(true);
+      try {
+        const token = getAccessToken();
+        await createProfessionalMeAction({ token });
+        // Refresh the client session so AuthContext picks up the new professional status
+        await refreshSession();
+        onClose();
+      } catch (error) {
+        console.error("Error al seleccionar plan gratuito:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     const checkoutUrl =
       plan.id === "profesional-premium" ? premiumCheckoutUrl : basicCheckoutUrl;
 
@@ -124,10 +146,15 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
 
               <button
                 type="button"
-                className={`plans-modal__select-btn ${plan.recommended ? "plans-modal__select-btn--primary" : ""}`}
+                className={`plans-modal__select-btn ${plan.recommended ? "plans-modal__select-btn--primary" : ""} ${isSubmitting ? "plans-modal__select-btn--loading" : ""}`}
                 onClick={() => handleSelectPlan(plan)}
+                disabled={isSubmitting}
               >
-                Elegir plan
+                {isSubmitting ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  "Elegir plan"
+                )}
               </button>
             </div>
           ))}

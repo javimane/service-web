@@ -12,6 +12,7 @@ import {
   XCircle,
   Star,
   ChevronUp,
+  Loader2,
 } from "lucide-react";
 import {
   plans as staticPlans,
@@ -21,11 +22,15 @@ import { type Subscription } from "../../../data/subscription";
 import { useAuth } from "../../../context/AuthContext";
 import "./SubscriptionSection.css";
 import { getSubscriptionPricesAction } from "@/app/actions/plans";
-import { getProfessionalSubscriptionAction } from "@/app/actions/professionals";
+import {
+  getProfessionalSubscriptionAction,
+  createProfessionalMeAction,
+} from "@/app/actions/professionals";
 import { getAccessToken } from "@/utils/auth";
 
 // Mapeo de los nombres de plan del API a los IDs internos
 const planNameToId: Record<string, string> = {
+  free: "gratuito",
   standard: "profesional-basico",
   premium: "profesional-premium",
 };
@@ -72,10 +77,11 @@ const statusIcons: Record<DisplaySubscriptionStatus, typeof Check> = {
 };
 
 export default function SubscriptionSection() {
-  const { sessionStatus } = useAuth();
+  const { sessionStatus, refreshSession } = useAuth();
   const [showPlans, setShowPlans] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [localSubscription, setLocalSubscription] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const plansRef = useRef<HTMLDivElement>(null);
 
   const { data: apiSubscription, isLoading: loadingSub } = useQuery({
@@ -170,7 +176,22 @@ export default function SubscriptionSection() {
     return "";
   };
 
-  const handleSelectPlan = (planId: string) => {
+  const handleSelectPlan = async (planId: string) => {
+    if (planId === "free" || planId === "gratuito") {
+      setIsSubmitting(true);
+      try {
+        const token = getAccessToken();
+        await createProfessionalMeAction({ token });
+        // Refresh session so AuthContext reflects the new professional status immediately
+        await refreshSession();
+      } catch (error) {
+        console.error("Error al activar plan free:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     const checkoutUrl = getCheckoutUrlByPlanId(planId);
     if (!checkoutUrl) {
       console.error(`Checkout URL no configurada para el plan: ${planId}`);
@@ -470,13 +491,20 @@ export default function SubscriptionSection() {
 
                 <button
                   type="button"
-                  className={`subscription-plans__select-btn ${activePlanId !== null && plan.id === activePlanId ? "subscription-plans__select-btn--disabled" : plan.recommended ? "subscription-plans__select-btn--primary" : ""}`}
-                  disabled={activePlanId !== null && plan.id === activePlanId}
+                  className={`subscription-plans__select-btn ${activePlanId !== null && plan.id === activePlanId ? "subscription-plans__select-btn--disabled" : plan.recommended ? "subscription-plans__select-btn--primary" : ""} ${isSubmitting ? "subscription-plans__select-btn--loading" : ""}`}
+                  disabled={
+                    (activePlanId !== null && plan.id === activePlanId) ||
+                    isSubmitting
+                  }
                   onClick={() => handleSelectPlan(plan.id)}
                 >
-                  {activePlanId !== null && plan.id === activePlanId
-                    ? "Plan actual"
-                    : "Elegir plan"}
+                  {isSubmitting ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : activePlanId !== null && plan.id === activePlanId ? (
+                    "Plan actual"
+                  ) : (
+                    "Elegir plan"
+                  )}
                 </button>
               </div>
             ))}
