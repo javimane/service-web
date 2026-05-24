@@ -118,7 +118,6 @@ export default function HomePage() {
             </form>
 
             <div className="home-hero__tags">
-              <span className="home-hero__tags-label">Popular:</span>
               {quickTags.map((tag) => (
                 <button
                   key={tag}
@@ -153,7 +152,8 @@ export default function HomePage() {
       >
         <div className="province-selector">
           <p className="province-selector__hint">
-            Mostraremos contenido destacado disponible en la provincia que elijas.
+            Mostraremos contenido destacado disponible en la provincia que
+            elijas.
           </p>
           <div className="province-selector__grid">
             {provinces.map((prov: any) => (
