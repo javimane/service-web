@@ -1,5 +1,7 @@
 :root {
-  /* Nueva Paleta de Colores */
+  /* ═══════════════════════════════════════
+     COLOR PALETTE
+     ═══════════════════════════════════════ */
   --bg-color: #ded9d9c1;
   --bg-card: #f8f9fa;
   --surface-soft: #f1f3f5;
@@ -21,20 +23,76 @@
   --input-bg: #ffffff;
   --error-color: #fa5252;
   --success-color: #40c057;
-  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
 
-  --highlight: #e94823;
-  --highlight-text: #e94823;
-  --highlight-soft: rgba(233, 72, 35, 0.1);
+  /* ═══════════════════════════════════════
+     HIGHLIGHT / ACCENT ALIASES
+     ═══════════════════════════════════════ */
+  --highlight: var(--accent-color);
+  --highlight-text: var(--accent-color);
+  --highlight-soft: var(--accent-transparent);
   --highlight-border: rgba(233, 72, 35, 0.2);
   --highlight-glow: rgba(233, 72, 35, 0.05);
   --highlight-glow-strong: rgba(233, 72, 35, 0.1);
-  --hover-border-color: #000000;
 
-  --font-family:
-    Arial, sans-serif;
+  /* ═══════════════════════════════════════
+     TYPOGRAPHY
+     ═══════════════════════════════════════ */
+  --font-primary: 'Outfit', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-  /* Layout Standards */
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+  --weight-black: 900;
+
+  --text-xs: 0.625rem;    /* 10px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.5rem;      /* 24px */
+  --text-2xl: 2rem;       /* 32px */
+  --text-3xl: 2.5rem;     /* 40px */
+  --text-4xl: 3.25rem;    /* 52px */
+
+  /* ═══════════════════════════════════════
+     SPACING SCALE (4px base = 0.25rem)
+     ═══════════════════════════════════════ */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ═══════════════════════════════════════
+     BORDER RADIUS
+     ═══════════════════════════════════════ */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* ═══════════════════════════════════════
+     SHADOWS
+     ═══════════════════════════════════════ */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
+
+  /* ═══════════════════════════════════════
+     LAYOUT STANDARDS
+     ═══════════════════════════════════════ */
   --content-max-width: 1280px;
   --section-padding-x: 1.5rem;
   --section-padding-y: 3rem;
@@ -47,7 +105,7 @@
 }
 
 body {
-  font-family: var(--font-family);
+  font-family: var(--font-primary);
   background: var(--bg-color);
   color: var(--text-primary);
   min-height: 100vh;
