@@ -55,7 +55,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--white);
   box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
 }
 
@@ -68,7 +68,7 @@
 .promo-preview__content p {
   margin: 0;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary, #fff);
   letter-spacing: -0.01em;
 }
@@ -76,14 +76,14 @@
 .promo-preview__content span {
   font-size: 0.75rem;
   color: #4facfe;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .chevron {
   margin-left: auto;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   transition: all 0.3s ease;
 }
 
@@ -109,7 +109,7 @@
   padding: 1rem;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--brand-blue-border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   gap: 1.5rem;
   transition: all 0.2s ease;
 }
@@ -127,10 +127,10 @@
   min-width: 70px;
   padding: 0.5rem;
   background: rgba(79, 172, 254, 0.1);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: #4facfe;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   gap: 4px;
 }
 
@@ -144,7 +144,7 @@
 .bank-logo-container {
   width: 50px;
   height: 50px;
-  background: white;
+  background: var(--white);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -166,14 +166,14 @@
 
 .bank-name {
   font-size: 1rem;
-  font-weight: 600;
-  color: #fff;
+  font-weight: var(--weight-semibold);
+  color: var(--white);
 }
 
 .bank-discount {
   font-size: 0.85rem;
   color: #4facfe;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .promo-cta {
@@ -182,7 +182,7 @@
   border: 1px solid rgba(79, 172, 254, 0.3);
   border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: #4facfe;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -190,13 +190,13 @@
 
 .promo-cta:hover {
   background: #4facfe;
-  color: white;
+  color: var(--white);
 }
 
 .promo-footer {
   margin-top: 1.5rem;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-tertiary);
   text-align: center;
   font-style: italic;
 }
@@ -212,14 +212,14 @@
 }
 
 [data-theme="light"] .promo-preview__content p {
-  color: #333;
+  color: var(--text-primary);
 }
 
 [data-theme="light"] .promo-day-row {
-  background: #f8f9fa;
-  border-color: #eee;
+  background: var(--bg-card);
+  border-color: var(--gray-200);
 }
 
 [data-theme="light"] .bank-name {
-  color: #333;
+  color: var(--text-primary);
 }

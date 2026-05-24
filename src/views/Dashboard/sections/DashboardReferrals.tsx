@@ -169,11 +169,6 @@ export default function DashboardReferrals() {
           </h2>
           <p
             className="dash-referrals__field-desc"
-            style={{
-              fontSize: "13px",
-              color: "rgba(0,0,0,0.5)",
-              marginTop: "-12px",
-            }}
           >
             Ingresá tu CBU o Alias para recibir los beneficios de tus referidos.
           </p>
@@ -213,16 +208,7 @@ export default function DashboardReferrals() {
             )}
 
             {bankSuccess && (
-              <div
-                className="dash-referrals__success"
-                style={{
-                  color: "#00e676",
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
+              <div className="dash-referrals__success">
                 <CheckCircle2 size={16} />
                 <span>Datos guardados correctamente</span>
               </div>
@@ -255,25 +241,15 @@ export default function DashboardReferrals() {
           >
             <div className="dash-referrals__field">
               <label>Email del referido</label>
-              <div
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
+              <div className="dash-referrals__field-input-wrap">
                 <Mail
                   size={16}
-                  style={{
-                    position: "absolute",
-                    left: "16px",
-                    color: "rgba(0,0,0,0.3)",
-                  }}
+                  className="dash-referrals__field-input-icon"
                 />
                 <input
                   type="email"
+                  className="dash-referrals__field-input--with-icon"
                   placeholder="ejemplo@correo.com"
-                  style={{ paddingLeft: "44px", width: "100%" }}
                   value={referralEmail}
                   onChange={(e) => setReferralEmail(e.target.value)}
                 />
@@ -304,17 +280,11 @@ export default function DashboardReferrals() {
           </form>
 
           <div className="dash-referrals__list-container">
-            <h3
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                marginBottom: "12px",
-              }}
-            >
+            <h3 className="dash-referrals__history-title">
               Historial
             </h3>
             {loadingReferrals ? (
-              <div style={{ textAlign: "center", padding: "20px" }}>
+              <div className="dash-referrals__loading">
                 <Loader2 className="animate-spin" />
               </div>
             ) : referrals.length === 0 ? (

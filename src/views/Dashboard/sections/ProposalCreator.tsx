@@ -413,7 +413,7 @@ export default function ProposalCreator({ onBack }) {
             
             <div className="form-group">
               <label>SELECCIONAR CLIENTE</label>
-              <div className="search-input-wrapper" style={{ position: 'relative' }}>
+              <div className="search-input-wrapper">
                 <Search size={18} className="search-icon" />
                 <input 
                   type="text" 
@@ -430,51 +430,27 @@ export default function ProposalCreator({ onBack }) {
                 <div className="dropdown-arrow">▼</div>
                 
                 {showClientDropdown && filteredClients.length > 0 && (
-                  <ul style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    background: 'var(--surface-color, #1a1a1a)',
-                    border: '1px solid var(--border-color, #333)',
-                    borderRadius: '8px',
-                    marginTop: '4px',
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    zIndex: 10,
-                    listStyle: 'none',
-                    padding: '0.5rem 0',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-                  }}>
+                  <ul className="proposal-client-dropdown">
                     {filteredClients.map((client: any) => (
                       <li 
                         key={client.id}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          borderBottom: '1px solid var(--border-color, #333)'
-                        }}
+                        className="proposal-client-item"
                         onClick={() => {
                           setClientSearch(client.display_name || client.email);
                           setSelectedClient(client);
                           setShowClientDropdown(false);
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--highlight-alpha, rgba(255,255,255,0.05))'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       >
                         {client.avatar_url ? (
-                          <img src={client.avatar_url} alt={client.display_name} style={{ width: 24, height: 24, borderRadius: '50%' }} />
+                          <img src={client.avatar_url} alt={client.display_name} className="proposal-client-avatar" />
                         ) : (
-                          <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
+                          <div className="proposal-client-avatar-placeholder">
                             {(client.display_name || client.email || 'U')[0].toUpperCase()}
                           </div>
                         )}
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.9rem', color: '#fff' }}>{client.display_name || 'Usuario'}</span>
-                          <span style={{ fontSize: '0.75rem', color: '#999' }}>{client.email}</span>
+                        <div className="proposal-client-info">
+                          <span className="proposal-client-name">{client.display_name || 'Usuario'}</span>
+                          <span className="proposal-client-email">{client.email}</span>
                         </div>
                       </li>
                     ))}
@@ -543,7 +519,7 @@ export default function ProposalCreator({ onBack }) {
               </div>
             </div>
             
-            <div className="form-row" style={{ marginTop: '1rem' }}>
+            <div className="form-row proposal-form-row">
               <div className="form-group">
                 <label>TASA DE IVA</label>
                 <div className="select-input-wrapper">
@@ -561,7 +537,7 @@ export default function ProposalCreator({ onBack }) {
               </div>
             </div>
 
-            <div className="form-row" style={{ marginTop: '1rem' }}>
+            <div className="form-row proposal-form-row">
               <div className="form-group">
                 <label>MÉTODO DE IVA</label>
                 <div className="select-input-wrapper">

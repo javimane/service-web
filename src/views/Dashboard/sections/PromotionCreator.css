@@ -19,7 +19,7 @@
 
 .promo-creator__label {
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--highlight);
   letter-spacing: 0.12em;
   display: block;
@@ -28,7 +28,7 @@
 
 .promo-creator__title {
   font-size: 1.8rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--text-primary);
   letter-spacing: -0.02em;
 }
@@ -38,7 +38,7 @@
   align-items: center;
   gap: 8px;
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   letter-spacing: 0.06em;
   background: var(--bg-card);
@@ -51,7 +51,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #fbbf24;
+  background: var(--amber-color);
 }
 
 /* ===== BODY GRID ===== */
@@ -92,7 +92,7 @@
 }
 
 .promo-card--error {
-  border-color: #ef4444;
+  border-color: var(--red-accent);
 }
 
 .promo-card--half {
@@ -113,7 +113,7 @@
   align-items: center;
   gap: 10px;
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
 }
 
@@ -130,7 +130,7 @@
 
 .promo-field__label {
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   letter-spacing: 0.08em;
 }
@@ -140,7 +140,7 @@
 .promo-field__select {
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   color: var(--text-primary);
   font-size: 0.88rem;
@@ -159,15 +159,17 @@
 .promo-field--error .promo-field__input,
 .promo-field--error .promo-field__textarea,
 .promo-field--error .promo-field__select {
-  border-color: #ef4444;
+  border-color: var(--red-accent);
   background: rgba(239, 68, 68, 0.02);
 }
 
 .promo-field__error {
-  color: #ef4444;
+  color: var(--red-accent);
   font-size: 0.65rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   margin-top: 4px;
+  margin-bottom: 10px;
+  display: block;
 }
 
 .promo-field__input::placeholder,
@@ -204,7 +206,7 @@
   position: absolute;
   right: 14px;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
   pointer-events: none;
 }
@@ -270,12 +272,12 @@
 
 .promo-switch input:checked + .promo-switch__slider:before {
   transform: translateX(22px);
-  background-color: #000;
+  background-color: var(--text-primary);
 }
 
 .promo-switch__label {
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -284,7 +286,7 @@
 /* ===== DROPZONE ===== */
 .promo-dropzone {
   border: 2px dashed var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 2.5rem 1.5rem;
   display: flex;
   flex-direction: column;
@@ -318,10 +320,14 @@
   color: var(--text-secondary);
 }
 
+.promo-dropzone__file-input {
+  display: none;
+}
+
 /* Image Preview */
 .promo-image-preview {
   position: relative;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border-color);
 }
@@ -339,7 +345,7 @@
   right: 10px;
   background: rgba(0, 0, 0, 0.6);
   border: none;
-  color: #fff;
+  color: var(--white);
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -383,9 +389,9 @@
   top: 12px;
   left: 12px;
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
   font-size: 0.55rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   letter-spacing: 0.1em;
   padding: 4px 10px;
   border-radius: 6px;
@@ -400,7 +406,7 @@
 
 .promo-preview-card__content h3 {
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   margin: 0;
 }
@@ -421,13 +427,13 @@
 
 .promo-preview-card__offer {
   font-size: 1.2rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--highlight);
 }
 
 .promo-preview-card__studio {
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   letter-spacing: 0.1em;
 }
@@ -439,7 +445,7 @@
   gap: 10px;
   color: var(--text-secondary);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .promo-code-display__label {
@@ -465,7 +471,7 @@
 
 .promo-creator__last-edit {
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
   letter-spacing: 0.04em;
 }
@@ -483,7 +489,7 @@
   padding: 12px 22px;
   border-radius: 14px;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: all 0.2s;
@@ -503,8 +509,8 @@
 .promo-btn--primary {
   background: var(--highlight);
   border: none;
-  color: #000;
-  font-weight: 900;
+  color: var(--text-primary);
+  font-weight: var(--weight-black);
 }
 
 .promo-btn--primary:hover {
@@ -515,13 +521,13 @@
 .promo-btn--preview {
   background: rgba(239, 227, 58, 0.714);
   border: 1px solid rgba(5, 5, 13, 0.2);
-  color: #666761;
+  color: var(--text-secondary);
 }
 
 .promo-btn--preview:hover {
   background: rgba(239, 227, 58, 0.714);
-  border-color: #08090f;
-  color: #120a0a;
+  border-color: var(--black);
+  color: var(--black);
 }
 
 /* ===== RESPONSIVE ===== */
@@ -623,7 +629,7 @@
 
 /* Coupon Card Design */
 .coupon-card {
-  background: white;
+  background: var(--white);
   border-radius: 40px;
   overflow: hidden;
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
@@ -633,12 +639,12 @@
 }
 
 .coupon-card__header {
-  background: #ffb703; /* Vibrant Orange as in image */
+  background: var(--amber-color);
   padding: 30px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .coupon-ticket-icon {
@@ -647,14 +653,14 @@
 
 .coupon-card__discount {
   font-size: 2.5rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   letter-spacing: -0.02em;
 }
 
 .coupon-card__image {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #f1f5f9;
+  background: var(--slate-100);
 }
 
 .coupon-card__image img {
@@ -669,7 +675,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #cbd5e1;
+  color: var(--slate-300);
 }
 
 .coupon-card__body {
@@ -683,21 +689,21 @@
 
 .coupon-card__title {
   font-size: 1.75rem;
-  font-weight: 900;
-  color: #0f172a;
+  font-weight: var(--weight-black);
+  color: var(--slate-900);
   margin: 0;
   line-height: 1.2;
 }
 
 .coupon-card__description {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--slate-500);
   line-height: 1.6;
   margin: 0;
 }
 
 .coupon-card__info-box {
-  background: #f8fafc;
+  background: var(--slate-50);
   border-radius: 20px;
   padding: 24px;
   display: flex;
@@ -709,22 +715,22 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #334155;
+  color: var(--slate-700);
   font-size: 0.9rem;
 }
 
 .coupon-card__info-item svg {
-  color: #64748b;
+  color: var(--slate-500);
   flex-shrink: 0;
 }
 
 .coupon-card__info-item strong {
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: var(--weight-extrabold);
+  color: var(--slate-900);
 }
 
 .coupon-card__verify-box {
-  border: 2px dashed #fbbd23;
+  border: 2px dashed var(--amber-color);
   background: #fffcf0;
   border-radius: 20px;
   padding: 24px;
@@ -737,15 +743,15 @@
 
 .verify-label {
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: #a16207;
   letter-spacing: 0.1em;
 }
 
 .verify-code {
   font-size: 2rem;
-  font-weight: 900;
-  color: #0f172a;
+  font-weight: var(--weight-black);
+  color: var(--slate-900);
   letter-spacing: 0.05em;
   font-family: 'Outfit', sans-serif;
 }
@@ -756,7 +762,7 @@
   border-radius: 20px;
   padding: 18px;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -765,7 +771,7 @@
 }
 
 .coupon-card__download-btn--success {
-  background: #10b981; /* Emerald Green */
+  background: var(--teal-accent);
   cursor: pointer;
 }
 
@@ -776,13 +782,13 @@
 }
 
 .coupon-card__download-btn--locked {
-  background: #ef4444; /* Red */
+  background: var(--red-accent);
   cursor: not-allowed;
   opacity: 0.8;
 }
 
 .coupon-card__download-btn--locked:hover {
-  background: #dc2626;
+  background: var(--error-hover);
 }
 
 .coupon-card__lock-msg {
@@ -790,17 +796,17 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--slate-100);
+  color: var(--slate-500);
   padding: 16px;
   border-radius: 20px;
   font-size: 0.85rem;
-  font-weight: 600;
-  border: 1px solid #e2e8f0;
+  font-weight: var(--weight-semibold);
+  border: 1px solid var(--slate-200);
 }
 
 .coupon-card__lock-msg svg {
-  color: #94a3b8;
+  color: var(--slate-400);
 }
 
 .coupon-card__footer {
@@ -812,13 +818,13 @@
 }
 
 .coupon-card__footer svg {
-  color: #94a3b8;
+  color: var(--slate-400);
 }
 
 .coupon-card__footer span {
   font-size: 0.8rem;
-  font-weight: 600;
-  color: #94a3b8;
+  font-weight: var(--weight-semibold);
+  color: var(--slate-400);
 }
 
 @keyframes fadeIn {
@@ -827,8 +833,8 @@
 }
 /* ===== PUBLIC PROMO PREVIEW (HUB STYLE) ===== */
 .public-promo-preview {
-  background: white;
-  border-radius: 32px;
+  background: var(--white);
+  border-radius: var(--radius-3xl);
   overflow: hidden;
   box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
   width: 100%;
@@ -850,12 +856,12 @@
   position: absolute;
   bottom: -20px;
   right: 40px;
-  background: #ffb703;
-  color: #000;
+  background: var(--amber-color);
+  color: var(--text-primary);
   padding: 15px 30px;
   border-radius: 20px;
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   box-shadow: 0 10px 30px rgba(255, 183, 3, 0.4);
   z-index: 10;
 }
@@ -883,7 +889,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--slate-100);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -903,21 +909,21 @@
 
 .professional-name {
   font-size: 0.85rem;
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: var(--weight-extrabold);
+  color: var(--slate-900);
 }
 
 .professional-label {
   font-size: 0.6rem;
-  font-weight: 700;
-  color: #10b981;
+  font-weight: var(--weight-bold);
+  color: var(--teal-accent);
   letter-spacing: 0.05em;
 }
 
 .public-promo-preview__title {
   font-size: 2.2rem;
-  font-weight: 900;
-  color: #0f172a;
+  font-weight: var(--weight-black);
+  color: var(--slate-900);
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin: 0;
@@ -926,18 +932,18 @@
 .public-promo-preview__code {
   font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--accent-color);
   background: var(--accent-transparent);
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   align-self: flex-start;
   margin-top: 4px;
 }
 
 .public-promo-preview__description {
   font-size: 1.1rem;
-  color: #475569;
+  color: var(--slate-600);
   line-height: 1.7;
   margin: 0;
 }
@@ -946,20 +952,20 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  background: #f8fafc;
+  background: var(--slate-50);
   padding: 24px;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
 }
 
 .detail-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  color: #334155;
+  color: var(--slate-700);
 }
 
 .detail-item svg {
-  color: #64748b;
+  color: var(--slate-500);
   margin-top: 4px;
 }
 
@@ -971,15 +977,15 @@
 
 .detail-text label {
   font-size: 0.65rem;
-  font-weight: 800;
-  color: #94a3b8;
+  font-weight: var(--weight-extrabold);
+  color: var(--slate-400);
   letter-spacing: 0.08em;
 }
 
 .detail-text span {
   font-size: 0.9rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: var(--weight-bold);
+  color: var(--slate-800);
 }
 
 .public-promo-preview__footer {
@@ -992,13 +998,13 @@
 
 .public-promo-preview__cta {
   width: 100%;
-  background: #0f172a;
-  color: white;
+  background: var(--slate-900);
+  color: var(--white);
   border: none;
   padding: 20px;
   border-radius: 20px;
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1008,27 +1014,27 @@
 }
 
 .public-promo-preview__cta:hover {
-  background: #1e293b;
+  background: var(--slate-800);
   transform: translateY(-2px);
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
 }
 
 .public-promo-preview__cta--disabled {
-  background: #64748b;
+  background: var(--slate-500);
   cursor: not-allowed;
   opacity: 0.8;
 }
 
 .public-promo-preview__cta--disabled:hover {
-  background: #475569;
+  background: var(--slate-600);
   transform: none;
   box-shadow: none;
 }
 
 .public-promo-preview__hint {
   font-size: 0.8rem;
-  color: #94a3b8;
-  font-weight: 600;
+  color: var(--slate-400);
+  font-weight: var(--weight-semibold);
 }
 
 @media (max-width: 640px) {

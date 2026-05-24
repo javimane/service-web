@@ -20,13 +20,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: var(--slate-100);
+  border: 1px solid var(--slate-200);
   padding: 6px 12px;
-  border-radius: 99px;
+  border-radius: var(--radius-full);
   font-size: 0.8rem;
-  font-weight: 600;
-  color: #64748b;
+  font-weight: var(--weight-semibold);
+  color: var(--slate-500);
   cursor: pointer;
   transition: all 0.2s ease;
   width: fit-content;
@@ -34,7 +34,7 @@
 
 .promotions-section__location-btn:hover {
   background: #e2e8f0;
-  color: #1e293b;
+  color: var(--slate-800);
 }
 
 .promotions-section__loading,
@@ -45,8 +45,8 @@
   justify-content: center;
   padding: 4rem 2rem;
   text-align: center;
-  background: #f8fafc;
-  border-radius: 24px;
+  background: var(--slate-50);
+  border-radius: var(--radius-xl);
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -54,27 +54,27 @@
 .promotions-section__empty h3 {
   margin: 0;
   font-size: 1.25rem;
-  color: #1e293b;
+  color: var(--slate-800);
 }
 
 .promotions-section__empty p {
   margin: 0;
-  color: #64748b;
+  color: var(--slate-500);
   max-width: 300px;
 }
 
 .empty-icon {
-  color: #fbbf24;
+  color: var(--amber-color);
   opacity: 0.5;
 }
 
 .change-loc-btn {
-  background: #1e293b;
-  color: white;
+  background: var(--slate-800);
+  color: var(--white);
   border: none;
   padding: 10px 20px;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   margin-top: 0.5rem;
 }
@@ -89,7 +89,7 @@
 
 .province-selector__hint {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--slate-500);
   margin: 0;
 }
 
@@ -100,28 +100,28 @@
 }
 
 .province-chip {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: var(--slate-100);
+  border: 1px solid var(--slate-200);
   padding: 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.85rem;
-  font-weight: 500;
-  color: #475569;
+  font-weight: var(--weight-medium);
+  color: var(--slate-600);
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
 }
 
 .province-chip:hover {
-  border-color: #fbbf24;
+  border-color: var(--amber-color);
   background: #fffbeb;
 }
 
 .province-chip.active {
-  background: #fbbf24;
+  background: var(--amber-color);
   border-color: #fbbf24;
-  color: #1e293b;
-  font-weight: 700;
+  color: var(--slate-800);
+  font-weight: var(--weight-bold);
 }
 
 /* ─── Professional Mini In Coupon ────────────────────────── */
@@ -148,13 +148,13 @@
 
 .prof-name {
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   line-height: 1.1;
 }
 
 .prof-label {
   font-size: 0.6rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   opacity: 0.8;
   letter-spacing: 0.05em;
 }
@@ -238,25 +238,25 @@
 .promo-modal__coupon {
   width: 100%;
   max-width: 420px;
-  background: #ffffff;
-  border-radius: 28px;
+  background: var(--white);
+  border-radius: var(--radius-2xl);
   overflow: hidden;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
   position: relative;
 }
 
 .promo-modal__top-banner {
-  background: #fbbf24;
+  background: var(--amber-color);
   padding: 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #1e293b;
+  color: var(--slate-800);
 }
 
 .promo-modal__offer-badge {
   font-size: 1.75rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   letter-spacing: -0.02em;
 }
 
@@ -282,14 +282,14 @@
 .promo-modal__title {
   margin: 0;
   font-size: 1.35rem;
-  font-weight: 800;
-  color: #1e293b;
+  font-weight: var(--weight-extrabold);
+  color: var(--slate-800);
 }
 
 .promo-modal__description {
   margin: 0;
   font-size: 1rem;
-  color: #475569;
+  color: var(--slate-600);
   line-height: 1.5;
 }
 
@@ -299,7 +299,7 @@
   gap: 8px;
   background: #f8fafc;
   padding: 12px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .promo-modal__detail-item {
@@ -307,13 +307,13 @@
   align-items: center;
   gap: 10px;
   font-size: 0.9rem;
-  color: #1e293b;
+  color: var(--slate-800);
 }
 
 .promo-modal__code-box {
   background: #fffbeb;
-  border: 2px dashed #fbbf24;
-  border-radius: 16px;
+  border: 2px dashed var(--amber-color);
+  border-radius: var(--radius-lg);
   padding: 1rem;
   text-align: center;
   display: flex;
@@ -323,26 +323,26 @@
 
 .promo-modal__code-label {
   font-size: 0.7rem;
-  font-weight: 700;
-  color: #d97706;
+  font-weight: var(--weight-bold);
+  color: var(--amber-dark);
   letter-spacing: 0.1em;
 }
 
 .promo-modal__code-value {
   font-size: 1.5rem;
-  font-weight: 900;
-  color: #1e293b;
+  font-weight: var(--weight-black);
+  color: var(--slate-800);
   letter-spacing: 0.05em;
   font-family: monospace;
 }
 
 .promo-modal__download-btn {
   background: #1e293b;
-  color: #ffffff;
+  color: var(--white);
   border: none;
   padding: 1rem;
-  border-radius: 16px;
-  font-weight: 700;
+  border-radius: var(--radius-lg);
+  font-weight: var(--weight-bold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -354,14 +354,14 @@
 }
 
 .promo-modal__download-btn:hover {
-  background: #0f172a;
+  background: var(--slate-900);
   transform: translateY(-2px);
 }
 
 .promo-modal__footer-text {
   margin: 0;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--slate-400);
   display: flex;
   align-items: center;
   justify-content: center;

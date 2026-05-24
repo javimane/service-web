@@ -20,7 +20,7 @@
 
 .items-table-header span {
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   letter-spacing: 0.05em;
 }
@@ -54,7 +54,7 @@
   background: var(--input-bg);
   border: 1px solid var(--border-color);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 0.9rem;
 }
@@ -67,7 +67,7 @@
 .row-delete-btn {
   background: transparent;
   border: none;
-  color: #ef4444;
+  color: var(--red-accent);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -85,10 +85,10 @@
   border: 1px dashed var(--border-color);
   color: var(--text-secondary);
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   width: 100%;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -117,18 +117,18 @@
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
 }
 
 .btn-submit {
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
   border: none;
   padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 700;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-bold);
   cursor: pointer;
 }
 
@@ -177,7 +177,7 @@
   border-radius: 11px;
   color: var(--text-secondary);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
@@ -204,10 +204,10 @@
   padding: 9px 14px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
@@ -237,7 +237,7 @@
   gap: 10px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   transition: border-color 0.2s;
 }
@@ -267,12 +267,12 @@
 
 .add-items__search-btn {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   border: none;
   padding: 10px 18px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-family: var(--font-family);
   cursor: pointer;
   white-space: nowrap;
@@ -321,7 +321,7 @@
   padding: 10px 12px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   transition: all 0.15s;
 }
 
@@ -337,7 +337,7 @@
 .add-items__product-img {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
   flex-shrink: 0;
   border: 1px solid var(--border-color);
@@ -353,7 +353,7 @@
 
 .add-items__product-name {
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -362,13 +362,13 @@
 
 .add-items__product-price {
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--accent-color);
 }
 
 .add-items__product-cat {
   font-size: 0.65rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -381,7 +381,7 @@
   padding: 6px 14px;
   border-radius: 10px;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-family: var(--font-family);
   cursor: pointer;
   white-space: nowrap;
@@ -391,13 +391,13 @@
 
 .add-items__product-add-btn:hover:not(:disabled) {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
 }
 
 .add-items__product-add-btn.added {
   background: rgba(34, 197, 94, 0.1);
-  border-color: #22c55e;
-  color: #22c55e;
+  border-color: var(--green-accent);
+  color: var(--green-accent);
   cursor: default;
 }
 
@@ -412,7 +412,7 @@
 
 .add-items__selected-title {
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -431,7 +431,7 @@
 .add-items__selected-name {
   flex: 1;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -448,7 +448,7 @@
 
 .add-items__selected-qty label {
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
 }
 
@@ -456,7 +456,7 @@
   width: 52px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
   color: var(--text-primary);
   font-size: 0.82rem;
@@ -471,7 +471,7 @@
 
 .add-items__selected-total {
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--accent-color);
   flex-shrink: 0;
   min-width: 80px;

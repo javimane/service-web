@@ -11,7 +11,6 @@ import Footer from "../../components/Footer/Footer";
 import ServiceCard from "../../components/Cards/ServiceCard";
 import ServicesFilters from "./ServicesFilters";
 import SEO from "../../components/SEO/SEO";
-import { useTheme } from "../../context/ThemeContext";
 import { ROUTES } from "../../routes/paths";
 import "./ServicesPage.css";
 
@@ -27,7 +26,6 @@ export default function ServicesPage() {
     onlyVerified: false,
   });
   const [viewMode, setViewMode] = useState("grid");
-  const { theme } = useTheme();
   const router = useRouter();
 
   const {
@@ -105,7 +103,7 @@ export default function ServicesPage() {
   }, [categories, filters.categoryId]);
 
   return (
-    <div className={`services-redesign ${theme === "dark" ? "dark" : ""}`}>
+    <div className="services-redesign">
       <SEO
         title={
           currentCategoryName

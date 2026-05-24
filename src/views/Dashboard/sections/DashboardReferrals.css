@@ -15,22 +15,22 @@
 
 .dash-referrals__header {
   padding-bottom: 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dash-referrals__label {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   letter-spacing: 0.1em;
-  color: #e94823;
+  color: var(--accent-color);
   display: block;
   margin-bottom: 4px;
 }
 
 .dash-referrals__title {
   font-size: 32px;
-  font-weight: 800;
-  color: #000000;
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -41,20 +41,20 @@
 }
 
 .dash-referrals__section {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 24px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
   padding: 32px;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-card);
 }
 
 .dash-referrals__section-title {
   font-size: 18px;
-  font-weight: 700;
-  color: #000000;
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
@@ -62,7 +62,14 @@
 }
 
 .dash-referrals__section-title svg {
-  color: #e94823;
+  color: var(--accent-color);
+}
+
+.dash-referrals__field-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  margin-top: -12px;
 }
 
 .dash-referrals__form {
@@ -79,38 +86,57 @@
 
 .dash-referrals__field label {
   font-size: 13px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.6);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
 }
 
 .dash-referrals__field input {
-  background: #f8f9fa;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
-  color: #000000;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
   padding: 14px 16px;
   font-size: 15px;
   outline: none;
   transition: all 0.2s ease;
 }
 
+.dash-referrals__field-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dash-referrals__field-input-icon {
+  position: absolute;
+  left: 16px;
+  color: var(--text-secondary);
+  opacity: 0.3;
+}
+
+.dash-referrals__field-input--with-icon {
+  padding-left: 44px;
+  width: 100%;
+}
+
 .dash-referrals__field input:focus {
-  border-color: #e94823;
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(233, 72, 35, 0.05);
+  border-color: var(--accent-color);
+  background: var(--input-bg);
+  box-shadow: 0 0 0 4px var(--highlight-glow);
 }
 
 .dash-referrals__field input::placeholder {
-  color: rgba(0, 0, 0, 0.3);
+  color: var(--text-secondary);
+  opacity: 0.5;
 }
 
 .dash-referrals__btn {
   padding: 14px 24px;
-  background: #e94823;
-  color: white;
+  background: var(--accent-color);
+  color: var(--white);
   border: none;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -121,7 +147,7 @@
 }
 
 .dash-referrals__btn:hover {
-  background: #d13d1c;
+  background: var(--accent-hover);
   transform: translateY(-2px);
 }
 
@@ -131,14 +157,22 @@
   transform: none;
 }
 
+.dash-referrals__success {
+  color: var(--success-color);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .dash-referrals__error {
   padding: 12px 16px;
-  background: #ffffff;
-  border: 1px solid #fa5252;
-  border-radius: 12px;
-  color: #fa5252;
+  background: var(--input-bg);
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-md);
+  color: var(--error-color);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -167,38 +201,51 @@
 }
 
 .dash-referrals__referrals-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--border-color);
   border-radius: 10px;
+}
+
+.dash-referrals__history-title {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  margin-bottom: 12px;
+}
+
+.dash-referrals__loading {
+  text-align: center;
+  padding: 20px;
 }
 
 .dash-referrals__referral-item {
   padding: 12px 16px;
-  background: #f8f9fa;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color);
 }
 
 .dash-referrals__referral-email {
   font-size: 14px;
-  color: #000000;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
 }
 
 .dash-referrals__referral-date {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.4);
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
 .dash-referrals__empty {
   text-align: center;
   padding: 24px;
-  color: rgba(0, 0, 0, 0.3);
+  color: var(--text-secondary);
   font-size: 14px;
-  border: 2px dashed rgba(0, 0, 0, 0.05);
-  border-radius: 16px;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  opacity: 0.5;
 }
 
 @media (max-width: 900px) {

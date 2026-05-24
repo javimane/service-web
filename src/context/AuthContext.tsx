@@ -17,6 +17,7 @@ import {
   notificationStorage,
   mapFirebasePayloadToNotification,
 } from "../services/notificationStorage";
+import "./AuthContext.css";
 
 type SessionStatus = {
   status?: boolean | string;
@@ -249,27 +250,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     >
       {children}
       {foregroundNotification && (
-        <div
-          style={{
-            position: "fixed",
-            right: 16,
-            bottom: 16,
-            zIndex: 9999,
-            maxWidth: 360,
-            background: "#111827",
-            color: "#f9fafb",
-            borderRadius: 12,
-            padding: "12px 14px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
-          role="status"
-          aria-live="polite"
-        >
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+        <div className="foreground-notification" role="status" aria-live="polite">
+          <div className="foreground-notification__title">
             {foregroundNotification.title}
           </div>
-          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
+          <div className="foreground-notification__body">
             {foregroundNotification.body}
           </div>
         </div>

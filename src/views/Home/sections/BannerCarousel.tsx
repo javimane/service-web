@@ -84,7 +84,7 @@ export default function BannerCarousel() {
       <div className="banner-carousel__container container">
         <div
           className="banner-carousel__track"
-          style={{ transform: `translateX(-${current * 100}%)` }}
+          style={{ '--slide-offset': `translateX(-${current * 100}%)` } as React.CSSProperties}
         >
           {BANNERS.map((banner) => {
             const Icon = banner.icon;
@@ -92,7 +92,7 @@ export default function BannerCarousel() {
               <div
                 key={banner.id}
                 className={`banner-slide ${banner.specialClass || ""}`}
-                style={{ background: banner.bg }}
+                style={{ '--slide-bg': banner.bg } as React.CSSProperties}
               >
                 <div className="banner-slide__content">
                   <div className="banner-slide__info">

@@ -14,7 +14,7 @@
 
 .nearby-services__title {
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--text-primary);
   margin: 0;
   letter-spacing: -0.03em;
@@ -127,20 +127,20 @@
 
 .prof-name {
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   margin: 0;
 }
 
 .prof-label {
   font-size: 0.75rem;
   color: var(--highlight);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
 }
 
 .service-modal__price {
   font-size: 1.5rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--highlight);
 }
 
@@ -152,7 +152,7 @@
 
 .service-name {
   font-size: 1.4rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   margin: 0;
 }
 
@@ -173,7 +173,7 @@
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
 }
 
@@ -186,8 +186,8 @@
 
 .btn-view-profile, .btn-request-msg {
   padding: 16px;
-  border-radius: 12px;
-  font-weight: 800;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-extrabold);
   font-size: 0.85rem;
   display: flex;
   align-items: center;
@@ -206,7 +206,7 @@
 .btn-request-msg {
   background: var(--highlight);
   border: 1px solid transparent;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .btn-view-profile:hover {

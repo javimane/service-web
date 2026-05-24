@@ -60,14 +60,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
-  font-weight: 900;
+  color: var(--text-primary);
+  font-weight: var(--weight-black);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .verified-badge {
-  background: #22c55e !important;
-  color: #fff !important;
+  background: var(--green-accent) !important;
+  color: var(--white) !important;
 }
 
 .reel-indicator {
@@ -82,7 +82,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--white);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
@@ -104,7 +104,7 @@
 
 .name {
   font-size: 2.5rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   line-height: 1;
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -113,7 +113,7 @@
 
 .title {
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--highlight);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -153,14 +153,14 @@
 
 .stat-value {
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
 }
 
 .stat-label {
   display: block;
   font-size: 0.55rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   letter-spacing: 0.05em;
 }
@@ -181,10 +181,10 @@
   padding: 12px 18px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   transition: all 0.2s ease;
 }
 
@@ -202,11 +202,11 @@
 
 .cta-button.message-btn {
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
   border: 1px solid transparent;
   padding: 20px;
   border-radius: 20px;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   font-size: 0.9rem;
   display: flex;
   align-items: center;
@@ -222,7 +222,7 @@
 
 .cta-button.message-btn:hover {
   transform: translateY(-4px);
-  border-color: #000;
+  border-color: var(--black);
   box-shadow: 0 15px 40px var(--highlight-glow-strong);
 }
 
@@ -240,7 +240,7 @@
 
 .location-info span {
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   text-transform: uppercase;
   color: var(--text-secondary);
   letter-spacing: 0.05em;
@@ -262,7 +262,7 @@
 
 .scope-of-work h3 {
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--highlight);
   letter-spacing: 0.1em;
   margin-bottom: 16px;
@@ -289,7 +289,7 @@
 
 .province-header strong {
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   text-transform: uppercase;
 }
 
@@ -306,7 +306,7 @@
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   transition: all 0.2s ease;
 }
 
@@ -330,7 +330,7 @@
 
 .section-header h2 {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   letter-spacing: 0.05em;
 }
 
@@ -338,10 +338,10 @@
   background: transparent;
   color: var(--accent-color);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   letter-spacing: 0.08em;
   padding: 8px 16px;
-  border-radius: 99px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--accent-transparent);
   transition: all 0.2s ease;
   cursor: pointer;
@@ -349,7 +349,7 @@
 
 .ver-todo:hover {
   background: var(--accent-transparent);
-  border-color: #000;
+  border-color: var(--black);
 }
 
 .portfolio-grid {
@@ -373,7 +373,7 @@
 }
 
 .portfolio-item:hover {
-  border-color: #000;
+  border-color: var(--black);
 }
 
 .portfolio-item:hover img {
@@ -407,15 +407,16 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
-  background: #000;
+  background: var(--black);
+  cursor: pointer;
 }
 
 .video-element {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  accent-color: #e94823;
-  background: #000;
+  accent-color: var(--accent-color);
+  background: var(--black);
 }
 
 .video-stats-overlay {
@@ -432,14 +433,15 @@
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
   padding: 6px 12px;
-  border-radius: 99px;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #fff;
+  color: var(--white);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
 }
 
 .video-content {
@@ -451,7 +453,7 @@
 
 .video-title {
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   margin: 0;
   letter-spacing: -0.01em;
@@ -469,7 +471,7 @@
   cursor: pointer;
   color: var(--text-secondary);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   transition: all 0.2s ease;
 }
 
@@ -525,7 +527,7 @@
 
 .video-expanded .reel-video-full {
   max-height: 70vh;
-  background: #000;
+  background: var(--black);
 }
 
 .video-expanded__info {
@@ -536,7 +538,7 @@
 
 .video-expanded__info h3 {
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   margin-bottom: 8px;
 }
 
@@ -580,6 +582,7 @@
   flex-direction: column;
   gap: 12px;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .service-card-mini:hover {
@@ -597,7 +600,7 @@
 
 .service-card-mini__header h3 {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   line-height: 1.2;
 }
 
@@ -605,9 +608,9 @@
   background: var(--accent-transparent);
   color: var(--accent-color);
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   white-space: nowrap;
 }
 
@@ -623,17 +626,17 @@
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   padding: 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .select-service-btn:hover {
   background: var(--accent-color);
-  color: #fff;
-  border-color: #000;
+  color: var(--white);
+  border-color: var(--black);
 }
 
 /* Modal Services */
@@ -650,13 +653,13 @@
   padding: 20px;
   background: var(--bg-color);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   gap: 20px;
 }
 
 .service-info h3 {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   margin-bottom: 4px;
 }
 
@@ -666,7 +669,7 @@
 }
 
 .service-price {
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--accent-color);
   font-size: 1.1rem;
 }
@@ -721,7 +724,7 @@
 
 .author-info h3 {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   margin-bottom: 4px;
 }
 
@@ -753,7 +756,7 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .modal-testimonials-list {
@@ -764,6 +767,10 @@
 
 .testimonial-card.modal-version {
   border-color: var(--accent-transparent);
+}
+
+.review-modal__file-input {
+  display: none;
 }
 
 .empty-msg {
@@ -803,8 +810,8 @@
   width: 100%;
   max-width: 450px;
   aspect-ratio: 9/16;
-  background: #000;
-  border-radius: 24px;
+  background: var(--black);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: 0 0 100px rgba(188, 24, 136, 0.3);
 }
@@ -824,7 +831,7 @@
   background: rgba(255, 255, 255, 0.1);
   border: none;
   border-radius: 50%;
-  color: #fff;
+  color: var(--white);
   font-size: 24px;
   display: flex;
   align-items: center;
@@ -844,7 +851,7 @@
   text-align: center;
   padding: 60px;
   background: var(--bg-card);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   border: 1px dashed var(--border-color);
   color: var(--text-secondary);
   grid-column: 1 / -1;
@@ -852,13 +859,13 @@
 
 .empty-reviews p {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 /* Testimonial Card Image */
 .testimonial-card__image-wrapper {
   margin-top: 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--border-color);
 }
@@ -881,9 +888,9 @@
   min-width: 280px;
   width: 280px;
   aspect-ratio: 4 / 5;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  background: #000;
+  background: var(--black);
   border: 1px solid var(--border-color);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -891,7 +898,7 @@
 
 .reel-card-profile:hover {
   transform: translateY(-5px);
-  border-color: #000;
+  border-color: var(--black);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
@@ -899,8 +906,8 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  accent-color: #e94823;
-  background: #000;
+  accent-color: var(--accent-color);
+  background: var(--black);
 }
 
 .reel-card-profile__overlay {
@@ -913,8 +920,8 @@
   position: absolute;
   bottom: 12px;
   left: 12px;
-  color: #fff;
-  font-weight: 700;
+  color: var(--white);
+  font-weight: var(--weight-bold);
   font-size: 0.85rem;
   z-index: 2;
   text-transform: uppercase;
@@ -935,7 +942,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--white);
   opacity: 0;
   transition: all 0.3s ease;
 }
@@ -1055,7 +1062,7 @@
     width: 100%;
     padding: 14px;
     font-size: 0.82rem;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     margin-top: 0;
     max-width: 460px;
   }
@@ -1095,7 +1102,7 @@
   .testimonial-card {
     width: 330px;
     padding: 22px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
   }
 
   .testimonial-text {
@@ -1150,7 +1157,7 @@
 
   .stat-item {
     padding: 8px 6px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
   }
 
   .stat-value {
@@ -1400,6 +1407,7 @@
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
 }
 
 .promo-card-premium:hover {
@@ -1422,18 +1430,18 @@
 }
 
 .promo-badge {
-  background: #ff4757;
-  color: #fff;
+  background: var(--red-accent);
+  color: var(--white);
   padding: 4px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   width: fit-content;
 }
 
 .promo-info h3 {
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   margin: 0;
 }
 
@@ -1446,13 +1454,13 @@
 
 .promo-info .expires {
   font-size: 0.75rem;
-  color: #999;
-  font-weight: 600;
+  color: var(--gray-400);
+  font-weight: var(--weight-semibold);
 }
 
 .bank-promo-card-premium {
   background: #f8f9fa;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 24px;
   display: flex;
@@ -1473,24 +1481,24 @@
 }
 
 .bank-name {
-  font-weight: 800;
-  color: #333;
+  font-weight: var(--weight-extrabold);
+  color: var(--gray-700);
   font-size: 0.9rem;
   text-transform: uppercase;
 }
 
 .discount {
-  background: #e94823;
-  color: #fff;
+  background: var(--accent-color);
+  color: var(--white);
   padding: 4px 10px;
   border-radius: 10px;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   font-size: 1.1rem;
 }
 
 .bank-promo-card-premium .description {
   font-size: 0.95rem;
-  color: #666;
+  color: var(--gray-500);
   line-height: 1.5;
   margin: 0;
 }
@@ -1501,7 +1509,7 @@
   align-items: center;
   margin-top: auto;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: #999;
 }
 
@@ -1522,7 +1530,7 @@
   width: 32px;
   height: 32px;
   background: #22c55e;
-  color: #fff;
+  color: var(--white);
   border: 3px solid var(--bg-card);
   border-radius: 50%;
   display: flex;
@@ -1568,19 +1576,19 @@
 }
 
 .promos-btn {
-  background: linear-gradient(135deg, #e94823 0%, #ff4757 50%, #e94823 100%);
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--red-accent) 50%, var(--accent-color) 100%);
   background-size: 200% auto;
   color: #fff !important;
   border: none !important;
   padding: 22px;
-  border-radius: 24px;
-  font-weight: 900;
+  border-radius: var(--radius-xl);
+  font-weight: var(--weight-black);
   font-size: 0.95rem;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  box-shadow: 0 10px 25px rgba(233, 72, 35, 0.4);
+  box-shadow: 0 10px 25px var(--highlight-glow-strong);
   transition: all 0.4s ease;
   margin-bottom: 12px;
   cursor: pointer;
@@ -1590,7 +1598,7 @@
 .promos-btn:hover {
   transform: translateY(-5px) scale(1.02);
   background-position: right center;
-  box-shadow: 0 15px 35px rgba(233, 72, 35, 0.6);
+  box-shadow: 0 15px 35px var(--highlight-glow-strong);
 }
 
 @keyframes shine-btn {
@@ -1611,7 +1619,7 @@
   background: transparent;
   border: none;
   color: var(--highlight);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   padding: 10px 0;
   margin-bottom: 20px;
@@ -1653,24 +1661,24 @@
 
 .bank-tag, .promo-type-tag {
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
 
 .discount-tag {
-  background: #ff4757;
-  color: #fff;
+  background: var(--red-accent);
+  color: var(--white);
   padding: 6px 14px;
   border-radius: 10px;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   font-size: 1.1rem;
 }
 
 .promo-detail-title {
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   margin: 0;
   line-height: 1.2;
@@ -1701,7 +1709,7 @@
 
 .info-label {
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1709,7 +1717,7 @@
 
 .info-value {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
 }
 
@@ -1727,11 +1735,11 @@
 
 .day-tag {
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   opacity: 0.4;
 }
@@ -1761,7 +1769,7 @@
 .bank-promo-card-premium {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 20px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -1797,7 +1805,7 @@
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.025em;
   border: 1px solid rgba(233, 72, 35, 0.2);
@@ -1805,14 +1813,14 @@
 
 .discount-circle {
   background: var(--highlight);
-  color: #fff;
+  color: var(--white);
   width: 44px;
   height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   font-size: 0.9rem;
   flex-shrink: 0;
   box-shadow: 0 4px 10px rgba(233, 72, 35, 0.3);
@@ -1862,8 +1870,8 @@
 }
 
 .cta-button.store-btn {
-  background: linear-gradient(135deg, #f5c518 0%, #ffd700 60%, #f5c518 100%) !important;
-  color: #1a1a1a !important;
+  background: linear-gradient(135deg, #f5c518 0%, var(--amber-color) 60%, #f5c518 100%) !important;
+  color: var(--gray-900) !important;
   border: none !important;
   padding: 18px !important;
   border-radius: 20px !important;
@@ -1884,8 +1892,8 @@
 .cta-button.store-btn:hover {
   transform: translateY(-4px) !important;
   box-shadow: 0 14px 36px rgba(245, 197, 24, 0.65) !important;
-  background: linear-gradient(135deg, #ffd700 0%, #ff9500 50%, #e94823 100%) !important;
-  color: #fff !important;
+  background: linear-gradient(135deg, var(--amber-color) 0%, #ff9500 50%, var(--accent-color) 100%) !important;
+  color: var(--white) !important;
 }
 
 /* Carousel Navigation */
@@ -1950,7 +1958,7 @@
 
 .product-detail-title {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
 }
 
@@ -1975,22 +1983,22 @@
 
 .product-detail-pricing .current-price {
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--accent-color);
 }
 
 .discount-badge {
-  background: #ff4757;
-  color: #fff;
+  background: var(--red-accent);
+  color: var(--white);
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
 }
 
 .product-detail-description h4 {
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   text-transform: uppercase;
   color: var(--text-secondary);
   margin-bottom: 8px;
@@ -2006,11 +2014,11 @@
 
 .contact-professional-btn {
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
   border: none;
   padding: 16px;
-  border-radius: 16px;
-  font-weight: 800;
+  border-radius: var(--radius-lg);
+  font-weight: var(--weight-extrabold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2032,7 +2040,7 @@
   border: 2px solid var(--highlight);
   padding: 16px 20px;
   border-radius: 20px;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   font-size: 0.85rem;
   letter-spacing: 0.04em;
   display: flex;
@@ -2046,7 +2054,7 @@
 
 .cta-button.review-btn:hover {
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
   transform: translateY(-3px);
   box-shadow: 0 10px 28px var(--highlight-glow);
 }
@@ -2073,7 +2081,7 @@
 .review-modal {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 28px;
+  border-radius: var(--radius-2xl);
   padding: 40px;
   width: 100%;
   max-width: 520px;
@@ -2116,7 +2124,7 @@
 
 .review-modal__header h2 {
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   letter-spacing: -0.02em;
   margin-bottom: 6px;
 }
@@ -2135,7 +2143,7 @@
 .review-modal__label {
   display: block;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
@@ -2177,7 +2185,7 @@
 .review-modal__rating-label {
   margin-top: 8px;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--highlight);
   letter-spacing: 0.03em;
 }
@@ -2190,7 +2198,7 @@
 .review-modal__textarea {
   background: var(--bg-color);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 16px;
   color: var(--text-primary);
   font-size: 0.95rem;
@@ -2216,7 +2224,7 @@
 .review-modal__image-upload {
   display: block;
   border: 2px dashed var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -2237,7 +2245,7 @@
   padding: 28px;
   color: var(--text-secondary);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .review-modal__image-preview {
@@ -2252,7 +2260,7 @@
   background: none;
   border: none;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
   cursor: pointer;
   text-decoration: underline;
@@ -2266,20 +2274,20 @@
 .review-modal__error {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 16px;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: #ef4444;
 }
 
 .review-modal__submit {
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
   border: none;
   padding: 18px;
   border-radius: 18px;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   font-size: 0.95rem;
   letter-spacing: 0.03em;
   display: flex;
@@ -2316,13 +2324,13 @@
   width: 72px;
   height: 72px;
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -2333,7 +2341,7 @@
 
 .review-modal__success h3 {
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
 }
 
 .review-modal__success p {

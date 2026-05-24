@@ -22,7 +22,7 @@
 .products-carousel-section__title {
   margin: 0;
   font-size: clamp(1.5rem, 2.5vw, 2rem);
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--text-primary);
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -73,13 +73,13 @@
   text-align: center;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   gap: 1rem;
   width: 100%;
 }
 
 .empty-icon {
-  color: #3b82f6;
+  color: var(--blue-accent);
   opacity: 0.3;
 }
 
@@ -115,7 +115,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  background: #fff;
+  background: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,10 +146,10 @@
 }
 
 .product-carousel-card__badge-foreign {
-  background: #3b82f6;
-  color: #fff;
+  background: var(--blue-accent);
+  color: var(--white);
   font-size: 0.55rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   padding: 3px 7px;
   border-radius: 5px;
   display: flex;
@@ -158,10 +158,10 @@
 }
 
 .product-carousel-card__badge-discount {
-  background: #ef4444;
-  color: #fff;
+  background: var(--red-accent);
+  color: var(--white);
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   padding: 3px 8px;
   border-radius: 6px;
 }
@@ -177,7 +177,7 @@
 
 .product-carousel-card__seller {
   font-size: 0.6rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -185,7 +185,7 @@
 
 .product-carousel-card__title {
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-primary);
   line-height: 1.35;
   margin: 0;
@@ -216,15 +216,15 @@
 
 .product-carousel-card__price {
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
 .product-carousel-card__discount {
   font-size: 0.65rem;
-  font-weight: 700;
-  color: #22c55e;
+  font-weight: var(--weight-bold);
+  color: var(--green-accent);
 }
 
 /* Shipping */
@@ -232,9 +232,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #22c55e;
+  color: var(--green-accent);
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 /* Rating */
@@ -243,17 +243,17 @@
   align-items: center;
   gap: 4px;
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-primary);
 }
 
 .product-carousel-card__rating .star-filled {
-  color: #f59e0b;
+  color: var(--amber-dark);
 }
 
 .product-carousel-card__reviews {
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 /* ===== RESPONSIVE ===== */

@@ -8,7 +8,7 @@
   justify-content: space-between;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 3rem 2.5rem;
   position: relative;
   overflow: hidden;
@@ -24,7 +24,7 @@
 
 .join-cta__eyebrow {
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -32,7 +32,7 @@
 
 .join-cta__title {
   font-size: clamp(2.5rem, 6vw, 4rem);
-  font-weight: 900;
+  font-weight: var(--weight-black);
   letter-spacing: 0.06em;
   color: var(--text-primary);
   line-height: 1;
@@ -48,12 +48,12 @@
   display: inline-block;
   padding: 0.75rem 1.75rem;
   background-color: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   text-decoration: none;
   align-self: flex-start;
   margin-top: 0.5rem;
@@ -84,7 +84,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    var(--accent-transparentnt) 0%,
+    var(--accent-transparent) 0%,
     transparent 65%
   );
 }

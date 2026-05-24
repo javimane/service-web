@@ -49,9 +49,9 @@
 
 .favorites-title {
   font-size: 2.5rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+  background: linear-gradient(135deg, var(--white) 0%, var(--slate-400) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -114,7 +114,7 @@
   bottom: -4px;
   right: -4px;
   background: var(--accent-primary, #2dd4bf);
-  color: #000;
+  color: var(--black);
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -133,14 +133,14 @@
 
 .favorite-item__name {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   margin: 0;
 }
 
 .favorite-item__specialty {
   font-size: 0.875rem;
   color: var(--accent-primary, #2dd4bf);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .favorite-item__meta {
@@ -192,7 +192,7 @@
 
 .action-btn--remove:hover {
   background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: var(--red-accent);
   border-color: rgba(239, 68, 68, 0.2);
 }
 
@@ -200,10 +200,10 @@
   width: auto;
   padding: 0 1.25rem;
   gap: 0.5rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   font-size: 0.875rem;
   background: var(--text-primary, #f8fafc);
-  color: #000;
+  color: var(--black);
   border: none;
 }
 
@@ -242,8 +242,8 @@
   padding: 0.875rem 2rem;
   border-radius: 1rem;
   background: var(--accent-primary, #2dd4bf);
-  color: #000;
-  font-weight: 700;
+  color: var(--black);
+  font-weight: var(--weight-bold);
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;

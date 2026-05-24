@@ -132,7 +132,7 @@ export default function PromotionDetailModal({
             <div
               className="promo-detail-modal__professional-mini"
               onClick={handleProfileClick}
-              style={{ cursor: professionalId ? "pointer" : "default" }}
+              style={{ '--prof-cursor': professionalId ? "pointer" : "default" } as React.CSSProperties}
             >
               <div className="avatar-container">
                 {avatarUrl ? (

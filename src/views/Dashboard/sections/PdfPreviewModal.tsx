@@ -350,15 +350,7 @@ export default function PdfPreviewModal({
         </div>
 
         <div className="preview-image-scroll">
-          <div
-            className="a4-page"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minHeight: 600,
-            }}
-          >
+          <div className="a4-page">
             {loading ? (
               <span>Generando PDF...</span>
             ) : pdfUrl ? (
@@ -367,7 +359,7 @@ export default function PdfPreviewModal({
                 title="Vista previa PDF"
                 width="100%"
                 height="600"
-                style={{ border: "none" }}
+                className="a4-page__iframe"
               />
             ) : (
               <span>No disponible</span>
@@ -401,16 +393,6 @@ export default function PdfPreviewModal({
                 params.set("prefillAttachmentUrl", uploadedUrl);
               }
               router.push(`/mensajes?${params.toString()}`);
-            }}
-            style={{
-              background: "#3b82f6",
-              color: "#fff",
-              fontWeight: 700,
-              border: "none",
-              borderRadius: 12,
-              padding: "12px 24px",
-              marginLeft: 8,
-              cursor: "pointer",
             }}
           >
             Enviar presupuesto

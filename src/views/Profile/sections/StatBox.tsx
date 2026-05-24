@@ -1,11 +1,13 @@
+import "./StatBox.css";
+
 export default function StatBox({ icon, label, sub, color }) {
   return (
     <div
-      className={`${color} p-4 rounded-2xl flex flex-col items-center justify-center border border-white/5`}
+      className={`stat-box stat-box--${color}`}
     >
-      <div className="mb-1">{icon}</div>
-      <span className="text-xl font-bold">{label}</span>
-      <span className="text-[8px] mt-1 font-bold tracking-tighter opacity-70">
+      <div className="stat-box__icon">{icon}</div>
+      <span className="stat-box__label">{label}</span>
+      <span className="stat-box__sub">
         {sub}
       </span>
     </div>

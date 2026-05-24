@@ -277,11 +277,10 @@ export default function Navbar() {
                 href={ROUTES.messages}
                 className="navbar__icon-btn"
                 aria-label="Mensajes"
-                style={{ position: 'relative' }}
               >
                 <MessageSquare size={20} />
                 {unreadMessagesCount > 0 && (
-                  <span className="navbar__notif-badge" style={{ position: 'absolute', top: '4px', right: '4px' }}>
+                  <span className="navbar__notif-badge">
                     {unreadMessagesCount}
                   </span>
                 )}

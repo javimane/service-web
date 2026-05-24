@@ -20,7 +20,7 @@
 .featured-specialists__title {
   margin: 0;
   font-size: clamp(1.5rem, 2.5vw, 2.2rem);
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--text-primary);
   line-height: 1.1;
   letter-spacing: -0.03em;
@@ -42,7 +42,7 @@
   text-align: center;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   gap: 1rem;
   margin-bottom: 1rem;
 }
@@ -60,13 +60,13 @@
 }
 
 .empty-icon {
-  color: #f59e0b;
+  color: var(--amber-dark);
   opacity: 0.4;
 }
 
 .featured-specialists__view-all {
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   font-size: 0.9rem;
   display: flex;
   align-items: center;

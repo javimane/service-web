@@ -49,20 +49,20 @@
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  border-radius: 99px;
+  border-radius: var(--radius-full);
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   letter-spacing: 0.05em;
 }
 
 .badge--active {
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
 }
 
 .badge--verified {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   backdrop-filter: blur(4px);
 }
 
@@ -83,7 +83,7 @@
 
 .category-card__name {
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
   margin-bottom: 1px;
   line-height: 1.2;
@@ -92,7 +92,7 @@
 .category-card__type {
   font-size: 0.6rem;
   color: var(--accent-color);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   letter-spacing: 0.08em;
 }
 
@@ -103,7 +103,7 @@
 .category-card__count {
   display: block;
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
   line-height: 1;
 }
@@ -111,7 +111,7 @@
 .category-card__count-label {
   font-size: 0.5rem;
   color: var(--text-secondary);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .category-card__footer {
@@ -142,7 +142,7 @@
   font-size: 0.6rem;
   color: var(--text-secondary);
   margin-left: 4px;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .category-card__button {
@@ -150,14 +150,14 @@
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   padding: 6px 12px;
-  border-radius: 99px;
+  border-radius: var(--radius-full);
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   transition: all 0.2s ease;
 }
 
 .category-card__button:hover {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   border-color: var(--accent-color);
 }

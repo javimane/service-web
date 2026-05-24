@@ -45,7 +45,7 @@
 
 .geo-column__header h3 {
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -57,7 +57,7 @@
   border: none;
   color: var(--accent-color);
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
@@ -110,7 +110,7 @@
 }
 
 .geo-item--active .geo-item__name {
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .geo-item--active .geo-item__arrow {
@@ -150,7 +150,7 @@
   width: 20px;
   height: 20px;
   background: var(--bg-card);
-  border: 2px solid #999; /* Even darker border for maximum visibility */
+  border: 2px solid var(--gray-400); /* Even darker border for maximum visibility */
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -186,7 +186,7 @@
 
 .geo-empty p {
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   max-width: 200px;
 }
 

@@ -17,7 +17,7 @@
 
 .all-promos__label {
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--highlight);
   letter-spacing: 0.12em;
   display: block;
@@ -26,7 +26,7 @@
 
 .all-promos__title {
   font-size: 1.6rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--text-primary);
   letter-spacing: -0.02em;
 }
@@ -36,12 +36,12 @@
   align-items: center;
   gap: 8px;
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
   border: none;
   padding: 12px 22px;
   border-radius: 14px;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -65,7 +65,7 @@
   gap: 10px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   flex: 1;
   min-width: 200px;
@@ -110,7 +110,7 @@
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -136,7 +136,7 @@
 .promo-stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -145,13 +145,13 @@
 
 .promo-stat-card__value {
   font-size: 1.6rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--text-primary);
 }
 
 .promo-stat-card__label {
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -178,7 +178,7 @@
 }
 
 .promo-stat-card--draft .promo-stat-card__value {
-  color: #fbbf24;
+  color: var(--amber-color);
 }
 
 /* ===== PROMO GRID ===== */
@@ -228,9 +228,9 @@
   top: 10px;
   left: 10px;
   padding: 4px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -249,7 +249,7 @@
 
 .promo-list-card__status--draft {
   background: rgba(251, 191, 36, 0.2);
-  color: #fbbf24;
+  color: var(--amber-color);
   border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
@@ -268,12 +268,12 @@
 }
 
 .promo-list-card__expired-overlay span {
-  background: #ef4444;
-  color: white;
+  background: var(--red-accent);
+  color: var(--white);
   padding: 8px 24px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   letter-spacing: 0.05em;
   box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
   transform: rotate(-4deg);
@@ -284,14 +284,14 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  background: #fbbf24;
-  color: #1e293b;
+  background: var(--amber-color);
+  color: var(--slate-800);
   padding: 5px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   gap: 5px;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   font-size: 0.7rem;
 }
 
@@ -305,7 +305,7 @@
 
 .promo-list-card__title {
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   margin: 0;
 }
@@ -330,13 +330,13 @@
   align-items: center;
   gap: 5px;
   font-size: 0.65rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
 }
 
 .promo-list-card__code {
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--accent-color);
   font-family: "JetBrains Mono", "Fira Code", monospace;
   background: var(--accent-transparent);
@@ -392,7 +392,7 @@
 
 .all-promos__empty p {
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 /* ===== RESPONSIVE ===== */
@@ -463,7 +463,7 @@
 
 /* Coupon Card Design */
 .coupon-card {
-  background: white;
+  background: var(--white);
   border-radius: 40px;
   overflow: hidden;
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
@@ -473,12 +473,12 @@
 }
 
 .coupon-card__header {
-  background: #ffb703; /* Vibrant Orange */
+  background: var(--amber-color);
   padding: 30px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .coupon-ticket-icon {
@@ -487,14 +487,14 @@
 
 .coupon-card__discount {
   font-size: 2.5rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   letter-spacing: -0.02em;
 }
 
 .coupon-card__image {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #f1f5f9;
+  background: var(--slate-100);
 }
 
 .coupon-card__image img {
@@ -514,21 +514,21 @@
 
 .coupon-card__title {
   font-size: 1.75rem;
-  font-weight: 900;
-  color: #0f172a;
+  font-weight: var(--weight-black);
+  color: var(--slate-900);
   margin: 0;
   line-height: 1.2;
 }
 
 .coupon-card__description {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--slate-500);
   line-height: 1.6;
   margin: 0;
 }
 
 .coupon-card__info-box {
-  background: #f8fafc;
+  background: var(--slate-50);
   border-radius: 20px;
   padding: 24px;
   display: flex;
@@ -540,18 +540,18 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #334155;
+  color: var(--slate-700);
   font-size: 0.9rem;
 }
 
 .coupon-card__info-item svg {
-  color: #64748b;
+  color: var(--slate-500);
   flex-shrink: 0;
 }
 
 .coupon-card__info-item strong {
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: var(--weight-extrabold);
+  color: var(--slate-900);
 }
 
 .coupon-card__download-btn {
@@ -560,13 +560,13 @@
   border-radius: 20px;
   padding: 18px;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   transition: all 0.2s;
-  background: #10b981; /* Emerald Green */
+  background: var(--teal-accent);
   cursor: pointer;
 }
 
@@ -581,9 +581,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #64748b;
+  color: var(--slate-500);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   margin-top: 10px;
 }
 
@@ -606,8 +606,8 @@
 }
 /* ===== PUBLIC PROMO PREVIEW (HUB STYLE) ===== */
 .public-promo-preview {
-  background: white;
-  border-radius: 32px;
+  background: var(--white);
+  border-radius: var(--radius-3xl);
   overflow: hidden;
   box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
   width: 100%;
@@ -629,12 +629,12 @@
   position: absolute;
   bottom: -20px;
   right: 40px;
-  background: #ffb703;
-  color: #000;
+  background: var(--amber-color);
+  color: var(--text-primary);
   padding: 15px 30px;
   border-radius: 20px;
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   box-shadow: 0 10px 30px rgba(255, 183, 3, 0.4);
   z-index: 10;
 }
@@ -662,7 +662,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--slate-100);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -682,21 +682,21 @@
 
 .professional-name {
   font-size: 0.85rem;
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: var(--weight-extrabold);
+  color: var(--slate-900);
 }
 
 .professional-label {
   font-size: 0.6rem;
-  font-weight: 700;
-  color: #10b981;
+  font-weight: var(--weight-bold);
+  color: var(--teal-accent);
   letter-spacing: 0.05em;
 }
 
 .public-promo-preview__title {
   font-size: 2.2rem;
-  font-weight: 900;
-  color: #0f172a;
+  font-weight: var(--weight-black);
+  color: var(--slate-900);
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin: 0;
@@ -705,18 +705,18 @@
 .public-promo-preview__code {
   font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--accent-color);
   background: var(--accent-transparent);
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   align-self: flex-start;
   margin-top: 4px;
 }
 
 .public-promo-preview__description {
   font-size: 1.1rem;
-  color: #475569;
+  color: var(--slate-600);
   line-height: 1.7;
   margin: 0;
 }
@@ -725,20 +725,20 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  background: #f8fafc;
+  background: var(--slate-50);
   padding: 24px;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
 }
 
 .detail-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  color: #334155;
+  color: var(--slate-700);
 }
 
 .detail-item svg {
-  color: #64748b;
+  color: var(--slate-500);
   margin-top: 4px;
 }
 
@@ -750,15 +750,15 @@
 
 .detail-text label {
   font-size: 0.65rem;
-  font-weight: 800;
-  color: #94a3b8;
+  font-weight: var(--weight-extrabold);
+  color: var(--slate-400);
   letter-spacing: 0.08em;
 }
 
 .detail-text span {
   font-size: 0.9rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: var(--weight-bold);
+  color: var(--slate-800);
 }
 
 .public-promo-preview__footer {
@@ -771,13 +771,13 @@
 
 .public-promo-preview__cta {
   width: 100%;
-  background: #0f172a;
-  color: white;
+  background: var(--slate-900);
+  color: var(--white);
   border: none;
   padding: 20px;
   border-radius: 20px;
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -787,15 +787,15 @@
 }
 
 .public-promo-preview__cta:hover {
-  background: #1e293b;
+  background: var(--slate-800);
   transform: translateY(-2px);
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
 }
 
 .public-promo-preview__hint {
   font-size: 0.8rem;
-  color: #94a3b8;
-  font-weight: 600;
+  color: var(--slate-400);
+  font-weight: var(--weight-semibold);
 }
 
 @media (max-width: 640px) {
@@ -871,6 +871,10 @@
   height: 12px;
   width: 100%;
   border-radius: 4px;
+}
+
+.promo-skeleton__desc--shorter {
+  width: 60%;
 }
 
 .promo-skeleton__meta {

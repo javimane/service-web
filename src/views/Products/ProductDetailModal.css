@@ -25,7 +25,7 @@
 .product-modal {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   width: 100%;
   max-width: 1100px;
   max-height: 90vh;
@@ -103,7 +103,7 @@
   aspect-ratio: 1;
   border-radius: 18px;
   overflow: hidden;
-  background: #fff;
+  background: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,12 +119,12 @@
   position: absolute;
   top: 12px;
   left: 12px;
-  background: #ef4444;
-  color: #fff;
+  background: var(--red-accent);
+  color: var(--white);
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 /* Carousel controls */
@@ -147,7 +147,7 @@
 }
 
 .carousel-btn:hover {
-  background: #fff;
+  background: var(--white);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -195,14 +195,14 @@
 
 .product-modal__condition {
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   letter-spacing: 0.04em;
 }
 
 .product-modal__title {
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   line-height: 1.35;
   margin: 0;
@@ -221,7 +221,7 @@
 }
 
 .star-filled {
-  color: #f59e0b;
+  color: var(--amber-dark);
 }
 
 .star-empty {
@@ -231,7 +231,7 @@
 .product-modal__rating-text {
   font-size: 0.75rem;
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 /* Pricing */
@@ -244,7 +244,7 @@
 
 .sellers-title {
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -283,7 +283,7 @@
 .seller-card {
   background: color-mix(in srgb, var(--bg-color) 60%, #ffffff 40%);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -315,13 +315,13 @@
   font-size: 0.65rem;
   color: var(--text-secondary);
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   letter-spacing: 0.05em;
 }
 
 .seller-name {
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   text-decoration: none;
   transition: color 0.2s;
@@ -338,7 +338,7 @@
   gap: 6px;
   font-size: 0.75rem;
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .seller-card__price-row {
@@ -369,15 +369,15 @@
 
 .seller-price {
   font-size: 1.3rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
 }
 
 .seller-discount {
-  background: #22c55e;
-  color: #fff;
+  background: var(--green-accent);
+  color: var(--white);
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -387,14 +387,26 @@
   align-items: center;
   gap: 6px;
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   border: none;
   padding: 8px 16px;
   border-radius: 10px;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.seller-contact-btn--link {
+  margin-top: 12px;
+  width: 100%;
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  text-decoration: none;
+  justify-content: center;
+  display: flex;
+  gap: 8px;
 }
 
 .seller-contact-btn:hover {
@@ -406,7 +418,7 @@
 .product-modal__description h4,
 .product-modal__features h4 {
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
@@ -457,7 +469,7 @@
   padding: 14px 24px;
   border-radius: 14px;
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-decoration: none;
   transition: all 0.2s;
   cursor: pointer;
@@ -467,7 +479,7 @@
 
 .product-modal__btn--primary {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
 }
 
 .product-modal__btn--primary:hover {
@@ -496,7 +508,7 @@
 
 .product-modal__description-container h4 {
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
   margin: 0;
 }

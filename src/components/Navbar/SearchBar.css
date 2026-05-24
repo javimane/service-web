@@ -3,7 +3,7 @@
   align-items: center;
   background-color: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   transition: border-color 0.2s ease;
 }
@@ -35,9 +35,9 @@
 .search-bar__btn {
   padding: 0.6rem 1.1rem;
   background-color: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   letter-spacing: 0.03em;
   border-radius: 0;
   flex-shrink: 0;

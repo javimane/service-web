@@ -151,25 +151,16 @@ export default function HomePage() {
         onClose={() => setIsProvinceModalOpen(false)}
         title="Seleccionar Ubicación"
       >
-        <div className="province-selector" style={{ padding: "1rem" }}>
-          <p className="province-selector__hint" style={{ marginBottom: "1rem", color: "var(--text-secondary)" }}>
+        <div className="province-selector">
+          <p className="province-selector__hint">
             Mostraremos contenido destacado disponible en la provincia que elijas.
           </p>
-          <div className="province-selector__grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "0.5rem" }}>
+          <div className="province-selector__grid">
             {provinces.map((prov: any) => (
               <button
                 key={prov.id}
                 className={`province-chip ${userProvince === prov.name ? "active" : ""}`}
                 onClick={() => handleProvinceSelect(prov.name)}
-                style={{
-                  padding: "0.5rem",
-                  border: userProvince === prov.name ? "1px solid var(--highlight)" : "1px solid var(--border)",
-                  borderRadius: "8px",
-                  background: userProvince === prov.name ? "var(--highlight-alpha)" : "transparent",
-                  color: userProvince === prov.name ? "var(--highlight)" : "var(--text-primary)",
-                  cursor: "pointer",
-                  transition: "all 0.2s"
-                }}
               >
                 {prov.name}
               </button>

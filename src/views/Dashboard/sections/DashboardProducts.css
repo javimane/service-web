@@ -19,7 +19,7 @@
 
 .dash-products__label {
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--highlight);
   letter-spacing: 0.12em;
   display: block;
@@ -28,7 +28,7 @@
 
 .dash-products__title {
   font-size: 1.6rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--text-primary);
   letter-spacing: -0.02em;
 }
@@ -38,12 +38,12 @@
   align-items: center;
   gap: 8px;
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
   border: none;
   padding: 12px 22px;
   border-radius: 14px;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
@@ -86,13 +86,13 @@
 
 .dash-products__stat-value {
   font-size: 1.05rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
 }
 
 .dash-products__stat-label {
   font-size: 0.65rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -112,7 +112,7 @@
   gap: 10px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   flex: 1;
   min-width: 200px;
@@ -141,10 +141,10 @@
 
 .dash-products__search-btn {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   border: none;
   padding: 6px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -187,9 +187,9 @@
   color: var(--accent-color);
   border: 1px solid var(--accent-color);
   padding: 10px 18px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
@@ -204,9 +204,9 @@
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   padding: 10px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.2s;
   animation: fadeIn 0.2s ease;
@@ -220,7 +220,7 @@
 
 .dash-products__bulk-btn:hover {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
 }
 
 .dash-products__loading-state {
@@ -232,7 +232,7 @@
   gap: 12px;
   color: var(--text-secondary);
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 /* ===== TABLE ===== */
@@ -257,7 +257,7 @@
   padding: 12px 16px;
   text-align: left;
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -333,12 +333,12 @@
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 2px solid var(--bg-card);
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -360,7 +360,7 @@
 /* Product name cell */
 .dash-products__product-name {
   display: block;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
   line-height: 1.3;
 }
@@ -378,9 +378,9 @@
   background: var(--accent-transparent);
   color: var(--accent-color);
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   white-space: nowrap;
 }
 
@@ -397,7 +397,7 @@
 }
 
 .dash-products__price {
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   display: block;
 }
@@ -415,14 +415,14 @@
 
 .dash-products__price-discount {
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--highlight);
   margin-top: 2px;
 }
 
 /* Stock */
 .dash-products__stock {
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
 }
 
@@ -444,7 +444,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   padding: 6px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -521,7 +521,7 @@
 
 .dash-products__modal-header h2 {
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
 }
 
@@ -531,7 +531,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   padding: 6px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -559,7 +559,7 @@
 
 .dash-products__modal-field label {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -569,7 +569,7 @@
 .dash-products__modal-field textarea {
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   color: var(--text-primary);
   font-size: 0.85rem;
@@ -588,7 +588,7 @@
 .dash-products__modal-select {
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   color: var(--text-primary);
   font-size: 0.85rem;
@@ -632,10 +632,10 @@
   padding: 10px 14px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
@@ -659,7 +659,7 @@
   gap: 10px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   transition: border-color 0.2s;
 }
@@ -694,7 +694,7 @@
   gap: 8px;
   background: rgba(251, 191, 36, 0.1);
   border: 1px solid rgba(251, 191, 36, 0.3);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   font-size: 0.8rem;
   color: var(--text-primary);
@@ -702,7 +702,7 @@
 }
 
 .dash-products__modal-preview svg {
-  color: #fbbf24;
+  color: var(--amber-color);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -710,12 +710,12 @@
 /* Apply button */
 .dash-products__modal-apply {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   border: none;
   padding: 13px 20px;
   border-radius: 14px;
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
@@ -760,9 +760,9 @@
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   padding: 11px 20px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.83rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
@@ -793,12 +793,12 @@
 
 .dash-products__ean-check-btn {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   border: none;
   padding: 10px 18px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   font-family: var(--font-family);
   cursor: pointer;
   transition: all 0.2s;
@@ -829,11 +829,11 @@
   gap: 8px;
   background: rgba(59, 130, 246, 0.1);
   border: 1px solid rgba(59, 130, 246, 0.25);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   font-size: 0.82rem;
-  font-weight: 600;
-  color: #3b82f6;
+  font-weight: var(--weight-semibold);
+  color: var(--blue-accent);
 }
 
 .dash-products__ean-match-card {
@@ -863,7 +863,7 @@
 
 .dash-products__ean-match-name {
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -872,13 +872,13 @@
 
 .dash-products__ean-match-price {
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--accent-color);
 }
 
 .dash-products__ean-match-cat {
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -908,7 +908,7 @@
 
 .dash-products__image-upload span {
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .dash-products__image-upload-hint {
@@ -971,9 +971,9 @@
   width: 24px;
   height: 24px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  color: var(--white);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -997,8 +997,8 @@
   right: -6px;
   width: 24px;
   height: 24px;
-  background: #ef4444;
-  color: #fff;
+  background: var(--red-accent);
+  color: var(--white);
   border: 2px solid var(--bg-card);
   border-radius: 50%;
   display: flex;
@@ -1009,7 +1009,7 @@
 }
 
 .dash-products__image-remove:hover {
-  background: #dc2626;
+  background: var(--error-hover);
   transform: scale(1.1);
 }
 
@@ -1141,7 +1141,7 @@
   background: var(--surface-contrast);
   color: var(--surface-contrast-text);
   border: 1px solid var(--surface-contrast-border);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   padding: 1.5rem 2rem;
   width: 100%;
   max-width: 540px;
@@ -1168,7 +1168,7 @@
 .dash-products__floating-icon {
   width: 56px;
   height: 56px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1177,12 +1177,12 @@
 
 .dash-products__floating-icon--success {
   background: rgba(64, 192, 87, 0.2);
-  color: #40c057;
+  color: var(--success-color);
 }
 
 .dash-products__floating-icon--danger {
   background: rgba(250, 82, 82, 0.2);
-  color: #fa5252;
+  color: var(--error-color);
 }
 
 .dash-products__floating-content {
@@ -1191,7 +1191,7 @@
 
 .dash-products__floating-title {
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   margin-bottom: 4px;
   display: block;
 }
@@ -1209,9 +1209,9 @@
 
 .dash-products__floating-btn {
   padding: 10px 18px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   white-space: nowrap;
   transition: all 0.2s;
   border: none;
@@ -1221,12 +1221,12 @@
 
 .dash-products__floating-btn--primary {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
 }
 
 .dash-products__floating-btn--secondary {
   background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--white);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -1244,7 +1244,7 @@
   user-select: none;
   font-size: 0.82rem;
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   padding: 8px 0;
 }
 
@@ -1266,6 +1266,44 @@
 .dash-products__checkbox-label input[type="checkbox"]:checked {
   background: var(--accent-color);
   border-color: var(--accent-color);
+}
+
+.dash-products__modal-field--mt {
+  margin-top: 4px;
+}
+
+.dash-products__modal-input-wrap--flex {
+  flex: 1;
+}
+
+.dash-products__ean-match-header--existing {
+  background-color: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.dash-products__ean-match-header--new {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.dash-products__ean-match-header {
+  margin-bottom: 20px;
+}
+
+.dash-products__price-container--flex-start {
+  align-items: flex-start;
+}
+
+.dash-products__form-grid--mt {
+  margin-top: 20px;
+}
+
+.dash-products__floating-screen--danger {
+  border-color: rgba(250, 82, 82, 0.3);
+}
+
+.dash-products__floating-btn--danger {
+  background: #fa5252;
 }
 
 .dash-products__checkbox-label input[type="checkbox"]:checked::after {

@@ -11,11 +11,11 @@
   justify-content: center;
   gap: 16px;
   min-height: 400px;
-  color: var(--obsidian-text-muted);
+  color: var(--text-secondary);
 }
 .bank-promos__loading p {
   font-size: 1.1rem;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .bank-promos__header {
@@ -26,18 +26,18 @@
 
 .bank-promos__label {
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   letter-spacing: 0.1em;
-  color: var(--obsidian-primary);
+  color: var(--accent-color);
   display: block;
   margin-bottom: 4px;
 }
 
 .bank-promos__title {
   font-size: 2.2rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   margin: 0;
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
   font-family: 'Outfit', system-ui, sans-serif;
   letter-spacing: -0.02em;
 }
@@ -50,9 +50,9 @@
   background: linear-gradient(135deg, #ec4899, #e11d48);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -70,9 +70,9 @@
 }
 
 .bank-promo-card {
-  background: var(--bg-card, var(--obsidian-surface));
-  border: 1px solid var(--border-color, var(--obsidian-border));
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -83,24 +83,24 @@
 }
 
 .bank-promo-card--expired {
-  border-color: #ef4444 !important;
+  border-color: var(--red-accent) !important;
   opacity: 0.8;
 }
 
 .bank-promo-card--expired::before {
-  background: #ef4444 !important;
+  background: var(--red-accent) !important;
 }
 
 .bank-promo-card__expired-badge {
   position: absolute;
   top: 12px;
   left: 12px;
-  background: #ef4444;
-  color: white;
+  background: var(--red-accent);
+  color: var(--white);
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   z-index: 10;
@@ -121,7 +121,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--obsidian-primary), #d946ef);
+  background: linear-gradient(90deg, var(--accent-color), #d946ef);
   opacity: 0.5;
 }
 
@@ -140,24 +140,24 @@
 .bank-promo-card__icon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--obsidian-primary);
+  color: var(--accent-color);
 }
 
 .bank-promo-card__bank-info h3 {
   margin: 0;
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
   font-size: 1.1rem;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .bank-promo-card__bank-info p {
   margin: 4px 0 0;
-  color: var(--obsidian-text-muted);
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
@@ -169,7 +169,7 @@
 .bank-promo-card__action {
   background: transparent;
   border: none;
-  color: var(--obsidian-text-muted);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
@@ -177,12 +177,12 @@
 }
 
 .bank-promo-card__action:hover {
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
   background: rgba(139, 92, 246, 0.1);
 }
 
 .bank-promo-card__action--danger:hover {
-  color: #ef4444;
+  color: var(--red-accent);
   background: rgba(239, 68, 68, 0.1);
 }
 
@@ -191,8 +191,8 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px 0;
-  border-top: 1px solid var(--obsidian-border);
-  border-bottom: 1px solid var(--obsidian-border);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .bank-promo-card__detail-row {
@@ -202,21 +202,34 @@
   font-size: 0.9rem;
 }
 
+.bank-promo-card__detail-row--column {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.bank-promo-card__detail-row--column-mb {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .bank-promo-card__detail-label {
-  color: var(--obsidian-text-muted);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .bank-promo-card__detail-value {
-  color: var(--text-primary, #fff);
-  font-weight: 500;
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
 }
 
 .bank-promo-card__detail-value--highlight {
-  color: #10b981;
-  font-weight: 600;
+  color: var(--teal-accent);
+  font-weight: var(--weight-semibold);
   background: rgba(16, 185, 129, 0.1);
   padding: 2px 8px;
   border-radius: 4px;
@@ -232,19 +245,19 @@
   font-size: 0.65rem;
   padding: 2px 6px;
   border-radius: 4px;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
 }
 
 .bank-promo-card__interest-badge.no-interest {
   background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  color: var(--teal-accent);
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .bank-promo-card__interest-badge.with-interest {
   background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
+  color: var(--amber-dark);
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
@@ -262,13 +275,13 @@
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   background: rgba(255, 255, 255, 0.05);
-  color: var(--obsidian-text-muted);
+  color: var(--text-secondary);
 }
 
 .bank-promo-card__day.active {
-  background: coral;
+  background: var(--coral);
   color: white;
   border: none;
   box-shadow: 0 2px 6px rgba(255, 127, 80, 0.4);
@@ -297,7 +310,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--obsidian-primary);
+  color: var(--accent-color);
   margin-bottom: 1.5rem;
 }
 
@@ -330,9 +343,9 @@
 }
 
 .bank-promo-modal {
-  background: var(--bg-card, var(--obsidian-surface));
-  border: 1px solid var(--border-color, var(--obsidian-border));
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
@@ -357,7 +370,7 @@
 
 .bank-promo-modal__header {
   padding: 24px;
-  border-bottom: 1px solid var(--border-color, var(--obsidian-border));
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -365,15 +378,15 @@
 
 .bank-promo-modal__header h2 {
   margin: 0;
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
   font-size: 1.25rem;
-  font-weight: 400;
+  font-weight: var(--weight-normal);
 }
 
 .bank-promo-modal__close {
   background: transparent;
   border: none;
-  color: var(--text-secondary, var(--obsidian-text-muted));
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
@@ -381,7 +394,7 @@
 }
 
 .bank-promo-modal__close:hover {
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
   background: rgba(139, 92, 246, 0.1);
 }
 
@@ -410,9 +423,9 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #f87171;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
-  margin-bottom: 4px;
+  margin-bottom: 20px;
 }
 
 .bank-promo-form-grid {
@@ -433,8 +446,8 @@
 
 .bank-promo-field label {
   font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary, var(--obsidian-text-muted));
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -448,7 +461,7 @@
 .bank-promo-input-wrapper .field-icon {
   position: absolute;
   left: 12px;
-  color: var(--text-secondary, var(--obsidian-text-muted));
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -456,20 +469,20 @@
   appearance: base-select;
   border-radius: 20px;
   padding: 12px 16px 12px 40px;
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
   font-size: 0.95rem;
   width: 100%;
   transition: all 0.2s ease;
-  border: 1px solid coral;
+  border: 1px solid var(--coral);
   background: var(--input-bg, rgba(0, 0, 0, 0.2));
 }
 
 .bank-promo-field input {
   background: var(--input-bg, rgba(0, 0, 0, 0.2));
-  border: 1px solid var(--border-color, var(--obsidian-border));
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 12px 40px 12px 40px;
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
   font-size: 0.95rem;
   width: 100%;
   transition: all 0.2s ease;
@@ -482,7 +495,7 @@
 .bank-promo-field input:focus,
 .bank-promo-field select:focus {
   outline: none;
-  border-color: coral;
+  border-color: var(--coral);
   background: var(--bg-surface, rgba(255, 255, 255, 0.05));
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
@@ -497,11 +510,11 @@
   height: 44px;
   background: var(--input-bg, rgba(0, 0, 0, 0.05));
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
-  border-radius: 12px;
-  color: var(--text-secondary, #64748b);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
@@ -510,14 +523,14 @@
 }
 
 .bank-promo-day-btn:hover {
-  border-color: var(--obsidian-primary, #8b5cf6);
+  border-color: var(--purple-accent);
   background: rgba(139, 92, 246, 0.05);
 }
 
 .bank-promo-day-btn.selected {
   background: rgba(255, 127, 80, 0.1);
-  border-color: coral;
-  color: coral;
+  border-color: var(--coral);
+  color: var(--coral);
   box-shadow: 0 4px 12px rgba(255, 127, 80, 0.15);
 }
 
@@ -525,7 +538,7 @@
   position: absolute;
   top: -6px;
   right: -6px;
-  background: #ef4444;
+  background: var(--red-accent);
   color: white;
   border-radius: 50%;
   padding: 2px;
@@ -538,7 +551,7 @@
 
 .bank-promo-modal__footer {
   padding: 24px;
-  border-top: 1px solid var(--border-color, var(--obsidian-border));
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
   gap: 16px;
@@ -553,7 +566,7 @@
   padding: 12px 28px;
   border-radius: 20px;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
@@ -561,25 +574,25 @@
 
 .bank-promo-btn--danger {
   background: transparent;
-  color: var(--error-color, #ef4444);
+  color: var(--error-color);
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .bank-promo-btn--danger:hover {
   background: rgba(239, 68, 68, 0.1);
-  border-color: #ef4444;
+  border-color: var(--red-accent);
 }
 
 .bank-promo-btn--outline {
   background: transparent;
-  border: 1px solid var(--border-color, var(--obsidian-border));
-  color: var(--text-primary, #fff);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .bank-promo-btn--outline:hover {
   background: rgba(139, 92, 246, 0.1);
-  border-color: coral;
-  color: var(--text-primary, #fff);
+  border-color: var(--coral);
+  color: var(--text-primary);
 }
 
 .bank-promo-btn--primary {
@@ -606,7 +619,7 @@
   width: 80px;
   height: 80px;
   background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: var(--red-accent);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -622,13 +635,13 @@
 
 .bank-promo-modal__confirm-content h2 {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   margin-bottom: 12px;
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
 }
 
 .bank-promo-modal__confirm-content p {
-  color: var(--obsidian-text-muted);
+  color: var(--text-secondary);
   font-size: 0.95rem;
   line-height: 1.5;
   margin-bottom: 24px;
@@ -653,24 +666,24 @@
 .bank-promo-method-btn {
   padding: 8px 16px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--obsidian-border);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  color: var(--obsidian-text-muted);
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   transition: all 0.2s ease;
 }
 
 .bank-promo-method-btn:hover {
-  border-color: coral;
+  border-color: var(--coral);
   background: rgba(139, 92, 246, 0.05);
 }
 
 .bank-promo-method-btn.selected {
   background: rgba(255, 127, 80, 0.1);
-  border-color: coral;
-  color: coral;
+  border-color: var(--coral);
+  color: var(--coral);
   box-shadow: 0 4px 12px rgba(255, 127, 80, 0.1);
 }
 
@@ -680,10 +693,10 @@
 
 .bank-promo-input-wrapper--textarea textarea {
   background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--obsidian-border);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 12px 12px 12px 40px;
-  color: #000000;
+  color: var(--text-primary);
   font-size: 0.95rem;
   width: 100%;
   min-height: 100px;
@@ -693,7 +706,7 @@
 
 .bank-promo-input-wrapper--textarea textarea:focus {
   outline: none;
-  border-color: coral;
+  border-color: var(--coral);
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -710,7 +723,7 @@
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
@@ -727,7 +740,7 @@
   gap: 10px;
   background: transparent;
   padding: 12px 0;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   margin-top: 4px;
 }
 
@@ -737,8 +750,8 @@
   gap: 10px;
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--obsidian-border);
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -750,7 +763,7 @@
 
 .bank-promo-checkbox-item.selected {
   background: rgba(255, 127, 80, 0.08);
-  border-color: coral;
+  border-color: var(--coral);
 }
 
 .checkbox-wrapper {
@@ -774,7 +787,7 @@
   height: 20px;
   width: 20px;
   background-color: rgba(0, 0, 0, 0.3);
-  border: 2px solid var(--obsidian-border);
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   transition: all 0.2s ease;
   display: flex;
@@ -783,8 +796,8 @@
 }
 
 .bank-promo-checkbox-item.selected .checkbox-custom {
-  border-color: coral;
-  background-color: coral;
+  border-color: var(--coral);
+  background-color: var(--coral);
 }
 
 .checkbox-inner {
@@ -802,13 +815,13 @@
 
 .bank-name {
   font-size: 0.9rem;
-  color: var(--obsidian-text-muted);
-  font-weight: 500;
+  color: var(--text-secondary);
+  font-weight: var(--weight-medium);
   transition: color 0.2s ease;
 }
 
 .bank-promo-checkbox-item.selected .bank-name {
-  color: #000000;
+  color: var(--text-primary);
 }
 
 /* Interest Toggle */
@@ -819,7 +832,7 @@
   cursor: pointer;
   padding: 8px 16px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--obsidian-border);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   transition: all 0.2s ease;
   width: fit-content;
@@ -827,7 +840,7 @@
 
 .bank-promo-interest-toggle:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: coral;
+  border-color: var(--coral);
 }
 
 .interest-toggle-track {
@@ -837,7 +850,7 @@
   border-radius: 10px;
   position: relative;
   transition: all 0.3s ease;
-  border: 1px solid var(--obsidian-border);
+  border: 1px solid var(--border-color);
 }
 
 .interest-toggle-thumb {
@@ -852,8 +865,8 @@
 }
 
 .bank-promo-interest-toggle.with-interest .interest-toggle-track {
-  background: #f59e0b;
-  border-color: #f59e0b;
+  background: var(--amber-dark);
+  border-color: var(--amber-dark);
 }
 
 .bank-promo-interest-toggle.with-interest .interest-toggle-thumb {
@@ -861,20 +874,20 @@
 }
 
 .bank-promo-interest-toggle.no-interest .interest-toggle-track {
-  background: #10b981;
-  border-color: #10b981;
+  background: var(--teal-accent);
+  border-color: var(--teal-accent);
 }
 
 .interest-toggle-label {
   font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--obsidian-text-muted);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
 }
 
 .bank-promo-interest-toggle.with-interest .interest-toggle-label {
-  color: #f59e0b;
+  color: var(--amber-dark);
 }
 
 .bank-promo-interest-toggle.no-interest .interest-toggle-label {
-  color: #10b981;
+  color: var(--teal-accent);
 }

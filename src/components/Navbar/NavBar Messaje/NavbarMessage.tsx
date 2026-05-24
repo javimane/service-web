@@ -128,7 +128,6 @@ export default function NavbarMessage() {
                         key={notif.id}
                         className={`notif-item ${notif.unread ? "notif-item--unread" : ""}`}
                         onClick={() => notificationStorage.markAsRead(notif.id)}
-                        style={{ cursor: "pointer" }}
                       >
                         <div
                           className={`notif-item__icon notif-item__icon--${notif.iconColor || "blue"}`}

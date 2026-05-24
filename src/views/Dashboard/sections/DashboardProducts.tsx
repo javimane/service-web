@@ -1193,10 +1193,7 @@ export default function DashboardProducts() {
             </div>
 
             {/* Delete offers option */}
-            <div
-              className="dash-products__modal-field"
-              style={{ marginTop: "4px" }}
-            >
+            <div className="dash-products__modal-field dash-products__modal-field--mt">
               <label className="dash-products__checkbox-label">
                 <input
                   type="checkbox"
@@ -1277,10 +1274,7 @@ export default function DashboardProducts() {
             <div className="dash-products__modal-field dash-products__field--full">
               <label>Código EAN / UPC</label>
               <div className="dash-products__ean-row">
-                <div
-                  className="dash-products__modal-input-wrap"
-                  style={{ flex: 1 }}
-                >
+                <div className="dash-products__modal-input-wrap dash-products__modal-input-wrap--flex">
                   <Barcode size={16} />
                   <input
                     type="text"
@@ -1305,14 +1299,7 @@ export default function DashboardProducts() {
             {eanMatch && (
               <div className="dash-products__ean-match">
                 <div
-                  className="dash-products__ean-match-header"
-                  style={{
-                    backgroundColor: eanMatch.isAlreadyAssigned
-                      ? "rgba(22, 163, 74, 0.1)"
-                      : "rgba(59, 130, 246, 0.1)",
-                    color: eanMatch.isAlreadyAssigned ? "#16a34a" : "#3b82f6",
-                    marginBottom: "20px",
-                  }}
+                  className={`dash-products__ean-match-header ${eanMatch.isAlreadyAssigned ? "dash-products__ean-match-header--existing" : "dash-products__ean-match-header--new"}`}
                 >
                   {eanMatch.isAlreadyAssigned ? (
                     <Check size={16} />
@@ -1338,10 +1325,7 @@ export default function DashboardProducts() {
                     <span className="dash-products__ean-match-name">
                       {eanMatch.title}
                     </span>
-                    <div
-                      className="dash-products__price-container"
-                      style={{ alignItems: "flex-start" }}
-                    >
+                    <div className="dash-products__price-container dash-products__price-container--flex-start">
                       <span
                         className={`dash-products__ean-match-price ${eanMatch.offer_price > 0 ? "dash-products__price--offer" : ""}`}
                       >
@@ -1366,10 +1350,7 @@ export default function DashboardProducts() {
                 </div>
 
                 {!eanMatch.isAlreadyAssigned && (
-                  <div
-                    className="dash-products__form-grid"
-                    style={{ marginTop: "20px" }}
-                  >
+                  <div className="dash-products__form-grid dash-products__form-grid--mt">
                     <div className="dash-products__modal-field">
                       <label>Precio (ARS) *</label>
                       <div className="dash-products__modal-input-wrap">
@@ -1843,10 +1824,7 @@ export default function DashboardProducts() {
               <div className="dash-products__modal-field dash-products__field--full">
                 <label>Código EAN / UPC</label>
                 <div className="dash-products__ean-row">
-                  <div
-                    className="dash-products__modal-input-wrap"
-                    style={{ flex: 1 }}
-                  >
+                  <div className="dash-products__modal-input-wrap dash-products__modal-input-wrap--flex">
                     <Barcode size={16} />
                     <input
                       type="text"
@@ -2053,8 +2031,7 @@ export default function DashboardProducts() {
       {deleteConfirmOpen && (
         <div className="dash-products__floating-overlay">
           <div
-            className="dash-products__floating-screen"
-            style={{ borderColor: "rgba(250, 82, 82, 0.3)" }}
+            className="dash-products__floating-screen dash-products__floating-screen--danger"
           >
             <div className="dash-products__floating-icon dash-products__floating-icon--danger">
               <Trash2 size={28} />
@@ -2076,8 +2053,7 @@ export default function DashboardProducts() {
                 Cancelar
               </button>
               <button
-                className="dash-products__floating-btn dash-products__floating-btn--primary"
-                style={{ background: "#fa5252" }}
+                className="dash-products__floating-btn dash-products__floating-btn--danger"
                 onClick={confirmDelete}
               >
                 Eliminar

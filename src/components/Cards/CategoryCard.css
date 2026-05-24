@@ -17,8 +17,8 @@
   width: 80px !important;
   height: 80px !important;
   flex-shrink: 0;
-  background: #f0f2f5; /* Color diferenciado para que se note el cuadrado */
-  border-radius: 16px;
+  background: var(--surface-soft); /* Color diferenciado para que se note el cuadrado */
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -27,14 +27,14 @@
 }
 
 .cat-minimal-card:hover .cat-minimal-card__icon-box {
-  background: #ffffff;
+  background: var(--white);
   border-color: var(--accent-color);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .cat-minimal-card__label {
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
   text-align: center;
   white-space: normal;

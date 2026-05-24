@@ -11,7 +11,7 @@
 
 .categories-section__title {
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--text-primary);
   letter-spacing: -0.03em;
   margin: 0;

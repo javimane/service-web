@@ -357,7 +357,7 @@ export default function DashboardPage() {
                       <div className="bar-container">
                         <div
                           className="bar highlight"
-                          style={{ height: `${chartHeight}%` }}
+                          style={{ '--bar-height': `${chartHeight}%` } as React.CSSProperties}
                         >
                           <div className="stars">👁</div>
                         </div>
@@ -389,13 +389,7 @@ export default function DashboardPage() {
                       </div>
                       <h3 className="mid-value">Reels</h3>
                     </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "32px",
-                        alignItems: "flex-start",
-                      }}
-                    >
+                    <div className="reels-stats-row">
                       <div className="stat-value-group">
                         <span className="card-label">CANTIDAD DE VISTAS</span>
                         <h2 className="mid-value">
@@ -588,14 +582,7 @@ export default function DashboardPage() {
             Para acceder a esta funcionalidad necesitás una suscripción
             profesional.
           </p>
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              marginTop: 12,
-              justifyContent: "flex-end",
-            }}
-          >
+          <div className="upgrade-actions">
             <button
               type="button"
               className="action-btn"

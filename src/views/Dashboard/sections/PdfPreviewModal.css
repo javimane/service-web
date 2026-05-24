@@ -12,13 +12,13 @@
   align-items: center;
   background: var(--bg-card);
   padding: 1rem 1.5rem;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
 }
 
 .preview-meta span {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
   display: block;
 }
@@ -73,12 +73,31 @@
 }
 
 .a4-page {
-  background: #fff;
+  background: var(--white);
   width: 100%;
   max-width: 500px;
-  aspect-ratio: 1 / 1.414; /* A4 aspect ratio */
+  aspect-ratio: 1 / 1.414;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 600px;
+}
+
+.a4-page__iframe {
+  border: none;
+}
+
+.btn-send-pdf {
+  background: #3b82f6;
+  color: #fff;
+  font-weight: var(--weight-bold);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 12px 24px;
+  margin-left: 8px;
+  cursor: pointer;
 }
 
 .a4-page img {
@@ -100,17 +119,17 @@
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
 }
 
 .btn-save-pdf {
-  background: #fff;
-  color: #000;
+  background: var(--white);
+  color: var(--text-primary);
   border: none;
   padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 800;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-extrabold);
   cursor: pointer;
 }

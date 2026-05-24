@@ -218,7 +218,7 @@ export default function ReviewModal({
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
-                    style={{ display: "none" }}
+                    className="review-modal__file-input"
                   />
                 </label>
                 {imagePreview && (
