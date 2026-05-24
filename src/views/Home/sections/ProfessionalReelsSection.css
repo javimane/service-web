@@ -1,38 +1,36 @@
 .professional-reels {
-  padding: 40px 0;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: var(--section-padding-y) 0;
 }
 
 .professional-reels__header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 24px;
-  padding: 0 40px;
+  margin-bottom: var(--space-6);
 }
 
 .professional-reels__title-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .professional-reels__title {
-  font-size: 2rem;
+  font-size: clamp(1.5rem, 2.5vw, var(--text-2xl));
   font-weight: var(--weight-black);
   color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   margin: 0;
-  letter-spacing: -0.03em;
 }
 
 .professional-reels__location {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
+  gap: var(--space-1-5);
+  font-size: var(--text-sm);
   font-weight: var(--weight-extrabold);
-  color: var(--highlight);
+  color: var(--accent-color);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -44,20 +42,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: var(--space-4);
   color: var(--text-secondary);
   border: 1px dashed var(--border-color);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   background: var(--bg-card);
 }
 
 .premium-badge-mini {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: var(--space-3);
+  right: var(--space-3);
   width: 20px;
   height: 20px;
-  background: var(--highlight);
+  background: var(--accent-color);
   color: var(--text-primary);
   border-radius: 50%;
   display: flex;
@@ -69,15 +67,14 @@
 
 .professional-reels__carousel-wrapper {
   position: relative;
-  padding: 0 40px;
 }
 
 .professional-reels__scroll {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
   overflow-x: auto;
   scroll-behavior: smooth;
-  padding: 10px 0;
+  padding: var(--space-3) 0;
   scrollbar-width: none;
 }
 
@@ -111,54 +108,14 @@
 
 .reel-card__label {
   position: absolute;
-  bottom: 12px;
-  left: 12px;
+  bottom: var(--space-3);
+  left: var(--space-3);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   color: var(--white);
   font-weight: var(--weight-bold);
-  font-size: 0.85rem;
-}
-
-/* Shared Carousel Controls */
-.carousel-control {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--bg-color);
-  border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  color: var(--text-primary);
-}
-
-.carousel-control:hover {
-  background: var(--surface-soft);
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-  transform: translateY(-50%) scale(1.1);
-}
-
-.carousel-control--left {
-  left: 18px;
-}
-
-.carousel-control--right {
-  right: 18px;
-}
-
-.carousel-control--hidden {
-  opacity: 0;
-  pointer-events: none;
+  font-size: var(--text-sm);
 }
 
 /* Modal */
@@ -171,7 +128,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: var(--space-5);
 }
 
 .reels-modal {
@@ -197,8 +154,8 @@
 }
 
 .reels-modal__close {
-  top: 12px;
-  right: 12px;
+  top: var(--space-3);
+  right: var(--space-3);
 }
 
 .reels-modal__nav--left {
@@ -232,10 +189,10 @@
   top: 0;
   left: 0;
   right: 0;
-  padding: 16px 18px;
+  padding: var(--space-4) var(--space-4-5);
   color: var(--white);
   font-weight: var(--weight-bold);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
   display: flex;
   align-items: center;
@@ -250,7 +207,7 @@
 .reels-modal__profile-link {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2-5);
   text-decoration: none;
   color: var(--white);
   font-weight: var(--weight-bold);
@@ -265,11 +222,11 @@
   height: 38px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--brand-blue-border, #3b82f6);
+  border: 2px solid var(--brand-blue-border);
   background: var(--white);
 }
 .reels-modal__profile-name {
-  font-size: 1rem;
+  font-size: var(--text-md);
   font-weight: var(--weight-bold);
   color: var(--white);
   letter-spacing: -0.01em;
@@ -295,11 +252,11 @@
 
 .reels-modal__actions {
   position: absolute;
-  right: 14px;
+  right: var(--space-3-5);
   bottom: 108px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2-5);
 }
 
 .reels-modal__icon-btn {
@@ -323,9 +280,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 18px;
+  padding: var(--space-4-5);
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   justify-content: flex-start;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.72), transparent 60%);
 }
@@ -333,22 +290,26 @@
 .reels-modal__badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: var(--space-1-5);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid var(--brand-blue-border);
   color: var(--white);
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   font-weight: var(--weight-bold);
 }
 
 @media (max-width: 640px) {
+  .professional-reels {
+    padding: var(--space-8) 0;
+  }
+
   .reels-modal__nav--left {
-    left: 8px;
+    left: var(--space-2);
   }
 
   .reels-modal__nav--right {
-    right: 8px;
+    right: var(--space-2);
   }
 }

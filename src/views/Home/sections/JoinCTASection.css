@@ -1,5 +1,5 @@
 .join-cta {
-  margin-bottom: 3rem;
+  padding: var(--section-padding-y) 0;
 }
 
 .join-cta__inner {
@@ -9,7 +9,7 @@
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 3rem 2.5rem;
+  padding: var(--space-12) var(--space-10);
   position: relative;
   overflow: hidden;
 }
@@ -17,13 +17,13 @@
 .join-cta__left {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
   position: relative;
   z-index: 1;
 }
 
 .join-cta__eyebrow {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -31,7 +31,7 @@
 }
 
 .join-cta__title {
-  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-size: clamp(2.5rem, 6vw, var(--text-4xl));
   font-weight: var(--weight-black);
   letter-spacing: 0.06em;
   color: var(--text-primary);
@@ -39,24 +39,24 @@
 }
 
 .join-cta__subtitle {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .join-cta__btn {
   display: inline-block;
-  padding: 0.75rem 1.75rem;
+  padding: var(--space-3) var(--space-5);
   background-color: var(--accent-color);
   color: var(--white);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   border-radius: var(--radius-sm);
   text-decoration: none;
   align-self: flex-start;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
   transition:
     background-color 0.2s ease,
     transform 0.2s ease;
@@ -90,7 +90,11 @@
 }
 
 @media (max-width: 640px) {
+  .join-cta {
+    padding: var(--space-8) 0;
+  }
+
   .join-cta__inner {
-    padding: 2rem 1.5rem;
+    padding: var(--space-8) var(--space-6);
   }
 }

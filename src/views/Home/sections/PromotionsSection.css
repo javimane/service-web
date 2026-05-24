@@ -1,40 +1,48 @@
 .promotions-section {
-  width: 100%;
-  margin-bottom: 3rem;
+  padding: var(--section-padding-y) 0;
 }
 
 .promotions-section__header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-6);
 }
 
 .promotions-section__title-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
+}
+
+.promotions-section__title {
+  font-size: clamp(1.5rem, 2.5vw, var(--text-2xl));
+  font-weight: var(--weight-black);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
 }
 
 .promotions-section__location-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: var(--slate-100);
-  border: 1px solid var(--slate-200);
-  padding: 6px 12px;
+  gap: var(--space-1-5);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  padding: var(--space-1-5) var(--space-3);
   border-radius: var(--radius-full);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: var(--slate-500);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   width: fit-content;
 }
 
 .promotions-section__location-btn:hover {
-  background: #e2e8f0;
-  color: var(--slate-800);
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 
 .promotions-section__loading,
@@ -45,21 +53,22 @@
   justify-content: center;
   padding: 4rem 2rem;
   text-align: center;
-  background: var(--slate-50);
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
   border-radius: var(--radius-xl);
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
 }
 
 .promotions-section__empty h3 {
   margin: 0;
-  font-size: 1.25rem;
-  color: var(--slate-800);
+  font-size: var(--text-xl);
+  color: var(--text-primary);
 }
 
 .promotions-section__empty p {
   margin: 0;
-  color: var(--slate-500);
+  color: var(--text-secondary);
   max-width: 300px;
 }
 
@@ -69,124 +78,18 @@
 }
 
 .change-loc-btn {
-  background: var(--slate-800);
+  background: var(--text-primary);
   color: var(--white);
   border: none;
-  padding: 10px 20px;
+  padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-md);
   font-weight: var(--weight-semibold);
   cursor: pointer;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
 }
 
-/* ─── Province Selector ────────────────────────── */
-.province-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 0.5rem;
-}
-
-.province-selector__hint {
-  font-size: 0.9rem;
-  color: var(--slate-500);
-  margin: 0;
-}
-
-.province-selector__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
-}
-
-.province-chip {
-  background: var(--slate-100);
-  border: 1px solid var(--slate-200);
-  padding: 10px;
-  border-radius: var(--radius-md);
-  font-size: 0.85rem;
-  font-weight: var(--weight-medium);
-  color: var(--slate-600);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-
-.province-chip:hover {
-  border-color: var(--amber-color);
-  background: #fffbeb;
-}
-
-.province-chip.active {
-  background: var(--amber-color);
-  border-color: #fbbf24;
-  color: var(--slate-800);
-  font-weight: var(--weight-bold);
-}
-
-/* ─── Professional Mini In Coupon ────────────────────────── */
-.promo-modal__professional-mini {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.avatar-placeholder {
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.prof-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.prof-name {
-  font-size: 0.85rem;
-  font-weight: var(--weight-bold);
-  line-height: 1.1;
-}
-
-.prof-label {
-  font-size: 0.6rem;
-  font-weight: var(--weight-semibold);
-  opacity: 0.8;
-  letter-spacing: 0.05em;
-}
-
-.promo-modal__close-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.2);
-  color: white;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: all 0.2s ease;
-}
-
-.promo-modal__close-btn:hover {
-  background: rgba(0, 0, 0, 0.4);
-  transform: scale(1.1);
-}
-
-.promotions-section__title {
-  margin: 0.25rem 0 0;
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  line-height: 1.2;
-  color: var(--text-primary, #1e293b);
+.change-loc-btn:hover {
+  opacity: 0.9;
 }
 
 .promotions-section__carousel {
@@ -195,11 +98,11 @@
 
 .promotions-section__scroll {
   display: flex;
-  gap: 16px;
+  gap: var(--space-4);
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 2rem;
-  padding-top: 0.5rem;
+  padding-bottom: var(--space-8);
+  padding-top: var(--space-2);
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -228,11 +131,115 @@
   pointer-events: none;
 }
 
+/* ─── Province Selector ────────────────────────── */
+.province-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-2);
+}
+
+.province-selector__hint {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.province-selector__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2-5);
+}
+
+.province-chip {
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.province-chip:hover {
+  border-color: var(--accent-color);
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+}
+
+.province-chip.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: var(--white);
+  font-weight: var(--weight-bold);
+}
+
+/* ─── Professional Mini In Coupon ────────────────────────── */
+.promo-modal__professional-mini {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+}
+
+.avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prof-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.prof-name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+}
+
+.prof-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  opacity: 0.8;
+  letter-spacing: 0.05em;
+}
+
+.promo-modal__close-btn {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.promo-modal__close-btn:hover {
+  background: rgba(0, 0, 0, 0.4);
+  transform: scale(1.1);
+}
+
 /* ─── Modal Detail Styles (Coupon Style) ────────────────────────── */
 .promo-modal {
   display: flex;
   justify-content: center;
-  padding: 1rem 0;
+  padding: var(--space-4) 0;
 }
 
 .promo-modal__coupon {
@@ -247,11 +254,11 @@
 
 .promo-modal__top-banner {
   background: var(--amber-color);
-  padding: 1.5rem;
+  padding: var(--space-6);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--slate-800);
+  color: var(--text-primary);
 }
 
 .promo-modal__offer-badge {
@@ -273,80 +280,80 @@
 }
 
 .promo-modal__body {
-  padding: 1.5rem;
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--space-5);
 }
 
 .promo-modal__title {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: var(--text-xl);
   font-weight: var(--weight-extrabold);
-  color: var(--slate-800);
+  color: var(--text-primary);
 }
 
 .promo-modal__description {
   margin: 0;
-  font-size: 1rem;
-  color: var(--slate-600);
+  font-size: var(--text-md);
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .promo-modal__details {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: #f8fafc;
-  padding: 12px;
+  gap: var(--space-2);
+  background: var(--surface-soft);
+  padding: var(--space-3);
   border-radius: var(--radius-lg);
 }
 
 .promo-modal__detail-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
-  color: var(--slate-800);
+  gap: var(--space-2-5);
+  font-size: var(--text-md);
+  color: var(--text-primary);
 }
 
 .promo-modal__code-box {
-  background: #fffbeb;
-  border: 2px dashed var(--amber-color);
+  background: var(--accent-transparent);
+  border: 2px dashed var(--accent-color);
   border-radius: var(--radius-lg);
-  padding: 1rem;
+  padding: var(--space-4);
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .promo-modal__code-label {
-  font-size: 0.7rem;
+  font-size: var(--text-sm);
   font-weight: var(--weight-bold);
-  color: var(--amber-dark);
+  color: var(--accent-color);
   letter-spacing: 0.1em;
 }
 
 .promo-modal__code-value {
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   font-weight: var(--weight-black);
-  color: var(--slate-800);
+  color: var(--text-primary);
   letter-spacing: 0.05em;
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 .promo-modal__download-btn {
-  background: #1e293b;
+  background: var(--text-primary);
   color: var(--white);
   border: none;
-  padding: 1rem;
+  padding: var(--space-4);
   border-radius: var(--radius-lg);
   font-weight: var(--weight-bold);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--space-2-5);
   cursor: pointer;
   transition:
     transform 0.2s ease,
@@ -354,16 +361,22 @@
 }
 
 .promo-modal__download-btn:hover {
-  background: var(--slate-900);
+  opacity: 0.9;
   transform: translateY(-2px);
 }
 
 .promo-modal__footer-text {
   margin: 0;
-  font-size: 0.75rem;
-  color: var(--slate-400);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--space-1);
+}
+
+@media (max-width: 640px) {
+  .promotions-section {
+    padding: var(--space-8) 0;
+  }
 }

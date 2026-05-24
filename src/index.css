@@ -211,22 +211,127 @@ a:hover {
   padding: 0 var(--section-padding-x);
 }
 
-/* Improved Section Link Button */
+/* ===== Shared Section Title ===== */
+.section-title {
+  font-size: clamp(1.5rem, 2.5vw, var(--text-2xl));
+  font-weight: var(--weight-black);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.section-subtitle {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ===== Shared Section Layout ===== */
+.section-container {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--section-padding-x);
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+}
+
+.section-header__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* ===== Shared Carousel Controls ===== */
+.carousel-control {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-card);
+  color: var(--text-primary);
+}
+
+.carousel-control:hover {
+  background: var(--surface-soft);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-control--left {
+  left: -22px;
+}
+
+.carousel-control--right {
+  right: -22px;
+}
+
+.carousel-control--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ===== Shared Loading/Empty State ===== */
+.section-loading,
+.section-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-xl);
+  gap: var(--space-4);
+  width: 100%;
+  color: var(--text-secondary);
+}
+
+.section-empty h3 {
+  margin: 0;
+  font-size: var(--text-xl);
+  color: var(--text-primary);
+}
+
+.section-empty p {
+  margin: 0;
+  max-width: 350px;
+}
+
+/* ===== Improved Section Link Button ===== */
 .section-link {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   background: var(--surface-soft);
   color: var(--text-primary);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-radius: 10px;
-  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .section-link:hover {

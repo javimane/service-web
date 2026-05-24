@@ -13,7 +13,6 @@ import {
   MapPin,
 } from "lucide-react";
 import { useQuery, useQueries } from "@tanstack/react-query";
-import Link from "next/link";
 import { ROUTES } from "../../../routes/paths";
 import {
   getReelsAction,
@@ -219,9 +218,13 @@ export default function ProfessionalReelsSection({ userProvince = "Buenos Aires"
               {userProvince}
             </span>
           </div>
-          <Link href={ROUTES.reels} className="section-link">
+          <button
+            type="button"
+            className="section-link"
+            onClick={() => window.location.href = ROUTES.reels}
+          >
             Ver todo <span>&gt;</span>
-          </Link>
+          </button>
         </div>
       </div>
 

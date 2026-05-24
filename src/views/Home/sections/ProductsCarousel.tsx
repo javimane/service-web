@@ -96,7 +96,7 @@ export default function ProductsCarousel() {
             <h2 className="products-carousel-section__title">
               Productos Importados
             </h2>
-            <p className="products-carousel-section__subtitle">
+            <p className="section-subtitle">
               Calidad internacional a un solo clic
             </p>
           </div>

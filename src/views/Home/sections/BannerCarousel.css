@@ -1,5 +1,5 @@
 .banner-carousel {
-  padding: 2rem 0 3.5rem;
+  padding: 0 0 var(--space-8);
   overflow: hidden;
   position: relative;
 }
@@ -8,7 +8,7 @@
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-xl);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xl);
   max-width: 1000px;
   margin: 0 auto;
 }
@@ -22,13 +22,25 @@
 
 .banner-slide {
   flex: 0 0 100%;
-  padding: 1.5rem 3rem;
+  padding: var(--space-6) var(--space-8);
   min-height: 200px;
   display: flex;
   align-items: center;
   color: white;
   position: relative;
-  background: var(--slide-bg);
+}
+
+/* Banner type backgrounds */
+.banner-slide--referrals {
+  background: linear-gradient(135deg, var(--indigo-accent) 0%, var(--purple-accent) 100%);
+}
+
+.banner-slide--register {
+  background: linear-gradient(135deg, var(--green-accent) 0%, var(--blue-accent) 100%);
+}
+
+.banner-slide--promos {
+  background: linear-gradient(135deg, var(--amber-color) 0%, var(--error-color) 100%);
 }
 
 .banner-slide__content {
@@ -36,14 +48,14 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 2rem;
+  gap: var(--space-8);
   z-index: 1;
 }
 
 .banner-slide__info {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: var(--space-8);
   max-width: 700px;
 }
 
@@ -66,25 +78,25 @@
 }
 
 .banner-slide__text-group h3 {
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   font-weight: var(--weight-extrabold);
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--space-2);
   letter-spacing: -0.01em;
 }
 
 .banner-slide__highlight {
-  background: #fef08a;
-  color: #854d0e;
-  padding: 2px 10px;
+  background: var(--amber-color);
+  color: var(--text-primary);
+  padding: var(--space-0-5) var(--space-2-5);
   border-radius: var(--radius-sm);
-  font-size: 1.5rem;
-  margin-left: 8px;
+  font-size: var(--text-xl);
+  margin-left: var(--space-2);
   display: inline-block;
   transform: rotate(-2deg);
 }
 
 .banner-slide__text-group p {
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   opacity: 0.9;
   line-height: 1.5;
   margin: 0;
@@ -92,15 +104,15 @@
 
 .banner-slide__btn {
   background: var(--white);
-  color: var(--gray-900);
+  color: var(--text-primary);
   border: none;
-  padding: 1rem 2rem;
+  padding: var(--space-4) var(--space-8);
   border-radius: 14px;
   font-weight: var(--weight-extrabold);
-  font-size: 1rem;
+  font-size: var(--text-md);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -110,7 +122,7 @@
 .banner-slide__btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-  background: var(--gray-50);
+  background: var(--surface-soft);
 }
 
 /* Special effects */
@@ -162,11 +174,11 @@
 
 .banner-carousel__dots {
   position: absolute;
-  bottom: 1rem;
+  bottom: var(--space-4);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   z-index: 2;
 }
 
@@ -191,22 +203,22 @@
 
 @media (max-width: 1024px) {
   .banner-slide {
-    padding: 2.5rem;
+    padding: var(--space-6) var(--space-6);
   }
-  
+
   .banner-slide__text-group h3 {
-    font-size: 1.5rem;
+    font-size: var(--text-xl);
   }
-  
+
   .banner-slide__info {
-    gap: 1.5rem;
+    gap: var(--space-6);
   }
 }
 
 @media (max-width: 1200px) {
-  .banner-carousel__nav--prev { left: 1rem; }
-  .banner-carousel__nav--next { right: 1rem; }
-  
+  .banner-carousel__nav--prev { left: var(--space-4); }
+  .banner-carousel__nav--next { right: var(--space-4); }
+
   .banner-carousel__nav {
     background: rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(8px);
@@ -219,25 +231,25 @@
   .banner-slide__content {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1.5rem;
+    gap: var(--space-6);
   }
-  
+
   .banner-slide__info {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
+    gap: var(--space-4);
   }
-  
+
   .banner-slide__icon-wrap {
     width: 48px;
     height: 48px;
   }
-  
+
   .banner-slide__btn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .banner-carousel__nav {
     display: none;
   }

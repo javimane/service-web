@@ -23,7 +23,7 @@ const BANNERS = [
     text: "Unite a nuestra red de referidos y ganá $5.000 por cada profesional o comercio que se sume gracias a vos.",
     buttonText: "EMPEZAR A REFERIR",
     icon: Users,
-    bg: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+    cssClass: "banner-slide--referrals",
   },
   {
     id: "register",
@@ -32,7 +32,7 @@ const BANNERS = [
     text: "Registrate hoy mismo, llegá a más clientes y hacé crecer tu negocio en nuestra red exclusiva.",
     buttonText: "REGISTRARME AHORA",
     icon: Store,
-    bg: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
+    cssClass: "banner-slide--register",
   },
   {
     id: "promotions",
@@ -41,7 +41,7 @@ const BANNERS = [
     text: "Descubrí las mejores promociones de la semana. Descuentos exclusivos que no vas a querer perderte.",
     buttonText: "VER PROMOCIONES",
     icon: Star,
-    bg: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)",
+    cssClass: "banner-slide--promos",
     specialClass: "banner-promos-glow",
   },
 ];
@@ -91,8 +91,7 @@ export default function BannerCarousel() {
             return (
               <div
                 key={banner.id}
-                className={`banner-slide ${banner.specialClass || ""}`}
-                style={{ '--slide-bg': banner.bg } as React.CSSProperties}
+                className={`banner-slide ${banner.cssClass} ${banner.specialClass || ""}`}
               >
                 <div className="banner-slide__content">
                   <div className="banner-slide__info">
