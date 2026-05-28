@@ -12,6 +12,11 @@ export const API_ENDPOINTS = {
     updateEmail: `${API_BASE_URL}/api/auth/update-email`,
     updatePassword: `${API_BASE_URL}/api/auth/update-password`,
   },
+  jobRequests: {
+    base: `${API_BASE_URL}/api/job-requests`,
+    search: `${API_BASE_URL}/api/job-requests/search`,
+    detail: (id: string) => `${API_BASE_URL}/api/job-requests/${id}`,
+  },
   users: {
     favorites: `${API_BASE_URL}/api/users/me/favorites`,
     favoriteDetail: (professionalId: string) =>
@@ -160,6 +165,7 @@ export const API_ENDPOINTS = {
     portfolio: `${API_BASE_URL}/api/storage/portfolio`,
     proposals: `${API_BASE_URL}/api/storage/proposals`,
     reviews: `${API_BASE_URL}/api/storage/reviews`,
+    jobRequests: `${API_BASE_URL}/api/storage/job-requests`,
     chat: (fileName: string) =>
       `${API_BASE_URL}/api/storage/chat?fileName=${encodeURIComponent(fileName)}`,
     getSignedUrl: (path: string) =>

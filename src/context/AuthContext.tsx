@@ -98,14 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const subscriptionPlan = sessionStatus?.subscription?.plan ?? null;
 
   const refreshSession = async () => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      setLoading(false);
-      setUser(null);
-      setSessionStatus(null);
-      return;
-    }
-
     try {
       const session = await authService.getSession();
       const { nextUser, nextSessionStatus } = normalizeSessionPayload(session);
@@ -114,8 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSessionStatus(nextSessionStatus);
       }
     } catch (err) {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
       setUser(null);
       setSessionStatus(null);
     } finally {
@@ -220,10 +210,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // If there's an API logout endpoint, we'd call it here
-    // await apiClient('/api/auth/logout', { method: 'POST' });
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    try {
+      await authService.logout();
+    } catch (error) {
+      // Ignore errors on logout
+    }
+
     localStorage.removeItem("registered_device_token");
 
     // Clear Supabase Session for chat functionality

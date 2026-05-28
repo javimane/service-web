@@ -26,7 +26,7 @@ export const getBankPromotionsAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx),
+        headers: await buildActionHeaders(ctx),
       });
 
       return response.data;
@@ -45,7 +45,7 @@ export const getBankPromotionDetailAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx),
+        headers: await buildActionHeaders(ctx),
       });
 
       return response.data;
@@ -64,7 +64,7 @@ export const getBanksAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx),
+        headers: await buildActionHeaders(ctx),
       });
 
       return response.data;
@@ -87,7 +87,7 @@ export const getMyBankPromotionsAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput?.token),
+        headers: await buildActionHeaders(ctx, parsedInput?.token),
       });
 
       return response.data;
@@ -110,7 +110,7 @@ export const createBankPromotionAction = publicAction
 
     try {
       const response = await axios.post(url, parsedInput.data, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -133,7 +133,7 @@ export const updateBankPromotionAction = publicAction
 
     try {
       const response = await axios.patch(url, parsedInput.data, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -155,7 +155,7 @@ export const deleteBankPromotionAction = publicAction
 
     try {
       await axios.delete(url, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return { success: true };
     } catch (error: any) {

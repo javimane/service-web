@@ -125,12 +125,32 @@ export const authService = {
 
   /**
    * @route GET /api/auth/session
-   * @auth Bearer (manual)
+   * @auth Cookie
    * @returns {Promise<any>} Supabase auth response
    */
   getSession: () =>
     apiClient<any>(API_ENDPOINTS.auth.getSession, {
       method: "GET",
+    }),
+
+  /**
+   * @route POST /api/auth/refresh
+   * @auth Cookie
+   * @returns {Promise<any>}
+   */
+  refresh: () =>
+    apiClient<any>((process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000") + "/api/auth/refresh", {
+      method: "POST",
+    }),
+
+  /**
+   * @route POST /api/auth/logout
+   * @auth Cookie
+   * @returns {Promise<any>}
+   */
+  logout: () =>
+    apiClient<any>((process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000") + "/api/auth/logout", {
+      method: "POST",
     }),
 
   /**

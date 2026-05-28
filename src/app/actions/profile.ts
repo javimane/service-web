@@ -36,7 +36,7 @@ export const updateProfileAction = publicAction
 
     try {
       const response = await axios.put(url, parsedInput.data, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {

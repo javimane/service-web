@@ -24,7 +24,7 @@ export const getVideosAction = publicAction
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-videos`;
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput?.token),
+        headers: await buildActionHeaders(ctx, parsedInput?.token),
       });
       return response.data;
     } catch (error: any) {
@@ -94,7 +94,7 @@ export const createVideoAction = publicAction
     const { token, ...data } = parsedInput;
     try {
       const response = await axios.post(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -127,7 +127,7 @@ export const deleteVideoAction = publicAction
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-videos/${parsedInput.id}`;
     try {
       await axios.delete(url, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return { success: true };
     } catch (error: any) {
@@ -142,7 +142,7 @@ export const createProfessionalImageAction = publicAction
     const { token, ...data } = parsedInput;
     try {
       const response = await axios.post(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -163,7 +163,7 @@ export const deleteProfessionalImageAction = publicAction
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-images/${parsedInput.id}`;
     try {
       await axios.delete(url, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return { success: true };
     } catch (error: any) {
@@ -188,7 +188,7 @@ export const getMultimediaUploadUrlAction = publicAction
     const { token, ...data } = parsedInput;
     try {
       const response = await axios.post(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {

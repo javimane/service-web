@@ -38,6 +38,7 @@ import ReelsSection from "./sections/ReelsSection";
 import "./DashboardPage.css";
 import DashboardServices from "./sections/DashboardServices";
 import DashboardReferrals from "./sections/DashboardReferrals";
+import JobRequestsSection from "./sections/JobRequestsSection";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -129,6 +130,8 @@ export default function DashboardPage() {
   const handleShowProfile = () =>
     router.push(`${ROUTES.dashboard}?view=profile`);
   const handleShowReels = () => router.push(`${ROUTES.dashboard}?view=reels`);
+  const handleShowJobRequests = () =>
+    router.push(`${ROUTES.dashboard}?view=job-requests`);
 
   const isFreePlan = subscriptionPlan === "free";
 
@@ -185,6 +188,7 @@ export default function DashboardPage() {
     "subscription",
     "notifications",
     "proposals-view",
+    "job-requests",
     "referrals",
   ]);
   const shouldLockDashboardView =
@@ -262,6 +266,7 @@ export default function DashboardPage() {
           onBankPromosClick={handleShowBankPromosBlocked}
           onProfileClick={handleShowProfile}
           onReelsClick={handleShowReelsBlocked}
+          onJobRequestsClick={handleShowJobRequests}
         />
 
         <main
@@ -303,6 +308,8 @@ export default function DashboardPage() {
               <ProfessionalProfileSection />
             ) : view === "referrals" ? (
               <DashboardReferrals />
+            ) : view === "job-requests" ? (
+              <JobRequestsSection />
             ) : (
               <div className="dashboard-content">
                 <div className="welcome-section">

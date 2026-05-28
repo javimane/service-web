@@ -21,7 +21,7 @@ export const getProposalsCountAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput?.token),
+        headers: await buildActionHeaders(ctx, parsedInput?.token),
       });
       return response.data;
     } catch (error: any) {
@@ -44,7 +44,7 @@ export const getReceivedProposalsAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput?.token),
+        headers: await buildActionHeaders(ctx, parsedInput?.token),
       });
       return response.data;
     } catch (error: any) {
@@ -67,7 +67,7 @@ export const getSentProposalsAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput?.token),
+        headers: await buildActionHeaders(ctx, parsedInput?.token),
       });
       return response.data;
     } catch (error: any) {
@@ -92,7 +92,7 @@ export const acceptProposalAction = publicAction
         url,
         {},
         {
-          headers: buildActionHeaders(ctx, parsedInput.token),
+          headers: await buildActionHeaders(ctx, parsedInput.token),
         },
       );
       return response.data;
@@ -115,7 +115,7 @@ export const createProposalAction = publicAction
 
     try {
       const response = await axios.post(url, parsedInput.data, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {

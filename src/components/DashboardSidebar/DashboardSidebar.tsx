@@ -22,6 +22,7 @@ import {
   Clapperboard,
   Briefcase,
   Users,
+  ClipboardList,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
@@ -50,6 +51,7 @@ type DashboardSidebarProps = {
   onReelsClick?: () => void;
   onProposalsCreate?: () => void;
   onProposalsView?: () => void;
+  onJobRequestsClick?: () => void;
 };
 
 export default function DashboardSidebar({
@@ -74,6 +76,7 @@ export default function DashboardSidebar({
   onReelsClick,
   onProposalsCreate,
   onProposalsView,
+  onJobRequestsClick,
 }: DashboardSidebarProps) {
   const router = useRouter();
   const { logout, hasProfessionalSubscription, user, sessionStatus } =
@@ -92,6 +95,7 @@ export default function DashboardSidebar({
   const alwaysEnabledItems = new Set([
     "proposals",
     "proposals-view",
+    "job-requests",
     "messages",
     "notifications",
     "subscription",
@@ -172,6 +176,12 @@ export default function DashboardSidebar({
             onProposalsView ?? (() => goToDashboardView("proposals-view")),
         },
       ],
+    },
+    {
+      key: "job-requests",
+      label: "SOLICITUDES",
+      icon: ClipboardList,
+      onClick: onJobRequestsClick ?? (() => goToDashboardView("job-requests")),
     },
     {
       key: "promotions",
@@ -429,6 +439,14 @@ export default function DashboardSidebar({
         onProposalsCreate ?? (() => goToDashboardView("proposals-create")),
       isActive: activeItem === "proposals-create",
       isLocked: isItemLocked("proposals"),
+    },
+    {
+      key: "job-requests",
+      label: "Solicitudes de trabajo",
+      icon: ClipboardList,
+      onClick: onJobRequestsClick ?? (() => goToDashboardView("job-requests")),
+      isActive: activeItem === "job-requests",
+      isLocked: false,
     },
     {
       key: "promotions-create",

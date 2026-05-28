@@ -102,7 +102,7 @@ export const getProfessionalMeAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput?.token),
+        headers: await buildActionHeaders(ctx, parsedInput?.token),
       });
       return response.data;
     } catch (error: any) {
@@ -125,7 +125,7 @@ export const getProfessionalSubscriptionAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput?.token),
+        headers: await buildActionHeaders(ctx, parsedInput?.token),
       });
       return response.data;
     } catch (error: any) {
@@ -172,7 +172,7 @@ export const updateProfessionalAction = publicAction
 
     try {
       const response = await axios.put(url, parsedInput.data, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -222,7 +222,7 @@ export const createProfessionalMeAction = publicAction
         url,
         {},
         {
-          headers: buildActionHeaders(ctx, parsedInput?.token),
+          headers: await buildActionHeaders(ctx, parsedInput?.token),
         },
       );
       return response.data;

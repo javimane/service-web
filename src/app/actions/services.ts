@@ -82,7 +82,7 @@ export const createServiceAction = publicAction
 
     try {
       const response = await axios.post(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -105,7 +105,7 @@ export const updateServiceAction = publicAction
 
     try {
       const response = await axios.put(url, parsedInput.data, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -127,7 +127,7 @@ export const deleteServiceAction = publicAction
 
     try {
       await axios.delete(url, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return { success: true };
     } catch (error: any) {
