@@ -16,7 +16,7 @@
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   border: 1.5px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--bg-card);
   color: var(--text-primary);
   cursor: pointer;
@@ -51,13 +51,13 @@
   border-radius: 20px;
   padding: 0.3rem 0.9rem;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   margin-bottom: 0.75rem;
 }
 
 .bank-promo-company {
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   margin: 0;
 }
 
@@ -81,14 +81,14 @@
   gap: 0.25rem;
   background: var(--brand-blue-soft);
   border: 1px solid var(--brand-blue-border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 1rem 1.5rem;
   min-width: 100px;
   color: var(--brand-blue);
 }
 .stat-value {
   font-size: 1.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 .stat-value--installments {
   font-size: 2.5rem;
@@ -98,18 +98,18 @@
 }
 .stat-label {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .bank-promo-stat--installments {
-  border-color: coral;
+  border-color: var(--coral);
   background: rgba(255, 127, 80, 0.05);
   min-width: 140px;
 }
 
 .interest-badge {
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   text-transform: uppercase;
   padding: 4px 8px;
   border-radius: 6px;
@@ -118,13 +118,13 @@
 }
 
 .interest-badge--no {
-  background: #10b981;
+  background: var(--teal-accent);
   color: white;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .interest-badge--yes {
-  background: #f59e0b;
+  background: var(--amber-dark);
   color: white;
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
@@ -138,7 +138,7 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   margin-bottom: 0.75rem;
 }
@@ -154,7 +154,7 @@
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 .bank-tag {
   background: var(--brand-blue-soft);
@@ -169,12 +169,12 @@
 
 .payment-method-tag {
   padding: 0.35rem 0.8rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.8rem;
-  font-weight: 700;
-  background: #eef5ff;
-  color: #1a4fa0;
-  border: 1px solid #cfe1ff;
+  font-weight: var(--weight-bold);
+  background: var(--slate-100);
+  color: var(--brand-blue);
+  border: 1px solid var(--brand-blue-border);
 }
 
 .bank-promo-detail-row {
@@ -204,9 +204,9 @@
   background: var(--brand-blue);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   transition: background 0.2s;
 }

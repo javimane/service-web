@@ -354,10 +354,7 @@ export default function PromotionCreator({
               <ImageIcon size={18} /> Visuals
             </h2>
             {errors.image && (
-              <span
-                className="promo-field__error"
-                style={{ marginBottom: "10px", display: "block" }}
-              >
+              <span className="promo-field__error">
                 {errors.image}
               </span>
             )}
@@ -397,7 +394,7 @@ export default function PromotionCreator({
                   ref={fileInputRef}
                   type="file"
                   accept="image/jpeg,image/png"
-                  style={{ display: "none" }}
+                  className="promo-dropzone__file-input"
                   onChange={(e) => handleImageFile(e.target.files?.[0])}
                 />
               </div>

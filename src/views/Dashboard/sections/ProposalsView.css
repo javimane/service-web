@@ -16,7 +16,7 @@
 
 .proposals-view__label {
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--highlight);
   letter-spacing: 0.12em;
   display: block;
@@ -24,7 +24,7 @@
 
 .proposals-view__title {
   font-size: 1.8rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--text-primary);
   letter-spacing: -0.02em;
 }
@@ -41,7 +41,7 @@
   background: none;
   border: none;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
   padding: 0.5rem 1rem;
   cursor: pointer;
@@ -73,7 +73,7 @@
   color: var(--text-secondary);
   font-size: 0.7rem;
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   margin-left: 8px;
 }
 
@@ -93,7 +93,7 @@
 .proposal-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -121,7 +121,7 @@
 
 .proposal-card__name {
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   margin: 0;
 }
@@ -134,9 +134,9 @@
 /* ===== STATUS BADGE ===== */
 .proposal-status {
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   display: inline-flex;
@@ -152,7 +152,7 @@
 
 .proposal-status--pending {
   background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
+  color: var(--amber-color);
   border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
@@ -174,7 +174,7 @@
   padding: 10px;
   border-radius: 10px;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.2s;
   border: none;
@@ -192,7 +192,7 @@
 
 .btn-proposal-accept {
   background: var(--highlight);
-  color: #000;
+  color: var(--text-primary);
 }
 
 .btn-proposal-accept:hover {
@@ -215,7 +215,7 @@
   padding: 4rem 2rem;
   background: var(--bg-card);
   border: 1px dashed var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   color: var(--text-secondary);
   text-align: center;
 }
@@ -223,7 +223,7 @@
 .proposals-empty p {
   font-size: 1rem;
   margin-top: 1rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .loading-container {
@@ -232,5 +232,5 @@
   align-items: center;
   min-height: 200px;
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }

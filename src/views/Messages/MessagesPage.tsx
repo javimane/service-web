@@ -967,14 +967,8 @@ export default function MessagesPage() {
                         <span className="msg-conv__name">{conv.name}</span>
                         <span className="msg-conv__time">{conv.time}</span>
                       </div>
-                      <div
-                        className="msg-conv__row"
-                        style={{ marginTop: "2px" }}
-                      >
-                        <p
-                          className="msg-conv__preview"
-                          style={{ flex: 1, marginRight: "8px" }}
-                        >
+                      <div className="msg-conv__row">
+                        <p className="msg-conv__preview">
                           {conv.lastMessage}
                         </p>
                         {conv.unreadCount > 0 && (
@@ -992,12 +986,11 @@ export default function MessagesPage() {
             {sidebarCollapsed && (
               <div className="msg-panel__avatars">
                 {filteredConversations.map((conv) => (
-                  <button
+                    <button
                     key={conv.id}
                     className={`msg-avatar-btn ${activeConversation?.id === conv.id ? "msg-avatar-btn--active" : ""}`}
                     onClick={() => handleSelectConversation(conv)}
                     title={conv.name}
-                    style={{ position: "relative" }}
                   >
                     <div className="msg-conv__avatar">
                       {conv.avatarImage ? (
@@ -1012,13 +1005,7 @@ export default function MessagesPage() {
                       {conv.online && <span className="msg-online-dot" />}
                       {conv.unreadCount > 0 && (
                         <span
-                          className="msg-unread-badge"
-                          style={{
-                            position: "absolute",
-                            top: -4,
-                            right: -4,
-                            zIndex: 10,
-                          }}
+                          className="msg-unread-badge msg-unread-badge--overlay"
                         >
                           {conv.unreadCount}
                         </span>
@@ -1040,10 +1027,7 @@ export default function MessagesPage() {
                 <ArrowLeft size={18} />
               </button>
               <div
-                className="msg-chat__header-avatar"
-                style={{
-                  cursor: (activeConversation?.role === "Profesional" || activeConversation?.professionalId) ? "pointer" : "default"
-                }}
+                className={`msg-chat__header-avatar ${(activeConversation?.role === "Profesional" || activeConversation?.professionalId) ? "msg-chat__header-avatar--clickable" : ""}`}
                 onClick={handleHeaderClick}
               >
                 {activeConversation?.avatarImage ? (
@@ -1060,17 +1044,11 @@ export default function MessagesPage() {
                 )}
               </div>
               <div
-                className="msg-chat__header-info"
-                style={{
-                  cursor: (activeConversation?.role === "Profesional" || activeConversation?.professionalId) ? "pointer" : "default"
-                }}
+                className={`msg-chat__header-info ${(activeConversation?.role === "Profesional" || activeConversation?.professionalId) ? "msg-chat__header-info--clickable" : ""}`}
                 onClick={handleHeaderClick}
               >
                 <span
                   className="msg-chat__header-name"
-                  style={{
-                    display: "inline-block"
-                  }}
                   onMouseEnter={(e) => {
                     if (activeConversation?.role === "Profesional" || activeConversation?.professionalId) {
                       e.currentTarget.style.textDecoration = "underline";
@@ -1121,14 +1099,7 @@ export default function MessagesPage() {
             )}
 
             <div
-              className="msg-chat__messages flex-1 p-4 overflow-y-auto space-y-3"
-              style={{
-                backgroundColor: "#efeae2",
-                backgroundImage:
-                  'url("https://w0.peakpx.com/wallpaper/818/148/HD-wallpaper-whatsapp-background-cool-dark-green-new-theme-whatsapp.jpg")',
-                backgroundSize: "cover",
-                backgroundBlendMode: "overlay",
-              }}
+              className="msg-chat__messages"
             >
               {messages.map((msg) => {
                 const isMe = msg.sender === "me";
@@ -1143,110 +1114,27 @@ export default function MessagesPage() {
                 return (
                   <div key={msg.id}>
                     {msg.date && (
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "center",
-                          width: "100%",
-                          padding: "12px 0",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            fontWeight: "bold",
-                            color: "#65676b",
-                            backgroundColor: "#e1e3e6",
-                            padding: "4px 14px",
-                            borderRadius: "12px",
-                            boxShadow: "0 1px 1px rgba(0,0,0,0.08)",
-                          }}
-                        >
+                      <div className="msg-date-wrapper">
+                        <span className="msg-date-bubble">
                           {msg.date}
                         </span>
                       </div>
                     )}
-                    <div
-                      style={{
-                        display: "flex",
-                        width: "100%",
-                        justifyContent: isMe ? "flex-end" : "flex-start",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          position: "relative",
-                          maxWidth: "75%",
-                          width: "fit-content",
-                          backgroundColor: isMe ? "#FF7F50" : "#ffffff",
-                          color: isMe ? "#ffffff" : "#1f2937",
-                          borderTopRightRadius: isMe ? "0px" : "8px",
-                          borderTopLeftRadius: !isMe ? "0px" : "8px",
-                          borderRadius: "8px",
-                          border: isMe ? "none" : "1px solid #e5e7eb",
-                          boxShadow: "0 1px 1px rgba(0,0,0,0.12)",
-                          padding: "6px 9px 8px 9px",
-                          display: "flex",
-                          flexDirection: "column",
-                        }}
-                      >
+                    <div className={`msg-bubble-wrap msg-bubble-wrap--${isMe ? "sent" : "received"}`}>
+                      <div className={`msg-bubble msg-bubble--${isMe ? "sent" : "received"}`}>
                         {/* WhatsApp like Tail */}
-                        <div
-                          style={{
-                            position: "absolute",
-                            top: 0,
-                            [isMe ? "right" : "left"]: "-8px",
-                            width: "8px",
-                            height: "13px",
-                            backgroundColor: "transparent",
-                            backgroundImage: isMe
-                              ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13'%3E%3Cpath fill='%23FF7F50' d='M0,0 C3,0 8,0 8,0 L8,13 C8,13 4,4 0,0 Z'/%3E%3C/svg%3E")`
-                              : `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13'%3E%3Cpath fill='%23ffffff' d='M8,0 C5,0 0,0 0,0 L0,13 C0,13 4,4 8,0 Z'/%3E%3C/svg%3E")`,
-                            backgroundSize: "contain",
-                            backgroundRepeat: "no-repeat",
-                          }}
-                        />
+                        <div className={`msg-bubble__tail msg-bubble__tail--${isMe ? "sent" : "received"}`} />
 
                         {!isMe && (
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              fontWeight: "bold",
-                              color: "#FF7F50",
-                              marginBottom: "2px",
-                              userSelect: "none",
-                            }}
-                          >
+                          <span className="msg-bubble__sender-name">
                             {msg.senderProfile?.display_name || profileName}
                           </span>
                         )}
 
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            alignItems: "flex-end",
-                            gap: "4px 12px",
-                            justifyContent: "space-between",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              width: "100%",
-                            }}
-                          >
+                        <div className="msg-bubble__content">
+                          <div className="msg-bubble__text-wrap">
                             {msg.fileUrl && (
-                              <div
-                                style={{
-                                  marginBottom: "4px",
-                                  borderRadius: "6px",
-                                  overflow: "hidden",
-                                  maxWidth: "100%",
-                                }}
-                              >
+                              <div className="msg-bubble__file">
                                 {msg.fileUrl.match(
                                   /\.(jpeg|jpg|gif|png|webp)/i,
                                 ) ||
@@ -1259,15 +1147,7 @@ export default function MessagesPage() {
                                     <img
                                       src={msg.fileUrl}
                                       alt="Imagen"
-                                      style={{
-                                        maxWidth: "240px",
-                                        maxHeight: "180px",
-                                        objectFit: "cover",
-                                        borderRadius: "6px",
-                                        display: "block",
-                                        cursor: "pointer",
-                                        transition: "opacity 0.2s",
-                                      }}
+                                      className="msg-bubble__img"
                                       onMouseEnter={(e) =>
                                         (e.currentTarget.style.opacity = "0.9")
                                       }
@@ -1281,21 +1161,7 @@ export default function MessagesPage() {
                                     href={msg.fileUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "8px",
-                                      backgroundColor: isMe
-                                        ? "rgba(255,255,255,0.15)"
-                                        : "#f3f4f6",
-                                      padding: "8px 12px",
-                                      borderRadius: "6px",
-                                      textDecoration: "none",
-                                      color: isMe ? "#ffffff" : "#FF7F50",
-                                      fontWeight: "500",
-                                      fontSize: "13px",
-                                      transition: "background 0.2s",
-                                    }}
+                                    className={`msg-bubble__file-link msg-bubble__file-link--${isMe ? "sent" : "received"}`}
                                     onMouseEnter={(e) =>
                                       (e.currentTarget.style.backgroundColor =
                                         isMe
@@ -1310,15 +1176,7 @@ export default function MessagesPage() {
                                     }
                                   >
                                     <Paperclip size={16} />
-                                    <span
-                                      style={{
-                                        textDecoration: "underline",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                        maxWidth: "180px",
-                                      }}
-                                    >
+                                    <span className="msg-bubble__file-name">
                                       {msg.text.replace(
                                         "Archivo adjunto: ",
                                         "",
@@ -1330,43 +1188,16 @@ export default function MessagesPage() {
                             )}
 
                             {!msg.fileUrl && (
-                              <span
-                                style={{
-                                  fontSize: "14.5px",
-                                  wordBreak: "break-word",
-                                  lineHeight: "1.4",
-                                }}
-                              >
+                              <span className="msg-bubble__text">
                                 {msg.text}
                               </span>
                             )}
                           </div>
-                          <span
-                            style={{
-                              fontSize: "10px",
-                              color: isMe
-                                ? "rgba(255, 255, 255, 0.75)"
-                                : "#8e8e93",
-                              marginLeft: "auto",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "3px",
-                              whiteSpace: "nowrap",
-                              alignSelf: "flex-end",
-                              paddingBottom: "1px",
-                            }}
-                          >
+                          <span className={`msg-bubble__time ${isMe ? "msg-bubble__time--sent" : ""}`}>
                             {msg.time}
                             {isMe && (
                               <span
-                                style={{
-                                  fontSize: "11px",
-                                  lineHeight: 1,
-                                  color:
-                                    msg.status === "Leído"
-                                      ? "#53bdeb"
-                                      : "inherit",
-                                }}
+                                className={`msg-bubble__check ${msg.status === "Leído" ? "msg-bubble__check--read" : ""}`}
                               >
                                 {msg.status === "Leído" ? "✓✓" : "✓"}
                               </span>
@@ -1379,8 +1210,8 @@ export default function MessagesPage() {
                 );
               })}
               {!messages.length && (
-                <div className="flex items-center justify-center py-4">
-                  <span className="text-xs text-gray-500 bg-white px-4 py-2 rounded-full border shadow-sm">
+                <div className="msg-empty-state">
+                  <span className="msg-empty-state__text">
                     Envía un mensaje para iniciar la conversación
                   </span>
                 </div>
@@ -1393,7 +1224,7 @@ export default function MessagesPage() {
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                style={{ display: "none" }}
+                className="msg-input__file-hidden"
               />
               <button
                 type="button"
@@ -1405,8 +1236,7 @@ export default function MessagesPage() {
                 {isUploading ? (
                   <Loader2
                     size={20}
-                    className="animate-spin"
-                    style={{ color: "#FF7F50" }}
+                    className="animate-spin msg-input__icon--accent"
                   />
                 ) : (
                   <Paperclip size={20} />
@@ -1421,11 +1251,7 @@ export default function MessagesPage() {
                 onKeyDown={handleKeyDown}
               />
               <div
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "center",
-                }}
+                className="msg-emoji-wrapper"
                 ref={emojiPickerRef}
               >
                 <button
@@ -1436,62 +1262,20 @@ export default function MessagesPage() {
                 >
                   <Smile
                     size={20}
-                    style={{ color: emojiPickerOpen ? "#FF7F50" : "inherit" }}
+                    className={emojiPickerOpen ? "msg-input__icon--accent" : ""}
                   />
                 </button>
 
                 {emojiPickerOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: "50px",
-                      right: "0px",
-                      width: "290px",
-                      height: "320px",
-                      backgroundColor: "#ffffff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "16px",
-                      boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
-                      zIndex: 1000,
-                      display: "flex",
-                      flexDirection: "column",
-                      overflow: "hidden",
-                    }}
-                  >
+                  <div className="msg-emoji-picker">
                     {/* Header / Tabs */}
-                    <div
-                      style={{
-                        display: "flex",
-                        borderBottom: "1px solid #f3f4f6",
-                        backgroundColor: "#f9fafb",
-                        padding: "4px",
-                        gap: "2px",
-                      }}
-                    >
+                    <div className="msg-emoji-tabs">
                       {Object.keys(emojiCategories).map((cat) => (
                         <button
                           key={cat}
                           type="button"
                           onClick={() => setActiveEmojiCat(cat)}
-                          style={{
-                            flex: 1,
-                            padding: "6px 0",
-                            border: "none",
-                            background: "transparent",
-                            fontSize: "11px",
-                            fontWeight:
-                              activeEmojiCat === cat ? "bold" : "normal",
-                            color:
-                              activeEmojiCat === cat ? "#FF7F50" : "#6b7280",
-                            cursor: "pointer",
-                            borderRadius: "8px",
-                            backgroundColor:
-                              activeEmojiCat === cat ? "#fff" : "transparent",
-                            boxShadow:
-                              activeEmojiCat === cat
-                                ? "0 1px 2px rgba(0,0,0,0.05)"
-                                : "none",
-                          }}
+                          className={`msg-emoji-tab ${activeEmojiCat === cat ? "msg-emoji-tab--active" : ""}`}
                         >
                           {cat}
                         </button>
@@ -1499,17 +1283,7 @@ export default function MessagesPage() {
                     </div>
 
                     {/* Emojis Grid */}
-                    <div
-                      style={{
-                        flex: 1,
-                        overflowY: "auto",
-                        padding: "10px",
-                        display: "grid",
-                        gridTemplateColumns: "repeat(6, 1fr)",
-                        gap: "4px",
-                        alignContent: "start",
-                      }}
-                    >
+                    <div className="msg-emoji-grid">
                       {emojiCategories[
                         activeEmojiCat as keyof typeof emojiCategories
                       ].map((emoji) => (
@@ -1517,26 +1291,7 @@ export default function MessagesPage() {
                           key={emoji}
                           type="button"
                           onClick={() => handleAddEmoji(emoji)}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            fontSize: "20px",
-                            padding: "4px",
-                            cursor: "pointer",
-                            borderRadius: "8px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            transition: "background 0.2s",
-                            userSelect: "none",
-                          }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#f3f4f6")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor =
-                              "transparent")
-                          }
+                          className="msg-emoji-btn"
                         >
                           {emoji}
                         </button>

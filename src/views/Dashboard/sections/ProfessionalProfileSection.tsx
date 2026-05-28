@@ -1041,14 +1041,14 @@ export default function ProfessionalProfileSection() {
           }}
         >
           <label className="professional-profile__dropzone">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              ref={newImageInputRef}
-              onChange={handleImageFileChange}
-              style={{ display: "none" }}
-            />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                ref={newImageInputRef}
+                onChange={handleImageFileChange}
+                className="professional-profile__dropzone-input"
+              />
             <div className="professional-profile__dropzone-inner">
               <div className="professional-profile__dropzone-icon">
                 <Upload size={32} />
@@ -1137,14 +1137,7 @@ export default function ProfessionalProfileSection() {
           Tu plan actual no permite esta acción. Actualizá a profesional para
           habilitarla.
         </p>
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            marginTop: 12,
-            justifyContent: "flex-end",
-          }}
-        >
+        <div className="professional-profile__promo-actions">
           <button
             type="button"
             className="professional-profile__cancel-btn"
@@ -1177,13 +1170,13 @@ export default function ProfessionalProfileSection() {
         >
           {!newVideoFile ? (
             <label className="professional-profile__dropzone">
-              <input
-                type="file"
-                accept="video/*"
-                ref={newVideoInputRef}
-                onChange={handleVideoFileChange}
-                style={{ display: "none" }}
-              />
+                <input
+                  type="file"
+                  accept="video/*"
+                  ref={newVideoInputRef}
+                  onChange={handleVideoFileChange}
+                  className="professional-profile__dropzone-input"
+                />
               <div className="professional-profile__dropzone-inner">
                 <div className="professional-profile__dropzone-icon">
                   <Upload size={32} />

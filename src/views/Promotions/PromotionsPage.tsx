@@ -461,9 +461,7 @@ export default function PromotionsPage() {
                       <>
                         <div
                           className="promo-card-image"
-                          style={{
-                            backgroundImage: `url(https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600)`,
-                          }}
+                          style={{ '--promo-bg': `url(https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600)` } as React.CSSProperties}
                         >
                           <div className="promo-card-offer-badge overlay">
                             <span className="offer-num">
@@ -569,9 +567,7 @@ export default function PromotionsPage() {
                 >
                   <div
                     className="promo-card-image"
-                    style={{
-                      backgroundImage: `url(${promo.image_url || "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600"})`,
-                    }}
+                    style={{ '--promo-bg': `url(${promo.image_url || "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600"})` } as React.CSSProperties}
                   >
                     <div className="promo-card-offer-badge overlay">
                       <span className="offer-num">

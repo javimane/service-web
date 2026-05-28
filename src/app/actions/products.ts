@@ -141,7 +141,7 @@ export const createProductAction = publicAction
 
     try {
       const response = await axios.post(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -159,7 +159,7 @@ export const assignProductToProfessionalAction = publicAction
 
     try {
       const response = await axios.post(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -183,7 +183,7 @@ export const updateProfessionalProductAction = publicAction
 
     try {
       const response = await axios.put(url, parsedInput.updates, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -206,7 +206,7 @@ export const unassignProductFromProfessionalAction = publicAction
 
     try {
       await axios.delete(url, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return { success: true };
     } catch (error: any) {
@@ -224,7 +224,7 @@ export const massUpdateProductPricesAction = publicAction
 
     try {
       const response = await axios.put(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {

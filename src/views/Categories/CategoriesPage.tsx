@@ -325,9 +325,7 @@ export default function CategoriesPage() {
       <main className="categories-page__main">
         <header
           className="categories-page__hero"
-          style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${selectedCategoryInfo.image})`,
-          }}
+          style={{ '--hero-bg': `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${selectedCategoryInfo.image})` } as React.CSSProperties}
         >
           <div className="container">
             <div className="categories-page__hero-glass">
@@ -510,26 +508,8 @@ export default function CategoriesPage() {
             </div>
 
             {isLoading ? (
-              <div
-                className="loading-state"
-                style={{
-                  padding: "4rem 2rem",
-                  textAlign: "center",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                <div
-                  className="spinner"
-                  style={{
-                    margin: "0 auto 1rem",
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    border: "3px solid var(--border-color)",
-                    borderTopColor: "var(--primary-color)",
-                    animation: "spin 1s linear infinite",
-                  }}
-                />
+              <div className="loading-state">
+                <div className="spinner" />
                 <p>Cargando perfiles...</p>
               </div>
             ) : (
@@ -545,9 +525,7 @@ export default function CategoriesPage() {
                   >
                     <div
                       className="profile-result-card__cover"
-                      style={{
-                        backgroundImage: `linear-gradient(180deg, rgba(9, 12, 20, 0.15), rgba(9, 12, 20, 0.65)), url(${profile.coverImage})`,
-                      }}
+                      style={{ '--cover-bg': `linear-gradient(180deg, rgba(9, 12, 20, 0.15), rgba(9, 12, 20, 0.65)), url(${profile.coverImage})` } as React.CSSProperties}
                     >
                       <span className="profile-result-card__price">
                         {profile.priceLabel}

@@ -71,12 +71,12 @@ export default function FeaturedSpecialists({ userProvince = "Buenos Aires" }: {
             <h2 className="featured-specialists__title">
               Especialistas Destacados
             </h2>
-            <p className="featured-specialists__subtitle">
+            <p className="section-subtitle">
               Los profesionales mejor valorados en {userProvince}
             </p>
           </div>
-          <button className="section-link">
-            Ver todos <span>&gt;</span>
+          <button type="button" className="section-link">
+            Ver todo <span>&gt;</span>
           </button>
         </div>
       </div>

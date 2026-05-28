@@ -127,7 +127,6 @@ function ProfileVideoCard({
           incrementVideoViewsAction({ id: video.id });
           onSelect(video);
         }}
-        style={{ cursor: "pointer" }}
       >
         <video
           ref={videoRef}
@@ -142,7 +141,6 @@ function ProfileVideoCard({
           <div
             className="stat"
             onClick={handleLike}
-            style={{ cursor: "pointer" }}
           >
             <Heart size={14} fill="white" />
             <span>{video.likes_count || 0}</span>
@@ -796,7 +794,6 @@ export default function ProfilePage() {
                         router.push(`/servicios/${slug}?id=${service.id}`);
                       }
                     }}
-                    style={{ cursor: "pointer" }}
                   >
                     <div className="service-card-mini__header">
                       <h3>{service.name}</h3>
@@ -1019,7 +1016,6 @@ export default function ProfilePage() {
                   setSelectedPromoForDetail({ ...promo, type: "prof" });
                 }
               }}
-              style={{ cursor: "pointer" }}
             >
               {promo.image_url && (
                 <img

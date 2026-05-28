@@ -63,6 +63,10 @@ export async function uploadReviewImage(input: UploadInput) {
   return uploadFile(API_ENDPOINTS.storage.reviews, input);
 }
 
+export async function uploadJobRequestImage(input: UploadInput) {
+  return uploadFile(API_ENDPOINTS.storage.jobRequests, input);
+}
+
 export async function getFileSignedUrl(path: string) {
   try {
     const config = await apiClient<StorageConfig>(

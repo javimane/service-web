@@ -18,7 +18,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   width: 100%;
-  max-width: 900px;
+  max-width: var(--modal-max-width, 900px);
   max-height: 90vh;
   border-radius: 30px;
   display: flex;
@@ -38,7 +38,7 @@
 
 .modal-header h2 {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
 }
 

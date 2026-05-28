@@ -124,7 +124,6 @@ export default function NotificationsPage() {
                       key={notif.id}
                       className={`notification-card ${notif.unread ? "notification-card--unread" : ""}`}
                       onClick={() => handleMarkSingleAsRead(notif.id)}
-                      style={{ cursor: "pointer" }}
                     >
                       <div
                         className={`notification-card__icon notification-card__icon--${notif.iconColor || "blue"}`}

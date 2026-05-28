@@ -2,7 +2,7 @@
   margin-top: 1.5rem;
   padding: 1.25rem;
   background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--brand-blue-border);
   transition: all 0.3s ease;
 }
@@ -14,10 +14,10 @@
 
 .card-subtitle {
   font-size: 0.7rem;
-  color: #888;
+  color: var(--text-tertiary);
   letter-spacing: 0.1em;
   margin-bottom: 1rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
 }
 
@@ -33,9 +33,9 @@
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.85rem;
-  color: #ddd;
+  color: var(--gray-300);
   transition:
     transform 0.2s ease,
     background 0.2s ease;
@@ -60,7 +60,7 @@
 }
 
 [data-theme="light"] .payment-method-item {
-  background: #ffffff;
-  color: #444;
+  background: var(--white);
+  color: var(--gray-600);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }

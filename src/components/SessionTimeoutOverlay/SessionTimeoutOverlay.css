@@ -12,9 +12,9 @@
 }
 
 .session-timeout-card {
-  background: var(--surface-contrast, #1a1a1a);
-  color: white;
-  border-radius: 24px;
+  background: var(--surface-contrast);
+  color: var(--white);
+  border-radius: var(--radius-xl);
   padding: 32px;
   max-width: 400px;
   width: 100%;
@@ -29,7 +29,7 @@
 
 .session-timeout-icon {
   background: rgba(255, 152, 0, 0.2);
-  color: #ff9800;
+  color: var(--amber-dark);
   width: 64px;
   height: 64px;
   border-radius: 20px;
@@ -42,7 +42,7 @@
 .session-timeout-content h3 {
   font-size: 24px;
   margin: 0 0 12px 0;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .session-timeout-content p {
@@ -53,7 +53,7 @@
 }
 
 .session-timeout-content strong {
-  color: #ff9800;
+  color: var(--amber-dark);
 }
 
 .session-timeout-actions {
@@ -62,12 +62,12 @@
 
 .session-timeout-btn {
   width: 100%;
-  background: var(--accent-color, #3b82f6);
-  color: white;
+  background: var(--accent-color);
+  color: var(--white);
   border: none;
   padding: 14px;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
   display: flex;
   align-items: center;
   justify-content: center;

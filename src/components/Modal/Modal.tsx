@@ -37,7 +37,7 @@ export default function Modal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ maxWidth }}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ '--modal-max-width': maxWidth } as React.CSSProperties}>
         {title && (
           <div className="modal-header">
             <h2>{title}</h2>

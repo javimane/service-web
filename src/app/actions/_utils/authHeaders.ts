@@ -1,24 +1,36 @@
 import type { RawAxiosRequestHeaders } from "axios";
+import { cookies } from "next/headers";
 
 type ActionContext = {
   headers?: RawAxiosRequestHeaders | Record<string, unknown>;
 };
 
-export function buildActionHeaders(
+export async function buildActionHeaders(
   ctx: ActionContext,
   token?: string,
-): RawAxiosRequestHeaders {
+): Promise<RawAxiosRequestHeaders> {
   const rawHeaders = (ctx?.headers ?? {}) as Record<string, unknown>;
   const baseHeaders = Object.fromEntries(
     Object.entries(rawHeaders).map(([key, value]) => [key, String(value)]),
   ) as RawAxiosRequestHeaders;
 
-  if (!token) {
+  let finalToken = token;
+
+  // Si no se proveyó un token explícitamente, intentar leerlo de las cookies
+  if (!finalToken) {
+    const cookieStore = await cookies();
+    const accessCookie = cookieStore.get("access_token");
+    if (accessCookie) {
+      finalToken = accessCookie.value;
+    }
+  }
+
+  if (!finalToken) {
     return baseHeaders;
   }
 
   return {
     ...baseHeaders,
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${finalToken}`,
   };
 }

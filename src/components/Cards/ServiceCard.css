@@ -1,8 +1,8 @@
 /* Modern Service Card - Light Theme with Coral Accents */
 .service-card-modern {
-  background: #ffffff;
-  border: 1px solid rgba(233, 72, 35, 0.15);
-  border-radius: 28px;
+  background: var(--white);
+  border: 1px solid var(--highlight-border);
+  border-radius: var(--radius-2xl);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -15,9 +15,9 @@
 }
 
 .service-card-modern:hover {
-  border-color: #e94823;
+  border-color: var(--accent-color);
   transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(233, 72, 35, 0.1);
+  box-shadow: 0 20px 40px var(--highlight-glow-strong);
 }
 
 .card-top {
@@ -30,26 +30,26 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #e94823;
+  color: var(--accent-color);
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   letter-spacing: 0.05em;
 }
 
 .card-badge {
   padding: 4px 10px;
-  border-radius: 99px;
+  border-radius: var(--radius-full);
   font-size: 0.6rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   letter-spacing: 0.05em;
   background: rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .badge-premium {
-  color: #e94823;
-  background: rgba(233, 72, 35, 0.08);
-  border-color: rgba(233, 72, 35, 0.1);
+  color: var(--accent-color);
+  background: var(--accent-transparent);
+  border-color: var(--highlight-glow-strong);
 }
 
 .card-main {
@@ -60,10 +60,10 @@
 
 .card-title {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   margin: 0;
   line-height: 1.2;
-  color: #000000;
+  color: var(--text-primary);
   letter-spacing: -0.02em;
 }
 
@@ -76,7 +76,7 @@
 .author-avatar {
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   object-fit: cover;
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
@@ -90,16 +90,16 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #00c853;
+  color: var(--green-accent);
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   margin-bottom: 2px;
 }
 
 .author-name {
   font-size: 0.9rem;
-  font-weight: 700;
-  color: #000000;
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
 }
 
 .author-rating {
@@ -107,14 +107,14 @@
   align-items: center;
   gap: 4px;
   font-size: 0.75rem;
-  font-weight: 800;
-  color: #e94823;
+  font-weight: var(--weight-extrabold);
+  color: var(--accent-color);
 }
 
 .card-description {
   margin: 0;
   font-size: 0.9rem;
-  color: #666666;
+  color: var(--text-tertiary);
   line-height: 1.5;
 }
 
@@ -130,14 +130,14 @@
 .card-price {
   display: flex;
   align-items: baseline;
-  color: #000000;
-  font-weight: 900;
+  color: var(--text-primary);
+  font-weight: var(--weight-black);
 }
 
 .price-currency {
   font-size: 1rem;
   margin-right: 2px;
-  color: #e94823;
+  color: var(--accent-color);
 }
 .price-value {
   font-size: 1.6rem;
@@ -152,22 +152,22 @@
 .card-cta {
   background: #fdf2f0;
   border: none;
-  color: #e94823;
+  color: var(--accent-color);
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   letter-spacing: 0.05em;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .service-card-modern:hover .card-cta {
-  background: #e94823;
-  color: white;
+  background: var(--accent-color);
+  color: var(--white);
 }
 
 .service-card-modern.view-list {

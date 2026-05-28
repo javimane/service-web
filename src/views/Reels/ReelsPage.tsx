@@ -292,7 +292,7 @@ export default function ReelsPage() {
           <div className="reels-container">
             <div className="reels-hero__content">
               <div className="reels-hero__sparkle">
-                <Sparkles size={20} className="text-coral animate-pulse" />
+                <Sparkles size={20} className="text-coral reels-hero__sparkle-icon" />
                 <span>Sercio Reels</span>
               </div>
               <h1 className="reels-hero__title">

@@ -25,7 +25,7 @@ export default function SpecialistCard({ specialist }) {
     <article className="specialist-card">
       <div 
         className="specialist-card__header" 
-        style={{ backgroundColor: headerColor }}
+        style={{ '--header-color': headerColor } as React.CSSProperties}
       />
       
       <div className="specialist-card__avatar-wrap">

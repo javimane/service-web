@@ -19,7 +19,7 @@
   gap: 1rem;
   color: var(--text-secondary);
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .store-back-btn {
@@ -31,8 +31,8 @@
   background: var(--accent-color);
   color: #fff;
   border: none;
-  border-radius: 12px;
-  font-weight: 700;
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -41,7 +41,7 @@
 .store-banner {
   position: relative;
   min-height: 280px;
-  background: linear-gradient(135deg, #1a0a06 0%, #3d1405 50%, #e94823 100%);
+  background: linear-gradient(135deg, #1a0a06 0%, #3d1405 50%, var(--accent-color) 100%);
   background-size: cover;
   background-position: center;
   display: flex;
@@ -82,7 +82,7 @@
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   transition: all 0.2s;
   width: fit-content;
@@ -102,7 +102,7 @@
 .store-banner__avatar-wrap {
   width: 100px;
   height: 100px;
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   border: 3px solid rgba(255, 255, 255, 0.35);
   overflow: hidden;
   flex-shrink: 0;
@@ -129,7 +129,7 @@
   background: rgba(233, 72, 35, 0.85);
   color: #fff;
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 4px 10px;
@@ -140,8 +140,8 @@
 .store-banner__name {
   margin: 0;
   font-size: 2.2rem;
-  font-weight: 900;
-  color: #ffffff;
+  font-weight: var(--weight-black);
+  color: var(--white);
   line-height: 1.1;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
@@ -150,7 +150,7 @@
   margin: 0;
   color: rgba(255, 255, 255, 0.75);
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 /* ── MAIN ── */
@@ -212,7 +212,7 @@
   gap: 8px;
   background: var(--bg-card);
   border: 1.5px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 0 14px;
   height: 46px;
   color: var(--text-secondary);
@@ -223,7 +223,7 @@
   background: transparent;
   color: var(--text-primary);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   outline: none;
   cursor: pointer;
   font-family: var(--font-family);
@@ -233,7 +233,7 @@
   display: flex;
   background: var(--bg-card);
   border: 1.5px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -262,10 +262,10 @@
   padding: 0 16px;
   background: var(--bg-card);
   border: 1.5px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
@@ -279,9 +279,9 @@
 
 .store-filter-badge {
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   padding: 2px 6px;
   border-radius: 10px;
   min-width: 18px;
@@ -318,7 +318,7 @@
 .store-sidebar__header h3 {
   margin: 0;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
 }
 
@@ -342,7 +342,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -375,7 +375,7 @@
 
 .store-filter-range span {
   color: var(--text-secondary);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .store-filter-range .store-filter-input {
@@ -387,10 +387,10 @@
   padding: 10px;
   background: var(--bg-color);
   border: 1.5px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.2s;
   width: 100%;
@@ -412,7 +412,7 @@
 .store-count {
   margin: 0;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
 }
 
@@ -431,7 +431,7 @@
 .store-empty h3 {
   margin: 0;
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
 }
 
@@ -504,9 +504,9 @@
 .store-badge {
   position: absolute;
   top: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   padding: 3px 8px;
   display: flex;
   align-items: center;
@@ -518,13 +518,13 @@
 .store-badge--foreign {
   left: 10px;
   background: rgba(99, 102, 241, 0.9);
-  color: #fff;
+  color: var(--white);
 }
 
 .store-badge--discount {
   right: 10px;
   background: rgba(239, 68, 68, 0.9);
-  color: #fff;
+  color: var(--white);
 }
 
 .store-product-card__body {
@@ -538,7 +538,7 @@
 .store-product-card__title {
   margin: 0;
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
   line-height: 1.35;
   display: -webkit-box;
@@ -549,7 +549,7 @@
 
 .store-product-card__ean {
   font-size: 0.68rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   letter-spacing: 0.03em;
 }
@@ -576,15 +576,15 @@
 
 .store-price--main {
   font-size: 1.3rem;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   color: var(--accent-color);
 }
 
 .store-price--off {
-  background: #22c55e;
-  color: #fff;
+  background: var(--green-accent);
+  color: var(--white);
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   padding: 2px 6px;
   border-radius: 6px;
 }
@@ -606,7 +606,7 @@
   margin-top: 4px;
 }
 
-.star-filled { color: #f59e0b; }
+.star-filled {   color: var(--amber-dark); }
 .star-empty  { color: var(--border-color); }
 
 /* ── PAGINATION ── */
@@ -626,10 +626,10 @@
   padding: 10px 20px;
   background: var(--bg-card);
   border: 1.5px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: all 0.2s;
   font-family: var(--font-family);
@@ -647,7 +647,7 @@
 
 .store-pagination__info {
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
 }
 

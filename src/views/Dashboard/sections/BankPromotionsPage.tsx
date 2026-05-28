@@ -378,7 +378,6 @@ export default function BankPromotionsPage() {
       {error && (
         <div
           className="bank-promo-error-message"
-          style={{ margin: "0 0 20px 0" }}
         >
           {error}
         </div>
@@ -449,13 +448,7 @@ export default function BankPromotionsPage() {
 
                     {bankNames.length > 1 && (
                       <div
-                        className="bank-promo-card__detail-row"
-                        style={{
-                          flexDirection: "column",
-                          alignItems: "flex-start",
-                          gap: "8px",
-                          marginBottom: "8px",
-                        }}
+                        className="bank-promo-card__detail-row bank-promo-card__detail-row--column-mb"
                       >
                         <span className="bank-promo-card__detail-label">
                           Bancos
@@ -530,12 +523,7 @@ export default function BankPromotionsPage() {
                       {promo.payment_method &&
                         JSON.parse(promo.payment_method).length > 0 && (
                           <div
-                            className="bank-promo-card__detail-row"
-                            style={{
-                              flexDirection: "column",
-                              alignItems: "flex-start",
-                              gap: "8px",
-                            }}
+                            className="bank-promo-card__detail-row bank-promo-card__detail-row--column"
                           >
                             <span className="bank-promo-card__detail-label">
                               Métodos de pago
@@ -556,12 +544,7 @@ export default function BankPromotionsPage() {
                         )}
 
                       <div
-                        className="bank-promo-card__detail-row"
-                        style={{
-                          flexDirection: "column",
-                          alignItems: "flex-start",
-                          gap: "8px",
-                        }}
+                        className="bank-promo-card__detail-row bank-promo-card__detail-row--column"
                       >
                         <span className="bank-promo-card__detail-label">
                           Días de aplicación

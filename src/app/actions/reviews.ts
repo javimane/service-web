@@ -43,7 +43,7 @@ export const createReviewAction = publicAction
 
     try {
       const response = await axios.post(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {

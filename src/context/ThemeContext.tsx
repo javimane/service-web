@@ -1,32 +1,15 @@
 "use client";
 import {
   createContext,
-  useState,
-  useEffect,
   useContext,
   type ReactNode,
 } from "react";
 
-type ThemeContextValue = {
-  theme: string;
-  toggleTheme: () => void;
-};
-
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+const ThemeContext = createContext<string>("light");
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme] = useState<string>("light");
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", "light");
-  }, []);
-
-  const toggleTheme = () => {
-    // Modo oscuro eliminado
-  };
-
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value="light">
       {children}
     </ThemeContext.Provider>
   );
@@ -39,5 +22,5 @@ export const useTheme = () => {
     throw new Error("useTheme must be used within ThemeProvider");
   }
 
-  return context;
+  return { theme: context, toggleTheme: () => {} };
 };

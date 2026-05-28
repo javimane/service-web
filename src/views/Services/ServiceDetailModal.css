@@ -10,7 +10,7 @@
   gap: 1.25rem;
   align-items: center;
   padding-bottom: 1.25rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--gray-200);
   margin-bottom: 0.25rem;
 }
 
@@ -33,10 +33,10 @@
   display: inline-block;
   padding: 4px 10px;
   background: #fdf2f0;
-  color: #e94823;
-  border-radius: 8px;
+  color: var(--accent-color);
+  border-radius: var(--radius-sm);
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   width: fit-content;
@@ -45,38 +45,38 @@
 .service-detail-modal__title {
   margin: 0;
   font-size: 1.75rem;
-  font-weight: 800;
-  color: #000000;
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
   line-height: 1.1;
 }
 
 .service-detail-modal__professional {
   margin: 0;
   font-size: 1rem;
-  font-weight: 600;
-  color: #666666;
+  font-weight: var(--weight-semibold);
+  color: var(--gray-500);
 }
 
 .service-detail-modal__location {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: #999999;
+  color: var(--gray-400);
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .service-detail-modal__rating {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: #e94823;
+  color: var(--accent-color);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .service-detail-modal__verified-icon {
-  color: #00c853;
+  color: var(--green-accent);
   margin-right: 4px;
   vertical-align: middle;
 }
@@ -84,8 +84,8 @@
 .service-detail-modal__professional {
   margin: 0;
   font-size: 1rem;
-  font-weight: 700;
-  color: #111111;
+  font-weight: var(--weight-bold);
+  color: var(--gray-900);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -101,17 +101,17 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 10px 16px;
-  background: #f8f9fa;
-  color: #333333;
+  background: var(--bg-card);
+  color: var(--gray-700);
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .service-detail-modal__tags span.tag-verified {
   background: rgba(0, 200, 83, 0.08);
-  color: #00c853;
+  color: var(--green-accent);
 }
 
 .service-detail-modal__section {
@@ -123,15 +123,15 @@
 .service-detail-modal__section h4 {
   margin: 0;
   font-size: 0.8rem;
-  font-weight: 800;
-  color: #e94823;
+  font-weight: var(--weight-extrabold);
+  color: var(--accent-color);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .service-detail-modal__desc {
   margin: 0;
-  color: #444444;
+  color: var(--gray-600);
   line-height: 1.6;
   font-size: 1rem;
 }
@@ -139,8 +139,8 @@
 .service-detail-modal__price {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 800;
-  color: #000000;
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
 }
 
 .service-detail-modal__footer {
@@ -148,7 +148,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--gray-200);
 }
 
 .service-detail-modal__button {
@@ -156,8 +156,8 @@
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  border-radius: 16px;
-  font-weight: 700;
+  border-radius: var(--radius-lg);
+  font-weight: var(--weight-bold);
   padding: 1rem;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   font-size: 0.95rem;
@@ -165,15 +165,15 @@
 }
 
 .service-detail-modal__button--primary {
-  background: #e94823;
-  color: #ffffff;
+  background: var(--accent-color);
+  color: var(--white);
   box-shadow: 0 8px 16px rgba(233, 72, 35, 0.15);
 }
 
 .service-detail-modal__button--secondary {
-  background: #f8f9fa;
-  color: #333333;
-  border: 1px solid #eee;
+  background: var(--bg-card);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-200);
 }
 
 .service-detail-modal__button:hover {
@@ -181,7 +181,7 @@
 }
 
 .service-detail-modal__button--primary:hover {
-  background: #d43d1c;
+  background: var(--accent-hover);
   box-shadow: 0 12px 24px rgba(233, 72, 35, 0.25);
 }
 
@@ -209,7 +209,7 @@
 
 .service-detail-modal__title-large {
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--text-primary);
   margin-bottom: 20px;
   line-height: 1.2;
@@ -217,7 +217,7 @@
 
 .service-detail-modal__price-large {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   color: var(--accent-color);
   margin-top: 10px;
 }

@@ -187,7 +187,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
       <div className="promo-skeleton__body">
         <div className="promo-skeleton__title shimmer" />
         <div className="promo-skeleton__desc shimmer" />
-        <div className="promo-skeleton__desc shimmer" style={{ width: '60%' }} />
+        <div className="promo-skeleton__desc promo-skeleton__desc--shorter shimmer" />
         <div className="promo-skeleton__meta">
           <div className="promo-skeleton__date shimmer" />
           <div className="promo-skeleton__code shimmer" />

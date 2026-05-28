@@ -62,7 +62,7 @@ export const getArcaCompanyAction = publicAction
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/arca/company/${parsedInput.id}`;
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -85,7 +85,7 @@ export const arcaVerifyAction = publicAction
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/arca/verify/${parsedInput.cuit}/${encodeURIComponent(parsedInput.companyName)}/${parsedInput.professionalId}`;
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {
@@ -106,7 +106,7 @@ export const createCompanyAction = publicAction
     const { token, ...data } = parsedInput;
     try {
       const response = await axios.post(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {
@@ -128,7 +128,7 @@ export const updateCompanyAction = publicAction
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/companies/${parsedInput.id}`;
     try {
       const response = await axios.put(url, parsedInput.data, {
-        headers: buildActionHeaders(ctx, parsedInput.token),
+        headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;
     } catch (error: any) {

@@ -19,11 +19,11 @@
   display: inline-flex;
   margin: 0 0 10px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--accent-color) 12%, transparent);
   color: var(--accent-color);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
 }
 
 .reels-section__hero h1 {
@@ -52,10 +52,10 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
 }
 
@@ -64,11 +64,11 @@
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   border: none;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   transition: opacity 0.2s;
 }
@@ -83,7 +83,7 @@
   background: rgba(34, 197, 94, 0.12);
   border: 1px solid rgba(34, 197, 94, 0.24);
   color: #15803d;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .reels-section__stats {
@@ -96,7 +96,7 @@
 .reels-section__content-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
 }
 
@@ -133,7 +133,7 @@
   margin-bottom: 4px;
   font-size: 0.78rem;
   color: var(--text-secondary);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .reels-section__stat-card strong {
@@ -187,7 +187,7 @@
 .reels-section__video-wrap {
   position: relative;
   aspect-ratio: 4 / 5;
-  background: #000;
+  background: var(--black);
 }
 
 .reels-section__video {
@@ -207,7 +207,7 @@
   justify-content: center;
   border-radius: 50%;
   background: rgba(15, 23, 42, 0.65);
-  color: #fff;
+  color: var(--white);
   pointer-events: none;
 }
 
@@ -237,7 +237,7 @@
   flex-wrap: wrap;
   color: var(--text-secondary);
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 .reels-section__reel-meta span {
@@ -253,12 +253,12 @@
   gap: 8px;
   border: 0;
   border-radius: 14px;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   cursor: pointer;
   align-self: flex-start;
   padding: 8px 12px;
   background: rgba(239, 68, 68, 0.08);
-  color: #dc2626;
+  color: var(--error-hover);
   transition: opacity 0.2s;
 }
 
@@ -275,7 +275,7 @@
   padding: 48px 24px;
   text-align: center;
   background: color-mix(in srgb, var(--bg-card) 96%, var(--border-color) 4%);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   border: 1px dashed var(--border-color);
 }
 
@@ -321,7 +321,7 @@
   width: 100%;
   max-width: 500px;
   background: var(--bg-card);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   padding: 24px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   border: 1px solid var(--border-color);
@@ -370,7 +370,7 @@
 
 .reels-section__field span {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   color: var(--text-secondary);
 }
 
@@ -400,7 +400,7 @@
   gap: 10px;
   min-height: 54px;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   border: 1px dashed var(--border-color);
   background: color-mix(in srgb, var(--bg-body) 92%, white 8%);
   color: var(--text-primary);
@@ -423,9 +423,9 @@
   padding: 14px 16px;
   border-radius: 14px;
   border: 0;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   background: var(--accent-color);
-  color: #fff;
+  color: var(--white);
   cursor: pointer;
   transition: opacity 0.2s;
   margin-top: 8px;

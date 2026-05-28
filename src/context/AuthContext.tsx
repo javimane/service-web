@@ -17,6 +17,7 @@ import {
   notificationStorage,
   mapFirebasePayloadToNotification,
 } from "../services/notificationStorage";
+import "./AuthContext.css";
 
 type SessionStatus = {
   status?: boolean | string;
@@ -97,14 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const subscriptionPlan = sessionStatus?.subscription?.plan ?? null;
 
   const refreshSession = async () => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      setLoading(false);
-      setUser(null);
-      setSessionStatus(null);
-      return;
-    }
-
     try {
       const session = await authService.getSession();
       const { nextUser, nextSessionStatus } = normalizeSessionPayload(session);
@@ -113,8 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSessionStatus(nextSessionStatus);
       }
     } catch (err) {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
       setUser(null);
       setSessionStatus(null);
     } finally {
@@ -219,10 +210,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // If there's an API logout endpoint, we'd call it here
-    // await apiClient('/api/auth/logout', { method: 'POST' });
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    try {
+      await authService.logout();
+    } catch (error) {
+      // Ignore errors on logout
+    }
+
     localStorage.removeItem("registered_device_token");
 
     // Clear Supabase Session for chat functionality
@@ -249,27 +242,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     >
       {children}
       {foregroundNotification && (
-        <div
-          style={{
-            position: "fixed",
-            right: 16,
-            bottom: 16,
-            zIndex: 9999,
-            maxWidth: 360,
-            background: "#111827",
-            color: "#f9fafb",
-            borderRadius: 12,
-            padding: "12px 14px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
-          role="status"
-          aria-live="polite"
-        >
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+        <div className="foreground-notification" role="status" aria-live="polite">
+          <div className="foreground-notification__title">
             {foregroundNotification.title}
           </div>
-          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
+          <div className="foreground-notification__body">
             {foregroundNotification.body}
           </div>
         </div>

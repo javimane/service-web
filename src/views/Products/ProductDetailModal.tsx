@@ -235,18 +235,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                           }
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="seller-contact-btn"
-                          style={{
-                            marginTop: "12px",
-                            width: "100%",
-                            backgroundColor: "transparent",
-                            border: "1px solid var(--border-color)",
-                            color: "var(--text-primary)",
-                            textDecoration: "none",
-                            justifyContent: "center",
-                            display: "flex",
-                            gap: "8px",
-                          }}
+                          className="seller-contact-btn seller-contact-btn--link"
                         >
                           <ExternalLink size={16} />
                           Ver en sitio web

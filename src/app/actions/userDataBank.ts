@@ -21,7 +21,7 @@ export const getMyUserDataBankAction = publicAction
 
     try {
       const response = await axios.get(url, {
-        headers: buildActionHeaders(ctx, parsedInput?.token),
+        headers: await buildActionHeaders(ctx, parsedInput?.token),
       });
       return response.data;
     } catch (error: any) {
@@ -45,7 +45,7 @@ export const upsertUserDataBankAction = publicAction
 
     try {
       const response = await axios.post(url, data, {
-        headers: buildActionHeaders(ctx, token),
+        headers: await buildActionHeaders(ctx, token),
       });
       return response.data;
     } catch (error: any) {

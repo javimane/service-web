@@ -125,7 +125,7 @@ export default function MapSidebar({
 
       <div className="map-sidebar__section">
         <label className="map-sidebar__label">UBICACIÓN</label>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div className="map-sidebar__location-filters">
           <select
             className="map-select"
             value={selectedProvince}

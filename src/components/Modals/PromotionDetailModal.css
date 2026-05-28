@@ -1,5 +1,5 @@
 .promo-detail-modal {
-  background: white;
+  background: var(--white);
   max-width: 500px;
   width: 100%;
   margin: 0 auto;
@@ -7,7 +7,7 @@
 
 .promo-detail-modal__coupon {
   position: relative;
-  background: white;
+  background: var(--white);
   border-radius: 0;
   overflow: hidden;
 }
@@ -16,7 +16,7 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  background: white;
+  background: var(--white);
   border: none;
   width: 32px;
   height: 32px;
@@ -27,38 +27,39 @@
   cursor: pointer;
   z-index: 150;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  color: #1e293b;
+  color: var(--slate-800);
   transition: all 0.2s;
 }
 
 .promo-detail-modal__close-btn:hover {
   transform: scale(1.1);
-  background: #f1f5f9;
+  background: var(--slate-100);
 }
 
 .promo-detail-modal__coupon-wrapper {
-  background: white;
+  background: var(--white);
   width: 100%;
   position: relative;
 }
 
 .promo-detail-modal__top-banner {
   padding: 24px 32px;
-  background: #f8fafc;
+  background: var(--slate-50);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px dashed #e2e8f0;
+  border-bottom: 2px dashed var(--slate-200);
 }
 
 .promo-detail-modal__professional-mini {
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: var(--prof-cursor);
 }
 
 .bank-icon {
-  color: #3b82f6;
+  color: var(--blue-accent);
   width: 28px;
   height: 28px;
 }
@@ -67,13 +68,13 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: white;
+  background: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  border: 2px solid white;
+  border: 2px solid var(--white);
 }
 
 .prof-avatar {
@@ -87,7 +88,7 @@
 }
 
 .avatar-container .bank-icon {
-  color: #3b82f6;
+  color: var(--blue-accent);
 }
 
 .prof-info {
@@ -97,25 +98,25 @@
 
 .prof-name {
   font-size: 1.1rem;
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: var(--weight-extrabold);
+  color: var(--slate-900);
   line-height: 1.2;
 }
 
 .prof-label {
   font-size: 0.7rem;
-  font-weight: 700;
-  color: #10b981;
+  font-weight: var(--weight-bold);
+  color: var(--teal-accent);
   letter-spacing: 0.05em;
   margin-top: 2px;
 }
 
 .promo-detail-modal__offer-badge {
-  background: #ffb703;
-  color: #000;
+  background: var(--amber-color);
+  color: var(--text-primary);
   padding: 8px 16px;
   border-radius: 14px;
-  font-weight: 900;
+  font-weight: var(--weight-black);
   font-size: 1.1rem;
   box-shadow: 0 6px 15px rgba(255, 183, 3, 0.25);
   display: flex;
@@ -126,7 +127,7 @@
 .promo-detail-modal__image-wrapper {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #f1f5f9;
+  background: var(--slate-100);
 }
 
 .promo-detail-modal__image {
@@ -144,15 +145,15 @@
 
 .promo-detail-modal__title {
   font-size: 1.75rem;
-  font-weight: 900;
-  color: #0f172a;
+  font-weight: var(--weight-black);
+  color: var(--slate-900);
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
 
 .promo-detail-modal__description {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--slate-500);
   line-height: 1.6;
 }
 
@@ -161,9 +162,9 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  background: #f8fafc;
+  background: var(--slate-50);
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--slate-200);
 }
 
 .promo-detail-modal__actions {
@@ -174,12 +175,12 @@
 }
 
 .promo-detail-modal__download-btn {
-  background: #0f172a;
-  color: white;
+  background: var(--slate-900);
+  color: var(--white);
   border: none;
   padding: 1.25rem;
   border-radius: 18px;
-  font-weight: 800;
+  font-weight: var(--weight-extrabold);
   font-size: 1.05rem;
   display: flex;
   align-items: center;
@@ -191,7 +192,7 @@
 }
 
 .promo-detail-modal__download-btn:hover {
-  background: #1e293b;
+  background: var(--slate-800);
   transform: translateY(-2px);
   box-shadow: 0 15px 30px rgba(15, 23, 42, 0.2);
 }
@@ -199,8 +200,8 @@
 .promo-detail-modal__footer-text {
   text-align: center;
   font-size: 0.8rem;
-  color: #94a3b8;
-  font-weight: 600;
+  color: var(--slate-400);
+  font-weight: var(--weight-semibold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -217,15 +218,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #1e293b;
+  color: var(--slate-800);
   font-size: 0.95rem;
 }
 
 .promo-detail-modal__terms-toggle {
   width: 100%;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  border-radius: 12px;
+  border: 1px solid var(--slate-200);
+  background: var(--white);
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   display: flex;
   justify-content: space-between;
@@ -238,14 +239,14 @@
 }
 
 .promo-detail-modal__terms-toggle:hover {
-  border-color: #cbd5e1;
+  border-color: var(--slate-300);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 .promo-detail-modal__terms-toggle-text {
   font-size: 0.8rem;
-  font-weight: 700;
-  color: #334155;
+  font-weight: var(--weight-bold);
+  color: var(--slate-700);
 }
 
 .promo-detail-modal__terms-toggle-indicator {
@@ -255,7 +256,7 @@
 }
 
 .promo-detail-modal__terms-chevron {
-  color: #475569;
+  color: var(--slate-600);
   transition: transform 0.24s ease;
 }
 
@@ -265,9 +266,9 @@
 
 .promo-detail-modal__terms-panel {
   margin: 16px 32px 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--slate-200);
   border-radius: 14px;
-  background: #f8fafc;
+  background: var(--slate-50);
   overflow: hidden;
   transform-origin: top;
   transition:
@@ -300,7 +301,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.95rem;
-  color: #0f172a;
+  color: var(--slate-900);
 }
 
 .promo-detail-modal__terms-panel-header {
@@ -317,8 +318,8 @@
 
 .promo-detail-modal__terms-panel-close {
   font-size: 0.78rem;
-  font-weight: 700;
-  color: #475569;
+  font-weight: var(--weight-bold);
+  color: var(--slate-600);
 }
 
 .promo-detail-modal__terms-panel-body {
@@ -336,18 +337,18 @@
 }
 
 .payment-method-tag {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--slate-100);
+  color: var(--slate-600);
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.75rem;
-  font-weight: 600;
-  border: 1px solid #e2e8f0;
+  font-weight: var(--weight-semibold);
+  border: 1px solid var(--slate-200);
 }
 
 .terms-text {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--slate-500);
   line-height: 1.5;
   padding-left: 0;
   margin: 0;

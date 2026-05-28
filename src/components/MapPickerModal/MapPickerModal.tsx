@@ -150,7 +150,7 @@ export default function MapPickerModal({
           <MapContainer
             center={mapCenter}
             zoom={13}
-            style={{ width: "100%", height: "100%" }}
+            className="map-picker-map"
             scrollWheelZoom={true}
           >
             <TileLayer
