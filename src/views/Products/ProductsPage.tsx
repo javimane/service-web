@@ -8,17 +8,15 @@ import {
   Grid3X3,
   List,
   Globe,
-  MapPin,
-  X,
   Filter,
   Loader2,
-  Package,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getProductsAction } from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
+import ProductFilters from "./ProductFilters";
 import "./ProductsPage.css";
 import { getProductCategoriesAction } from "@/app/actions/categories";
 import { getProvincesAction } from "@/app/actions/provinces";
@@ -371,151 +369,19 @@ export default function ProductsPage() {
         </div>
 
         <section className="products-page__content">
-          <aside className={`products-sidebar ${showFilters ? "active" : ""}`}>
-            <div className="products-sidebar__header">
-              <h3>Filtros</h3>
-              <button
-                className="close-filters-btn"
-                onClick={() => setShowFilters(false)}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="products-filter-section">
-              <label>
-                <Globe size={14} /> Origen
-              </label>
-              <div className="filter-options">
-                {[
-                  { id: "all", name: "Todos" },
-                  { id: "internal", name: "Locales" },
-                  { id: "external", name: "Externos" },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    className={`filter-chip ${filters.is_foreign === opt.id ? "active" : ""}`}
-                    onClick={() => handleFilterChange("is_foreign", opt.id)}
-                  >
-                    {opt.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="products-filter-section">
-              <label>
-                <MapPin size={14} /> Provincia
-              </label>
-              <select
-                value={filters.provinceId}
-                onChange={(e) =>
-                  handleFilterChange("provinceId", e.target.value)
-                }
-              >
-                <option value="all">Todas las provincias</option>
-                {provinces.map((p) => (
-                  <option key={p.id} value={String(p.id)}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="products-filter-section">
-              <label>
-                <Package size={14} /> Categoría
-              </label>
-              <select
-                value={filters.categoryId}
-                onChange={(e) =>
-                  handleFilterChange("categoryId", e.target.value)
-                }
-              >
-                <option value="all">Todas las categorías</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="products-filter-section">
-              <label>Marca</label>
-              <input
-                type="text"
-                value={filters.brand}
-                placeholder="Ej: Samsung"
-                onChange={(e) => handleFilterChange("brand", e.target.value)}
-                className="filter-input"
-              />
-            </div>
-
-            <div className="products-filter-section">
-              <label>EAN</label>
-              <input
-                type="text"
-                value={filters.ean}
-                placeholder="Ej: 7791234567890"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                onChange={(e) =>
-                  handleFilterChange("ean", e.target.value.replace(/\D/g, ""))
-                }
-                className="filter-input"
-              />
-            </div>
-
-            <div className="products-filter-section">
-              <label>Rango de precio</label>
-              <div className="filter-range">
-                <input
-                  type="number"
-                  min="0"
-                  value={filters.priceMin}
-                  placeholder="Mín"
-                  onChange={(e) =>
-                    handleFilterChange("priceMin", e.target.value)
-                  }
-                  className="filter-input"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  value={filters.priceMax}
-                  placeholder="Máx"
-                  onChange={(e) =>
-                    handleFilterChange("priceMax", e.target.value)
-                  }
-                  className="filter-input"
-                />
-              </div>
-            </div>
-
-            {professionalIdParam && (
-              <div className="products-filter-section">
-                <div className="professional-filter-badge">
-                  <span>Filtrando por profesional</span>
-                  <button
-                    onClick={() => {
-                      const newParams = new URLSearchParams(
-                        searchParams?.toString() ?? "",
-                      );
-                      newParams.delete("professionalId");
-                      router.replace(`${pathname}?${newParams.toString()}`);
-                    }}
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <button className="clear-filters-btn" onClick={clearFilters}>
-              Limpiar Filtros
-            </button>
-          </aside>
+          <ProductFilters
+            filters={filters}
+            categories={categories}
+            provinces={provinces}
+            onFilterChange={handleFilterChange}
+            onClear={clearFilters}
+            showFilters={showFilters}
+            onToggle={setShowFilters}
+            professionalIdParam={professionalIdParam}
+            searchParams={searchParams}
+            pathname={pathname}
+            router={router}
+          />
 
           <div className="products-results">
             {/* Header controls inside results for better flow */}

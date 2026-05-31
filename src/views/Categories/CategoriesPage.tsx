@@ -2,19 +2,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import {
-  MapPin,
-  Search,
-  ShieldCheck,
-  Store,
-  UserRound,
-  Zap,
-} from "lucide-react";
+import { MapPin, ShieldCheck, Store, UserRound, Zap } from "lucide-react";
+import CategoriesFilters from "./CategoriesFilters";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import { getServiceCategoriesAction } from "../../app/actions/categories";
 import { ROUTES } from "../../routes/paths";
-import { locationService } from "../../services/locationService";
 import {
   getProfessionalsAction,
   incrementProfessionalViewsAction,
@@ -51,8 +44,6 @@ type CategoryProfile = {
 
 const fallbackImage =
   "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&q=80";
-
-const accountTypes: AccountType[] = ["Todos", "Comercio", "Autónomo"];
 
 export default function CategoriesPage() {
   const router = useRouter();
@@ -346,154 +337,38 @@ export default function CategoriesPage() {
         </header>
 
         <section className="categories-page__content container">
-          <aside className="sidebar">
-            <div className="filter-card">
-              <div className="filter-card__header">
-                <h2 className="filter-card__title">
-                  Encontrá a tu profesional
-                </h2>
-                <p className="filter-card__subtitle">
-                  Ajustá la búsqueda por categoría, ubicación y tipo de perfil.
-                </p>
-              </div>
-
-              <div className="search-container">
-                <Search size={20} className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Buscar nombre, rubro, o especialidad..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <div className="filter-section">
-                <span className="section-label">CATEGORÍA:</span>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  <option value="Todas">Profesiones y Oficios</option>
-                  {categoryOptions
-                    .filter((c) => c.label !== "Todas")
-                    .map((cat) => (
-                      <option key={cat.label} value={cat.label}>
-                        {cat.label}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div className="filter-section">
-                <span className="section-label">UBICACIÓN:</span>
-                <div className="location-stack">
-                  <select
-                    value={selectedProvince}
-                    onChange={(e) => {
-                      setSelectedProvince(e.target.value);
-                      setSelectedCity("Todas");
-                    }}
-                  >
-                    <option value="Todas">Provincia</option>
-                    {provinceOptions
-                      .filter((p) => p !== "Todas")
-                      .map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                  </select>
-
-                  <select
-                    value={selectedCity}
-                    onChange={(e) => setSelectedCity(e.target.value)}
-                    disabled={selectedProvince === "Todas"}
-                  >
-                    <option value="Todas">Ciudad</option>
-                    {cityOptions
-                      .filter((c) => c !== "Todas")
-                      .map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="filter-section">
-                <span className="section-label">TIPO DE PERFIL:</span>
-                <div className="profile-type-switcher">
-                  {accountTypes.map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      className={selectedAccountType === type ? "active" : ""}
-                      onClick={() => setSelectedAccountType(type)}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="preferences-box">
-                <span className="section-label">PREFERENCIAS:</span>
-                <div className="preferences-list">
-                  <div className="pref-row">
-                    <label className="ios-toggle">
-                      <input
-                        type="checkbox"
-                        checked={urgentOnly}
-                        onChange={() => setUrgentOnly((v) => !v)}
-                      />
-                      <span className="ios-toggle__slider" />
-                    </label>
-                    <span className="pref-label">SOLO URGENCIAS</span>
-                  </div>
-
-                  <div className="pref-row">
-                    <label className="ios-toggle">
-                      <input
-                        type="checkbox"
-                        checked={publicStoreOnly}
-                        onChange={() => setPublicStoreOnly((v) => !v)}
-                      />
-                      <span className="ios-toggle__slider" />
-                    </label>
-                    <span className="pref-label">COMERCIO AL PÚBLICO</span>
-                  </div>
-
-                  <div className="pref-row">
-                    <label className="ios-toggle">
-                      <input
-                        type="checkbox"
-                        checked={verifiedOnly}
-                        onChange={() => setVerifiedOnly((v) => !v)}
-                      />
-                      <span className="ios-toggle__slider" />
-                    </label>
-                    <span className="pref-label">SOLO VERIFICADOS</span>
-                  </div>
-
-                  <div className="pref-row">
-                    <label className="ios-toggle">
-                      <input
-                        type="checkbox"
-                        checked={matriculatedOnly}
-                        onChange={() => setMatriculatedOnly((v) => !v)}
-                      />
-                      <span className="ios-toggle__slider" />
-                    </label>
-                    <span className="pref-label">SOLO MATRICULADOS</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button className="reset-filters-btn" onClick={handleResetFilters}>
-              Limpiar filtros
-            </button>
-          </aside>
+          <CategoriesFilters
+            searchTerm={searchTerm}
+            selectedCategory={selectedCategory}
+            selectedProvince={selectedProvince}
+            selectedCity={selectedCity}
+            selectedAccountType={selectedAccountType}
+            categoryOptions={categoryOptions}
+            provinceOptions={provinceOptions}
+            cityOptions={cityOptions}
+            selectedProvinceId={selectedProvinceId}
+            urgentOnly={urgentOnly}
+            publicStoreOnly={publicStoreOnly}
+            verifiedOnly={verifiedOnly}
+            matriculatedOnly={matriculatedOnly}
+            onSearchChange={setSearchTerm}
+            onCategoryChange={(value) => setSelectedCategory(value)}
+            onProvinceChange={(value) => {
+              setSelectedProvince(value);
+              setSelectedCity("Todas");
+            }}
+            onCityChange={setSelectedCity}
+            onAccountTypeChange={setSelectedAccountType}
+            onToggleChange={(key, value) => {
+              switch (key) {
+                case "urgentOnly": setUrgentOnly(value); break;
+                case "publicStoreOnly": setPublicStoreOnly(value); break;
+                case "verifiedOnly": setVerifiedOnly(value); break;
+                case "matriculatedOnly": setMatriculatedOnly(value); break;
+              }
+            }}
+            onReset={handleResetFilters}
+          />
 
           <div className="results-panel">
             <div className="results-panel__header">
