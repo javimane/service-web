@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
-import axios from "axios";
+import axios from "@/services/apiClient";
 
 export const getMyReferralsAction = publicAction
   .schema(z.void())

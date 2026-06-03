@@ -118,6 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (user) {
+      localStorage.setItem("was_logged_in", "true");
+    }
+  }, [user]);
+
+  useEffect(() => {
     const registerDeviceTokenIfPresent = async () => {
       if (!user || typeof window === "undefined") return;
 
@@ -217,6 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     localStorage.removeItem("registered_device_token");
+    localStorage.removeItem("was_logged_in");
 
     // Clear Supabase Session for chat functionality
     await clearSupabaseSession();

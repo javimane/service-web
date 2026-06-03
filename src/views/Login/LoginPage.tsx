@@ -76,9 +76,12 @@ export default function LoginPage({
         email: formData.email,
         password: formData.password,
       });
-      
+
       if (chatLoginError) {
-        console.error("Error al iniciar sesión en el chat:", chatLoginError.message);
+        console.error(
+          "Error al iniciar sesión en el chat:",
+          chatLoginError.message,
+        );
         // Opcional: Decidir si el login general falla si el chat falla.
       }
 

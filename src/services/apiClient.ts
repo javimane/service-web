@@ -9,7 +9,30 @@ const axiosInstance = axios.create({
 
 // Request interceptor
 axiosInstance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
+    // Prevent caching of API requests
+    config.headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+    config.headers["Pragma"] = "no-cache";
+    config.headers["Expires"] = "0";
+
+    if (!isBrowser) {
+      try {
+        const { cookies } = await import("next/headers");
+        const cookieStore = await cookies();
+        const access_token = cookieStore.get("access_token")?.value;
+        const refresh_token = cookieStore.get("refresh_token")?.value;
+
+        const cookieArray: string[] = [];
+        if (access_token) cookieArray.push(`access_token=${access_token}`);
+        if (refresh_token) cookieArray.push(`refresh_token=${refresh_token}`);
+
+        if (cookieArray.length > 0) {
+          config.headers.Cookie = cookieArray.join("; ");
+        }
+      } catch (e) {
+        // Ignore error if not in Next.js SSR context
+      }
+    }
     return config;
   },
   (error) => {
@@ -40,11 +63,34 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Si estamos en el servidor, verificar si podemos escribir cookies (Server Actions / Route Handlers)
+      // Si no podemos (SSR page render), no refrescamos para no desincronizar/rotar el token
+      if (!isBrowser) {
+        let canWrite = false;
+        try {
+          const { cookies } = await import("next/headers");
+          const cookieStore = await cookies();
+          cookieStore.set("temp_write_test", "1");
+          cookieStore.delete("temp_write_test");
+          canWrite = true;
+        } catch (e) {
+          canWrite = false;
+        }
+        
+        if (!canWrite) {
+          return Promise.reject(error);
+        }
+      }
+
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
         })
           .then(() => {
+            if (originalRequest.headers) {
+              delete originalRequest.headers.Authorization;
+              delete originalRequest.headers.authorization;
+            }
             return axiosInstance(originalRequest);
           })
           .catch((err) => {
@@ -60,8 +106,69 @@ axiosInstance.interceptors.response.use(
           (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000") +
           "/api/auth/refresh";
         
-        await axios.post(refreshUrl, {}, { withCredentials: true });
+        const refreshHeaders: any = {};
+        if (!isBrowser) {
+          try {
+            const { cookies } = await import("next/headers");
+            const cookieStore = await cookies();
+            const access_token = cookieStore.get("access_token")?.value;
+            const refresh_token = cookieStore.get("refresh_token")?.value;
+            const cookieArray: string[] = [];
+            if (access_token) cookieArray.push(`access_token=${access_token}`);
+            if (refresh_token) cookieArray.push(`refresh_token=${refresh_token}`);
+            if (cookieArray.length > 0) {
+              refreshHeaders.Cookie = cookieArray.join("; ");
+            }
+          } catch (e) {
+            // Ignorar
+          }
+        }
+
+        const refreshResponse = await axios.post(refreshUrl, {}, { 
+          withCredentials: true,
+          headers: refreshHeaders
+        });
         
+        if (!isBrowser) {
+          try {
+            const setCookieHeaders = refreshResponse.headers["set-cookie"];
+            if (setCookieHeaders) {
+              const { cookies } = await import("next/headers");
+              const cookieStore = await cookies();
+              const cookiesArray = Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders];
+              
+              for (const cookieStr of cookiesArray) {
+                const parts = cookieStr.split(";")[0].split("=");
+                if (parts.length >= 2) {
+                  const name = parts[0].trim();
+                  const value = parts.slice(1).join("=").trim();
+                  
+                  const options: any = {
+                    httpOnly: true,
+                    path: "/",
+                    secure: process.env.NODE_ENV === "production",
+                    sameSite: "lax",
+                  };
+                  
+                  const maxAgeMatch = cookieStr.match(/Max-Age=([^;]+)/i);
+                  if (maxAgeMatch) {
+                    options.maxAge = parseInt(maxAgeMatch[1], 10);
+                  }
+                  
+                  cookieStore.set(name, value, options);
+                }
+              }
+            }
+          } catch (e) {
+            // Ignorar
+          }
+        }
+        
+        if (originalRequest.headers) {
+          delete originalRequest.headers.Authorization;
+          delete originalRequest.headers.authorization;
+        }
+
         isRefreshing = false;
         processQueue(null, "refreshed");
         
@@ -72,7 +179,22 @@ axiosInstance.interceptors.response.use(
         processQueue(err, null);
         
         if (isBrowser) {
-          window.dispatchEvent(new CustomEvent("session-expired"));
+          const isRefreshEndpoint = originalRequest.url?.includes("/api/auth/refresh");
+          const isLoginEndpoint = originalRequest.url?.includes("/api/auth/login");
+          if (!isRefreshEndpoint && !isLoginEndpoint) {
+            const isPublicPage = 
+              window.location.pathname === "/" || 
+              window.location.pathname === "/login" || 
+              window.location.pathname === "/registro";
+              
+            if (!isPublicPage) {
+              const wasLoggedIn = localStorage.getItem("was_logged_in") === "true";
+              if (wasLoggedIn) {
+                localStorage.removeItem("was_logged_in");
+                window.dispatchEvent(new CustomEvent("session-expired"));
+              }
+            }
+          }
         }
         
         return Promise.reject(err);

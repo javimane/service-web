@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
-import axios from "axios";
+import axios from "@/services/apiClient";
 import { buildActionHeaders } from "./_utils/authHeaders";
 
 const serviceListSchema = z.record(z.string(), z.any()).optional();
