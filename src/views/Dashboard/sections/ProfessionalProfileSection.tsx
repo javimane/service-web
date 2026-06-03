@@ -141,7 +141,8 @@ export default function ProfessionalProfileSection() {
     queryFn: async () => {
       if (!professionalId) return [];
       const result = await getVideosByProfessionalAction({ professionalId });
-      const data = result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      const data = (raw && Array.isArray(raw.items) ? raw.items : Array.isArray(raw) ? raw : []);
       const filtered = data.filter((v) => v.activate === true);
       return filtered.map((v) => ({
         id: v.id.toString(),
@@ -173,7 +174,8 @@ export default function ProfessionalProfileSection() {
     queryFn: async () => {
       if (!professionalId) return [];
       const result = await getImagesByProfessionalAction({ professionalId });
-      const data = result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      const data = (raw && Array.isArray(raw.items) ? raw.items : Array.isArray(raw) ? raw : []);
       return data.map((img) => ({
         id: img.id.toString(),
         url: img.image_url,

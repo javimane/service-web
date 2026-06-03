@@ -61,7 +61,10 @@ export default function PromotionsSection({ userProvince = "Buenos Aires" }: { u
       const result = await getProfessionalPromotionsAction({
         province: userProvince,
       });
-      if (result?.data) return result.data;
+      const raw = (result?.data as any) ?? result;
+      // Handle both paginated { items, ... } and plain array responses
+      if (raw && Array.isArray(raw.items)) return raw.items as any[];
+      if (Array.isArray(raw)) return raw as any[];
       return [];
     },
     staleTime: 1000 * 60 * 10, // 10 minutos

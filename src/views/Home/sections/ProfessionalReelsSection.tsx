@@ -71,7 +71,9 @@ export default function ProfessionalReelsSection({ userProvince = "Buenos Aires"
     queryKey: ["professional-reels", provinceId],
     queryFn: async () => {
       const result = await getReelsAction({ provinceId });
-      if (result?.data) return result.data;
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
       return [];
     },
     enabled: !!provinceId || userProvince === "Buenos Aires",

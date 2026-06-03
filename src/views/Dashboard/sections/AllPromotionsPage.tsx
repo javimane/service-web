@@ -54,7 +54,10 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
       const result = await getPromotionsByProfessionalAction({
         professionalId,
       });
-      return result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
+      return [];
     },
     enabled: !!professionalId,
   });

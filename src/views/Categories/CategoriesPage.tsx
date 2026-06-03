@@ -127,7 +127,9 @@ export default function CategoriesPage() {
         limit: 100,
       });
 
-      if (result?.data) return result.data;
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
       return [];
     },
     staleTime: 1000 * 60 * 5,

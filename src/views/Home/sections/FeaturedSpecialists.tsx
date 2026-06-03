@@ -36,15 +36,15 @@ export default function FeaturedSpecialists({ userProvince = "Buenos Aires" }: {
         sortBy: "rating",
       });
 
-      if (result?.data) {
-        return result.data;
-      }
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
 
       if (result?.serverError) {
         throw new Error(result.serverError);
       }
 
-      return null;
+      return [];
     },
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,

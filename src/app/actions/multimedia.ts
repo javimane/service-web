@@ -46,15 +46,25 @@ export const getVideosByProfessionalAction = publicAction
     }
   });
 
-export const incrementVideoLikesAction = publicAction
-  .schema(z.object({ id: z.string().or(z.number()) }))
+export const upsertVideoLikeAction = publicAction
+  .schema(
+    z.object({
+      id: z.string().or(z.number()),
+      is_like: z.boolean(),
+      token: z.string().optional(),
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-videos/${parsedInput.id}/like`;
     try {
-      await axios.post(url, {}, { headers: ctx.headers });
+      await axios.post(
+        url,
+        { is_like: parsedInput.is_like },
+        { headers: await buildActionHeaders(ctx, parsedInput.token) },
+      );
       return { success: true };
     } catch (error: any) {
-      console.error("Error incrementing video likes:", error.message);
+      console.error("Error upserting video like:", error.message);
       return { success: false, error: error.message };
     }
   });
@@ -69,6 +79,19 @@ export const incrementVideoViewsAction = publicAction
     } catch (error: any) {
       console.error("Error incrementing video views:", error.message);
       return { success: false, error: error.message };
+    }
+  });
+
+export const getVideoStatsByProfessionalAction = publicAction
+  .schema(z.object({ professionalId: z.number() }))
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-videos/professional/${parsedInput.professionalId}/stats`;
+    try {
+      const response = await axios.get(url, { headers: ctx.headers });
+      return response.data;
+    } catch (error: any) {
+      console.error("Error fetching video stats:", error.message);
+      return null;
     }
   });
 

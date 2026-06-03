@@ -14,11 +14,10 @@ import {
   MapPin,
   Volume2,
   VolumeX,
-  Search,
 } from "lucide-react";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { getReelsAction, updateReelStatsAction } from "../../app/actions/reels";
+import { getReelsAction, updateReelStatsAction, upsertReelLikeAction } from "../../app/actions/reels";
 import { getProvincesAction } from "@/app/actions/provinces";
 import { getSubscriptionByProfessionalAction } from "@/app/actions/subscriptions";
 import type { ProfessionalReelRow } from "../../types/database.types";
@@ -26,6 +25,10 @@ import { getProfilePath } from "../../utils/utils";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
+import Pagination from "../../components/Pagination/Pagination";
+import { useAuth } from "../../context/AuthContext";
+import { useAuthModal } from "../../context/AuthModalContext";
+import { getAccessToken } from "../../utils/auth";
 import "./ReelsPage.css";
 
 // Individual Reel Card with hover-to-play preview
@@ -117,11 +120,15 @@ function ReelCard({
 
 export default function ReelsPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { openAuth } = useAuthModal();
   const [selectedProvinceId, setSelectedProvinceId] = useState<string>("All");
   const [selectedReelIndex, setSelectedReelIndex] = useState<number | null>(null);
-  const [likedReels, setLikedReels] = useState<number[]>([]);
+  const [likedReels, setLikedReels] = useState<Set<string | number>>(new Set());
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+  const [page, setPage] = useState(1);
+  const LIMIT = 12;
   const theaterVideoRef = useRef<HTMLVideoElement>(null);
 
   // Fetch provinces
@@ -134,19 +141,32 @@ export default function ReelsPage() {
     staleTime: 1000 * 60 * 60 * 24,
   });
 
-  // Fetch Reels filtered by province
-  const { data: reels = [], isLoading: isLoadingReels } = useQuery<
-    ProfessionalReelRow[]
-  >({
-    queryKey: ["all-reels-view", selectedProvinceId],
+  // Fetch Reels (paginated)
+  const { data: reelsPaginated, isLoading: isLoadingReels } = useQuery({
+    queryKey: ["all-reels-view", selectedProvinceId, page],
     queryFn: async () => {
       const provinceId =
         selectedProvinceId === "All" ? undefined : Number(selectedProvinceId);
-      const result = await getReelsAction({ provinceId });
-      return result?.data ?? [];
+      const result = await getReelsAction({ provinceId, page, limit: LIMIT });
+      const raw = (result?.data as any) ?? result;
+      // Support both paginated { items, ... } and plain array responses
+      if (raw && raw.items) return raw as { items: ProfessionalReelRow[]; page: number; totalPages: number; hasPrev: boolean; hasNext: boolean; total: number };
+      return { items: (raw as ProfessionalReelRow[]) ?? [], page: 1, totalPages: 1, hasPrev: false, hasNext: false, total: 0 };
     },
     staleTime: 1000 * 60 * 5,
   });
+
+  const reels = reelsPaginated?.items ?? [];
+  const totalPages = reelsPaginated?.totalPages ?? 1;
+  const hasPrev = reelsPaginated?.hasPrev ?? false;
+  const hasNext = reelsPaginated?.hasNext ?? false;
+
+  // Reset to page 1 when province filter changes
+  const handleProvinceChange = (value: string) => {
+    setSelectedProvinceId(value);
+    setPage(1);
+    setSelectedReelIndex(null);
+  };
 
   // Extract unique professional IDs
   const professionalIds = useMemo<number[]>(() => {
@@ -259,14 +279,34 @@ export default function ReelsPage() {
     setIsMuted(video.muted);
   };
 
-  const toggleTheaterLike = () => {
+  const toggleTheaterLike = async () => {
     if (!activeReel) return;
-    const isLiked = likedReels.includes(activeReel.id);
-    if (!isLiked) {
-      updateReelStatsAction({ id: activeReel.id, data: { likes: 1 } });
-      setLikedReels((prev) => [...prev, activeReel.id]);
-    } else {
-      setLikedReels((prev) => prev.filter((id) => id !== activeReel.id));
+    if (!user) {
+      openAuth("login");
+      return;
+    }
+    const alreadyLiked = likedReels.has(activeReel.id);
+    const newIsLike = !alreadyLiked;
+
+    // Optimistic update
+    setLikedReels((prev) => {
+      const next = new Set(prev);
+      if (newIsLike) next.add(activeReel.id);
+      else next.delete(activeReel.id);
+      return next;
+    });
+
+    try {
+      const token = getAccessToken();
+      await upsertReelLikeAction({ id: activeReel.id, is_like: newIsLike, token });
+    } catch {
+      // Revert on error
+      setLikedReels((prev) => {
+        const next = new Set(prev);
+        if (alreadyLiked) next.add(activeReel.id);
+        else next.delete(activeReel.id);
+        return next;
+      });
     }
   };
 
@@ -308,7 +348,7 @@ export default function ReelsPage() {
                   <MapPin size={18} className="reels-filter-icon" />
                   <select
                     value={selectedProvinceId}
-                    onChange={(e) => setSelectedProvinceId(e.target.value)}
+                    onChange={(e) => handleProvinceChange(e.target.value)}
                     className="reels-filter-select"
                   >
                     <option value="All">Todas las provincias</option>
@@ -347,20 +387,31 @@ export default function ReelsPage() {
                 </button>
               </div>
             ) : (
-              <div className="reels-grid">
-                {processedReels.map((reel, index) => {
-                  const sub = subscriptionsMap[reel.professional_id];
-                  const isPremium = sub?.type === "premium" || sub?.is_premium;
-                  return (
-                    <ReelCard
-                      key={reel.id}
-                      reel={reel}
-                      isPremium={!!isPremium}
-                      onClick={() => setSelectedReelIndex(index)}
-                    />
-                  );
-                })}
-              </div>
+              <>
+                <div className="reels-grid">
+                  {processedReels.map((reel, index) => {
+                    const sub = subscriptionsMap[reel.professional_id];
+                    const isPremium = sub?.type === "premium" || sub?.is_premium;
+                    return (
+                      <ReelCard
+                        key={reel.id}
+                        reel={reel}
+                        isPremium={!!isPremium}
+                        onClick={() => setSelectedReelIndex(index)}
+                      />
+                    );
+                  })}
+                </div>
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  hasPrev={hasPrev}
+                  hasNext={hasNext}
+                  onPrev={() => { setPage((p) => p - 1); setSelectedReelIndex(null); }}
+                  onNext={() => { setPage((p) => p + 1); setSelectedReelIndex(null); }}
+                  onPage={(p) => { setPage(p); setSelectedReelIndex(null); }}
+                />
+              </>
             )}
           </div>
         </section>
@@ -462,14 +513,14 @@ export default function ReelsPage() {
                 <button
                   type="button"
                   className={`reels-theater__action-btn ${
-                    likedReels.includes(activeReel.id) ? "is-active" : ""
+                    likedReels.has(activeReel.id) ? "is-active" : ""
                   }`}
                   onClick={toggleTheaterLike}
                 >
                   <Heart
                     size={22}
                     fill={
-                      likedReels.includes(activeReel.id)
+                      likedReels.has(activeReel.id)
                         ? "currentColor"
                         : "none"
                     }

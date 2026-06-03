@@ -129,7 +129,10 @@ export default function BankPromotionsPage() {
         token ? { token } : undefined,
       );
       if (result?.serverError) throw new Error(result.serverError);
-      return result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
+      return [];
     },
   });
 

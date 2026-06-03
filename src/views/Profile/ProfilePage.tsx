@@ -29,12 +29,14 @@ import { getServicesByProfessionalAction } from "../../app/actions/services";
 import {
   getImagesByProfessionalAction,
   getVideosByProfessionalAction,
-  incrementVideoLikesAction,
+  upsertVideoLikeAction,
   incrementVideoViewsAction,
 } from "../../app/actions/multimedia";
 import { getReelsAction, updateReelStatsAction } from "../../app/actions/reels";
 import { getProfessionalReviewsAction } from "../../app/actions/reviews";
 import ReviewModal from "./sections/ReviewModal";
+import { useAuthModal } from "../../context/AuthModalContext";
+import { getAccessToken } from "../../utils/auth";
 import { getPromotionsByProfessionalAction } from "../../app/actions/professionalPromotions";
 import { getBankPromotionsAction } from "../../app/actions/bankPromotions";
 import { getProductsByProfessionalAction } from "../../app/actions/products";
@@ -91,9 +93,11 @@ function useDraggableScroll() {
 function ProfileVideoCard({
   video,
   onSelect,
+  onLike,
 }: {
   video: any;
   onSelect: (v: any) => void;
+  onLike?: (video: any, e: React.MouseEvent) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -114,7 +118,7 @@ function ProfileVideoCard({
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
-    incrementVideoLikesAction({ id: video.id });
+    onLike?.(video, e);
   };
 
   return (
@@ -202,7 +206,18 @@ export default function ProfilePage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   const { user } = useAuth();
+  const { openAuth } = useAuthModal();
   const accessToken = typeof window !== "undefined" ? localStorage.getItem("access_token") ?? undefined : undefined;
+
+  const handleVideoLike = async (video: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      openAuth("login");
+      return;
+    }
+    const token = getAccessToken();
+    await upsertVideoLikeAction({ id: video.id, is_like: true, token });
+  };
 
   const servicesScroll = useDraggableScroll();
   const videosScroll = useDraggableScroll();
@@ -269,7 +284,9 @@ export default function ProfilePage() {
     queryKey: ["all-reels"],
     queryFn: async () => {
       const result = await getReelsAction({});
-      return result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      if (raw && raw.items) return raw.items;
+      return (raw as any[]) ?? [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 15,
@@ -294,7 +311,10 @@ export default function ProfilePage() {
       const result = await getPromotionsByProfessionalAction({
         professionalId: id!,
       });
-      return result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
+      return [];
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 10, // 10 minutos
@@ -305,7 +325,10 @@ export default function ProfilePage() {
     queryKey: ["all-bank-promotions"],
     queryFn: async () => {
       const result = await getBankPromotionsAction({});
-      return result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
+      return [];
     },
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
@@ -821,6 +844,7 @@ export default function ProfilePage() {
                   key={video.id}
                   video={video}
                   onSelect={setSelectedVideo}
+                  onLike={handleVideoLike}
                 />
               ))}
               {videos.length === 0 && (
@@ -1097,9 +1121,7 @@ export default function ProfilePage() {
                 <h3>{selectedVideo.title}</h3>
                 <button
                   className="video-like-btn"
-                  onClick={() =>
-                    incrementVideoLikesAction({ id: selectedVideo.id })
-                  }
+                  onClick={(e) => handleVideoLike(selectedVideo, e)}
                 >
                   <Heart size={20} />
                 </button>

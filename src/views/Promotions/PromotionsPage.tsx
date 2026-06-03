@@ -94,7 +94,10 @@ export default function PromotionsPage() {
         limit: 20,
         offset: pageParam,
       });
-      return result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
+      return [];
     },
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.length === 20 ? allPages.length * 20 : undefined;
@@ -117,7 +120,10 @@ export default function PromotionsPage() {
         limit: 20,
         offset: pageParam,
       });
-      return result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
+      return [];
     },
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.length === 20 ? allPages.length * 20 : undefined;

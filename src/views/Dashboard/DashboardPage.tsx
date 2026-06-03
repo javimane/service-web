@@ -22,6 +22,7 @@ import { getProfessionalMeAction } from "../../app/actions/professionals";
 import { getProposalsCountAction } from "../../app/actions/proposals";
 import { getProfessionalReelStatsAction } from "../../app/actions/reels";
 import { getVideosByProfessionalAction } from "../../app/actions/multimedia";
+import { getVideoStatsByProfessionalAction } from "../../app/actions/multimedia";
 import type { CountViewsReelsRow } from "../../types/database.types";
 import { getAccessToken } from "../../utils/auth";
 import ProposalCreator from "./sections/ProposalCreator";
@@ -90,7 +91,22 @@ export default function DashboardPage() {
     queryKey: ["professional-videos", professionalId],
     queryFn: async () => {
       const result = await getVideosByProfessionalAction({ professionalId });
-      return result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      if (raw && Array.isArray(raw.items)) return raw.items;
+      if (Array.isArray(raw)) return raw;
+      return [];
+    },
+    enabled: !!professionalId,
+  });
+
+  const { data: videoStats } = useQuery({
+    queryKey: ["video-stats", professionalId],
+    queryFn: async () => {
+      const result = await getVideoStatsByProfessionalAction({
+        professionalId,
+      });
+      const raw = (result?.data as any) ?? result;
+      return raw ?? null;
     },
     enabled: !!professionalId,
   });
@@ -364,7 +380,11 @@ export default function DashboardPage() {
                       <div className="bar-container">
                         <div
                           className="bar highlight"
-                          style={{ '--bar-height': `${chartHeight}%` } as React.CSSProperties}
+                          style={
+                            {
+                              "--bar-height": `${chartHeight}%`,
+                            } as React.CSSProperties
+                          }
                         >
                           <div className="stars">👁</div>
                         </div>
@@ -394,11 +414,11 @@ export default function DashboardPage() {
                       <div className="play-icon-bg">
                         <Play size={20} fill="currentColor" />
                       </div>
-                      <h3 className="mid-value">Reels</h3>
+                      <h3 className="mid-value">Reels &amp; Videos</h3>
                     </div>
                     <div className="reels-stats-row">
                       <div className="stat-value-group">
-                        <span className="card-label">CANTIDAD DE VISTAS</span>
+                        <span className="card-label">VISTAS (REELS)</span>
                         <h2 className="mid-value">
                           {reelsStats?.total_views !== undefined
                             ? reelsStats.total_views >= 1000
@@ -408,12 +428,32 @@ export default function DashboardPage() {
                         </h2>
                       </div>
                       <div className="stat-value-group">
-                        <span className="card-label">CANTIDAD DE LIKES</span>
+                        <span className="card-label">LIKES (REELS)</span>
                         <h2 className="mid-value">
                           {reelsStats?.total_likes !== undefined
                             ? reelsStats.total_likes >= 1000
                               ? `${(reelsStats.total_likes / 1000).toFixed(1)}K`
                               : reelsStats.total_likes
+                            : "--"}
+                        </h2>
+                      </div>
+                      <div className="stat-value-group">
+                        <span className="card-label">VISTAS (VIDEOS)</span>
+                        <h2 className="mid-value">
+                          {videoStats?.total_views !== undefined
+                            ? videoStats.total_views >= 1000
+                              ? `${(videoStats.total_views / 1000).toFixed(1)}K`
+                              : videoStats.total_views
+                            : "--"}
+                        </h2>
+                      </div>
+                      <div className="stat-value-group">
+                        <span className="card-label">LIKES (VIDEOS)</span>
+                        <h2 className="mid-value">
+                          {videoStats?.total_likes !== undefined
+                            ? videoStats.total_likes >= 1000
+                              ? `${(videoStats.total_likes / 1000).toFixed(1)}K`
+                              : videoStats.total_likes
                             : "--"}
                         </h2>
                       </div>

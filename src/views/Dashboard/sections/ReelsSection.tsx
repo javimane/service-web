@@ -54,7 +54,8 @@ export default function ReelsSection() {
     queryFn: async () => {
       if (!professionalId) return [];
       const result = await getReelsByProfessionalAction({ professionalId });
-      const data = result?.data ?? [];
+      const raw = (result?.data as any) ?? result;
+      const data = (raw && Array.isArray(raw.items) ? raw.items : Array.isArray(raw) ? raw : []);
       const filtered = data.filter(
         (r: any) => r.professional_id === professionalId && r.activate === true,
       );

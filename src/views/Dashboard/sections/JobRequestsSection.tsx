@@ -63,7 +63,12 @@ export default function JobRequestsSection() {
   });
 
   const { data: requestsData, isLoading } = useQuery({
-    queryKey: ["job-requests", hasProfessionalSubscription, filterCategory, filterProvince],
+    queryKey: [
+      "job-requests",
+      hasProfessionalSubscription,
+      filterCategory,
+      filterProvince,
+    ],
     queryFn: async () => {
       const token = await getAccessToken();
       if (hasProfessionalSubscription) {
@@ -97,7 +102,7 @@ export default function JobRequestsSection() {
 
     setIsSubmitting(true);
     try {
-      let imageUrl = null;
+      let imageUrl = "";
       if (selectedImage) {
         const uploadRes = await uploadJobRequestImage({
           file: selectedImage,
@@ -111,8 +116,10 @@ export default function JobRequestsSection() {
         data: {
           description,
           image_url: imageUrl,
-          categories_services: selectedCategory !== "" ? [Number(selectedCategory)] : [],
-          provinces_id: selectedProvince !== "" ? [Number(selectedProvince)] : [],
+          categories_services:
+            selectedCategory !== "" ? [Number(selectedCategory)] : [],
+          provinces_id:
+            selectedProvince !== "" ? [Number(selectedProvince)] : [],
         },
         token,
       });
@@ -161,7 +168,9 @@ export default function JobRequestsSection() {
     <div className="job-requests-section">
       <div className="job-requests-section__header">
         <h2 className="job-requests-section__title">
-          {hasProfessionalSubscription ? "Solicitudes de Trabajo Disponibles" : "Mis Solicitudes de Trabajo"}
+          {hasProfessionalSubscription
+            ? "Solicitudes de Trabajo Disponibles"
+            : "Mis Solicitudes de Trabajo"}
         </h2>
         <button
           type="button"
@@ -176,7 +185,19 @@ export default function JobRequestsSection() {
       {hasProfessionalSubscription && (
         <div className="job-requests-section__filters-container">
           <div className="job-requests-section__filters-title">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
             Filtros de Búsqueda
           </div>
           <div className="job-requests-section__filters">
@@ -184,7 +205,11 @@ export default function JobRequestsSection() {
               <label>Categoría</label>
               <select
                 value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value === "" ? "" : Number(e.target.value))}
+                onChange={(e) =>
+                  setFilterCategory(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
               >
                 <option value="">Todas las categorías</option>
                 {categories.map((c: any) => (
@@ -198,7 +223,11 @@ export default function JobRequestsSection() {
               <label>Provincia</label>
               <select
                 value={filterProvince}
-                onChange={(e) => setFilterProvince(e.target.value === "" ? "" : Number(e.target.value))}
+                onChange={(e) =>
+                  setFilterProvince(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
               >
                 <option value="">Todas las provincias</option>
                 {provinces.map((p: any) => (
@@ -220,7 +249,11 @@ export default function JobRequestsSection() {
             <div key={req.id} className="job-request-card">
               <div className="job-request-card__image-container">
                 {req.image_url ? (
-                  <img src={req.image_url} alt="Request" className="job-request-card__image" />
+                  <img
+                    src={req.image_url}
+                    alt="Request"
+                    className="job-request-card__image"
+                  />
                 ) : (
                   <div className="job-request-card__no-image">
                     <ImageIcon size={48} />
@@ -231,7 +264,10 @@ export default function JobRequestsSection() {
                 <div className="job-request-card__header">
                   <div className="job-request-card__avatar">
                     {req.avatar_url ? (
-                      <img src={req.avatar_url} alt={req.display_name || "User"} />
+                      <img
+                        src={req.avatar_url}
+                        alt={req.display_name || "User"}
+                      />
                     ) : (
                       (req.display_name || "U").charAt(0).toUpperCase()
                     )}
@@ -246,16 +282,24 @@ export default function JobRequestsSection() {
                   </div>
                 </div>
 
-                <p className="job-request-card__description">{req.description}</p>
+                <p className="job-request-card__description">
+                  {req.description}
+                </p>
 
                 <div className="job-request-card__tags">
                   {req.categories_services?.map((catId) => (
-                    <span key={`cat-${catId}`} className="job-request-card__tag">
+                    <span
+                      key={`cat-${catId}`}
+                      className="job-request-card__tag"
+                    >
                       {getCategoryName(catId)}
                     </span>
                   ))}
                   {req.provinces_id?.map((provId) => (
-                    <span key={`prov-${provId}`} className="job-request-card__tag">
+                    <span
+                      key={`prov-${provId}`}
+                      className="job-request-card__tag"
+                    >
                       {getProvinceName(provId)}
                     </span>
                   ))}
@@ -272,7 +316,10 @@ export default function JobRequestsSection() {
                       Eliminar
                     </button>
                   ) : hasProfessionalSubscription ? (
-                    <button type="button" className="job-request-card__btn-contact">
+                    <button
+                      type="button"
+                      className="job-request-card__btn-contact"
+                    >
                       <MessageCircle size={16} />
                       Contactar
                     </button>
@@ -311,7 +358,11 @@ export default function JobRequestsSection() {
             <select
               className="job-request-form__select"
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value === "" ? "" : Number(e.target.value))}
+              onChange={(e) =>
+                setSelectedCategory(
+                  e.target.value === "" ? "" : Number(e.target.value),
+                )
+              }
             >
               <option value="">Selecciona una categoría (Opcional)</option>
               {categories.map((c: any) => (
@@ -327,7 +378,11 @@ export default function JobRequestsSection() {
             <select
               className="job-request-form__select"
               value={selectedProvince}
-              onChange={(e) => setSelectedProvince(e.target.value === "" ? "" : Number(e.target.value))}
+              onChange={(e) =>
+                setSelectedProvince(
+                  e.target.value === "" ? "" : Number(e.target.value),
+                )
+              }
             >
               <option value="">Selecciona tu provincia (Opcional)</option>
               {provinces.map((p: any) => (
@@ -356,7 +411,11 @@ export default function JobRequestsSection() {
                 }}
               />
               {imagePreview ? (
-                <img src={imagePreview} alt="Preview" className="job-request-form__image-preview" />
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="job-request-form__image-preview"
+                />
               ) : (
                 <div style={{ color: "var(--text-secondary)" }}>
                   <ImageIcon size={32} style={{ marginBottom: "8px" }} />
@@ -375,7 +434,11 @@ export default function JobRequestsSection() {
             >
               Cancelar
             </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting || !description.trim()}>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={isSubmitting || !description.trim()}
+            >
               {isSubmitting ? "Publicando..." : "Publicar Solicitud"}
             </button>
           </div>
