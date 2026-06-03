@@ -192,11 +192,25 @@
   font-size: 0.7rem;
 }
 
+.services-filters {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-card);
+}
+
 @media (max-width: 1024px) {
   .services-layout {
     flex-direction: column;
     padding: 1.5rem;
     gap: 2rem;
+  }
+
+  .services-filters {
+    width: 100%;
   }
 
   .services-header {

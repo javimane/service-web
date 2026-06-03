@@ -1,6 +1,6 @@
-import { Search, ChevronDown, CheckCircle, RotateCcw } from "lucide-react";
+import FilterPanel from "../../components/Filters/FilterPanel";
+import type { FilterSection } from "../../components/Filters/FilterPanel";
 import { priceRangeOptions } from "./serviceUtils";
-import "./ServicesFilters.css";
 
 export default function ServicesFilters({
   filters,
@@ -9,81 +9,49 @@ export default function ServicesFilters({
   onFilterChange,
   onReset,
 }) {
+  const sections: FilterSection[] = [
+    {
+      type: "search",
+      label: "BÚSQUEDA",
+      placeholder: "Buscar servicio...",
+    },
+    {
+      type: "select",
+      label: "CATEGORÍAS",
+      filterKey: "categoryId",
+      allLabel: "Todas las categorías",
+      allValue: "All",
+      options: categories.map((cat: any) => ({
+        value: String(cat.id),
+        label: cat.name,
+      })),
+    },
+    {
+      type: "select",
+      label: "UBICACIÓN",
+      filterKey: "provinceId",
+      allLabel: "Todas las provincias",
+      allValue: "All",
+      options: provinces.map((p: any) => ({
+        value: String(p.id),
+        label: p.name,
+      })),
+    },
+    {
+      type: "price-select",
+      label: "PRECIO",
+      options: priceRangeOptions,
+    },
+    { type: "reset" },
+  ];
+
   return (
-    <aside className="services-sidebar">
-      {/* Discovery / Search */}
-      <div className="services-filter-section">
-        <h3 className="services-filter-section-label">BÚSQUEDA</h3>
-        <div className="search-box">
-          <Search size={18} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Buscar servicio..."
-            value={filters.search}
-            onChange={(e) => onFilterChange({ search: e.target.value })}
-          />
-        </div>
-      </div>
-
-      {/* Categorías */}
-      <div className="services-filter-section">
-        <h3 className="services-filter-section-label">CATEGORÍAS</h3>
-        <div className="select-wrapper">
-          <select
-            value={filters.categoryId}
-            onChange={(e) => onFilterChange({ categoryId: e.target.value })}
-          >
-            <option value="All">Todas las categorías</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="select-arrow" />
-        </div>
-      </div>
-
-      {/* Ubicación */}
-      <div className="services-filter-section">
-        <h3 className="services-filter-section-label">UBICACIÓN</h3>
-        <div className="select-wrapper">
-          <select
-            value={filters.provinceId}
-            onChange={(e) => onFilterChange({ provinceId: e.target.value })}
-          >
-            <option value="All">Todas las provincias</option>
-            {provinces.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="select-arrow" />
-        </div>
-      </div>
-
-      {/* Precio */}
-      <div className="services-filter-section">
-        <h3 className="services-filter-section-label">PRECIO</h3>
-        <div className="select-wrapper">
-          <select
-            value={filters.priceRange}
-            onChange={(e) => onFilterChange({ priceRange: e.target.value })}
-          >
-            {priceRangeOptions.map((range) => (
-              <option key={range.id} value={range.id}>
-                {range.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="select-arrow" />
-        </div>
-      </div>
-      <button className="reset-sidebar-btn" onClick={onReset}>
-        <RotateCcw size={16} />
-        <span>Restablecer filtros</span>
-      </button>
-    </aside>
+    <FilterPanel
+      className="services-filters"
+      sections={sections}
+      filters={filters}
+      onFilterChange={(key, value) => onFilterChange({ [key]: value })}
+      onReset={onReset}
+    />
   );
 }

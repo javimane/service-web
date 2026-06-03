@@ -1,12 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Search, Loader2, Filter } from "lucide-react";
+import { Loader2, Filter } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getServiceCategoriesAction } from "../../app/actions/categories";
 import {
   getProvincesAction,
   getDepartmentsAction,
 } from "../../app/actions/locations";
+import FilterPanel from "../../components/Filters/FilterPanel";
+import type { FilterSection } from "../../components/Filters/FilterPanel";
 import "./MapSidebar.css";
 
 export default function MapSidebar({
@@ -25,7 +27,7 @@ export default function MapSidebar({
       const result = await getServiceCategoriesAction();
       return result?.data ?? [];
     },
-    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    staleTime: 1000 * 60 * 60 * 24,
     gcTime: 1000 * 60 * 60 * 24,
   });
 
@@ -35,7 +37,7 @@ export default function MapSidebar({
       const result = await getProvincesAction();
       return result?.data ?? [];
     },
-    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    staleTime: 1000 * 60 * 60 * 24,
     gcTime: 1000 * 60 * 60 * 24,
   });
 
@@ -48,9 +50,16 @@ export default function MapSidebar({
       return result?.data ?? [];
     },
     enabled: !!selectedProvince,
-    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    staleTime: 1000 * 60 * 60 * 24,
     gcTime: 1000 * 60 * 60 * 24,
   });
+
+  const localFilters = {
+    search,
+    categoryId: selectedCategory,
+    provinceId: selectedProvince,
+    departmentId: selectedDepartment,
+  };
 
   const handleApply = () => {
     onFilterChange({
@@ -69,8 +78,44 @@ export default function MapSidebar({
     return () => clearTimeout(timer);
   }, [search, selectedCategory, selectedProvince, selectedDepartment]);
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") handleApply();
+  const sections: FilterSection[] = [
+    {
+      type: "search",
+      label: "BÚSQUEDA RÁPIDA",
+      placeholder: "Nombre o especialidad...",
+      filterKey: "search",
+    },
+    {
+      type: "chips",
+      label: "CATEGORÍAS",
+      filterKey: "categoryId",
+      options: [
+        { value: "all", label: "Todas" },
+        ...categories.map((cat: any) => ({
+          value: String(cat.id),
+          label: cat.name,
+        })),
+      ],
+    },
+    {
+      type: "select",
+      label: "UBICACIÓN",
+      filterKey: "provinceId",
+      allLabel: "Todas las provincias",
+      options: provinces.map((prov: any) => ({
+        value: String(prov.id),
+        label: prov.name,
+      })),
+    },
+  ];
+
+  const handleFilterChange = (key: string, value: any) => {
+    if (key === "search") setSearch(value);
+    if (key === "categoryId") setSelectedCategory(value);
+    if (key === "provinceId") {
+      setSelectedProvince(value);
+      setSelectedDepartment("");
+    }
   };
 
   return (
@@ -80,70 +125,16 @@ export default function MapSidebar({
         <p className="map-sidebar__subtitle">Encuentra expertos cerca de ti</p>
       </div>
 
-      <div className="map-sidebar__section">
-        <label className="map-sidebar__label">BÚSQUEDA RÁPIDA</label>
-        <div className="search-input">
-          <Search size={18} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Nombre o especialidad..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyPress={handleKeyPress}
-          />
-        </div>
-      </div>
+      <FilterPanel
+        sections={sections}
+        filters={localFilters}
+        onFilterChange={handleFilterChange}
+      />
 
       <div className="map-sidebar__section">
-        <label className="map-sidebar__label">CATEGORÍAS</label>
-        <div className="category-pills">
-          <button
-            type="button"
-            className={`pill ${selectedCategory === "all" ? "active" : ""}`}
-            onClick={() => setSelectedCategory("all")}
-          >
-            Todas
-          </button>
-          {isLoadingCats ? (
-            <div className="pills-loading">
-              <Loader2 className="animate-spin" size={14} />
-            </div>
-          ) : (
-            categories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                className={`pill ${selectedCategory === cat.id ? "active" : ""}`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                {cat.name}
-              </button>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div className="map-sidebar__section">
-        <label className="map-sidebar__label">UBICACIÓN</label>
-        <div className="map-sidebar__location-filters">
+        <label className="map-sidebar__label">DEPARTAMENTO</label>
+        <div className="filter-panel__select-wrapper">
           <select
-            className="map-select"
-            value={selectedProvince}
-            onChange={(e) => {
-              setSelectedProvince(e.target.value);
-              setSelectedDepartment("");
-            }}
-          >
-            <option value="">Todas las provincias</option>
-            {provinces.map((prov: any) => (
-              <option key={prov.id} value={prov.id}>
-                {prov.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="map-select"
             value={selectedDepartment}
             onChange={(e) => setSelectedDepartment(e.target.value)}
             disabled={!selectedProvince}
@@ -159,12 +150,14 @@ export default function MapSidebar({
       </div>
 
       <div className="map-sidebar__footer">
-        <div className="stats">
-          <span>Encontrados:</span>
-          <span className="count">{isLoading ? "..." : specialistsCount}</span>
+        <div className="map-sidebar__stats">
+          <span className="map-sidebar__stats-label">Encontrados:</span>
+          <span className="map-sidebar__stats-count">
+            {isLoading ? "..." : specialistsCount}
+          </span>
         </div>
         <button
-          className="apply-btn"
+          className="map-sidebar__apply-btn"
           onClick={handleApply}
           disabled={isLoading}
         >
