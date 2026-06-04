@@ -11,6 +11,8 @@ import {
   Loader2,
   Sparkles,
   MapPin,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { ROUTES } from "../../../routes/paths";
@@ -24,6 +26,7 @@ import type { ProfessionalReelRow } from "../../../types/database.types";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import { getProfilePath } from "../../../utils/utils";
 import "./ProfessionalReelsSection.css";
+import "../../Reels/ReelsPage.css"; // Reuse theater styles
 
 function ReelThumbnail({ src }: { src: string }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -45,6 +48,7 @@ function ReelThumbnail({ src }: { src: string }) {
 export default function ProfessionalReelsSection({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
   const [likedReels, setLikedReels] = useState<number[]>([]);
   const sliderRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -167,6 +171,13 @@ export default function ProfessionalReelsSection({ userProvince = "Buenos Aires"
       video.pause();
       setIsPlaying(false);
     }
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
   };
 
   const toggleLike = () => {
@@ -300,123 +311,162 @@ export default function ProfessionalReelsSection({ userProvince = "Buenos Aires"
 
       {selectedReel && (
         <div
-          className="reels-modal-overlay"
+          className="reels-theater"
           onClick={() => setSelectedIndex(null)}
         >
-          <div className="reels-modal" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="reels-modal__nav reels-modal__nav--left"
-              onClick={showPreviousReel}
-              aria-label="Reel anterior"
-            >
-              <ChevronLeft size={20} />
-            </button>
+          {/* Navigations */}
+          <button
+            type="button"
+            className="reels-theater__nav reels-theater__nav--prev"
+            onClick={(e) => {
+              e.stopPropagation();
+              showPreviousReel();
+            }}
+            aria-label="Reel anterior"
+          >
+            <ChevronLeft size={24} />
+          </button>
 
-            <button
-              type="button"
-              className="reels-modal__nav reels-modal__nav--right"
-              onClick={showNextReel}
-              aria-label="Siguiente reel"
-            >
-              <ChevronRight size={20} />
-            </button>
+          <button
+            type="button"
+            className="reels-theater__nav reels-theater__nav--next"
+            onClick={(e) => {
+              e.stopPropagation();
+              showNextReel();
+            }}
+            aria-label="Siguiente reel"
+          >
+            <ChevronRight size={24} />
+          </button>
 
-            <button
-              type="button"
-              className="reels-modal__close"
-              onClick={() => setSelectedIndex(null)}
-              aria-label="Cerrar reel"
-            >
-              <X size={18} />
-            </button>
+          <button
+            type="button"
+            className="reels-theater__close"
+            onClick={() => setSelectedIndex(null)}
+            aria-label="Cerrar reproductor"
+          >
+            <X size={20} />
+          </button>
 
-            <div className="reels-modal__phone-frame">
-              <video
-                ref={videoRef}
-                className="reels-modal__video"
-                src={selectedReel.video_url}
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
+          {/* Smartphone Container Frame */}
+          <div
+            className="reels-theater__container"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <video
+              ref={videoRef}
+              className="reels-theater__video"
+              src={selectedReel.video_url}
+              autoPlay
+              loop
+              muted={isMuted}
+              playsInline
+            />
 
-              <div className="reels-modal__topbar reels-modal__topbar--profile">
-                <a
-                  className="reels-modal__profile-link"
-                  href={getProfilePath(
-                    selectedReel.professional_id,
-                    selectedReel.Professional?.seo_path,
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  <img
-                    src={
-                      selectedReel.Professional?.Profile?.avatar_url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedReel.Professional?.Profile?.display_name || "P")}`
-                    }
-                    alt={
-                      selectedReel.Professional?.Profile?.display_name ??
-                      "Profesional"
-                    }
-                    className="reels-modal__profile-avatar"
-                  />
-                  <span className="reels-modal__profile-name">
+            {/* Theater UI Overlays */}
+            {/* Profile Bar */}
+            <div className="reels-theater__profile-bar">
+              <a
+                href={getProfilePath(
+                  selectedReel.professional_id,
+                  selectedReel.Professional?.seo_path
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="reels-theater__profile-info"
+              >
+                <img
+                  src={
+                    selectedReel.Professional?.Profile?.avatar_url ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      selectedReel.Professional?.Profile?.display_name || "P"
+                    )}`
+                  }
+                  alt={selectedReel.Professional?.Profile?.display_name || "P"}
+                  className="reels-theater__profile-avatar"
+                />
+                <div className="reels-theater__profile-text">
+                  <span className="reels-theater__profile-name">
                     {selectedReel.Professional?.Profile?.display_name ||
                       "Profesional"}
                   </span>
-                </a>
-              </div>
+                  {subscriptionsMap[selectedReel.professional_id]?.type === "premium" && (
+                    <span className="reels-theater__premium-tag">
+                      <Sparkles size={8} fill="currentColor" /> Premium
+                    </span>
+                  )}
+                </div>
+              </a>
+            </div>
 
+            {/* Controls & Actions Sidebar */}
+            <div className="reels-theater__sidebar">
+              {/* Like Button */}
               <button
                 type="button"
-                className="reels-modal__center-control"
-                onClick={togglePlayback}
-                aria-label={isPlaying ? "Pausar" : "Reproducir"}
+                className={`reels-theater__action-btn ${
+                  likedReels.includes(selectedReel.id) ? "is-active" : ""
+                }`}
+                onClick={toggleLike}
               >
-                {isPlaying ? (
-                  <Pause size={18} />
-                ) : (
-                  <Play size={18} fill="currentColor" />
-                )}
+                <Heart
+                  size={22}
+                  fill={
+                    likedReels.includes(selectedReel.id)
+                      ? "currentColor"
+                      : "none"
+                  }
+                />
+                <span>{selectedReel.likes || 0}</span>
               </button>
 
-              <div className="reels-modal__actions">
-                <button
-                  type="button"
-                  className={`reels-modal__icon-btn ${likedReels.includes(selectedReel.id) ? "is-active" : ""}`}
-                  onClick={toggleLike}
-                  aria-label="Me gusta"
-                >
-                  <Heart
-                    size={18}
-                    fill={
-                      likedReels.includes(selectedReel.id)
-                        ? "currentColor"
-                        : "none"
-                    }
-                  />
-                </button>
+              {/* Sound Button */}
+              <button
+                type="button"
+                className="reels-theater__action-btn"
+                onClick={toggleMute}
+              >
+                {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
+                <span>Audio</span>
+              </button>
 
-                <button
-                  type="button"
-                  className="reels-modal__icon-btn"
-                  onClick={restartReel}
-                  aria-label="Reiniciar reel"
-                >
-                  <RotateCcw size={17} />
-                </button>
-              </div>
+              {/* Restart Button */}
+              <button
+                type="button"
+                className="reels-theater__action-btn"
+                onClick={restartReel}
+              >
+                <RotateCcw size={20} />
+                <span>Reiniciar</span>
+              </button>
 
-              <div className="reels-modal__meta">
-                <div className="reels-modal__badge">
-                  <span>{isPlaying ? "Reproduciendo" : "En pausa"}</span>
-                </div>
+              {/* Play/Pause Button */}
+              <button
+                type="button"
+                className="reels-theater__action-btn"
+                onClick={togglePlayback}
+              >
+                {isPlaying ? (
+                  <Pause size={22} />
+                ) : (
+                  <Play size={22} fill="currentColor" />
+                )}
+                <span>{isPlaying ? "Pausa" : "Play"}</span>
+              </button>
+            </div>
+
+            {/* Details Bottom Overlay */}
+            <div className="reels-theater__details">
+              {selectedReel.title && (
+                <h2 className="reels-theater__title">{selectedReel.title}</h2>
+              )}
+              {selectedReel.description && (
+                <p className="reels-theater__description">
+                  {selectedReel.description}
+                </p>
+              )}
+              <div className="reels-theater__metadata">
+                <span>{selectedReel.views_count || 0} reproducciones</span>
               </div>
             </div>
           </div>

@@ -94,7 +94,8 @@ export default function SettingsPage() {
   } = useQuery({
     queryKey: ["professional-me"],
     queryFn: async () => {
-      const result = await getProfessionalMeAction({ token: getAccessToken() });
+      const token = await getAccessToken();
+      const result = await getProfessionalMeAction({ token });
       return result?.data ?? null;
     },
     staleTime: 1000 * 60 * 5,
@@ -254,12 +255,14 @@ export default function SettingsPage() {
     mutationFn: async () => {
       if (!professionalId) return;
 
+      const token = await getAccessToken();
+
       const profResult = await updateProfessionalAction({
         id: professionalId,
         data: {
           account_type: businessType,
         },
-        token: getAccessToken(),
+        token,
       });
       if (profResult?.serverError) throw new Error(profResult.serverError);
 
@@ -296,23 +299,23 @@ export default function SettingsPage() {
         const result = await updateCompanyAction({
           id: companyId,
           data: companyData,
-          token: getAccessToken(),
+          token,
         });
         if (result?.serverError) throw new Error(result.serverError);
         await updateProfessionalCategoriesAction({
           categories: selectedCategories,
-          token: getAccessToken(),
+          token,
         });
         return result?.data;
       } else {
         const result = await createCompanyAction({
           ...companyData,
-          token: getAccessToken(),
+          token,
         });
         if (result?.serverError) throw new Error(result.serverError);
         await updateProfessionalCategoriesAction({
           categories: selectedCategories,
-          token: getAccessToken(),
+          token,
         });
         return result?.data;
       }

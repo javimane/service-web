@@ -9,12 +9,14 @@ import { buildActionHeaders } from "./_utils/authHeaders";
 const authTokenSchema = z.string().optional();
 
 export const getProfileAction = publicAction
-  .schema(z.object({ id: z.string() }))
+  .schema(z.object({ id: z.string(), token: z.string().optional() }))
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/profiles/${parsedInput.id}`;
 
     try {
-      const response = await axios.get(url, { headers: ctx.headers });
+      const response = await axios.get(url, {
+        headers: await buildActionHeaders(ctx, parsedInput.token),
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(

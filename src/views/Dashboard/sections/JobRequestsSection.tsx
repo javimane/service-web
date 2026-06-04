@@ -36,6 +36,7 @@ export default function JobRequestsSection() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<number | "">("");
   const [filterProvince, setFilterProvince] = useState<number | "">("");
+  const [page, setPage] = useState<number>(1);
 
   // Create form state
   const [description, setDescription] = useState("");
@@ -68,6 +69,7 @@ export default function JobRequestsSection() {
       hasProfessionalSubscription,
       filterCategory,
       filterProvince,
+      page,
     ],
     queryFn: async () => {
       const token = await getAccessToken();
@@ -75,12 +77,27 @@ export default function JobRequestsSection() {
         const res = await searchJobRequestsAction({
           category: filterCategory !== "" ? Number(filterCategory) : undefined,
           province: filterProvince !== "" ? Number(filterProvince) : undefined,
+          page,
           token,
         });
-        return (res?.data || []) as JobRequestRow[];
+        const data = res?.data || {};
+        if (data && typeof data === 'object' && 'items' in data) {
+           return {
+             items: (Array.isArray(data.items) ? data.items : []) as JobRequestRow[],
+             totalPages: data.totalPages || 1,
+             page: data.page || 1,
+           };
+        }
+        return {
+          items: (Array.isArray(data) ? data : data?.data || []) as JobRequestRow[],
+          totalPages: 1,
+          page: 1,
+        };
       } else {
         const res = await listMyJobRequestsAction({ token });
-        return (res?.data || []) as JobRequestRow[];
+        const data = res?.data as any;
+        const items = (Array.isArray(data) ? data : data?.data || []) as JobRequestRow[];
+        return { items, totalPages: 1, page: 1 };
       }
     },
   });
@@ -205,11 +222,12 @@ export default function JobRequestsSection() {
               <label>Categoría</label>
               <select
                 value={filterCategory}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFilterCategory(
                     e.target.value === "" ? "" : Number(e.target.value),
-                  )
-                }
+                  );
+                  setPage(1);
+                }}
               >
                 <option value="">Todas las categorías</option>
                 {categories.map((c: any) => (
@@ -223,11 +241,12 @@ export default function JobRequestsSection() {
               <label>Provincia</label>
               <select
                 value={filterProvince}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFilterProvince(
                     e.target.value === "" ? "" : Number(e.target.value),
-                  )
-                }
+                  );
+                  setPage(1);
+                }}
               >
                 <option value="">Todas las provincias</option>
                 {provinces.map((p: any) => (
@@ -243,9 +262,9 @@ export default function JobRequestsSection() {
 
       {isLoading ? (
         <p>Cargando solicitudes...</p>
-      ) : requestsData && requestsData.length > 0 ? (
+      ) : requestsData?.items && requestsData.items.length > 0 ? (
         <div className="job-requests-grid">
-          {requestsData.map((req) => (
+          {requestsData.items.map((req) => (
             <div key={req.id} className="job-request-card">
               <div className="job-request-card__image-container">
                 {req.image_url ? (
@@ -332,6 +351,30 @@ export default function JobRequestsSection() {
       ) : (
         <div className="job-requests-section__empty">
           <p>No se encontraron solicitudes de trabajo.</p>
+        </div>
+      )}
+
+      {requestsData?.totalPages && requestsData.totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={requestsData.page <= 1}
+          >
+            Anterior
+          </button>
+          <span style={{ fontWeight: 'var(--weight-semibold)', color: 'var(--text-secondary)' }}>
+            Página {requestsData.page} de {requestsData.totalPages}
+          </span>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setPage((p) => Math.min(requestsData.totalPages, p + 1))}
+            disabled={requestsData.page >= requestsData.totalPages}
+          >
+            Siguiente
+          </button>
         </div>
       )}
 

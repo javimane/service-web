@@ -26,6 +26,14 @@ import {
   X,
   UploadCloud,
   Heart,
+  CalendarDays,
+  Clapperboard,
+  ClipboardList,
+  UserRound,
+  Briefcase,
+  Landmark,
+  Users,
+  CreditCard,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
@@ -171,6 +179,23 @@ export default function Navbar() {
     { label: "Promociones", path: ROUTES.promotions },
   ];
 
+  const dashboardLinks = [
+    { label: "Dashboard", icon: LayoutDashboard, path: ROUTES.dashboard },
+    { label: "Perfil", icon: UserRound, path: `${ROUTES.dashboard}?view=profile` },
+    { label: "Solicitudes", icon: ClipboardList, path: `${ROUTES.dashboard}?view=job-requests` },
+    { label: "Mensajes", icon: MessageSquare, path: ROUTES.messages },
+    { label: "Presupuestos", icon: FileText, path: `${ROUTES.dashboard}?view=proposals-view` },
+    { label: "Promociones", icon: Ticket, path: `${ROUTES.dashboard}?view=promotions-all` },
+    { label: "Promos Bancarias", icon: Landmark, path: `${ROUTES.dashboard}?view=bank-promotions` },
+    { label: "Productos", icon: Package, path: `${ROUTES.dashboard}?view=products` },
+    { label: "Servicios", icon: Briefcase, path: `${ROUTES.dashboard}?view=services` },
+    { label: "Agenda", icon: CalendarDays, path: `${ROUTES.dashboard}?view=calendar` },
+    { label: "Reels", icon: Clapperboard, path: `${ROUTES.dashboard}?view=reels` },
+    { label: "Referidos", icon: Users, path: `${ROUTES.dashboard}?view=referrals` },
+    { label: "Suscripción", icon: CreditCard, path: `${ROUTES.dashboard}?view=subscription` },
+    { label: "Configuración", icon: Settings, path: ROUTES.settings },
+  ];
+
   // Close menus when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -225,6 +250,7 @@ export default function Navbar() {
 
             {isMobileMenuOpen && (
               <div className="navbar__mobile-dropdown">
+                <div className="navbar__mobile-section-label">Explorar</div>
                 {navLinks.map((link) => (
                   <Link
                     key={link.label}
@@ -248,8 +274,8 @@ export default function Navbar() {
             <BrandLogo className="navbar__brand-mark" />
           </Link>
 
-          {/* Search */}
-          <div className="navbar__search">
+          {/* Search (Desktop/Tablet) */}
+          <div className="navbar__search navbar__search--desktop">
             <SearchBar />
           </div>
 
@@ -363,7 +389,7 @@ export default function Navbar() {
                 </button>
 
                 {isMenuOpen && (
-                  <div className="navbar__dropdown">
+                  <div className="navbar__dropdown navbar__dropdown--wide">
                     <div className="dropdown__header">
                       <div className="dropdown__user-info">
                         <span className="dropdown__username">
@@ -375,61 +401,59 @@ export default function Navbar() {
                       </div>
                     </div>
                     <div className="dropdown__divider"></div>
+
+                    <div className="dropdown__section-label">Mi Panel</div>
+                    <div className="dropdown__body dropdown__body--scroll">
+                      {dashboardLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                          <Link
+                            key={link.label}
+                            href={link.path}
+                            className="dropdown__item"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <Icon size={16} />
+                            <span>{link.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+
+                    <div className="dropdown__divider"></div>
+                    <div className="dropdown__section-label">Cuenta</div>
                     <div className="dropdown__body">
                       <Link
                         href={ROUTES.profile}
                         className="dropdown__item"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <Settings size={18} />
+                        <Settings size={16} />
                         <span>Mi Cuenta</span>
-                      </Link>
-                      <Link
-                        href={ROUTES.dashboard}
-                        className="dropdown__item"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <LayoutDashboard size={18} />
-                        <span>Dashboard</span>
                       </Link>
                       <Link
                         href={ROUTES.favorites}
                         className="dropdown__item"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <Heart size={18} />
+                        <Heart size={16} />
                         <span>Favoritos</span>
                       </Link>
-                      <Link
-                        href={ROUTES.products}
-                        className="dropdown__item"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Package size={18} />
-                        <span>Productos</span>
-                      </Link>
-                      <button
-                        className="dropdown__item"
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                        }}
-                      >
-                        <UploadCloud size={18} />
-                        <span>Subir Reel</span>
-                      </button>
                     </div>
+
                     <div className="dropdown__divider"></div>
                     <div className="dropdown__footer">
                       <button
                         className="dropdown__item dropdown__item--logout"
                         onClick={handleLogout}
                       >
-                        <LogOut size={18} />
+                        <LogOut size={16} />
                         <span>Cerrar Sesión</span>
                       </button>
                     </div>
                   </div>
                 )}
+
               </div>
             </div>
           ) : (
@@ -449,6 +473,11 @@ export default function Navbar() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Mobile-only search bar row */}
+        <div className="navbar__search-mobile">
+          <SearchBar />
         </div>
       </div>
 

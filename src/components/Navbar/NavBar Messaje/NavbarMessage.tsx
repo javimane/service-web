@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import logoImage from "../../../images/Logo solo nombre sin fondo.png";
 import { useState, useRef, useEffect } from "react";
 import {
   Bell,
@@ -90,7 +92,7 @@ export default function NavbarMessage() {
       <div className="navbar__inner container">
         {/* Back to home */}
         <Link href={ROUTES.home} className="navbar__logo">
-          Cercio
+          <Image src={logoImage} alt="Logo" width={100} height={40} style={{ objectFit: 'contain' }} />
         </Link>
 
         {/* Right side */}

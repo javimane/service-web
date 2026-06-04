@@ -155,7 +155,7 @@ const ArcaVerificationSection = React.memo(
                         inputMode="numeric"
                         value={cuit}
                         onChange={(e) => setCuit(e.target.value)}
-                        placeholder="Ej: 20123456789"
+                        placeholder="Ej: 20123456789 (solo números sin puntos ni guiones)"
                         maxLength={11}
                       />
                     </label>
@@ -166,7 +166,7 @@ const ArcaVerificationSection = React.memo(
                         type="text"
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="Nombre de la empresa"
+                        placeholder="Nombre de la empresa (Tal cual figura en ARCA)"
                       />
                     </label>
                   </div>

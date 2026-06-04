@@ -97,7 +97,7 @@ const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80";
 
 export default function ProfessionalProfileSection() {
-  const { sessionStatus, subscriptionPlan } = useAuth();
+  const { sessionStatus, subscriptionPlan, user } = useAuth();
   const router = useRouter();
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
   const openPromoModal = () => setIsPromoModalOpen(true);
@@ -106,7 +106,7 @@ export default function ProfessionalProfileSection() {
     setIsPromoModalOpen(false);
     router.push(`${ROUTES.dashboard}?view=subscription`);
   };
-  const userId = sessionStatus?.user?.id;
+  const userId = user?.id;
   const professionalId = Number(
     sessionStatus?.subscription?.professional_id ??
       sessionStatus?.professional_id,
@@ -117,7 +117,8 @@ export default function ProfessionalProfileSection() {
   const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["profile", userId],
     queryFn: async () => {
-      const result = await getProfileAction({ id: userId! });
+      const token = await getAccessToken();
+      const result = await getProfileAction({ id: userId!, token });
       return result?.data ?? null;
     },
     enabled: !!userId,
@@ -142,7 +143,12 @@ export default function ProfessionalProfileSection() {
       if (!professionalId) return [];
       const result = await getVideosByProfessionalAction({ professionalId });
       const raw = (result?.data as any) ?? result;
-      const data = (raw && Array.isArray(raw.items) ? raw.items : Array.isArray(raw) ? raw : []);
+      const data =
+        raw && Array.isArray(raw.items)
+          ? raw.items
+          : Array.isArray(raw)
+            ? raw
+            : [];
       const filtered = data.filter((v) => v.activate === true);
       return filtered.map((v) => ({
         id: v.id.toString(),
@@ -175,7 +181,12 @@ export default function ProfessionalProfileSection() {
       if (!professionalId) return [];
       const result = await getImagesByProfessionalAction({ professionalId });
       const raw = (result?.data as any) ?? result;
-      const data = (raw && Array.isArray(raw.items) ? raw.items : Array.isArray(raw) ? raw : []);
+      const data =
+        raw && Array.isArray(raw.items)
+          ? raw.items
+          : Array.isArray(raw)
+            ? raw
+            : [];
       return data.map((img) => ({
         id: img.id.toString(),
         url: img.image_url,
@@ -187,6 +198,8 @@ export default function ProfessionalProfileSection() {
 
   const [profilePhoto, setProfilePhoto] = useState("");
   const [profilePhotoFileName, setProfilePhotoFileName] = useState("");
+  const [portfolioPhoto, setPortfolioPhoto] = useState("");
+  const [portfolioPhotoFileName, setPortfolioPhotoFileName] = useState("");
   const [commercialName, setCommercialName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [description, setDescription] = useState("");
@@ -208,9 +221,8 @@ export default function ProfessionalProfileSection() {
     if (profile) {
       setDisplayName(profile.display_name || "");
       if (profile.avatar_url) setProfilePhoto(profile.avatar_url);
-      if (profile.portfolio_image_url) {
-        // optionally handle initialImages vs DB images here
-      }
+      if (profile.portfolio_image_url)
+        setPortfolioPhoto(profile.portfolio_image_url);
     }
   }, [profile]);
 
@@ -254,6 +266,7 @@ export default function ProfessionalProfileSection() {
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const profilePhotoObjectUrlRef = useRef<string | null>(null);
+  const portfolioPhotoObjectUrlRef = useRef<string | null>(null);
   const newImageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -270,6 +283,9 @@ export default function ProfessionalProfileSection() {
     return () => {
       if (profilePhotoObjectUrlRef.current) {
         URL.revokeObjectURL(profilePhotoObjectUrlRef.current);
+      }
+      if (portfolioPhotoObjectUrlRef.current) {
+        URL.revokeObjectURL(portfolioPhotoObjectUrlRef.current);
       }
     };
   }, []);
@@ -325,6 +341,55 @@ export default function ProfessionalProfileSection() {
       setSavedMessage("Foto de perfil actualizada.");
     } catch {
       setSavedMessage("No se pudo subir la foto de perfil.");
+    }
+  };
+
+  const handlePortfolioPhotoChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setPortfolioPhotoFileName(file.name);
+
+    if (portfolioPhotoObjectUrlRef.current) {
+      URL.revokeObjectURL(portfolioPhotoObjectUrlRef.current);
+      portfolioPhotoObjectUrlRef.current = null;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    portfolioPhotoObjectUrlRef.current = objectUrl;
+    setPortfolioPhoto(objectUrl);
+
+    if (!userId) return;
+
+    try {
+      const uploaded = await uploadProfileWorkImage({
+        file,
+        entityId: displayName || "portfolio",
+        fileName: file.name,
+      });
+
+      if (portfolioPhotoObjectUrlRef.current) {
+        URL.revokeObjectURL(portfolioPhotoObjectUrlRef.current);
+        portfolioPhotoObjectUrlRef.current = null;
+      }
+
+      setPortfolioPhoto(uploaded.publicUrl);
+
+      const updateResult = await updateProfileAction({
+        id: userId,
+        data: {
+          portfolio_image_url: uploaded.publicUrl,
+        },
+        token: getAccessToken(),
+      });
+      if (updateResult?.serverError) throw new Error(updateResult.serverError);
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+
+      setSavedMessage("Imagen de portfolio actualizada.");
+    } catch {
+      setSavedMessage("No se pudo subir la imagen de portfolio.");
     }
   };
 
@@ -781,6 +846,31 @@ export default function ProfessionalProfileSection() {
               </label>
 
               <label className="professional-profile__field professional-profile__field--full">
+                <span>Imagen de Portfolio / Portada</span>
+                <div className="professional-profile__photo-upload">
+                  <label className="professional-profile__upload-btn">
+                    <Camera size={16} /> Subir nueva imagen
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePortfolioPhotoChange}
+                    />
+                  </label>
+                  <span className="professional-profile__file-name">
+                    {portfolioPhotoFileName || "Ningún archivo seleccionado"}
+                  </span>
+                </div>
+                {portfolioPhoto ? (
+                  <div className="professional-profile__photo-preview">
+                    <img
+                      src={portfolioPhoto}
+                      alt="Vista previa imagen de portfolio"
+                    />
+                  </div>
+                ) : null}
+              </label>
+
+              <label className="professional-profile__field professional-profile__field--full">
                 <span>Descripción</span>
                 <textarea
                   rows={5}
@@ -1043,14 +1133,14 @@ export default function ProfessionalProfileSection() {
           }}
         >
           <label className="professional-profile__dropzone">
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                ref={newImageInputRef}
-                onChange={handleImageFileChange}
-                className="professional-profile__dropzone-input"
-              />
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              ref={newImageInputRef}
+              onChange={handleImageFileChange}
+              className="professional-profile__dropzone-input"
+            />
             <div className="professional-profile__dropzone-inner">
               <div className="professional-profile__dropzone-icon">
                 <Upload size={32} />
@@ -1172,13 +1262,13 @@ export default function ProfessionalProfileSection() {
         >
           {!newVideoFile ? (
             <label className="professional-profile__dropzone">
-                <input
-                  type="file"
-                  accept="video/*"
-                  ref={newVideoInputRef}
-                  onChange={handleVideoFileChange}
-                  className="professional-profile__dropzone-input"
-                />
+              <input
+                type="file"
+                accept="video/*"
+                ref={newVideoInputRef}
+                onChange={handleVideoFileChange}
+                className="professional-profile__dropzone-input"
+              />
               <div className="professional-profile__dropzone-inner">
                 <div className="professional-profile__dropzone-icon">
                   <Upload size={32} />

@@ -24,7 +24,8 @@ export default function AvatarSection({ userId }: AvatarSectionProps) {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", userId],
     queryFn: async () => {
-      const result = await getProfileAction({ id: userId });
+      const token = await getAccessToken();
+      const result = await getProfileAction({ id: userId, token });
       return result?.data ?? null;
     },
     enabled: !!userId,

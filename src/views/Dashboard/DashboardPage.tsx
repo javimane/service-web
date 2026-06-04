@@ -40,6 +40,7 @@ import "./DashboardPage.css";
 import DashboardServices from "./sections/DashboardServices";
 import DashboardReferrals from "./sections/DashboardReferrals";
 import JobRequestsSection from "./sections/JobRequestsSection";
+import Navbar from "../../components/Navbar/Navbar";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -260,30 +261,35 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-page-wrapper">
-      <div className="dashboard-page">
-        <DashboardSidebar
-          activeItem={view === "overview" ? "dashboard" : view}
-          isCollapsed={isMobileSidebarMode ? false : isSidebarCollapsed}
-          isMobile={isMobileSidebarMode}
-          isMobileOpen={isMobileSidebarOpen}
-          onCloseMobile={() => setIsMobileSidebarOpen(false)}
-          onToggle={handleSidebarToggle}
-          onProposalsCreate={handleShowProposalsCreateBlocked}
-          onProposalsView={handleShowProposalsViewBlocked}
-          onDashboardClick={handleShowOverview}
-          onMessagesClick={handleShowMessages}
-          onNotificationsClick={handleShowNotifications}
-          onPromotionsCreate={handleShowPromotionsCreateBlocked}
-          onPromotionsViewAll={handleShowPromotionsAllBlocked}
-          onProductsClick={handleShowProducts}
-          onServicesClick={handleShowServices}
-          onSubscriptionClick={handleShowSubscription}
-          onCalendarClick={handleShowCalendarBlocked}
-          onBankPromosClick={handleShowBankPromosBlocked}
-          onProfileClick={handleShowProfile}
-          onReelsClick={handleShowReelsBlocked}
-          onJobRequestsClick={handleShowJobRequests}
-        />
+      {isMobileSidebarMode && <Navbar />}
+      <div
+        className={`dashboard-page ${isMobileSidebarMode ? "dashboard-page--mobile" : ""}`}
+      >
+        {!isMobileSidebarMode && (
+          <DashboardSidebar
+            activeItem={view === "overview" ? "dashboard" : view}
+            isCollapsed={isSidebarCollapsed}
+            isMobile={false}
+            isMobileOpen={false}
+            onCloseMobile={() => {}}
+            onToggle={handleSidebarToggle}
+            onProposalsCreate={handleShowProposalsCreateBlocked}
+            onProposalsView={handleShowProposalsViewBlocked}
+            onDashboardClick={handleShowOverview}
+            onMessagesClick={handleShowMessages}
+            onNotificationsClick={handleShowNotifications}
+            onPromotionsCreate={handleShowPromotionsCreateBlocked}
+            onPromotionsViewAll={handleShowPromotionsAllBlocked}
+            onProductsClick={handleShowProducts}
+            onServicesClick={handleShowServices}
+            onSubscriptionClick={handleShowSubscription}
+            onCalendarClick={handleShowCalendarBlocked}
+            onBankPromosClick={handleShowBankPromosBlocked}
+            onProfileClick={handleShowProfile}
+            onReelsClick={handleShowReelsBlocked}
+            onJobRequestsClick={handleShowJobRequests}
+          />
+        )}
 
         <main
           className={`dashboard-main ${isSidebarCollapsed ? "dashboard-main--collapsed" : ""} ${isMobileSidebarMode ? "dashboard-main--mobile" : ""}`}

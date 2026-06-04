@@ -64,7 +64,8 @@ export default function PersonalInfoSection({
   const { data: profile, isLoading: fetching } = useQuery({
     queryKey: ["profile", userId],
     queryFn: async () => {
-      const result = await getProfileAction({ id: userId });
+      const token = await getAccessToken();
+      const result = await getProfileAction({ id: userId, token });
       return result?.data ?? null;
     },
     enabled: !!userId,

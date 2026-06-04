@@ -36,6 +36,8 @@ export const searchJobRequestsAction = publicAction
       .object({
         category: z.number().optional(),
         province: z.number().optional(),
+        page: z.number().optional(),
+        limit: z.number().optional(),
         token: authTokenSchema,
       })
       .optional(),
@@ -48,6 +50,12 @@ export const searchJobRequestsAction = publicAction
       }
       if (parsedInput?.province !== undefined) {
         params.append("province", parsedInput.province.toString());
+      }
+      if (parsedInput?.page !== undefined) {
+        params.append("page", parsedInput.page.toString());
+      }
+      if (parsedInput?.limit !== undefined) {
+        params.append("limit", parsedInput.limit.toString());
       }
 
       const queryString = params.toString() ? `?${params.toString()}` : "";

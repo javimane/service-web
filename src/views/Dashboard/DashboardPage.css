@@ -18,9 +18,6 @@
   overflow-x: hidden;
 }
 
-.dashboard-bottom-nav {
-  display: none;
-}
 
 .reels-stats-row {
   display: flex;
@@ -446,6 +443,15 @@
 
 .dashboard-main--collapsed {
   margin-left: 96px;
+}
+
+.dashboard-page--mobile {
+  flex-direction: column;
+}
+
+.dashboard-main--mobile {
+  margin-left: 0;
+  padding: 12px;
 }
 
 .dashboard-main-panel {
@@ -1484,74 +1490,10 @@
     font-weight: var(--weight-bold);
   }
 
-  .dashboard-bottom-nav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 220;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
-    background: rgba(248, 250, 252, 0.96);
-    border-top: 1px solid rgba(148, 163, 184, 0.22);
-    box-shadow: 0 -12px 32px rgba(15, 23, 42, 0.09);
-    backdrop-filter: blur(16px);
-  }
-
-  .dashboard-bottom-nav__item {
-    width: 100%;
-    min-height: 60px;
-    border: 1px solid transparent;
-    border-radius: 20px;
-    background: transparent;
-    color: var(--text-secondary);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    font-size: 0.7rem;
-    font-weight: var(--weight-extrabold);
-    cursor: pointer;
-    transition:
-      background-color 0.2s ease,
-      color 0.2s ease,
-      transform 0.15s ease,
-      border-color 0.2s ease;
-  }
-
-  .dashboard-bottom-nav__item.is-active {
-    background: #ecfdf3;
-    color: var(--green-dark);
-    border-color: rgba(22, 163, 74, 0.18);
-  }
-
-  .dashboard-bottom-nav__item:last-child {
-    background: var(--green-dark);
-    color: var(--white);
-    box-shadow: 0 12px 24px rgba(22, 163, 74, 0.22);
-  }
-
-  .dashboard-bottom-nav__item:last-child.is-active {
-    background: #15803d;
-    border-color: transparent;
-  }
 
   .dashboard-mobile-shortcut > *,
-  .dashboard-mobile-list__item > *,
-  .dashboard-bottom-nav__item > * {
+  .dashboard-mobile-list__item > * {
     pointer-events: none;
-  }
-
-  .dashboard-sidebar-overlay {
-    background: rgba(15, 23, 42, 0.34);
-    backdrop-filter: blur(3px);
-  }
-
-  .dashboard-bottom-nav__item:active {
-    transform: scale(0.98);
   }
 
   .dashboard-content {

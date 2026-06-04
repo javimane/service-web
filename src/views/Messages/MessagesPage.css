@@ -522,7 +522,7 @@
 .msg-bubble-wrap {
   display: flex;
   flex-direction: column;
-  max-width: 60%;
+  max-width: 100%;
 }
 
 .msg-bubble-wrap--sent {

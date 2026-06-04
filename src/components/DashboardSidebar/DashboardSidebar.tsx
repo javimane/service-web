@@ -681,59 +681,7 @@ export default function DashboardSidebar({
           </div>
         </aside>
 
-        <nav
-          className="dashboard-bottom-nav"
-          aria-label="Navegacion principal movil"
-        >
-          <button
-            type="button"
-            className={`dashboard-bottom-nav__item ${activeItem === "messages" ? "is-active" : ""}`}
-            onClick={() =>
-              handleNavigation(
-                onMessagesClick ?? (() => router.push(ROUTES.messages)),
-              )
-            }
-          >
-            <MessageSquare size={20} />
-            <span>Mensajes</span>
-          </button>
 
-          <button
-            type="button"
-            className={`dashboard-bottom-nav__item ${activeItem === "notifications" ? "is-active" : ""}`}
-            onClick={() =>
-              handleNavigation(
-                onNotificationsClick ??
-                  (() => goToDashboardView("notifications")),
-              )
-            }
-          >
-            <Bell size={20} />
-            <span>Alertas</span>
-          </button>
-
-          <button
-            type="button"
-            className={`dashboard-bottom-nav__item ${activeItem === "profile" ? "is-active" : ""}`}
-            onClick={() =>
-              handleNavigation(
-                onProfileClick ?? (() => goToDashboardView("profile")),
-              )
-            }
-          >
-            <UserRound size={20} />
-            <span>Perfil</span>
-          </button>
-
-          <button
-            type="button"
-            className={`dashboard-bottom-nav__item ${isMobileOpen ? "is-active" : ""}`}
-            onClick={onToggle}
-          >
-            <PanelLeftOpen size={20} />
-            <span>Menu</span>
-          </button>
-        </nav>
       </>
     );
   }
