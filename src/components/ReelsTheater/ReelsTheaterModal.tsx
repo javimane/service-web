@@ -14,7 +14,10 @@ import {
   Share2,
   Sparkles,
 } from "lucide-react";
-import { updateReelStatsAction, upsertReelLikeAction } from "@/app/actions/reels";
+import {
+  updateReelStatsAction,
+  upsertReelLikeAction,
+} from "@/app/actions/reels";
 import { getProfilePath } from "@/utils/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
@@ -110,7 +113,11 @@ export default function ReelsTheaterModal({
 
     try {
       const token = getAccessToken();
-      await upsertReelLikeAction({ id: activeReel.id, is_like: newIsLike, token });
+      await upsertReelLikeAction({
+        id: activeReel.id,
+        is_like: newIsLike,
+        token,
+      });
     } catch {
       setLikedReels((prev) => {
         const next = new Set(prev);
@@ -124,15 +131,21 @@ export default function ReelsTheaterModal({
   const handleShare = () => {
     if (!activeReel) return;
     const seoPath = activeReel.seo_path;
-    const cleanSeo = seoPath ? (seoPath.startsWith("/") ? seoPath : `/${seoPath}`) : `/${activeReel.id}`;
+    const cleanSeo = seoPath
+      ? seoPath.startsWith("/")
+        ? seoPath
+        : `/${seoPath}`
+      : `/${activeReel.id}`;
     const shareUrl = `${window.location.origin}${cleanSeo.startsWith("/reels") ? cleanSeo : `/reels${cleanSeo}`}`;
 
     if (navigator.share) {
-      navigator.share({
-        title: activeReel.title || "Reel de Sercio",
-        text: activeReel.description || "Mirá este reel en Sercio",
-        url: shareUrl,
-      }).catch(() => {});
+      navigator
+        .share({
+          title: activeReel.title || "Reel de Sercio",
+          text: activeReel.description || "Mirá este reel en Sercio",
+          url: shareUrl,
+        })
+        .catch(() => {});
     } else {
       navigator.clipboard.writeText(shareUrl).then(() => {
         alert("¡Enlace de compartir copiado al portapapeles!");
@@ -165,7 +178,9 @@ export default function ReelsTheaterModal({
   const company = Array.isArray(companies) ? companies[0] : companies;
   const companyName = company?.name;
   const displayName = companyName || profile?.display_name || "Profesional";
-  const avatar = profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
+  const avatar =
+    profile?.avatar_url ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
   const professionalId = activeReel.professional_id || professional?.id;
   const isPremium = isPremiumMap[professionalId] || activeReel.isPremium;
 
@@ -224,7 +239,9 @@ export default function ReelsTheaterModal({
             className="reels-theater__profile-info"
             onClick={(e) => {
               e.preventDefault();
-              router.push(getProfilePath(professionalId, professional?.seo_path));
+              router.push(
+                getProfilePath(professionalId, professional?.seo_path),
+              );
               onClose();
             }}
           >
