@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { extractIdFromSlug } from "../../utils/utils";
+import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../services/supabaseClient";
 import {
@@ -52,6 +52,10 @@ import ProductCard from "../../components/Cards/ProductCard";
 import PromotionDetailModal from "../../components/Modals/PromotionDetailModal";
 import ProfileServiceDetailModal from "./sections/ProfileServiceDetailModal";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import ReelCard from "../../components/Cards/ReelCard";
+import ReelsTheaterModal from "../../components/ReelsTheater/ReelsTheaterModal";
+import { Share2 } from "lucide-react";
 
 // Custom hook for drag-to-scroll
 function useDraggableScroll() {
@@ -121,8 +125,61 @@ function ProfileVideoCard({
     onLike?.(video, e);
   };
 
+  const professional = video.professional || video.Professional;
+  const profile = professional?.Profile || professional?.profile;
+  const companies = professional?.companies || professional?.Companies || [];
+  const company = Array.isArray(companies) ? companies[0] : companies;
+  const companyName = company?.name;
+  const displayName = companyName || profile?.display_name || "Profesional";
+  const avatar =
+    profile?.avatar_url ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
+  const professionalId = video.professional_id || professional?.id;
+
+  const router = useRouter();
+
+  const handleProfessionalClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(getProfilePath(professionalId, professional?.seo_path));
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const seoPath = professional?.seo_path || video.seo_path;
+    const cleanSeo = seoPath
+      ? seoPath.startsWith("/")
+        ? seoPath
+        : `/${seoPath}`
+      : `/perfil/${professionalId}`;
+    const shareUrl = `${window.location.origin}${cleanSeo.startsWith("/perfil") ? cleanSeo : `/perfil${cleanSeo}`}`;
+
+    if (navigator.share) {
+      navigator
+        .share({
+          title: video.title || "Video de Sercio",
+          url: shareUrl,
+        })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert("¡Enlace de compartir copiado al portapapeles!");
+      });
+    }
+  };
+
   return (
     <div className="instagram-video-card">
+      <div
+        className="video-card__professional-header"
+        onClick={handleProfessionalClick}
+      >
+        <img
+          src={avatar}
+          alt={displayName}
+          className="video-card__professional-avatar"
+        />
+        <span className="video-card__professional-name">{displayName}</span>
+      </div>
       <div
         className="video-wrapper"
         onMouseEnter={handleMouseEnter}
@@ -142,10 +199,7 @@ function ProfileVideoCard({
           muted
         />
         <div className="video-stats-overlay">
-          <div
-            className="stat"
-            onClick={handleLike}
-          >
+          <div className="stat" onClick={handleLike}>
             <Heart size={14} fill="white" />
             <span>{video.likes_count || 0}</span>
           </div>
@@ -173,6 +227,14 @@ function ProfileVideoCard({
         <div className={`video-description ${isExpanded ? "is-expanded" : ""}`}>
           <p>{video.description || "Sin descripción disponible."}</p>
         </div>
+
+        <button
+          type="button"
+          className="video-card__share-btn"
+          onClick={handleShare}
+        >
+          <Share2 size={14} /> Compartir
+        </button>
       </div>
     </div>
   );
@@ -201,13 +263,18 @@ export default function ProfilePage() {
     useState<any>(null);
   const [selectedProductForDetail, setSelectedProductForDetail] =
     useState<any>(null);
-  const [selectedReel, setSelectedReel] = useState<any>(null);
+  const [selectedReelIndex, setSelectedReelIndex] = useState<number | null>(
+    null,
+  );
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   const { user } = useAuth();
   const { openAuth } = useAuthModal();
-  const accessToken = typeof window !== "undefined" ? localStorage.getItem("access_token") ?? undefined : undefined;
+  const accessToken =
+    typeof window !== "undefined"
+      ? (localStorage.getItem("access_token") ?? undefined)
+      : undefined;
 
   const handleVideoLike = async (video: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -280,14 +347,15 @@ export default function ProfilePage() {
     gcTime: 1000 * 60 * 30,
   });
 
-  const { data: allReels = [] } = useQuery({
-    queryKey: ["all-reels"],
+  const { data: profReels = [] } = useQuery({
+    queryKey: ["professional-reels", id],
     queryFn: async () => {
-      const result = await getReelsAction({});
+      const result = await getReelsAction({ professionalId: Number(id) });
       const raw = (result?.data as any) ?? result;
       if (raw && raw.items) return raw.items;
       return (raw as any[]) ?? [];
     },
+    enabled: !!id && !isNaN(Number(id)),
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 15,
   });
@@ -359,7 +427,7 @@ export default function ProfilePage() {
         .from("messages")
         .select("id")
         .or(
-          `and(sender_id.eq.${user.id},receiver_id.eq.${professionalUserId}),and(sender_id.eq.${professionalUserId},receiver_id.eq.${user.id})`
+          `and(sender_id.eq.${user.id},receiver_id.eq.${professionalUserId}),and(sender_id.eq.${professionalUserId},receiver_id.eq.${user.id})`,
         )
         .limit(1);
       if (error) return false;
@@ -460,12 +528,6 @@ export default function ProfilePage() {
     rawId,
   ]);
 
-  useEffect(() => {
-    if (selectedReel) {
-      updateReelStatsAction({ id: selectedReel.id, data: { views: 1 } });
-    }
-  }, [selectedReel]);
-
   const handleCloseModal = () => {
     const rawSeo = professional?.seo_path
       ? professional.seo_path.startsWith("/")
@@ -483,10 +545,6 @@ export default function ProfilePage() {
     if (promo.Bank?.name) return [promo.Bank.name];
     return ["Banco"];
   };
-
-  const profReels = useMemo(() => {
-    return allReels.filter((r) => r.professional_id === Number(id));
-  }, [allReels, id]);
 
   const profile = professional?.Profile;
   const company = professional?.Companies?.[0] || professional?.Company;
@@ -578,7 +636,7 @@ export default function ProfilePage() {
           <div className="profile-sidebar__avatar-container">
             <div
               className={`avatar-frame ${hasReels ? "pulse-reel" : ""} ${isVerified ? "verified-ring" : ""}`}
-              onClick={() => hasReels && setSelectedReel(profReels[0])}
+              onClick={() => hasReels && setSelectedReelIndex(0)}
             >
               <img src={avatar} alt={name} className="avatar-image" />
               {isVerified && (
@@ -717,9 +775,10 @@ export default function ProfilePage() {
                 <div className="scope-grid">
                   {companyLocations.provinces?.map((p: any) => {
                     const provinceId = p.Province?.id;
-                    const provinceDepartments = companyLocations.departments?.filter(
-                      (d: any) => d.Department?.province_id === provinceId
-                    );
+                    const provinceDepartments =
+                      companyLocations.departments?.filter(
+                        (d: any) => d.Department?.province_id === provinceId,
+                      );
 
                     return (
                       <div key={provinceId} className="scope-province">
@@ -728,14 +787,17 @@ export default function ProfilePage() {
                           <strong>{p.Province?.name}</strong>
                         </div>
                         <div className="departments-list">
-                          {provinceDepartments && provinceDepartments.length > 0 ? (
+                          {provinceDepartments &&
+                          provinceDepartments.length > 0 ? (
                             provinceDepartments.map((d: any) => (
                               <span key={d.Department?.id} className="dept-tag">
                                 {d.Department?.name}
                               </span>
                             ))
                           ) : (
-                            <span className="all-province">Toda la provincia</span>
+                            <span className="all-province">
+                              Toda la provincia
+                            </span>
                           )}
                         </div>
                       </div>
@@ -833,6 +895,24 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {profReels.length > 0 && (
+            <div className="profile-section">
+              <div className="section-header">
+                <h2>REELS PROFESIONALES</h2>
+              </div>
+              <div className="reels-grid">
+                {profReels.map((reel: any, index: number) => (
+                  <ReelCard
+                    key={reel.id}
+                    reel={{ ...reel, professional: reel.professional || professional }}
+                    isPremium={false}
+                    onClick={() => setSelectedReelIndex(index)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="profile-section">
             <div className="section-header">
@@ -1080,27 +1160,12 @@ export default function ProfilePage() {
       />
 
       {/* Reel Modal Overlay */}
-      {selectedReel && (
-        <div className="reel-overlay" onClick={() => setSelectedReel(null)}>
-          <div
-            className="reel-modal-container"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <video
-              src={selectedReel.video_url}
-              autoPlay
-              controls
-              loop
-              className="reel-video-full"
-            />
-            <button
-              className="reel-close"
-              onClick={() => setSelectedReel(null)}
-            >
-              ×
-            </button>
-          </div>
-        </div>
+      {selectedReelIndex !== null && (
+        <ReelsTheaterModal
+          reels={profReels.map((r: any) => ({ ...r, professional: r.professional || professional }))}
+          initialIndex={selectedReelIndex}
+          onClose={() => setSelectedReelIndex(null)}
+        />
       )}
 
       {/* Video Modal Overlay */}

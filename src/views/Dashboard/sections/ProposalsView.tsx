@@ -6,7 +6,9 @@ import {
   Clock,
   ExternalLink,
   Download,
+  Plus,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
 import {
   acceptProposalAction,
@@ -21,6 +23,7 @@ type TabType = "received" | "sent";
 
 export default function ProposalsView() {
   const { hasProfessionalSubscription } = useAuth();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<TabType>("received");
   const [receivedProposals, setReceivedProposals] = useState<
@@ -156,8 +159,20 @@ export default function ProposalsView() {
   return (
     <div className="proposals-view">
       <header className="proposals-view__header">
-        <span className="proposals-view__label">GESTIÓN DOCUMENTAL</span>
-        <h1 className="proposals-view__title">Presupuestos</h1>
+        <div>
+          <span className="proposals-view__label">GESTIÓN DOCUMENTAL</span>
+          <h1 className="proposals-view__title">Presupuestos</h1>
+        </div>
+        {hasProfessionalSubscription && (
+          <button
+            type="button"
+            className="proposals-view__create-btn"
+            onClick={() => router.push("?view=proposals-create")}
+          >
+            <Plus size={16} />
+            <span>Crear Presupuesto</span>
+          </button>
+        )}
       </header>
 
       {hasProfessionalSubscription && (

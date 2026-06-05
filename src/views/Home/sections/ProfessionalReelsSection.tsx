@@ -25,6 +25,7 @@ import { getSubscriptionByProfessionalAction } from "@/app/actions/subscriptions
 import type { ProfessionalReelRow } from "../../../types/database.types";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import { getProfilePath } from "../../../utils/utils";
+import ReelsTheaterModal from "../../../components/ReelsTheater/ReelsTheaterModal";
 import "./ProfessionalReelsSection.css";
 import "../../Reels/ReelsPage.css"; // Reuse theater styles
 
@@ -309,168 +310,18 @@ export default function ProfessionalReelsSection({ userProvince = "Buenos Aires"
         </div>
       </div>
 
-      {selectedReel && (
-        <div
-          className="reels-theater"
-          onClick={() => setSelectedIndex(null)}
-        >
-          {/* Navigations */}
-          <button
-            type="button"
-            className="reels-theater__nav reels-theater__nav--prev"
-            onClick={(e) => {
-              e.stopPropagation();
-              showPreviousReel();
-            }}
-            aria-label="Reel anterior"
-          >
-            <ChevronLeft size={24} />
-          </button>
-
-          <button
-            type="button"
-            className="reels-theater__nav reels-theater__nav--next"
-            onClick={(e) => {
-              e.stopPropagation();
-              showNextReel();
-            }}
-            aria-label="Siguiente reel"
-          >
-            <ChevronRight size={24} />
-          </button>
-
-          <button
-            type="button"
-            className="reels-theater__close"
-            onClick={() => setSelectedIndex(null)}
-            aria-label="Cerrar reproductor"
-          >
-            <X size={20} />
-          </button>
-
-          {/* Smartphone Container Frame */}
-          <div
-            className="reels-theater__container"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <video
-              ref={videoRef}
-              className="reels-theater__video"
-              src={selectedReel.video_url}
-              autoPlay
-              loop
-              muted={isMuted}
-              playsInline
-            />
-
-            {/* Theater UI Overlays */}
-            {/* Profile Bar */}
-            <div className="reels-theater__profile-bar">
-              <a
-                href={getProfilePath(
-                  selectedReel.professional_id,
-                  selectedReel.Professional?.seo_path
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="reels-theater__profile-info"
-              >
-                <img
-                  src={
-                    selectedReel.Professional?.Profile?.avatar_url ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      selectedReel.Professional?.Profile?.display_name || "P"
-                    )}`
-                  }
-                  alt={selectedReel.Professional?.Profile?.display_name || "P"}
-                  className="reels-theater__profile-avatar"
-                />
-                <div className="reels-theater__profile-text">
-                  <span className="reels-theater__profile-name">
-                    {selectedReel.Professional?.Profile?.display_name ||
-                      "Profesional"}
-                  </span>
-                  {subscriptionsMap[selectedReel.professional_id]?.type === "premium" && (
-                    <span className="reels-theater__premium-tag">
-                      <Sparkles size={8} fill="currentColor" /> Premium
-                    </span>
-                  )}
-                </div>
-              </a>
-            </div>
-
-            {/* Controls & Actions Sidebar */}
-            <div className="reels-theater__sidebar">
-              {/* Like Button */}
-              <button
-                type="button"
-                className={`reels-theater__action-btn ${
-                  likedReels.includes(selectedReel.id) ? "is-active" : ""
-                }`}
-                onClick={toggleLike}
-              >
-                <Heart
-                  size={22}
-                  fill={
-                    likedReels.includes(selectedReel.id)
-                      ? "currentColor"
-                      : "none"
-                  }
-                />
-                <span>{selectedReel.likes || 0}</span>
-              </button>
-
-              {/* Sound Button */}
-              <button
-                type="button"
-                className="reels-theater__action-btn"
-                onClick={toggleMute}
-              >
-                {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
-                <span>Audio</span>
-              </button>
-
-              {/* Restart Button */}
-              <button
-                type="button"
-                className="reels-theater__action-btn"
-                onClick={restartReel}
-              >
-                <RotateCcw size={20} />
-                <span>Reiniciar</span>
-              </button>
-
-              {/* Play/Pause Button */}
-              <button
-                type="button"
-                className="reels-theater__action-btn"
-                onClick={togglePlayback}
-              >
-                {isPlaying ? (
-                  <Pause size={22} />
-                ) : (
-                  <Play size={22} fill="currentColor" />
-                )}
-                <span>{isPlaying ? "Pausa" : "Play"}</span>
-              </button>
-            </div>
-
-            {/* Details Bottom Overlay */}
-            <div className="reels-theater__details">
-              {selectedReel.title && (
-                <h2 className="reels-theater__title">{selectedReel.title}</h2>
-              )}
-              {selectedReel.description && (
-                <p className="reels-theater__description">
-                  {selectedReel.description}
-                </p>
-              )}
-              <div className="reels-theater__metadata">
-                <span>{selectedReel.views_count || 0} reproducciones</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      {selectedIndex !== null && (
+        <ReelsTheaterModal
+          reels={processedReels}
+          initialIndex={selectedIndex}
+          onClose={() => setSelectedIndex(null)}
+          isPremiumMap={Object.fromEntries(
+            Object.entries(subscriptionsMap).map(([id, sub]: any) => [
+              id,
+              sub?.type === "premium" || sub?.is_premium,
+            ])
+          )}
+        />
       )}
     </section>
   );

@@ -5,6 +5,7 @@ export interface ProfileRow {
   readonly avatar_url: string | null;
   readonly portfolio_image_url?: string | null;
   readonly updated_at: string | null;
+  readonly province_id: string;
 }
 
 export interface AddressRow {
@@ -299,7 +300,7 @@ export interface ProfessionalReelRow {
   readonly views_count: number | null;
   readonly created_at: string | null;
   readonly updated_at: string | null;
-  readonly likes: number | null;
+  readonly likes_count: number | null;
   readonly activate: boolean | null;
   // Relationships
   readonly Professional?: ProfessionalRow;

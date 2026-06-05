@@ -72,7 +72,7 @@ export default function ReelsSection() {
         url: r.video_url,
         storageKey: "",
         views: r.views_count || 0,
-        likes: r.likes || 0,
+        likes: r.likes_count || 0,
       }));
     },
     enabled: !!professionalId,
@@ -174,7 +174,7 @@ export default function ReelsSection() {
               url: activatedReel.video_url,
               storageKey: key,
               views: activatedReel.views_count || 0,
-              likes: activatedReel.likes || 0,
+              likes: activatedReel.likes_count || 0,
             },
             ...current,
           ],

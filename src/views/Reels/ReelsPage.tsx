@@ -31,105 +31,15 @@ import { useAuthModal } from "../../context/AuthModalContext";
 import { getAccessToken } from "../../utils/auth";
 import "./ReelsPage.css";
 
-// Individual Reel Card with hover-to-play preview
-function ReelCard({
-  reel,
-  isPremium,
-  onClick,
-}: {
-  reel: ProfessionalReelRow;
-  isPremium: boolean;
-  onClick: () => void;
-}) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0.01;
-      videoRef.current.play().catch(() => {});
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0.01;
-    }
-  };
-
-  return (
-    <div
-      className={`reels-grid-card ${isPremium ? "is-premium" : ""}`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={onClick}
-    >
-      <div className="reels-grid-card__video-wrapper">
-        <video
-          ref={videoRef}
-          className="reels-grid-card__video"
-          src={reel.video_url}
-          muted
-          playsInline
-          loop
-          preload="metadata"
-        />
-        <div className="reels-grid-card__overlay">
-          <div className="reels-grid-card__play-btn">
-            <Play size={20} fill="currentColor" />
-          </div>
-        </div>
-      </div>
-
-      {isPremium && (
-        <div className="reels-grid-card__premium-badge">
-          <Sparkles size={12} fill="currentColor" />
-          <span>Destacado</span>
-        </div>
-      )}
-
-      <div className="reels-grid-card__info">
-        <div className="reels-grid-card__professional">
-          <img
-            src={
-              reel.Professional?.Profile?.avatar_url ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                reel.Professional?.Profile?.display_name || "P"
-              )}`
-            }
-            alt={reel.Professional?.Profile?.display_name || "Profesional"}
-            className="reels-grid-card__avatar"
-          />
-          <span className="reels-grid-card__name">
-            {reel.Professional?.Profile?.display_name || "Profesional"}
-          </span>
-        </div>
-        {reel.title && <h3 className="reels-grid-card__title">{reel.title}</h3>}
-        <div className="reels-grid-card__stats">
-          <span>{reel.views_count || 0} vistas</span>
-          <span>•</span>
-          <span>{reel.likes || 0} likes</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+import ReelsTheaterModal from "../../components/ReelsTheater/ReelsTheaterModal";
+import ReelCard from "../../components/Cards/ReelCard";
 
 export default function ReelsPage() {
   const router = useRouter();
-  const { user } = useAuth();
-  const { openAuth } = useAuthModal();
   const [selectedProvinceId, setSelectedProvinceId] = useState<string>("All");
   const [selectedReelIndex, setSelectedReelIndex] = useState<number | null>(null);
-  const [likedReels, setLikedReels] = useState<Set<string | number>>(new Set());
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
   const [page, setPage] = useState(1);
   const LIMIT = 12;
-  const theaterVideoRef = useRef<HTMLVideoElement>(null);
 
   // Fetch provinces
   const { data: provinces = [] } = useQuery({
@@ -212,111 +122,6 @@ export default function ReelsPage() {
       return bPremium - aPremium;
     });
   }, [reels, subscriptionsMap]);
-
-  const activeReel =
-    selectedReelIndex !== null ? processedReels[selectedReelIndex] : null;
-
-  // Handle keyboard navigation in theater mode
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedReelIndex === null) return;
-      if (e.key === "ArrowRight") {
-        handleNextReel();
-      } else if (e.key === "ArrowLeft") {
-        handlePrevReel();
-      } else if (e.key === "Escape") {
-        setSelectedReelIndex(null);
-      } else if (e.key === " ") {
-        e.preventDefault();
-        toggleTheaterPlayback();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedReelIndex, processedReels.length]);
-
-  // Handle tracking view and playing video when active reel changes
-  useEffect(() => {
-    if (activeReel && theaterVideoRef.current) {
-      // Increment views
-      updateReelStatsAction({ id: activeReel.id, data: { views: 1 } });
-
-      const video = theaterVideoRef.current;
-      video.currentTime = 0;
-      void video.play().catch(() => {});
-      setIsPlaying(true);
-    }
-  }, [activeReel]);
-
-  const handleNextReel = () => {
-    if (selectedReelIndex === null) return;
-    setSelectedReelIndex((selectedReelIndex + 1) % processedReels.length);
-  };
-
-  const handlePrevReel = () => {
-    if (selectedReelIndex === null) return;
-    setSelectedReelIndex(
-      (selectedReelIndex - 1 + processedReels.length) % processedReels.length
-    );
-  };
-
-  const toggleTheaterPlayback = () => {
-    const video = theaterVideoRef.current;
-    if (!video) return;
-    if (video.paused) {
-      void video.play().catch(() => {});
-      setIsPlaying(true);
-    } else {
-      video.pause();
-      setIsPlaying(false);
-    }
-  };
-
-  const toggleTheaterMute = () => {
-    const video = theaterVideoRef.current;
-    if (!video) return;
-    video.muted = !video.muted;
-    setIsMuted(video.muted);
-  };
-
-  const toggleTheaterLike = async () => {
-    if (!activeReel) return;
-    if (!user) {
-      openAuth("login");
-      return;
-    }
-    const alreadyLiked = likedReels.has(activeReel.id);
-    const newIsLike = !alreadyLiked;
-
-    // Optimistic update
-    setLikedReels((prev) => {
-      const next = new Set(prev);
-      if (newIsLike) next.add(activeReel.id);
-      else next.delete(activeReel.id);
-      return next;
-    });
-
-    try {
-      const token = getAccessToken();
-      await upsertReelLikeAction({ id: activeReel.id, is_like: newIsLike, token });
-    } catch {
-      // Revert on error
-      setLikedReels((prev) => {
-        const next = new Set(prev);
-        if (alreadyLiked) next.add(activeReel.id);
-        else next.delete(activeReel.id);
-        return next;
-      });
-    }
-  };
-
-  const handleRestartReel = () => {
-    if (theaterVideoRef.current) {
-      theaterVideoRef.current.currentTime = 0;
-      void theaterVideoRef.current.play().catch(() => {});
-      setIsPlaying(true);
-    }
-  };
 
   return (
     <>
@@ -417,168 +222,19 @@ export default function ReelsPage() {
         </section>
 
         {/* Full-Screen Theater Modal */}
-        {activeReel && (
-          <div
-            className="reels-theater"
-            onClick={() => setSelectedReelIndex(null)}
-          >
-            {/* Navigations */}
-            <button
-              type="button"
-              className="reels-theater__nav reels-theater__nav--prev"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePrevReel();
-              }}
-              aria-label="Reel anterior"
-            >
-              <ChevronLeft size={24} />
-            </button>
-
-            <button
-              type="button"
-              className="reels-theater__nav reels-theater__nav--next"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNextReel();
-              }}
-              aria-label="Siguiente reel"
-            >
-              <ChevronRight size={24} />
-            </button>
-
-            <button
-              type="button"
-              className="reels-theater__close"
-              onClick={() => setSelectedReelIndex(null)}
-              aria-label="Cerrar reproductor"
-            >
-              <X size={20} />
-            </button>
-
-            {/* Smartphone Container Frame */}
-            <div
-              className="reels-theater__container"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <video
-                ref={theaterVideoRef}
-                className="reels-theater__video"
-                src={activeReel.video_url}
-                autoPlay
-                loop
-                muted={isMuted}
-                playsInline
-              />
-
-              {/* Theater UI Overlays */}
-              {/* Profile Bar */}
-              <div className="reels-theater__profile-bar">
-                <a
-                  href={getProfilePath(
-                    activeReel.professional_id,
-                    activeReel.Professional?.seo_path
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="reels-theater__profile-info"
-                >
-                  <img
-                    src={
-                      activeReel.Professional?.Profile?.avatar_url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        activeReel.Professional?.Profile?.display_name || "P"
-                      )}`
-                    }
-                    alt={activeReel.Professional?.Profile?.display_name || "P"}
-                    className="reels-theater__profile-avatar"
-                  />
-                  <div className="reels-theater__profile-text">
-                    <span className="reels-theater__profile-name">
-                      {activeReel.Professional?.Profile?.display_name ||
-                        "Profesional"}
-                    </span>
-                    {subscriptionsMap[activeReel.professional_id]?.type === "premium" && (
-                      <span className="reels-theater__premium-tag">
-                        <Sparkles size={8} fill="currentColor" /> Premium
-                      </span>
-                    )}
-                  </div>
-                </a>
-              </div>
-
-              {/* Controls & Actions Sidebar */}
-              <div className="reels-theater__sidebar">
-                {/* Like Button */}
-                <button
-                  type="button"
-                  className={`reels-theater__action-btn ${
-                    likedReels.has(activeReel.id) ? "is-active" : ""
-                  }`}
-                  onClick={toggleTheaterLike}
-                >
-                  <Heart
-                    size={22}
-                    fill={
-                      likedReels.has(activeReel.id)
-                        ? "currentColor"
-                        : "none"
-                    }
-                  />
-                  <span>{activeReel.likes || 0}</span>
-                </button>
-
-                {/* Sound Button */}
-                <button
-                  type="button"
-                  className="reels-theater__action-btn"
-                  onClick={toggleTheaterMute}
-                >
-                  {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
-                  <span>Audio</span>
-                </button>
-
-                {/* Restart Button */}
-                <button
-                  type="button"
-                  className="reels-theater__action-btn"
-                  onClick={handleRestartReel}
-                >
-                  <RotateCcw size={20} />
-                  <span>Reiniciar</span>
-                </button>
-
-                {/* Play/Pause Button */}
-                <button
-                  type="button"
-                  className="reels-theater__action-btn"
-                  onClick={toggleTheaterPlayback}
-                >
-                  {isPlaying ? (
-                    <Pause size={22} />
-                  ) : (
-                    <Play size={22} fill="currentColor" />
-                  )}
-                  <span>{isPlaying ? "Pausa" : "Play"}</span>
-                </button>
-              </div>
-
-              {/* Details Bottom Overlay */}
-              <div className="reels-theater__details">
-                {activeReel.title && (
-                  <h2 className="reels-theater__title">{activeReel.title}</h2>
-                )}
-                {activeReel.description && (
-                  <p className="reels-theater__description">
-                    {activeReel.description}
-                  </p>
-                )}
-                <div className="reels-theater__metadata">
-                  <span>{activeReel.views_count || 0} reproducciones</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Full-Screen Theater Modal */}
+        {selectedReelIndex !== null && (
+          <ReelsTheaterModal
+            reels={processedReels}
+            initialIndex={selectedReelIndex}
+            onClose={() => setSelectedReelIndex(null)}
+            isPremiumMap={Object.fromEntries(
+              Object.entries(subscriptionsMap).map(([id, sub]: any) => [
+                id,
+                sub?.type === "premium" || sub?.is_premium,
+              ])
+            )}
+          />
         )}
       </main>
 

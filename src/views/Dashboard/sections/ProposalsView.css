@@ -10,8 +10,10 @@
 
 .proposals-view__header {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .proposals-view__label {
@@ -20,6 +22,7 @@
   color: var(--highlight);
   letter-spacing: 0.12em;
   display: block;
+  margin-bottom: 6px;
 }
 
 .proposals-view__title {
@@ -27,6 +30,27 @@
   font-weight: var(--weight-black);
   color: var(--text-primary);
   letter-spacing: -0.02em;
+}
+
+.proposals-view__create-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--highlight);
+  color: var(--text-primary);
+  border: none;
+  padding: 12px 22px;
+  border-radius: 14px;
+  font-size: 0.8rem;
+  font-weight: var(--weight-extrabold);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.proposals-view__create-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
 /* ===== TABS ===== */

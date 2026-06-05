@@ -249,3 +249,46 @@
     grid-template-columns: 1fr;
   }
 }
+
+.personal-password-errors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  grid-column: 1 / -1;
+  margin-top: var(--space-2);
+}
+
+.personal-password-error-item {
+  color: var(--error-color);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+
+.personal-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.personal-input-wrapper .personal-input {
+  padding-right: 3rem;
+}
+
+.personal-password-toggle {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  transition: color 0.2s ease;
+}
+
+.personal-password-toggle:hover {
+  color: var(--text-primary);
+}

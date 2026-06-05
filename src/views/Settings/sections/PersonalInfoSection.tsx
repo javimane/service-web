@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   Loader2,
   Bell,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { authService } from "../../../services/authService";
 import { userService } from "../../../services/userService";
@@ -44,6 +46,7 @@ export default function PersonalInfoSection({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
 
   const notificationPermissionState =
@@ -140,6 +143,7 @@ export default function PersonalInfoSection({
       setIsEditingPassword(false);
       setPassword("");
       setConfirmPassword("");
+      setShowPassword(false);
       setNotification({
         type: "success",
         message: "Contraseña actualizada con éxito.",
@@ -163,18 +167,36 @@ export default function PersonalInfoSection({
     updateEmailMutation.mutate(email);
   };
 
+  const validatePassword = (pass: string) => {
+    const errors: string[] = [];
+    if (pass.length <= 8) {
+      errors.push("Debe tener más de 8 caracteres.");
+    }
+    if (!/[A-Z]/.test(pass)) {
+      errors.push("Debe contener al menos una letra mayúscula.");
+    }
+    if (!/[0-9]/.test(pass)) {
+      errors.push("Debe contener al menos un número.");
+    }
+    if (!/[^A-Za-z0-9]/.test(pass)) {
+      errors.push("Debe contener al menos un carácter especial.");
+    }
+    return errors;
+  };
+
   const handleUpdatePassword = () => {
+    const validationErrors = validatePassword(password);
+    if (validationErrors.length > 0) {
+      setNotification({
+        type: "error",
+        message: `La contraseña no cumple los requisitos: ${validationErrors.join(" ")}`,
+      });
+      return;
+    }
     if (password !== confirmPassword) {
       setNotification({
         type: "error",
         message: "Las contraseñas no coinciden.",
-      });
-      return;
-    }
-    if (password.length < 6) {
-      setNotification({
-        type: "error",
-        message: "La contraseña debe tener al menos 6 caracteres.",
       });
       return;
     }
@@ -373,20 +395,51 @@ export default function PersonalInfoSection({
                 </span>
                 {isEditingPassword ? (
                   <div className="personal-password-inputs">
-                    <input
-                      type="password"
-                      className="personal-input"
-                      placeholder="Nueva contraseña"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <input
-                      type="password"
-                      className="personal-input"
-                      placeholder="Confirmar contraseña"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
+                    <div className="personal-input-wrapper">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        className="personal-input"
+                        placeholder="Nueva contraseña"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="personal-password-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+
+                    <div className="personal-input-wrapper">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        className="personal-input"
+                        placeholder="Confirmar contraseña"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="personal-password-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+
+                    {password && (
+                      <div className="personal-password-errors">
+                        {validatePassword(password).map((err, idx) => (
+                          <div key={idx} className="personal-password-error-item">
+                            • {err}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <span className="personal-field-value">••••••••••••</span>
@@ -404,7 +457,10 @@ export default function PersonalInfoSection({
                     </button>
                     <button
                       className="personal-action-btn personal-action-btn--cancel"
-                      onClick={() => setIsEditingPassword(false)}
+                      onClick={() => {
+                        setIsEditingPassword(false);
+                        setShowPassword(false);
+                      }}
                     >
                       <X size={16} /> Cancelar
                     </button>

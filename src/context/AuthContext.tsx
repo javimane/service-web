@@ -23,6 +23,8 @@ type SessionStatus = {
   status?: boolean | string;
   is_professional?: boolean;
   professional_active?: boolean;
+  has_professional_address?: boolean;
+  profile_province_id?: number | null;
   full_name?: string;
   email?: string;
   subscription?: {
@@ -42,6 +44,7 @@ type AuthContextValue = {
   hasProfessionalSubscription: boolean;
   professionalPlanActive: boolean;
   subscriptionPlan: string | null;
+  hasAddress: boolean;
   loading: boolean;
   refreshSession: () => Promise<void>;
   logout: () => Promise<void>;
@@ -94,6 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const professionalPlanActive =
     sessionStatus?.subscription?.plan === "professional" &&
     (sessionStatus?.subscription?.status === "active" || hasActiveStatusFlag);
+
+  const hasAddress = Boolean(sessionStatus?.has_professional_address);
 
   const subscriptionPlan = sessionStatus?.subscription?.plan ?? null;
 
@@ -239,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStatus,
         hasProfessionalSubscription,
         professionalPlanActive,
+        hasAddress,
         subscriptionPlan,
         loading,
         refreshSession,
@@ -249,7 +255,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     >
       {children}
       {foregroundNotification && (
-        <div className="foreground-notification" role="status" aria-live="polite">
+        <div
+          className="foreground-notification"
+          role="status"
+          aria-live="polite"
+        >
           <div className="foreground-notification__title">
             {foregroundNotification.title}
           </div>

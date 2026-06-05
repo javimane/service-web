@@ -161,7 +161,7 @@ type EditImageItem =
 
 export default function DashboardProducts() {
   const queryClient = useQueryClient();
-  const { sessionStatus } = useAuth();
+  const { sessionStatus, hasAddress } = useAuth();
 
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
@@ -865,13 +865,22 @@ export default function DashboardProducts() {
           <span className="dash-products__label">GESTIÓN</span>
           <h1 className="dash-products__title">Productos</h1>
         </div>
-        <button
-          className="dash-products__add-btn"
-          onClick={() => setAddOpen(true)}
-        >
-          <Plus size={18} />
-          <span>Agregar Producto</span>
-        </button>
+        {hasAddress ? (
+          <button
+            className="dash-products__add-btn"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus size={18} />
+            <span>Agregar Producto</span>
+          </button>
+        ) : (
+          <div className="dash-products__no-address-banner">
+            <Info size={16} />
+            <span>
+              Por el momento solo pueden agregar productos los que tiene local fisico al Público.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Stats row */}

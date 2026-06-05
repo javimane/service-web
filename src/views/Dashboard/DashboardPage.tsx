@@ -8,6 +8,7 @@ import {
   ChevronRight,
   TrendingUp,
   Clapperboard,
+  Eye,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -56,6 +57,7 @@ export default function DashboardPage() {
   const [editingPromotion, setEditingPromotion] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileSidebarMode, setIsMobileSidebarMode] = useState(false);
+  const [isVideosModalOpen, setIsVideosModalOpen] = useState(false);
   const routeView = searchParams.get("view");
 
   const { data: myProfessional } = useQuery({
@@ -336,66 +338,34 @@ export default function DashboardPage() {
               <div className="dashboard-content">
                 <div className="welcome-section">
                   <div className="welcome-copy">
-                    <h1>Welcome back, Architect.</h1>
-                    <p>
-                      Your Sercio performance is trending{" "}
-                      <span className="trending-up">+12.4%</span> this week.
-                    </p>
+                    <h1>¡Bienvenido de nuevo!</h1>
                   </div>
 
                   <div className="welcome-actions">
                     <button
                       type="button"
                       className="action-btn"
-                      onClick={handleGoServices}
-                    >
-                      <FileText size={18} />
-                      <span>Explore Services</span>
-                      <ChevronRight size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      className="action-btn"
                       onClick={handleGoSettings}
                     >
                       <Settings size={18} />
-                      <span>Account Settings</span>
+                      <span>Configuración de cuenta</span>
                       <ChevronRight size={18} />
                     </button>
                   </div>
                 </div>
 
                 <div className="stats-grid">
-                  <div className="stat-card chart-card">
+                  <div className="stat-card compact-card">
                     <div className="card-header">
-                      <div className="label-group">
-                        <span className="card-label">ANÁLISIS DE IMPACTO</span>
-                        <h3>Cantidad de visitas a tu perfil</h3>
-                      </div>
-                      <div className="views-badge">
-                        <div className="views-count">
-                          {profileViews !== null
-                            ? profileViews.toLocaleString("es-AR")
-                            : "--"}
-                        </div>
-                        <div className="views-label">VISTAS</div>
-                      </div>
+                      <Eye size={24} className="icon-orange" />
                     </div>
-
-                    <div className="bar-chart">
-                      <div className="bar-container">
-                        <div
-                          className="bar highlight"
-                          style={
-                            {
-                              "--bar-height": `${chartHeight}%`,
-                            } as React.CSSProperties
-                          }
-                        >
-                          <div className="stars">👁</div>
-                        </div>
-                        <span className="bar-day">Vistas</span>
-                      </div>
+                    <div className="stat-value-group">
+                      <span className="card-label">VISITAS A TU PERFIL</span>
+                      <h2 className="big-value">
+                        {profileViews !== null
+                          ? profileViews.toLocaleString("es-AR")
+                          : "--"}
+                      </h2>
                     </div>
                   </div>
 
@@ -405,7 +375,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="stat-value-group">
                       <span className="card-label">
-                        TOTAL PRESUPUESTOS ACEPTADOS
+                        PRESUPUESTOS ACEPTADOS
                       </span>
                       <h2 className="big-value">
                         {acceptedProposalsCount !== null
@@ -420,7 +390,7 @@ export default function DashboardPage() {
                       <div className="play-icon-bg">
                         <Play size={20} fill="currentColor" />
                       </div>
-                      <h3 className="mid-value">Reels &amp; Videos</h3>
+                      <h3 className="mid-value">Reels y videos</h3>
                     </div>
                     <div className="reels-stats-row">
                       <div className="stat-value-group">
@@ -434,7 +404,7 @@ export default function DashboardPage() {
                         </h2>
                       </div>
                       <div className="stat-value-group">
-                        <span className="card-label">LIKES (REELS)</span>
+                        <span className="card-label">ME GUSTA (REELS)</span>
                         <h2 className="mid-value">
                           {reelsStats?.total_likes !== undefined
                             ? reelsStats.total_likes >= 1000
@@ -454,7 +424,7 @@ export default function DashboardPage() {
                         </h2>
                       </div>
                       <div className="stat-value-group">
-                        <span className="card-label">LIKES (VIDEOS)</span>
+                        <span className="card-label">ME GUSTA (VIDEOS)</span>
                         <h2 className="mid-value">
                           {videoStats?.total_likes !== undefined
                             ? videoStats.total_likes >= 1000
@@ -470,13 +440,13 @@ export default function DashboardPage() {
                 <div className="lower-grid">
                   <div className="section-container">
                     <div className="section-header">
-                      <h2>Video Performance</h2>
+                      <h2>Rendimiento de videos</h2>
                       <button
                         type="button"
                         className="view-all"
-                        onClick={handleGoServices}
+                        onClick={() => setIsVideosModalOpen(true)}
                       >
-                        VIEW ALL CLIPS
+                        VER TODOS LOS VIDEOS
                       </button>
                     </div>
 
@@ -491,9 +461,11 @@ export default function DashboardPage() {
                                   alt={video.title || "Video"}
                                 />
                               ) : (
-                                <div className="video-thumb-placeholder">
-                                  <Play size={32} />
-                                </div>
+                                <video
+                                  src={video.video_url}
+                                  preload="metadata"
+                                  className="video-thumb__preview"
+                                />
                               )}
                               <div className="thumb-overlay">
                                 <Play size={32} fill="white" />
@@ -510,7 +482,7 @@ export default function DashboardPage() {
                               <h4>{video.title || "Sin título"}</h4>
                               <div className="video-meta">
                                 <span>👁 {video.views_count || 0}</span>
-                                <span>👍 {video.likes || 0}</span>
+                                <span>👍 {video.likes_count || 0}</span>
                                 <span
                                   className={`status-tag ${
                                     video.activate ? "active" : "inactive"
@@ -532,7 +504,7 @@ export default function DashboardPage() {
 
                   <div className="side-column">
                     <div className="quick-actions">
-                      <h3>Quick Actions</h3>
+                      <h3>Acciones rápidas</h3>
                       <div className="actions-list">
                         <button
                           type="button"
@@ -542,7 +514,7 @@ export default function DashboardPage() {
                           <div className="action-icon">
                             <Plus size={20} />
                           </div>
-                          <span>Create New Proposal</span>
+                          <span>Crear presupuesto</span>
                           <ChevronRight size={18} />
                         </button>
                         <button
@@ -569,43 +541,9 @@ export default function DashboardPage() {
                           onClick={handleGoSettings}
                         >
                           <Settings size={18} />
-                          <span>Account Settings</span>
+                          <span>Configuración de cuenta</span>
                           <ChevronRight size={18} />
                         </button>
-                      </div>
-                    </div>
-
-                    <div className="latest-activity">
-                      <h3>Latest Activity</h3>
-                      <div className="activity-list">
-                        {activities.map((activity) => (
-                          <div key={activity.id} className="activity-item">
-                            <div
-                              className={`activity-icon-box ${activity.status.toLowerCase()}`}
-                            >
-                              {activity.status === "ACCEPTED" && (
-                                <TrendingUp size={16} />
-                              )}
-                              {activity.status === "SENT" && (
-                                <FileText size={16} />
-                              )}
-                              {activity.status === "DRAFT" && (
-                                <FileText size={16} />
-                              )}
-                            </div>
-                            <div className="activity-details">
-                              <h4>{activity.title}</h4>
-                              <p>
-                                {activity.time} • {activity.project}
-                              </p>
-                            </div>
-                            <span
-                              className={`status-pill ${activity.status.toLowerCase()}`}
-                            >
-                              {activity.status}
-                            </span>
-                          </div>
-                        ))}
                       </div>
                     </div>
                   </div>
@@ -650,6 +588,63 @@ export default function DashboardPage() {
             >
               Ver planes
             </button>
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={isVideosModalOpen}
+          onClose={() => setIsVideosModalOpen(false)}
+          title="Todos los videos"
+        >
+          <div className="dashboard-videos-modal-grid">
+            {professionalVideos.length > 0 ? (
+              professionalVideos.map((video) => (
+                <div key={video.id} className="video-card">
+                  <div className="video-thumb">
+                    {video.thumbnail_url ? (
+                      <img
+                        src={video.thumbnail_url}
+                        alt={video.title || "Video"}
+                      />
+                    ) : (
+                      <video
+                        src={video.video_url}
+                        preload="metadata"
+                        className="video-thumb__preview"
+                      />
+                    )}
+                    <div className="thumb-overlay">
+                      <Play size={32} fill="white" />
+                    </div>
+                    <span className="duration">
+                      {video.duration_seconds
+                        ? `${Math.floor(video.duration_seconds / 60)}:${String(
+                            video.duration_seconds % 60,
+                          ).padStart(2, "0")}`
+                        : "0:00"}
+                    </span>
+                  </div>
+                  <div className="video-info">
+                    <h4>{video.title || "Sin título"}</h4>
+                    <div className="video-meta">
+                      <span>👁 {video.views_count || 0}</span>
+                      <span>👍 {video.likes_count || 0}</span>
+                      <span
+                        className={`status-tag ${
+                          video.activate ? "active" : "inactive"
+                        }`}
+                      >
+                        {video.activate ? "Activo" : "Inactivo"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="no-videos-placeholder">
+                <p>No hay videos subidos aún.</p>
+              </div>
+            )}
           </div>
         </Modal>
       </div>

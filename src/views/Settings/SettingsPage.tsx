@@ -13,6 +13,7 @@ import OperationsSection from "./sections/OperationsSection";
 import PaymentMethodsSection from "./sections/PaymentMethodsSection";
 import ArcaVerificationSection from "./sections/ArcaVerificationSection";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
+import ProvinceNovedadesSection from "./sections/ProvinceNovedadesSection";
 import ActionsSection from "./sections/ActionsSection";
 import CompanyDisplaySection from "./sections/CompanyDisplaySection";
 import { useAuth } from "../../context/AuthContext";
@@ -402,6 +403,15 @@ export default function SettingsPage() {
                   email: user?.email || "",
                 }}
               />
+
+              {/* Province news feed selection (for all authenticated users) */}
+              {user?.id && (
+                <ProvinceNovedadesSection
+                  userId={user.id}
+                  provinceList={provinceList}
+                  initialProvinceId={sessionStatus?.profile_province_id ?? null}
+                />
+              )}
 
               {/* Avatar (only for non-professionals) */}
               {!isProfessional && user?.id && (

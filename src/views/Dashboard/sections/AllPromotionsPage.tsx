@@ -33,7 +33,6 @@ import "./AllPromotionsPage.css";
 const STATUS_LABELS = {
   active: "Activa",
   expired: "Expirada",
-  draft: "Borrador",
 };
 
 export default function AllPromotionsPage({ onCreateNew, onEdit }) {
@@ -76,43 +75,12 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
     },
   });
 
-  const duplicateMutation = useMutation({
-    mutationFn: (promo: any) => {
-      // Find the original promotion data to get all fields
-      const original = promotions.find((p) => p.id === promo.id);
-      if (!original) throw new Error("Promoción no encontrada");
-
-      const { id, created_at, updated_at, Professional, ...rest } = original;
-      return createProfessionalPromotionAction({
-        ...rest,
-        title: `${rest.title} (Copia)`,
-        state: "draft",
-        discount_percentage:
-          rest.discount_type === "percentage" ? Number(rest.discount_value) : 0,
-      }).then((result) => {
-        if (result?.serverError) throw new Error(result.serverError);
-        return result?.data;
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["professional-promotions"] });
-      alert("Promoción duplicada con éxito como borrador");
-    },
-    onError: (err: any) => {
-      alert("Error al duplicar: " + err.message);
-    },
-  });
-
   const handleDelete = (id: string) => {
     if (
       window.confirm("¿Estás seguro de que deseas eliminar esta promoción?")
     ) {
       deleteMutation.mutate(id);
     }
-  };
-
-  const handleDuplicate = (promo: any) => {
-    duplicateMutation.mutate(promo);
   };
 
   const handleView = (promoId: string) => {
@@ -236,7 +204,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
 
         <div className="all-promos__filters">
           <Filter size={14} />
-          {["all", "active", "expired", "draft"].map((f) => (
+          {["all", "active", "expired"].map((f) => (
             <button
               key={f}
               type="button"
@@ -252,7 +220,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
       {/* Stats Row */}
       <div className="all-promos__stats">
         {isLoading ? (
-          Array(4).fill(0).map((_, i) => (
+          Array(3).fill(0).map((_, i) => (
             <div key={i} className="promo-stat-card promo-stat-card--skeleton shimmer" />
           ))
         ) : (
@@ -272,12 +240,6 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
                 {promosList.filter((p) => p.status === "expired").length}
               </span>
               <span className="promo-stat-card__label">Expiradas</span>
-            </div>
-            <div className="promo-stat-card promo-stat-card--draft">
-              <span className="promo-stat-card__value">
-                {promosList.filter((p) => p.status === "draft").length}
-              </span>
-              <span className="promo-stat-card__label">Borradores</span>
             </div>
           </>
         )}
