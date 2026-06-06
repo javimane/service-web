@@ -302,6 +302,7 @@ export interface ProfessionalReelRow {
   readonly updated_at: string | null;
   readonly likes_count: number | null;
   readonly activate: boolean | null;
+  readonly seo_path: string | null;
   // Relationships
   readonly Professional?: ProfessionalRow;
 }

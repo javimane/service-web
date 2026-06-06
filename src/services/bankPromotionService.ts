@@ -45,6 +45,7 @@ export interface BankPromotion {
     }>;
     Profile?: {
       avatar_url: string | null;
+      portfolio_image_url: string | null;
     };
     address?: Array<{
       province_id: number;

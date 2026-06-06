@@ -149,17 +149,19 @@ export default function ProfessionalReelsSection({ userProvince = "Buenos Aires"
     updateArrowVisibility,
   } = useCarouselDrag(sliderRef, ".reel-card");
 
+  const selectedReelId = selectedReel?.id;
+
   useEffect(() => {
-    if (selectedReel && videoRef.current) {
+    if (selectedReelId && videoRef.current) {
       // Increment views
-      updateReelStatsAction({ id: selectedReel.id, data: { views: 1 } });
+      updateReelStatsAction({ id: selectedReelId, data: { views: 1 } });
 
       const video = videoRef.current;
       video.currentTime = 0;
       void video.play().catch(() => undefined);
       setIsPlaying(true);
     }
-  }, [selectedReel]);
+  }, [selectedReelId]);
 
   const togglePlayback = () => {
     const video = videoRef.current;

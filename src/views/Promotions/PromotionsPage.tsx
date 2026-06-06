@@ -467,7 +467,12 @@ export default function PromotionsPage() {
                       <>
                         <div
                           className="promo-card-image"
-                          style={{ '--promo-bg': `url(https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600)` } as React.CSSProperties}
+                          style={{
+                            "--promo-bg": `url(${
+                              discount.Professional?.Profile?.portfolio_image_url ||
+                              "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600"
+                            })`
+                          } as React.CSSProperties}
                         >
                           <div className="promo-card-offer-badge overlay">
                             <span className="offer-num">

@@ -45,20 +45,40 @@ export default function ReelsTheaterModal({
   const [isMuted, setIsMuted] = useState(true);
   const [likedReels, setLikedReels] = useState<Set<string | number>>(new Set());
   const theaterVideoRef = useRef<HTMLVideoElement>(null);
+  const initialUrlRef = useRef(typeof window !== "undefined" ? window.location.pathname + window.location.search : "");
 
   const activeReel = reels[currentIndex];
 
   useEffect(() => {
-    if (activeReel && theaterVideoRef.current) {
+    return () => {
+      if (typeof window !== "undefined" && initialUrlRef.current) {
+        window.history.replaceState(null, "", initialUrlRef.current);
+      }
+    };
+  }, []);
+
+  const activeReelId = activeReel?.id;
+  const activeReelSeoPath = activeReel?.seo_path;
+
+  useEffect(() => {
+    if (activeReelId && theaterVideoRef.current) {
       // Increment views
-      updateReelStatsAction({ id: activeReel.id, data: { views: 1 } });
+      updateReelStatsAction({ id: activeReelId, data: { views: 1 } });
 
       const video = theaterVideoRef.current;
       video.currentTime = 0;
       void video.play().catch(() => {});
       setIsPlaying(true);
+
+      const cleanSeo = activeReelSeoPath
+        ? activeReelSeoPath.startsWith("/")
+          ? activeReelSeoPath
+          : `/${activeReelSeoPath}`
+        : `/${activeReelId}`;
+      const url = cleanSeo.startsWith("/reels") ? cleanSeo : `/reels${cleanSeo}`;
+      window.history.replaceState(null, "", url);
     }
-  }, [activeReel]);
+  }, [activeReelId, activeReelSeoPath]);
 
   const handleNextReel = () => {
     setCurrentIndex((prev) => (prev + 1) % reels.length);

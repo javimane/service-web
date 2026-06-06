@@ -1,6 +1,45 @@
 "use client";
+import { useState, useEffect } from "react";
 import { Search, ChevronDown, RotateCcw } from "lucide-react";
 import "./FilterPanel.css";
+
+function SearchInputWrapper({ section, filterKey, value, onFilterChange }: { section: any; filterKey: string; value: string; onFilterChange: (key: string, value: any) => void }) {
+  const [localVal, setLocalVal] = useState(value);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onFilterChange(filterKey, localVal);
+    }
+  };
+
+  return (
+    <div className="filter-panel__section">
+      {section.label && (
+        <span className="filter-panel__label">{section.label}</span>
+      )}
+      <div className="filter-panel__search">
+        <Search size={18} className="filter-panel__search-icon" />
+        <input
+          type="text"
+          placeholder={section.placeholder || "Buscar..."}
+          value={localVal}
+          onChange={(e) => {
+            const v = e.target.value;
+            setLocalVal(v);
+            if (!v) {
+              onFilterChange(filterKey, "");
+            }
+          }}
+          onKeyDown={handleKeyDown}
+        />
+      </div>
+    </div>
+  );
+}
 
 type SectionBase = {
   id?: string;
@@ -77,22 +116,7 @@ function renderSection(
   switch (section.type) {
     case "search": {
       const key = section.filterKey || "search";
-      return (
-        <div className="filter-panel__section" key={section.id || "search"}>
-          {section.label && (
-            <span className="filter-panel__label">{section.label}</span>
-          )}
-          <div className="filter-panel__search">
-            <Search size={18} className="filter-panel__search-icon" />
-            <input
-              type="text"
-              placeholder={section.placeholder || "Buscar..."}
-              value={filters[key] || ""}
-              onChange={(e) => onFilterChange(key, e.target.value)}
-            />
-          </div>
-        </div>
-      );
+      return <SearchInputWrapper key={section.id || "search"} section={section} filterKey={key} value={filters[key] || ""} onFilterChange={onFilterChange} />;
     }
 
     case "select": {

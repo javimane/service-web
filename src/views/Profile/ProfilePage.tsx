@@ -33,6 +33,7 @@ import {
   incrementVideoViewsAction,
 } from "../../app/actions/multimedia";
 import { getReelsAction, updateReelStatsAction } from "../../app/actions/reels";
+import { getProvincesAction } from "../../app/actions/provinces";
 import { getProfessionalReviewsAction } from "../../app/actions/reviews";
 import ReviewModal from "./sections/ReviewModal";
 import { useAuthModal } from "../../context/AuthModalContext";
@@ -151,7 +152,10 @@ function ProfileVideoCard({
         ? seoPath
         : `/${seoPath}`
       : `/perfil/${professionalId}`;
-    const shareUrl = `${window.location.origin}${cleanSeo.startsWith("/perfil") ? cleanSeo : `/perfil${cleanSeo}`}`;
+    const basePath = cleanSeo.startsWith("/perfil")
+      ? cleanSeo
+      : `/perfil${cleanSeo}`;
+    const shareUrl = `${window.location.origin}${basePath}?video=${video.id}`;
 
     if (navigator.share) {
       navigator
@@ -268,6 +272,8 @@ export default function ProfilePage() {
   );
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isReelsModalOpen, setIsReelsModalOpen] = useState(false);
+  const [showScope, setShowScope] = useState(false);
 
   const { user } = useAuth();
   const { openAuth } = useAuthModal();
@@ -288,7 +294,10 @@ export default function ProfilePage() {
 
   const servicesScroll = useDraggableScroll();
   const videosScroll = useDraggableScroll();
+  const reelsScroll = useDraggableScroll();
   const productsScroll = useDraggableScroll();
+  const [showAllReels, setShowAllReels] = useState(false);
+  const [showAllVideos, setShowAllVideos] = useState(false);
 
   const scrollContainer = (ref: any, direction: "left" | "right") => {
     if (ref.current) {
@@ -437,6 +446,15 @@ export default function ProfilePage() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const { data: provinces = [] } = useQuery({
+    queryKey: ["provinces"],
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24,
+  });
+
   const { data: companyLocations } = useQuery({
     queryKey: ["company-locations", id],
     queryFn: async () => {
@@ -472,6 +490,7 @@ export default function ProfilePage() {
   // Modal Deep Linking: Sync URL with modal state
   useEffect(() => {
     if (isLoadingProfile) return;
+    if (typeof window === "undefined") return;
 
     const currentPath = window.location.pathname;
     const normalizePath = (path: string | null | undefined) => {
@@ -518,15 +537,42 @@ export default function ProfilePage() {
       setSelectedPromoForDetail({ ...matchedPromo, type: "prof" });
       return;
     }
+
+    // Check videos
+    const searchParams = new URLSearchParams(window.location.search);
+    const videoId = searchParams.get("video");
+    if (videoId && videos.length > 0) {
+      const matchedVideo = videos.find((v) => v.id.toString() === videoId);
+      if (matchedVideo) {
+        setSelectedVideo(matchedVideo);
+        return;
+      }
+    }
   }, [
-    window.location.pathname,
+    typeof window !== "undefined" ? window.location.pathname : "",
+    typeof window !== "undefined" ? window.location.search : "",
     products,
     services,
     profPromotions,
+    videos,
     isLoadingProfile,
     professional,
     rawId,
   ]);
+
+  // Sync URL when a video is selected or closed
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (selectedVideo) {
+        url.searchParams.set("video", selectedVideo.id.toString());
+        window.history.replaceState(null, "", url.toString());
+      } else if (url.searchParams.has("video")) {
+        url.searchParams.delete("video");
+        window.history.replaceState(null, "", url.toString());
+      }
+    }
+  }, [selectedVideo]);
 
   const handleCloseModal = () => {
     const rawSeo = professional?.seo_path
@@ -555,6 +601,19 @@ export default function ProfilePage() {
   const isVerified =
     company?.companies_arca?.[0]?.is_verified || professional?.is_verified;
   const hasReels = profReels.length > 0;
+
+  const addresses = Array.isArray(professional?.address)
+    ? professional.address
+    : Array.isArray(professional?.Address)
+      ? professional.Address
+      : company?.Address
+        ? [company.Address]
+        : [];
+
+  const mainAddress =
+    addresses.find((a: any) => a?.is_main_address) || addresses[0];
+  const provinceName =
+    provinces.find((p: any) => p.id === mainAddress?.province_id)?.name || "";
 
   const paymentMethods = useMemo(() => {
     if (!company) return [];
@@ -622,9 +681,11 @@ export default function ProfilePage() {
         }
         image={avatar}
         url={
-          professional.seo_path
-            ? `${window.location.origin}${professional.seo_path}`
-            : window.location.href
+          typeof window !== "undefined"
+            ? window.location.href
+            : professional.seo_path
+              ? `/perfil${professional.seo_path.startsWith("/") ? professional.seo_path : `/${professional.seo_path}`}`
+              : `/perfil/${rawId}`
         }
         schema={professionalSchema}
       />
@@ -657,7 +718,45 @@ export default function ProfilePage() {
             <p className="title">
               {professional.bio?.slice(0, 50) || "Servicios Profesionales"}
             </p>
+            {professional.professional_categories &&
+              professional.professional_categories.length > 0 && (
+                <div className="profile-sidebar__categories">
+                  {professional.professional_categories.map((pc: any) => (
+                    <span
+                      key={pc.Category?.id}
+                      className="profile-category-pill"
+                    >
+                      {pc.Category?.name}
+                    </span>
+                  ))}
+                </div>
+              )}
           </div>
+
+          {mainAddress && (
+            <div className="profile-sidebar__address-card">
+              <h3 className="address-card__title">Ubicación</h3>
+              <p className="address-card__text">
+                {mainAddress.street_name} {mainAddress.street_number}
+                {mainAddress.floor_apartment &&
+                  `, Depto: ${mainAddress.floor_apartment}`}
+              </p>
+              <p className="address-card__subtext">{provinceName}</p>
+              {mainAddress.latitude && mainAddress.longitude && (
+                <button
+                  type="button"
+                  className="address-card__map-btn"
+                  onClick={() =>
+                    router.push(
+                      `/mapa?lat=${mainAddress.latitude}&lng=${mainAddress.longitude}`,
+                    )
+                  }
+                >
+                  <MapPin size={14} /> Ver en el mapa
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="profile-sidebar__stats">
             <div className="stat-item">
@@ -771,39 +870,55 @@ export default function ProfilePage() {
 
             {companyLocations && (
               <div className="scope-of-work">
-                <h3>ALCANCE DE TRABAJO / COBERTURA</h3>
-                <div className="scope-grid">
-                  {companyLocations.provinces?.map((p: any) => {
-                    const provinceId = p.Province?.id;
-                    const provinceDepartments =
-                      companyLocations.departments?.filter(
-                        (d: any) => d.Department?.province_id === provinceId,
-                      );
+                <button
+                  type="button"
+                  className="scope-toggle-btn"
+                  onClick={() => setShowScope(!showScope)}
+                >
+                  <MapPin size={16} />
+                  <span>
+                    {showScope
+                      ? "Ocultar alcance de cobertura"
+                      : "Ver alcance de cobertura"}
+                  </span>
+                </button>
+                {showScope && (
+                  <div className="scope-grid mt-4">
+                    {companyLocations.provinces?.map((p: any) => {
+                      const provinceId = p.Province?.id;
+                      const provinceDepartments =
+                        companyLocations.departments?.filter(
+                          (d: any) => d.Department?.province_id === provinceId,
+                        );
 
-                    return (
-                      <div key={provinceId} className="scope-province">
-                        <div className="province-header">
-                          <MapPin size={14} />
-                          <strong>{p.Province?.name}</strong>
-                        </div>
-                        <div className="departments-list">
-                          {provinceDepartments &&
-                          provinceDepartments.length > 0 ? (
-                            provinceDepartments.map((d: any) => (
-                              <span key={d.Department?.id} className="dept-tag">
-                                {d.Department?.name}
+                      return (
+                        <div key={provinceId} className="scope-province">
+                          <div className="province-header">
+                            <MapPin size={14} />
+                            <strong>{p.Province?.name}</strong>
+                          </div>
+                          <div className="departments-list">
+                            {provinceDepartments &&
+                            provinceDepartments.length > 0 ? (
+                              provinceDepartments.map((d: any) => (
+                                <span
+                                  key={d.Department?.id}
+                                  className="dept-tag"
+                                >
+                                  {d.Department?.name}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="all-province">
+                                Toda la provincia
                               </span>
-                            ))
-                          ) : (
-                            <span className="all-province">
-                              Toda la provincia
-                            </span>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </header>
@@ -896,42 +1011,34 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {profReels.length > 0 && (
+          {videos.length > 0 && (
             <div className="profile-section">
               <div className="section-header">
-                <h2>REELS PROFESIONALES</h2>
+                <h2>VIDEOS PROFESIONALES</h2>
+                <button
+                  className="ver-todo"
+                  onClick={() => setShowAllVideos(!showAllVideos)}
+                >
+                  {showAllVideos ? "VER MENOS" : "VER TODOS"}
+                </button>
               </div>
-              <div className="reels-grid">
-                {profReels.map((reel: any, index: number) => (
-                  <ReelCard
-                    key={reel.id}
-                    reel={{ ...reel, professional: reel.professional || professional }}
-                    isPremium={false}
-                    onClick={() => setSelectedReelIndex(index)}
-                  />
+              <div
+                className={`profile-videos-carousel ${videosScroll.isDragging ? "dragging" : ""}`}
+                ref={videosScroll.ref}
+                {...videosScroll.events}
+              >
+                {(showAllVideos ? videos : videos.slice(0, 6)).map((video) => (
+                  <div key={video.id} className="profile-video-carousel-item">
+                    <ProfileVideoCard
+                      video={video}
+                      onSelect={setSelectedVideo}
+                      onLike={handleVideoLike}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
           )}
-
-          <div className="profile-section">
-            <div className="section-header">
-              <h2>VIDEOS PROFESIONALES</h2>
-            </div>
-            <div className="videos-instagram-grid">
-              {videos.map((video) => (
-                <ProfileVideoCard
-                  key={video.id}
-                  video={video}
-                  onSelect={setSelectedVideo}
-                  onLike={handleVideoLike}
-                />
-              ))}
-              {videos.length === 0 && (
-                <p className="empty-msg">No hay videos disponibles.</p>
-              )}
-            </div>
-          </div>
 
           <div className="profile-section">
             <div className="section-header">
@@ -1058,9 +1165,12 @@ export default function ProfilePage() {
               <div
                 key={promo.id}
                 className="bank-promo-card-premium"
-                onClick={() =>
-                  setSelectedPromoForDetail({ ...promo, type: "bank" })
-                }
+                onClick={() => {
+                  const path = promo.seo_path
+                    ? promo.seo_path.replace(/^\/+/, "")
+                    : "promo";
+                  router.push(`/promociones-bancarias/${path}?id=${promo.id}`);
+                }}
               >
                 <div className="bank-promo-header">
                   <div className="bank-names-stack">
@@ -1112,12 +1222,10 @@ export default function ProfilePage() {
               className="promo-card-premium"
               onClick={() => {
                 if (promo.seo_path) {
-                  const target = promo.seo_path.startsWith("/")
-                    ? promo.seo_path
-                    : `/profile/${rawId}/promo/${promo.seo_path}`;
-                  router.push(target);
+                  const path = promo.seo_path.replace(/^\/+/, "");
+                  router.push(`/promociones/${path}?id=${promo.id}`);
                 } else {
-                  setSelectedPromoForDetail({ ...promo, type: "prof" });
+                  router.push(`/promociones/promo?id=${promo.id}`);
                 }
               }}
             >
@@ -1152,6 +1260,27 @@ export default function ProfilePage() {
         </div>
       </Modal>
 
+      {/* Reels Modal */}
+      <Modal
+        isOpen={isReelsModalOpen}
+        onClose={() => setIsReelsModalOpen(false)}
+        title="Reels del Profesional"
+      >
+        <div className="modal-reels-grid">
+          {profReels.map((reel, index) => (
+            <ReelCard
+              key={reel.id}
+              reel={reel}
+              isPremium={isVerified}
+              onClick={() => {
+                setSelectedReelIndex(index);
+                setIsReelsModalOpen(false);
+              }}
+            />
+          ))}
+        </div>
+      </Modal>
+
       {/* Unified Promotion Detail Modal */}
       <PromotionDetailModal
         promo={selectedPromoForDetail}
@@ -1162,7 +1291,10 @@ export default function ProfilePage() {
       {/* Reel Modal Overlay */}
       {selectedReelIndex !== null && (
         <ReelsTheaterModal
-          reels={profReels.map((r: any) => ({ ...r, professional: r.professional || professional }))}
+          reels={profReels.map((r: any) => ({
+            ...r,
+            professional: r.professional || professional,
+          }))}
           initialIndex={selectedReelIndex}
           onClose={() => setSelectedReelIndex(null)}
         />

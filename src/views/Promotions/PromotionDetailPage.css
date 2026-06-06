@@ -214,6 +214,18 @@
   box-shadow: 0 4px 14px rgba(255, 127, 80, 0.4);
 }
 
+.promotion-detail__btn--share {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.promotion-detail__btn--share:hover {
+  background-color: var(--surface-soft, #f5f5f5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px var(--highlight-glow);
+}
+
 .promotion-detail-loading,
 .promotion-detail-error {
   display: flex;

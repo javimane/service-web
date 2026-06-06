@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { getReelsAction, updateReelStatsAction, upsertReelLikeAction } from "../../app/actions/reels";
+import { getReelsAction, updateReelStatsAction, upsertReelLikeAction, getReelDetailAction } from "../../app/actions/reels";
 import { getProvincesAction } from "@/app/actions/provinces";
 import { getSubscriptionByProfessionalAction } from "@/app/actions/subscriptions";
 import type { ProfessionalReelRow } from "../../types/database.types";
@@ -40,6 +40,17 @@ export default function ReelsPage() {
   const [selectedReelIndex, setSelectedReelIndex] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const LIMIT = 12;
+
+  const [initialSeoPath, setInitialSeoPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/reels/') && path.length > 7) {
+        setInitialSeoPath(path.replace('/reels/', '').split('/')[0]);
+      }
+    }
+  }, []);
 
   // Fetch provinces
   const { data: provinces = [] } = useQuery({
@@ -66,6 +77,20 @@ export default function ReelsPage() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const { data: initialReel, isLoading: isLoadingInitialReel } = useQuery({
+    queryKey: ["reel-detail", initialSeoPath],
+    queryFn: async () => {
+      if (!initialSeoPath) return null;
+      try {
+        const result = await getReelDetailAction({ id: initialSeoPath });
+        return (result?.data as ProfessionalReelRow) ?? result;
+      } catch (e) {
+        return null;
+      }
+    },
+    enabled: !!initialSeoPath,
+  });
+
   const reels = reelsPaginated?.items ?? [];
   const totalPages = reelsPaginated?.totalPages ?? 1;
   const hasPrev = reelsPaginated?.hasPrev ?? false;
@@ -81,8 +106,11 @@ export default function ReelsPage() {
   // Extract unique professional IDs
   const professionalIds = useMemo<number[]>(() => {
     const ids = reels.map((r) => r.professional_id).filter(Boolean);
+    if (initialReel?.professional_id) {
+      ids.push(initialReel.professional_id);
+    }
     return [...new Set(ids)];
-  }, [reels]);
+  }, [reels, initialReel]);
 
   // Fetch subscriptions for each professional
   const subscriptionQueries = useQueries({
@@ -110,7 +138,7 @@ export default function ReelsPage() {
   }, [subscriptionQueries, professionalIds]);
 
   const isLoading =
-    isLoadingReels || subscriptionQueries.some((q) => q.isLoading);
+    isLoadingReels || isLoadingInitialReel || subscriptionQueries.some((q) => q.isLoading);
 
   // Process and sort: Premium/Featured first
   const processedReels = useMemo(() => {
@@ -122,6 +150,30 @@ export default function ReelsPage() {
       return bPremium - aPremium;
     });
   }, [reels, subscriptionsMap]);
+
+  const finalReels = useMemo(() => {
+    let list = [...processedReels];
+    if (initialReel) {
+      const exists = list.some((r) => String(r.id) === String(initialReel.id));
+      if (!exists) {
+        list.unshift(initialReel as ProfessionalReelRow);
+      }
+    }
+    return list;
+  }, [processedReels, initialReel]);
+
+  // Auto open the initial reel once loaded
+  useEffect(() => {
+    if (initialSeoPath && !isLoadingReels && !isLoadingInitialReel && finalReels.length > 0) {
+      const index = finalReels.findIndex(
+        (r) => r.seo_path === initialSeoPath || r.id?.toString() === initialSeoPath
+      );
+      if (index !== -1) {
+        setSelectedReelIndex(index);
+        setInitialSeoPath(null); // prevent re-opening on close
+      }
+    }
+  }, [initialSeoPath, isLoadingReels, isLoadingInitialReel, finalReels]);
 
   return (
     <>
@@ -194,12 +246,12 @@ export default function ReelsPage() {
             ) : (
               <>
                 <div className="reels-grid">
-                  {processedReels.map((reel, index) => {
+                  {finalReels.map((reel, index) => {
                     const sub = subscriptionsMap[reel.professional_id];
                     const isPremium = sub?.type === "premium" || sub?.is_premium;
                     return (
                       <ReelCard
-                        key={reel.id}
+                        key={String(reel.id)}
                         reel={reel}
                         isPremium={!!isPremium}
                         onClick={() => setSelectedReelIndex(index)}
@@ -225,7 +277,7 @@ export default function ReelsPage() {
         {/* Full-Screen Theater Modal */}
         {selectedReelIndex !== null && (
           <ReelsTheaterModal
-            reels={processedReels}
+            reels={finalReels}
             initialIndex={selectedReelIndex}
             onClose={() => setSelectedReelIndex(null)}
             isPremiumMap={Object.fromEntries(

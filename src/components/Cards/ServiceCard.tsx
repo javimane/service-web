@@ -24,31 +24,16 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
   const address = professional?.address?.[0] || professional?.Address?.[0];
   const locationName = address?.province?.name || address?.city || "Mendoza";
 
-  const getBadgeType = (category) => {
-    const badges = {
-      Arquitectura: "PREMIUM",
-      Diseño: "FEATURED",
-      Sustentabilidad: "ECO",
-      Ingeniería: "TECHNICAL",
-    };
-    return badges[category] || "SPECIAL";
-  };
-
-  const badgeType = getBadgeType(categoryName);
-
   return (
     <article
       className={`service-card-modern view-${viewMode}`}
       onClick={() => onClick(service)}
     >
-      {/* Location and Badge */}
+      {/* Location */}
       <div className="card-top">
         <div className="card-location">
           <MapPin size={12} className="loc-icon" />
           <span>{locationName.toUpperCase()}</span>
-        </div>
-        <div className={`card-badge badge-${badgeType.toLowerCase()}`}>
-          {badgeType}
         </div>
       </div>
 
@@ -85,7 +70,6 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
         <div className="card-price">
           <span className="price-currency">$</span>
           <span className="price-value">{price.toLocaleString("es-AR")}</span>
-          <span className="price-plus">+</span>
         </div>
 
         <button

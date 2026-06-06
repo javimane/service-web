@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import {
   getProfessionalsAction,
@@ -30,15 +30,16 @@ function MapUpdater({ center }: { center: { lat: number; lng: number } }) {
 }
 
 // Crear un icono personalizado con foto de perfil y efecto de pulso
-const createCustomIcon = (avatarUrl: string) => {
+const createCustomIcon = (avatarUrl: string, hasPromotions: boolean) => {
   return L.divIcon({
-    className: "custom-map-marker",
+    className: `custom-map-marker ${hasPromotions ? "custom-map-marker--has-promotions" : ""}`,
     html: `
-      <div class="custom-map-marker__pin">
-        <img src="${avatarUrl}" alt="avatar" />
-      </div>
-      <div class="custom-map-marker__pulse"></div>
-    `,
+        <div class="custom-map-marker__pin">
+          <img src="${avatarUrl}" alt="avatar" />
+          ${hasPromotions ? '<span class="custom-map-marker__promo-badge">PROMO</span>' : ""}
+        </div>
+        <div class="custom-map-marker__pulse"></div>
+      `,
     iconSize: [46, 46],
     iconAnchor: [23, 46], // punto de anclaje en la base
     popupAnchor: [0, -50], // popup arriba del pin
@@ -57,6 +58,7 @@ const getInitialCenter = () => {
 
 export default function MapPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [center, setCenter] = useState(getInitialCenter);
   const [filters, setFilters] = useState<{
@@ -71,8 +73,25 @@ export default function MapPage() {
     departmentId: undefined,
   });
 
+  useEffect(() => {
+    const latParam = searchParams.get("lat");
+    const lngParam = searchParams.get("lng");
+    if (latParam && lngParam) {
+      const newCenter = {
+        lat: Number(latParam),
+        lng: Number(lngParam),
+      };
+      setCenter(newCenter);
+      localStorage.setItem("lastMapCenter", JSON.stringify(newCenter));
+    }
+  }, [searchParams]);
+
   // Request location permission
   useEffect(() => {
+    const latParam = searchParams.get("lat");
+    const lngParam = searchParams.get("lng");
+    if (latParam && lngParam) return;
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -102,6 +121,7 @@ export default function MapPage() {
         categoryId: filters.categoryId || undefined,
         province_id: filters.provinceId || undefined,
         department_id: filters.departmentId || undefined,
+        has_promotions: true,
       });
       const raw = (result?.data as any) ?? result;
       if (raw && Array.isArray(raw.items)) return raw.items;
@@ -155,6 +175,8 @@ export default function MapPage() {
           ? `${ROUTES.profile}${seoPath.startsWith("/") ? seoPath : `/${seoPath}`}`
           : `${ROUTES.profile}/${p.id}`;
 
+        const hasPromotions = Boolean(p.has_promotions || p.hasPromotions);
+
         return {
           id: p.user_id || p.id,
           name,
@@ -165,11 +187,12 @@ export default function MapPage() {
           avatar,
           seoPath,
           profileUrl,
+          hasPromotions,
           coordinates: {
             lat: Number(address?.latitude || 0),
             lng: Number(address?.longitude || 0),
           },
-          icon: createCustomIcon(avatar),
+          icon: createCustomIcon(avatar, hasPromotions),
         };
       })
       .filter((p: any) => p.coordinates.lat !== 0 && p.coordinates.lng !== 0);
@@ -251,6 +274,18 @@ export default function MapPage() {
                           )}
                         </span>
                       </div>
+                      {prof.hasPromotions && (
+                        <button
+                          className="map-info-window__btn map-info-window__btn--promo"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            incrementProfessionalViewsAction({ id: prof.id });
+                            router.push(`${prof.profileUrl}?view=promotions`);
+                          }}
+                        >
+                          Promociones
+                        </button>
+                      )}
                       <button
                         className="map-info-window__btn"
                         onClick={(e) => {

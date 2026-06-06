@@ -11,6 +11,8 @@ import {
   Video,
   X,
   Plus,
+  Share2,
+  Clock,
 } from "lucide-react";
 import { multimediaService } from "../../../services/multimediaService";
 import {
@@ -20,6 +22,9 @@ import {
   getReelsByProfessionalAction,
 } from "../../../app/actions/reels";
 import { getMultimediaUploadUrlAction } from "../../../app/actions/multimedia";
+import { getProfileAction } from "../../../app/actions/profile";
+import { getProfessionalDetailAction } from "../../../app/actions/professionals";
+import ReelsTheaterModal from "../../../components/ReelsTheater/ReelsTheaterModal";
 import { useAuth } from "../../../context/AuthContext";
 import { getAccessToken } from "../../../utils/auth";
 import "./ReelsSection.css";
@@ -43,9 +48,11 @@ const formatCompact = (value: number) => {
 };
 
 export default function ReelsSection() {
-  const { sessionStatus } = useAuth();
+  const { sessionStatus, user } = useAuth();
   const professionalId = Number(
-    sessionStatus?.subscription?.professional_id ?? 0,
+    sessionStatus?.subscription?.professional_id ??
+      sessionStatus?.professional_id ??
+      0,
   );
   const queryClient = useQueryClient();
 
@@ -61,11 +68,9 @@ export default function ReelsSection() {
           : Array.isArray(raw)
             ? raw
             : [];
-      const filtered = data.filter(
-        (r: any) => r.professional_id === professionalId && r.activate === true,
-      );
 
-      return filtered.map((r) => ({
+      return data.map((r) => ({
+        ...r,
         id: r.id.toString(),
         title: r.title || "",
         description: r.description || "",
@@ -73,6 +78,9 @@ export default function ReelsSection() {
         storageKey: "",
         views: r.views_count || 0,
         likes: r.likes_count || 0,
+        video_url: r.video_url,
+        likes_count: r.likes_count || 0,
+        views_count: r.views_count || 0,
       }));
     },
     enabled: !!professionalId,
@@ -85,7 +93,74 @@ export default function ReelsSection() {
   const [savedMessage, setSavedMessage] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedReelIndex, setSelectedReelIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const userId = user?.id;
+
+  const { data: professional } = useQuery({
+    queryKey: ["professional-detail", professionalId],
+    queryFn: async () => {
+      if (!professionalId) return null;
+      const result = await getProfessionalDetailAction({ id: professionalId });
+      return result?.data ?? null;
+    },
+    enabled: !!professionalId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const token = await getAccessToken();
+      const result = await getProfileAction({ id: userId, token });
+      return result?.data ?? null;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const processedReels = useMemo(() => {
+    return reels.map((reel) => ({
+      ...reel,
+      video_url: reel.url || (reel as any).video_url,
+      likes_count: reel.likes !== undefined ? reel.likes : (reel as any).likes_count || 0,
+      views_count: reel.views !== undefined ? reel.views : (reel as any).views_count || 0,
+      professional: {
+        ...(professional || {}),
+        profile: profile || professional?.profile || professional?.Profile,
+      },
+      Professional: {
+        ...(professional || {}),
+        Profile: profile || professional?.profile || professional?.Profile,
+      },
+    }));
+  }, [reels, professional, profile]);
+
+  const handleShare = (reel: any) => {
+    const seoPath = reel.seo_path;
+    const cleanSeo = seoPath
+      ? seoPath.startsWith("/")
+        ? seoPath
+        : `/${seoPath}`
+      : `/${reel.id}`;
+    const shareUrl = `${window.location.origin}${cleanSeo.startsWith("/reels") ? cleanSeo : `/reels${cleanSeo}`}`;
+
+    if (navigator.share) {
+      navigator
+        .share({
+          title: reel.title || "Reel de Sercio",
+          text: reel.description || "Mirá este reel en Sercio",
+          url: shareUrl,
+        })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert("¡Enlace de compartir copiado al portapapeles!");
+      });
+    }
+  };
 
   const totalViews = useMemo(
     () => reels.reduce((sum, reel) => sum + reel.views, 0),
@@ -235,6 +310,10 @@ export default function ReelsSection() {
             Subí nuevos videos, revisá el rendimiento de cada reel y mantené tu
             perfil activo con contenido visual.
           </p>
+          <p className="reels-section__expiry-note">
+            <Clock size={14} />
+            <span>Los reels caducan en 24hs</span>
+          </p>
         </div>
 
         <div className="reels-section__hero-actions">
@@ -289,14 +368,17 @@ export default function ReelsSection() {
           </div>
 
           <div className="reels-section__grid">
-            {reels.map((reel) => (
+            {processedReels.map((reel, index) => (
               <article key={reel.id} className="reels-section__reel-card">
-                <div className="reels-section__video-wrap">
+                <div
+                  className="reels-section__video-wrap"
+                  onClick={() => setSelectedReelIndex(index)}
+                >
                   <video
                     src={reel.url}
                     className="reels-section__video"
-                    controls
                     muted
+                    playsInline
                     preload="metadata"
                   />
                   <div className="reels-section__video-overlay">
@@ -319,14 +401,24 @@ export default function ReelsSection() {
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    className="reels-section__remove-btn"
-                    onClick={() => handleRemove(reel.id)}
-                  >
-                    <Trash2 size={16} />
-                    <span>Eliminar</span>
-                  </button>
+                  <div className="reels-section__reel-actions">
+                    <button
+                      type="button"
+                      className="reels-section__remove-btn"
+                      onClick={() => handleRemove(reel.id)}
+                    >
+                      <Trash2 size={16} />
+                      <span>Eliminar</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="reels-section__share-btn"
+                      onClick={() => handleShare(reel)}
+                    >
+                      <Share2 size={16} />
+                      <span>Compartir</span>
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
@@ -406,6 +498,16 @@ export default function ReelsSection() {
             </div>
           </aside>
         </div>
+      )}
+      {selectedReelIndex !== null && (
+        <ReelsTheaterModal
+          reels={processedReels}
+          initialIndex={selectedReelIndex}
+          onClose={() => setSelectedReelIndex(null)}
+          isPremiumMap={{
+            [professionalId]: sessionStatus?.subscription?.plan === "premium" || false,
+          }}
+        />
       )}
     </section>
   );

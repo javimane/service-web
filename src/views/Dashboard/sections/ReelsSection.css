@@ -40,6 +40,16 @@
   line-height: 1.6;
 }
 
+.reels-section__expiry-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--accent-color);
+  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .reels-section__hero-actions {
   display: flex;
   align-items: center;
@@ -188,6 +198,7 @@
   position: relative;
   aspect-ratio: 4 / 5;
   background: var(--black);
+  cursor: pointer;
 }
 
 .reels-section__video {
@@ -246,6 +257,12 @@
   gap: 6px;
 }
 
+.reels-section__reel-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .reels-section__remove-btn {
   display: inline-flex;
   align-items: center;
@@ -255,7 +272,6 @@
   border-radius: 14px;
   font-weight: var(--weight-bold);
   cursor: pointer;
-  align-self: flex-start;
   padding: 8px 12px;
   background: rgba(239, 68, 68, 0.08);
   color: var(--error-hover);
@@ -263,6 +279,25 @@
 }
 
 .reels-section__remove-btn:hover {
+  opacity: 0.8;
+}
+
+.reels-section__share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 14px;
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  padding: 8px 12px;
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+  transition: opacity 0.2s;
+}
+
+.reels-section__share-btn:hover {
   opacity: 0.8;
 }
 

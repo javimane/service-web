@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import MapPage from "@/views/Map/MapPage";
 
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <MapPage />;
+  return (
+    <Suspense fallback={<div>Cargando mapa...</div>}>
+      <MapPage />
+    </Suspense>
+  );
 }

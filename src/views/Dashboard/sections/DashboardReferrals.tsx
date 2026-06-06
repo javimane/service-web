@@ -167,9 +167,7 @@ export default function DashboardReferrals() {
             <Landmark size={20} />
             Datos de Cobro
           </h2>
-          <p
-            className="dash-referrals__field-desc"
-          >
+          <p className="dash-referrals__field-desc">
             Ingresá tu CBU o Alias para recibir los beneficios de tus referidos.
           </p>
 
@@ -242,14 +240,11 @@ export default function DashboardReferrals() {
             <div className="dash-referrals__field">
               <label>Email del referido</label>
               <div className="dash-referrals__field-input-wrap">
-                <Mail
-                  size={16}
-                  className="dash-referrals__field-input-icon"
-                />
+                <Mail size={16} className="dash-referrals__field-input-icon" />
                 <input
                   type="email"
                   className="dash-referrals__field-input--with-icon"
-                  placeholder="ejemplo@correo.com"
+                  placeholder="     ejemplo@correo.com"
                   value={referralEmail}
                   onChange={(e) => setReferralEmail(e.target.value)}
                 />
@@ -280,9 +275,7 @@ export default function DashboardReferrals() {
           </form>
 
           <div className="dash-referrals__list-container">
-            <h3 className="dash-referrals__history-title">
-              Historial
-            </h3>
+            <h3 className="dash-referrals__history-title">Historial</h3>
             {loadingReferrals ? (
               <div className="dash-referrals__loading">
                 <Loader2 className="animate-spin" />

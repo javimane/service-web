@@ -9,6 +9,7 @@ import {
   Loader2,
   Percent,
   Tag,
+  Share2,
 } from "lucide-react";
 import { type BankPromotion } from "../../services/bankPromotionService";
 import Navbar from "../../components/Navbar/Navbar";
@@ -156,6 +157,31 @@ export default function BankPromotionDetailPage() {
     (promo.Bank ? [promo.Bank.name] : []);
   const paymentMethods = getPaymentMethods((promo as any).payment_method);
 
+  const handleShare = () => {
+    if (!promo) return;
+    const slug = promo.seo_path || "";
+    const cleanSeo = slug
+      ? slug.startsWith("/")
+        ? slug.replace("/promotions/", "/promociones-bancarias/")
+        : `/promociones-bancarias/${slug}`
+      : `/promociones-bancarias/${promo.id}`;
+    const shareUrl = `${window.location.origin}${cleanSeo}`;
+
+    if (navigator.share) {
+      navigator
+        .share({
+          title: companyName || "Promoción Bancaria en Sercio",
+          text: promo.description || "Mirá esta promoción bancaria en Sercio",
+          url: shareUrl,
+        })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert("¡Enlace de compartir copiado al portapapeles!");
+      });
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -299,22 +325,32 @@ export default function BankPromotionDetailPage() {
                 </div>
               )}
 
-              {/* CTA - View Profile */}
-              {professional && (
+              {/* Actions */}
+              <div className="bank-promo-actions">
+                {professional && (
+                  <button
+                    className="bank-promo-profile-btn"
+                    onClick={() =>
+                      router.push(
+                        getProfilePath(
+                          professional.id,
+                          (professional as any).seo_path,
+                        ),
+                      )
+                    }
+                  >
+                    Ver perfil del comercio
+                  </button>
+                )}
                 <button
-                  className="bank-promo-profile-btn"
-                  onClick={() =>
-                    router.push(
-                      getProfilePath(
-                        professional.id,
-                        (professional as any).seo_path,
-                      ),
-                    )
-                  }
+                  type="button"
+                  className="bank-promo-share-btn"
+                  onClick={handleShare}
                 >
-                  Ver perfil del comercio
+                  <Share2 size={18} />
+                  Compartir
                 </button>
-              )}
+              </div>
             </div>
           </div>
         </div>

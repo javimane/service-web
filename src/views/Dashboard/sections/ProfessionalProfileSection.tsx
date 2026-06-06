@@ -292,9 +292,23 @@ export default function ProfessionalProfileSection() {
 
   // Estado para video temporal
   const [newVideoFile, setNewVideoFile] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string>("");
   const [newVideoTitle, setNewVideoTitle] = useState("");
   const [newVideoDescription, setNewVideoDescription] = useState("");
   const newVideoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!newVideoFile) {
+      setVideoPreviewUrl("");
+      return;
+    }
+    const objectUrl = URL.createObjectURL(newVideoFile);
+    setVideoPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [newVideoFile]);
 
   const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -564,43 +578,10 @@ export default function ProfessionalProfileSection() {
       }
       const newVideo = createVideoResult?.data;
 
-      // Poll until activated
-      let activatedVideo = newVideo;
-      const MAX_ATTEMPTS = 10;
-      const POLL_INTERVAL_MS = 6000;
-
-      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-        if (activatedVideo.activate === true) break;
-        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-        const detailResult = await getVideoDetailAction({
-          id: activatedVideo.id.toString(),
-        });
-        if (detailResult?.serverError)
-          throw new Error(detailResult.serverError);
-        activatedVideo = detailResult?.data;
-      }
-
-      queryClient.setQueryData(
-        ["videos", professionalId],
-        (current: VideoItem[] = []) => [
-          {
-            id: activatedVideo.id.toString(),
-            title: activatedVideo.title || "",
-            url: activatedVideo.video_url,
-            description: activatedVideo.description || "",
-          },
-          ...current,
-        ],
+      // Close modal and show success toast immediately
+      setSavedMessage(
+        "Se creó y se guardó el video, se está procesando vuelva en unos minutos",
       );
-
-      if (activatedVideo.activate === true) {
-        setSavedMessage("¡Video publicado con éxito!");
-      } else {
-        setSavedMessage(
-          "El video se subió correctamente y se activará en breve.",
-        );
-      }
-
       setIsVideoModalOpen(false);
       setNewVideoFile(null);
       setNewVideoTitle("");
@@ -610,6 +591,44 @@ export default function ProfessionalProfileSection() {
       if (newVideoInputRef.current) {
         newVideoInputRef.current.value = "";
       }
+
+      // Poll in background until activated to update query state
+      void (async () => {
+        try {
+          let activatedVideo = newVideo;
+          const MAX_ATTEMPTS = 10;
+          const POLL_INTERVAL_MS = 6000;
+
+          for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            if (activatedVideo.activate === true) break;
+            await new Promise((resolve) =>
+              setTimeout(resolve, POLL_INTERVAL_MS),
+            );
+            const detailResult = await getVideoDetailAction({
+              id: activatedVideo.id.toString(),
+            });
+            if (detailResult?.serverError) return;
+            activatedVideo = detailResult?.data;
+          }
+
+          if (activatedVideo.activate === true) {
+            queryClient.setQueryData(
+              ["videos", professionalId],
+              (current: VideoItem[] = []) => [
+                {
+                  id: activatedVideo.id.toString(),
+                  title: activatedVideo.title || "",
+                  url: activatedVideo.video_url,
+                  description: activatedVideo.description || "",
+                },
+                ...current,
+              ],
+            );
+          }
+        } catch (err) {
+          console.error("Error background polling video:", err);
+        }
+      })();
     } catch (error) {
       console.error("Error publishing video:", error);
       const errorMessage =
@@ -1294,11 +1313,13 @@ export default function ProfessionalProfileSection() {
                 </div>
               )}
               <div className="professional-profile__video-preview-wrapper">
-                <video
-                  src={URL.createObjectURL(newVideoFile)}
-                  controls
-                  className="professional-profile__video-preview-element"
-                />
+                {videoPreviewUrl ? (
+                  <video
+                    src={videoPreviewUrl}
+                    controls
+                    className="professional-profile__video-preview-element"
+                  />
+                ) : null}
                 <button
                   type="button"
                   className="professional-profile__video-remove"

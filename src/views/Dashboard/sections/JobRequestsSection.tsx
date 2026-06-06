@@ -81,22 +81,28 @@ export default function JobRequestsSection() {
           token,
         });
         const data = res?.data || {};
-        if (data && typeof data === 'object' && 'items' in data) {
-           return {
-             items: (Array.isArray(data.items) ? data.items : []) as JobRequestRow[],
-             totalPages: data.totalPages || 1,
-             page: data.page || 1,
-           };
+        if (data && typeof data === "object" && "items" in data) {
+          return {
+            items: (Array.isArray(data.items)
+              ? data.items
+              : []) as JobRequestRow[],
+            totalPages: data.totalPages || 1,
+            page: data.page || 1,
+          };
         }
         return {
-          items: (Array.isArray(data) ? data : data?.data || []) as JobRequestRow[],
+          items: (Array.isArray(data)
+            ? data
+            : data?.data || []) as JobRequestRow[],
           totalPages: 1,
           page: 1,
         };
       } else {
         const res = await listMyJobRequestsAction({ token });
         const data = res?.data as any;
-        const items = (Array.isArray(data) ? data : data?.data || []) as JobRequestRow[];
+        const items = (
+          Array.isArray(data) ? data : data?.data || []
+        ) as JobRequestRow[];
         return { items, totalPages: 1, page: 1 };
       }
     },
@@ -194,7 +200,6 @@ export default function JobRequestsSection() {
           className="btn-primary"
           onClick={() => setIsCreateModalOpen(true)}
         >
-          <Plus size={18} />
           Crear Solicitud
         </button>
       </div>
@@ -331,7 +336,6 @@ export default function JobRequestsSection() {
                       className="job-request-card__btn-delete"
                       onClick={() => handleDelete(req.id)}
                     >
-                      <Trash2 size={16} />
                       Eliminar
                     </button>
                   ) : hasProfessionalSubscription ? (
@@ -355,7 +359,15 @@ export default function JobRequestsSection() {
       )}
 
       {requestsData?.totalPages && requestsData.totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem', alignItems: 'center' }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "1rem",
+            marginTop: "2rem",
+            alignItems: "center",
+          }}
+        >
           <button
             type="button"
             className="btn-secondary"
@@ -364,13 +376,20 @@ export default function JobRequestsSection() {
           >
             Anterior
           </button>
-          <span style={{ fontWeight: 'var(--weight-semibold)', color: 'var(--text-secondary)' }}>
+          <span
+            style={{
+              fontWeight: "var(--weight-semibold)",
+              color: "var(--text-secondary)",
+            }}
+          >
             Página {requestsData.page} de {requestsData.totalPages}
           </span>
           <button
             type="button"
             className="btn-secondary"
-            onClick={() => setPage((p) => Math.min(requestsData.totalPages, p + 1))}
+            onClick={() =>
+              setPage((p) => Math.min(requestsData.totalPages, p + 1))
+            }
             disabled={requestsData.page >= requestsData.totalPages}
           >
             Siguiente

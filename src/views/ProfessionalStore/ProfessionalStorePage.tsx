@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   Search,
@@ -58,17 +58,47 @@ export default function ProfessionalStorePage() {
   const router = useRouter();
 
   const [filters, setFilters] = useState(defaultFilters);
-  const [debouncedText, setDebouncedText] = useState({ search: "", ean: "" });
+  const [searchInput, setSearchInput] = useState(filters.search);
+  const [debouncedSearchInput, setDebouncedSearchInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [debouncedEan, setDebouncedEan] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
 
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search input for suggestions (300ms)
   useEffect(() => {
     const t = window.setTimeout(() => {
-      setDebouncedText({ search: filters.search, ean: filters.ean });
+      setDebouncedSearchInput(searchInput);
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [searchInput]);
+
+  // Debounce EAN code (400ms)
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebouncedEan(filters.ean);
     }, 400);
     return () => window.clearTimeout(t);
-  }, [filters.search, filters.ean]);
+  }, [filters.ean]);
+
+  // Click outside to close suggestions dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const { data: professional, isLoading: loadingPro } = useQuery({
     queryKey: ["professional-detail", id],
@@ -91,19 +121,52 @@ export default function ProfessionalStorePage() {
     gcTime: 1000 * 60 * 60 * 24,
   });
 
+  // Fetch product name suggestions when debouncedSearchInput changes
+  const { data: suggestions = [], isLoading: loadingSuggestions } = useQuery({
+    queryKey: ["product-suggestions", id, debouncedSearchInput],
+    queryFn: async () => {
+      if (!debouncedSearchInput || debouncedSearchInput.trim().length < 2)
+        return [];
+      const result = await getProductsAction({
+        page: 1,
+        limit: 6,
+        professionalId: id ? Number(id) : undefined,
+        name: debouncedSearchInput.trim(),
+      });
+      const p = result?.data;
+      if (!p) return [];
+      if (Array.isArray(p)) return p;
+      if (Array.isArray(p.data)) return p.data;
+      return [];
+    },
+    enabled: !!id && debouncedSearchInput.trim().length >= 2,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    gcTime: 1000 * 60 * 5,
+  });
+
   const { data: productsData, isLoading: loadingProducts } = useQuery({
-    queryKey: ["store-products", id, debouncedText, filters, page],
+    queryKey: [
+      "store-products",
+      id,
+      filters.search,
+      debouncedEan,
+      filters.categoryId,
+      filters.priceMin,
+      filters.priceMax,
+      filters.sortBy,
+      page,
+    ],
     queryFn: async () => {
       const result = await getProductsAction({
         page,
         limit: 20,
         professionalId: id ? Number(id) : undefined,
-        name: debouncedText.search || undefined,
+        name: filters.search || undefined,
         categoryId:
           filters.categoryId !== "all" ? Number(filters.categoryId) : undefined,
         priceMin: filters.priceMin ? Number(filters.priceMin) : undefined,
         priceMax: filters.priceMax ? Number(filters.priceMax) : undefined,
-        ean: debouncedText.ean || undefined,
+        ean: debouncedEan || undefined,
         sortBy: filters.sortBy,
       });
       return result?.data;
@@ -144,11 +207,19 @@ export default function ProfessionalStorePage() {
       );
       const displayPrice = myEntry?.price ?? item.price ?? 0;
       const offerPrice = myEntry?.offer_price;
-      const percentDiscount = item.percent_discount || myEntry?.percent_discount || myEntry?.discount_percentage || 0;
-      const currencyCode = item.currency_code || myEntry?.currency_code || "ARG";
-      const displayDiscount = percentDiscount > 0
-        ? percentDiscount
-        : (offerPrice && displayPrice ? Math.round((1 - offerPrice / displayPrice) * 100) : 0);
+      const percentDiscount =
+        item.percent_discount ||
+        myEntry?.percent_discount ||
+        myEntry?.discount_percentage ||
+        0;
+      const currencyCode =
+        item.currency_code || myEntry?.currency_code || "ARG";
+      const displayDiscount =
+        percentDiscount > 0
+          ? percentDiscount
+          : offerPrice && displayPrice
+            ? Math.round((1 - offerPrice / displayPrice) * 100)
+            : 0;
       const sortedSellers = myEntry
         ? [myEntry, ...sellers.filter((s: any) => s !== myEntry)]
         : sellers;
@@ -188,8 +259,34 @@ export default function ProfessionalStorePage() {
     setPage(1);
   };
 
+  const handleSearchSubmit = () => {
+    handleFilterChange("search", searchInput);
+    setShowSuggestions(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearchSubmit();
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    handleFilterChange("search", "");
+    setShowSuggestions(false);
+  };
+
+  const handleSelectSuggestion = (name: string) => {
+    setSearchInput(name);
+    handleFilterChange("search", name);
+    setShowSuggestions(false);
+  };
+
   const clearFilters = () => {
     setFilters(defaultFilters);
+    setSearchInput("");
     setPage(1);
   };
 
@@ -275,14 +372,63 @@ export default function ProfessionalStorePage() {
       <main className="store-main">
         {/* Toolbar */}
         <div className="store-toolbar">
-          <div className="store-search">
-            <Search size={17} />
+          <div className="store-search" ref={searchRef}>
+            <button
+              type="button"
+              className="store-search__btn"
+              onClick={handleSearchSubmit}
+              aria-label="Buscar"
+            >
+              <Search size={17} />
+            </button>
             <input
               type="text"
               placeholder="Buscar productos..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
+              value={searchInput}
+              onChange={(e) => {
+                setSearchInput(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setShowSuggestions(true)}
             />
+            {searchInput && (
+              <button
+                type="button"
+                className="store-search__clear"
+                onClick={handleClearSearch}
+                aria-label="Limpiar búsqueda"
+              >
+                <X size={16} />
+              </button>
+            )}
+
+            {showSuggestions && searchInput.trim().length >= 2 && (
+              <div className="store-search__suggestions">
+                {loadingSuggestions ? (
+                  <div className="store-search__suggestions-loading">
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Cargando sugerencias...</span>
+                  </div>
+                ) : suggestions.length === 0 ? (
+                  <div className="store-search__suggestions-empty">
+                    <span>No se encontraron sugerencias</span>
+                  </div>
+                ) : (
+                  suggestions.map((sug: any) => (
+                    <button
+                      key={sug.id}
+                      type="button"
+                      className="store-search__suggestion-item"
+                      onClick={() => handleSelectSuggestion(sug.name)}
+                    >
+                      <Search size={14} />
+                      <span>{sug.name}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
           <div className="store-toolbar__right">
             <div className="store-sort">
@@ -451,7 +597,7 @@ export default function ProfessionalStorePage() {
                       )}
                       {product.discount > 0 && (
                         <span className="store-badge store-badge--discount">
-                          -{product.discount}%
+                          Oferta
                         </span>
                       )}
                     </div>
@@ -463,11 +609,13 @@ export default function ProfessionalStorePage() {
                         {product.offerPrice ? (
                           <>
                             <span className="store-price--original">
-                              {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.price)}
+                              {product.currencyCode === "USD" ? "USD $" : "$"}
+                              {formatPrice(product.price)}
                             </span>
                             <div className="store-price--row">
                               <span className="store-price--main">
-                                {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.offerPrice)}
+                                {product.currencyCode === "USD" ? "USD $" : "$"}
+                                {formatPrice(product.offerPrice)}
                               </span>
                               {product.discount > 0 && (
                                 <span className="store-price--off">
@@ -479,7 +627,8 @@ export default function ProfessionalStorePage() {
                         ) : (
                           <div className="store-price--row">
                             <span className="store-price--main">
-                              {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.price)}
+                              {product.currencyCode === "USD" ? "USD $" : "$"}
+                              {formatPrice(product.price)}
                             </span>
                           </div>
                         )}

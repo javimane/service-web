@@ -198,8 +198,14 @@
   line-height: 1.6;
 }
 
-.bank-promo-profile-btn {
+.bank-promo-actions {
+  display: flex;
+  gap: var(--space-3);
   margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.bank-promo-profile-btn {
   padding: 0.875rem 2rem;
   background: var(--brand-blue);
   color: white;
@@ -209,9 +215,32 @@
   font-weight: var(--weight-semibold);
   cursor: pointer;
   transition: background 0.2s;
+  flex: 1;
+  min-width: 200px;
 }
 .bank-promo-profile-btn:hover {
   background: #1a4fa0;
+}
+
+.bank-promo-share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0.875rem 2rem;
+  background: var(--bg-card);
+  color: var(--brand-blue);
+  border: 1.5px solid var(--brand-blue-border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 200px;
+}
+.bank-promo-share-btn:hover {
+  background: var(--brand-blue-soft);
 }
 
 .bank-promo-detail-loading,

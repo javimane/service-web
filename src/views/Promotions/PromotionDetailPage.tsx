@@ -10,6 +10,7 @@ import {
   Loader2,
   MessageCircle,
   Ticket,
+  Share2,
 } from "lucide-react";
 import { getProfessionalPromotionDetailAction } from "../../app/actions/professionalPromotions";
 import Navbar from "../../components/Navbar/Navbar";
@@ -106,6 +107,31 @@ export default function PromotionDetailPage({
     "Profesional";
   const avatarUrl = professional?.Profile?.avatar_url;
 
+  const handleShare = () => {
+    if (!promotion) return;
+    const slug = promotion.seo_path || "";
+    const cleanSeo = slug
+      ? slug.startsWith("/")
+        ? slug.replace("/promotions/", "/promociones/")
+        : `/promociones/${slug}`
+      : `/promociones/${promotion.id}`;
+    const shareUrl = `${window.location.origin}${cleanSeo}`;
+
+    if (navigator.share) {
+      navigator
+        .share({
+          title: promotion.title || "Promoción en Sercio",
+          text: promotion.description || "Mirá esta promoción en Sercio",
+          url: shareUrl,
+        })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert("¡Enlace de compartir copiado al portapapeles!");
+      });
+    }
+  };
+
   const offerLabel =
     promotion.discount_type === "2x1"
       ? "2x1"
@@ -177,12 +203,7 @@ export default function PromotionDetailPage({
                 <p className="promotion-detail__company-name">{companyName}</p>
                 <button
                   onClick={() =>
-                    router.push(
-                      getProfilePath(
-                        promotion.professional_id,
-                        promotion.seo_path,
-                      ),
-                    )
+                    router.push(getProfilePath(promotion.professional_id))
                   }
                   className="promotion-detail__profile-link"
                 >
@@ -248,16 +269,18 @@ export default function PromotionDetailPage({
               <button
                 className="promotion-detail__btn promotion-detail__btn--secondary"
                 onClick={() =>
-                  router.push(
-                    getProfilePath(
-                      promotion.professional_id,
-                      promotion.seo_path,
-                    ),
-                  )
+                  router.push(getProfilePath(promotion.professional_id))
                 }
               >
                 <User size={18} />
                 Ver Perfil
+              </button>
+              <button
+                className="promotion-detail__btn promotion-detail__btn--share"
+                onClick={handleShare}
+              >
+                <Share2 size={18} />
+                Compartir
               </button>
             </div>
           </div>

@@ -131,24 +131,6 @@ export default function MapSidebar({
         onFilterChange={handleFilterChange}
       />
 
-      <div className="map-sidebar__section">
-        <label className="map-sidebar__label">DEPARTAMENTO</label>
-        <div className="filter-panel__select-wrapper">
-          <select
-            value={selectedDepartment}
-            onChange={(e) => setSelectedDepartment(e.target.value)}
-            disabled={!selectedProvince}
-          >
-            <option value="">Todos los departamentos</option>
-            {departments.map((dept: any) => (
-              <option key={dept.id} value={dept.id}>
-                {dept.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       <div className="map-sidebar__footer">
         <div className="map-sidebar__stats">
           <span className="map-sidebar__stats-label">Encontrados:</span>

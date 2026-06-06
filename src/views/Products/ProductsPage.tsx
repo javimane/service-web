@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import {
@@ -61,17 +61,32 @@ export default function ProductsPage() {
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
 
+  const [searchInput, setSearchInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Debounce only for brand and ean (not search)
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      setDebouncedTextFilters({
-        search: filters.search,
+      setDebouncedTextFilters((prev) => ({
+        ...prev,
         brand: filters.brand,
         ean: filters.ean,
-      });
+      }));
     }, 400);
-
     return () => window.clearTimeout(timeoutId);
-  }, [filters.search, filters.brand, filters.ean]);
+  }, [filters.brand, filters.ean]);
 
   const effectiveFilters = useMemo(
     () => ({
@@ -209,9 +224,14 @@ export default function ProductsPage() {
       const firstSeller = sellers[0] || {};
 
       const displayPrice = product.price || firstSeller.price || 0;
-      const displayDiscount = product.percent_discount || firstSeller.percent_discount || firstSeller.discount_percentage || 0;
+      const displayDiscount =
+        product.percent_discount ||
+        firstSeller.percent_discount ||
+        firstSeller.discount_percentage ||
+        0;
       const displayOriginalPrice = firstSeller.original_price;
-      const currencyCode = product.currency_code || firstSeller.currency_code || "ARG";
+      const currencyCode =
+        product.currency_code || firstSeller.currency_code || "ARG";
 
       // Extract company name handling array structure
       const companyData = firstSeller.Professional?.Company;
@@ -269,9 +289,32 @@ export default function ProductsPage() {
   );
 
   const isDebouncingTextFilters =
-    filters.search !== debouncedTextFilters.search ||
     filters.brand !== debouncedTextFilters.brand ||
     filters.ean !== debouncedTextFilters.ean;
+
+  // Suggestions: match product names from already-loaded data
+  const suggestions = useMemo(() => {
+    if (!searchInput.trim() || searchInput.length < 2) return [];
+    const term = searchInput.toLowerCase();
+    const names: string[] = [];
+    const seen = new Set<string>();
+    (productsList || []).forEach((p: any) => {
+      const name: string = p.title || "";
+      if (name.toLowerCase().includes(term) && !seen.has(name)) {
+        seen.add(name);
+        names.push(name);
+      }
+    });
+    return names.slice(0, 6);
+  }, [searchInput, productsList]);
+
+  const commitSearch = (value: string) => {
+    const trimmed = value.trim();
+    setFilters((prev) => ({ ...prev, search: trimmed }));
+    setDebouncedTextFilters((prev) => ({ ...prev, search: trimmed }));
+    setPage(1);
+    setShowSuggestions(false);
+  };
 
   const clearFilters = () => {
     setFilters({ ...defaultFilters });
@@ -338,15 +381,37 @@ export default function ProductsPage() {
           </div>
 
           {/* Search bar */}
-          <div className="products-page__search-wrapper">
+          <div className="products-page__search-wrapper" ref={searchRef}>
             <div className="products-page__search">
               <Search size={18} />
               <input
                 type="text"
                 placeholder="¿Qué estás buscando hoy?"
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitSearch(searchInput);
+                  if (e.key === "Escape") setShowSuggestions(false);
+                }}
+                onFocus={() =>
+                  searchInput.length >= 2 && setShowSuggestions(true)
+                }
               />
+              {filters.search && (
+                <button
+                  className="products-page__search-clear"
+                  onClick={() => {
+                    setSearchInput("");
+                    commitSearch("");
+                  }}
+                  aria-label="Limpiar búsqueda"
+                >
+                  ×
+                </button>
+              )}
               {isDebouncingTextFilters && (
                 <span
                   className="products-page__search-status"
@@ -357,6 +422,24 @@ export default function ProductsPage() {
                 </span>
               )}
             </div>
+            {/* Suggestions dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="products-page__suggestions">
+                {suggestions.map((s) => (
+                  <li
+                    key={s}
+                    className="products-page__suggestion-item"
+                    onMouseDown={() => {
+                      setSearchInput(s);
+                      commitSearch(s);
+                    }}
+                  >
+                    <Search size={13} />
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            )}
             <button
               className={`products-page__filter-toggle ${showFilters ? "active" : ""}`}
               onClick={() => setShowFilters(!showFilters)}
@@ -474,12 +557,14 @@ export default function ProductsPage() {
                       <div className="product-card__pricing">
                         {product.originalPrice && (
                           <span className="product-card__original">
-                            {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.originalPrice)}
+                            {product.currencyCode === "USD" ? "USD $" : "$"}
+                            {formatPrice(product.originalPrice)}
                           </span>
                         )}
                         <div className="product-card__price-row">
                           <span className="product-card__price">
-                            {product.currencyCode === "USD" ? "USD $" : "$"}{formatPrice(product.price)}
+                            {product.currencyCode === "USD" ? "USD $" : "$"}
+                            {formatPrice(product.price)}
                           </span>
                           {product.discount > 0 && (
                             <span className="product-card__discount">

@@ -25,10 +25,8 @@ export const getReelsAction = publicAction
       params.append("departmentId", parsedInput.departmentId.toString());
     if (parsedInput.professionalId)
       params.append("professionalId", parsedInput.professionalId.toString());
-    if (parsedInput.page)
-      params.append("page", parsedInput.page.toString());
-    if (parsedInput.limit)
-      params.append("limit", parsedInput.limit.toString());
+    if (parsedInput.page) params.append("page", parsedInput.page.toString());
+    if (parsedInput.limit) params.append("limit", parsedInput.limit.toString());
     const queryString = params.toString() ? `?${params.toString()}` : "";
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-reels${queryString}`;
 
@@ -106,11 +104,12 @@ export const updateReelStatsAction = publicAction
 export const getReelsByProfessionalAction = publicAction
   .schema(z.object({ professionalId: z.number() }))
   .action(async ({ parsedInput, ctx }) => {
-    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-reels/professional/${parsedInput.professionalId}`;
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-reels`;
 
     try {
       const response = await axios.get(url, {
         headers: ctx.headers,
+        params: { professionalId: parsedInput.professionalId },
       });
       return response.data;
     } catch (error: any) {
