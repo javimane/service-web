@@ -358,6 +358,8 @@ export interface ProvinceRow {
   readonly id: number;
   readonly name: string;
   readonly created_at: string | null;
+  readonly latitude?: number | null;
+  readonly longitude?: number | null;
 }
 
 export interface ProvinceDepartmentRow {

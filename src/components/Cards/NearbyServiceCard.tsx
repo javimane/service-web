@@ -54,7 +54,6 @@ export default function NearbyServiceCard({ service, onClick }) {
         <div className="nearby-card__rating">
           <Star size={14} className="nearby-card__star" fill="currentColor" />
           <span className="nearby-card__score">{rating}</span>
-          <span className="nearby-card__reviews">({reviews})</span>
         </div>
       </div>
 

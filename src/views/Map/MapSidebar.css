@@ -1,15 +1,53 @@
 .map-sidebar {
   width: 400px;
-  background: var(--bg-card);
+  background: #9ee0f6;
   border-right: 1px solid var(--border-color);
-  padding: var(--space-10);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  position: relative;
+  transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.map-sidebar--collapsed {
+  margin-left: -400px;
+}
+
+.map-sidebar__body {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  z-index: 10;
+  padding: var(--space-10);
   overflow-y: auto;
+  height: 100%;
   box-sizing: border-box;
-  flex-shrink: 0;
+}
+
+.map-sidebar__toggle-btn {
+  position: absolute;
+  top: 24px;
+  right: -36px;
+  width: 36px;
+  height: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: none;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  color: var(--text-primary);
+  box-shadow: 4px 2px 10px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.map-sidebar__toggle-btn:hover {
+  background: var(--surface-soft);
+  color: var(--accent-color);
 }
 
 .map-sidebar__header {
@@ -98,10 +136,38 @@
 @media (max-width: 900px) {
   .map-sidebar {
     width: 100%;
-    height: auto;
+    height: 360px;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
+    transition: margin-top 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .map-sidebar--collapsed {
+    margin-top: -360px;
+    margin-left: 0;
+  }
+
+  .map-sidebar__body {
     padding: var(--space-6);
-    gap: var(--space-5);
+    gap: var(--space-4);
+  }
+
+  .map-sidebar__toggle-btn {
+    top: auto;
+    right: auto;
+    bottom: -36px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 36px;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    border-top: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  }
+
+  .map-sidebar__toggle-btn svg {
+    transform: rotate(90deg);
   }
 }

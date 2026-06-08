@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Search, ArrowRight, MapPin } from "lucide-react";
 import Modal from "../../components/Modal/Modal";
 import { getProvincesAction } from "@/app/actions/provinces";
@@ -19,14 +20,42 @@ import Footer from "../../components/Footer/Footer";
 import { ROUTES } from "../../routes/paths";
 import "./HomePage.css";
 
-const quickTags = [
-  "Plomería",
-  "Electricidad",
-  "Limpieza",
-  "Pintura",
-  "Mudanzas",
-  "Diseño",
-  "Reparaciones",
+const quickLinks = [
+  {
+    label: "Referidos",
+    path: `${ROUTES.dashboard}?view=referrals`,
+    icon: "/referrals.png",
+    badge: "GANÁ $",
+    badgeColor: "green",
+  },
+  {
+    label: "Promociones",
+    path: ROUTES.promotions,
+    icon: "/promotions.png",
+    badge: "PROMOS",
+    badgeColor: "red",
+  },
+  {
+    label: "Productos",
+    path: ROUTES.products,
+    icon: "/products.png",
+    badge: "NUEVO",
+    badgeColor: "blue",
+  },
+  {
+    label: "Servicios",
+    path: ROUTES.services,
+    icon: "/services.png",
+    badge: "PARA TI",
+    badgeColor: "green",
+  },
+  {
+    label: "Mapa",
+    path: ROUTES.map,
+    icon: "/map.png",
+    badge: "CERCA",
+    badgeColor: "purple",
+  },
 ];
 
 export default function HomePage() {
@@ -68,10 +97,6 @@ export default function HomePage() {
         `${ROUTES.services}?q=${encodeURIComponent(heroQuery.trim())}`,
       );
     }
-  };
-
-  const handleTagClick = (tag) => {
-    router.push(`${ROUTES.services}?q=${encodeURIComponent(tag)}`);
   };
 
   return (
@@ -117,16 +142,29 @@ export default function HomePage() {
               </button>
             </form>
 
-            <div className="home-hero__tags">
-              {quickTags.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  className="home-hero__tag"
-                  onClick={() => handleTagClick(tag)}
+            <div className="home-hero__quick-links">
+              {quickLinks.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.path}
+                  className="quick-link-card"
                 >
-                  {tag}
-                </button>
+                  <div className="quick-link-card__icon-wrapper">
+                    <img
+                      src={item.icon}
+                      alt={item.label}
+                      className="quick-link-card__icon"
+                    />
+                    {item.badge && (
+                      <span
+                        className={`quick-link-card__badge quick-link-card__badge--${item.badgeColor}`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span className="quick-link-card__label">{item.label}</span>
+                </Link>
               ))}
             </div>
           </div>

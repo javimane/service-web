@@ -42,3 +42,14 @@
     padding: var(--space-8) 0;
   }
 }
+
+.categories-section__scroll.is-dragging {
+  scroll-behavior: auto;
+  cursor: grabbing;
+}
+
+.categories-section__scroll.is-dragging > * {
+  pointer-events: none;
+  user-select: none;
+}
+

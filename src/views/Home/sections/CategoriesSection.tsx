@@ -40,6 +40,8 @@ export default function CategoriesSection() {
     image: c.image_url || "",
   }));
 
+  const displayedCategories = categories.slice(0, 11);
+
   const goToCategories = (seoPath?: string) => {
     if (seoPath) {
       try {
@@ -99,13 +101,25 @@ export default function CategoriesSection() {
             onPointerCancel={handlePointerUp}
             onPointerLeave={handlePointerUp}
           >
-            {categories.map((category) => (
+            {displayedCategories.map((category) => (
               <CategoryCard
                 key={category.id}
                 category={category}
                 onClick={() => goToCategories(category.seoPath)}
               />
             ))}
+            {categories.length > 11 && (
+              <CategoryCard
+                key="ver-todas"
+                category={{
+                  id: "all",
+                  name: "Ver todas",
+                  label: "Ver todas",
+                  image: "",
+                }}
+                onClick={() => goToCategories()}
+              />
+            )}
           </div>
 
           <button

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -20,12 +20,26 @@ const defaultCenter = {
   lng: -58.3816,
 };
 
-// Componente para actualizar el centro del mapa cuando cambia
-function MapUpdater({ center }: { center: { lat: number; lng: number } }) {
+// Componente para actualizar el centro del mapa y ajustar tamaño en colapso
+function MapUpdater({
+  center,
+  isCollapsed,
+}: {
+  center: { lat: number; lng: number };
+  isCollapsed: boolean;
+}) {
   const map = useMap();
   useEffect(() => {
     map.flyTo([center.lat, center.lng], 13, { animate: true });
   }, [center.lat, center.lng, map]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize({ animate: true });
+    }, 300); // Esperar a que termine la transición (0.3s)
+    return () => clearTimeout(timer);
+  }, [isCollapsed, map]);
+
   return null;
 }
 
@@ -60,6 +74,7 @@ export default function MapPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [center, setCenter] = useState(getInitialCenter);
   const [filters, setFilters] = useState<{
     search: string;
@@ -72,6 +87,21 @@ export default function MapPage() {
     provinceId: undefined,
     departmentId: undefined,
   });
+
+  const handleProvinceCoordinatesChange = useCallback((coords: { lat: number; lng: number } | null) => {
+    if (coords) {
+      setCenter(coords);
+      localStorage.setItem("lastMapCenter", JSON.stringify(coords));
+    }
+  }, []);
+
+  const handleFilterChange = useCallback((newFilters: any) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+  }, []);
+
+  const handleToggleCollapse = useCallback(() => {
+    setIsSidebarCollapsed((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     const latParam = searchParams.get("lat");
@@ -199,6 +229,9 @@ export default function MapPage() {
   }, [professionals]);
 
   useEffect(() => {
+    // If a province filter is active, do not auto-center on the first professional
+    if (filters.provinceId) return;
+
     const firstProfessional = mappedProfessionals[0];
     if (!firstProfessional) return;
 
@@ -208,7 +241,7 @@ export default function MapPage() {
     }
 
     setCenter(nextCenter);
-  }, [mappedProfessionals, center.lat, center.lng]);
+  }, [mappedProfessionals, center.lat, center.lng, filters.provinceId]);
 
   return (
     <div className="map-page">
@@ -216,11 +249,12 @@ export default function MapPage() {
 
       <main className="map-page__container">
         <MapSidebar
-          onFilterChange={(newFilters) =>
-            setFilters((prev) => ({ ...prev, ...newFilters }))
-          }
+          onFilterChange={handleFilterChange}
+          onProvinceCoordinatesChange={handleProvinceCoordinatesChange}
           specialistsCount={mappedProfessionals.length}
           isLoading={isLoading}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={handleToggleCollapse}
         />
 
         <div className="map-page__map-wrapper">
@@ -230,7 +264,7 @@ export default function MapPage() {
             className="map-page__map"
             zoomControl={false}
           >
-            <MapUpdater center={center} />
+            <MapUpdater center={center} isCollapsed={isSidebarCollapsed} />
 
             {/* TileLayer Claro y Premium (CartoDB Positron) */}
             <TileLayer

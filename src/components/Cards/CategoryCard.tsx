@@ -1,6 +1,7 @@
 import React from "react";
 // Importamos de manera dinámica la bolsa completa de iconos de lucide-react
 import * as LucideIcons from "lucide-react";
+import "./CategoryCard.css";
 
 type CategoryCardProps = {
   category: any;
@@ -101,16 +102,29 @@ export default function CategoryCard({ category, onClick }: CategoryCardProps) {
   const first = words[0] ?? "";
   const rest = words.slice(1).join(" ");
 
+  const isSeeAll = id === "all";
+
   return (
-    <article className="cat-minimal-card" onClick={onClick}>
+    <article
+      className={`cat-minimal-card ${isSeeAll ? "cat-minimal-card--see-all" : ""}`}
+      onClick={onClick}
+    >
       <div className="cat-minimal-card__icon-box">
-        <IconById id={id} size={36} />
+        {isSeeAll ? (
+          <LucideIcons.ArrowRight
+            size={32}
+            color="var(--accent-color)"
+            strokeWidth={2.5}
+          />
+        ) : (
+          <IconById id={Number(id)} size={32} />
+        )}
       </div>
       <h3 className="cat-minimal-card__label">
         {rest ? (
           <>
             <span className="cat-label-line">{first}</span>
-            <br />
+
             <span className="cat-label-line">{rest}</span>
           </>
         ) : (

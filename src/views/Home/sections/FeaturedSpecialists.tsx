@@ -51,16 +51,7 @@ export default function FeaturedSpecialists({ userProvince = "Buenos Aires" }: {
   });
 
   const specialistsList = useMemo(() => {
-    return professionals.map((p: any) => ({
-      id: p.id,
-      name: p.Profile?.display_name || p.Company?.name || "Profesional",
-      specialty: p.bio || "Servicios Profesionales",
-      rating: p.rating_avg || 5.0,
-      avatar:
-        p.Profile?.avatar_url ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(p.Profile?.display_name || "P")}&background=random`,
-      seoPath: p.seo_path || null,
-    }));
+    return professionals;
   }, [professionals]);
 
   return (

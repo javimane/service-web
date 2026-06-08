@@ -2,50 +2,75 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: var(--space-3);
   cursor: pointer;
-  transition: transform 0.2s ease;
-  min-width: 100px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-3);
+  min-width: 120px;
+  width: 120px;
+  height: 130px;
   user-select: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
 }
 
 .cat-minimal-card:hover {
   transform: translateY(-6px);
+  border-color: var(--accent-color);
+  box-shadow: var(--shadow-md);
+  background: var(--white);
 }
 
 .cat-minimal-card__icon-box {
-  width: 80px !important;
-  height: 80px !important;
+  width: 48px !important;
+  height: 48px !important;
   flex-shrink: 0;
-  background: var(--surface-soft); /* Color diferenciado para que se note el cuadrado */
-  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cat-minimal-card:hover .cat-minimal-card__icon-box {
-  background: var(--white);
-  border-color: var(--accent-color);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  background: var(--accent-transparent);
+  transform: scale(1.08);
 }
 
 .cat-minimal-card__label {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: var(--weight-bold);
   color: var(--text-primary);
   text-align: center;
   white-space: normal;
-  max-width: 120px;
+  max-width: 100px;
   word-break: break-word;
-  line-height: 1.1rem;
+  line-height: 1.25;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .cat-label-line {
   display: inline-block;
-  max-width: 120px;
+  max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: center;
 }
+
+.cat-minimal-card--see-all {
+  border-color: color-mix(in srgb, var(--accent-color) 25%, var(--border-color));
+}
+
+.cat-minimal-card--see-all .cat-minimal-card__icon-box {
+  background: var(--accent-transparent);
+}
+

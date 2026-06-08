@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import MapPage from "@/views/Map/MapPage";
+import MapPageWrapper from "@/views/Map/MapPageWrapper";
 
 export const metadata: Metadata = {
   title: "Mapa de Profesionales - TuApp",
@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div>Cargando mapa...</div>}>
-      <MapPage />
+    <Suspense fallback={<div className="map-placeholder">Cargando mapa...</div>}>
+      <MapPageWrapper />
     </Suspense>
   );
 }

@@ -24,7 +24,30 @@ type UserLocation = {
   lng: number;
 };
 
-export default function NearbyServicesSection({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+export default function NearbyServicesSection({
+  userProvince = "Buenos Aires",
+}: {
+  userProvince?: string;
+}) {
   const router = useRouter();
   const [selectedService, setSelectedService] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -99,7 +122,9 @@ export default function NearbyServicesSection({ userProvince = "Buenos Aires" }:
       <div className="home-section-container">
         <div className="nearby-services__header">
           <div className="nearby-services__title-group">
-            <h2 className="nearby-services__title">Servicios Destacados en {userProvince}</h2>
+            <h2 className="nearby-services__title">
+              Servicios Destacados en {userProvince}
+            </h2>
           </div>
           <button
             className="section-link"
@@ -137,23 +162,45 @@ export default function NearbyServicesSection({ userProvince = "Buenos Aires" }:
                 <p>Buscando servicios cercanos...</p>
               </div>
             ) : services.length > 0 ? (
-              services.map((service) => (
-                <NearbyServiceCard
-                  key={service.id}
-                  service={{
-                    ...service,
-                    name: service.name,
-                    avatar:
-                      service.Professional?.Profile?.avatar_url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(service.Professional?.Profile?.display_name || "P")}`,
-                    price: `$${service.base_price?.toLocaleString() || "0"}`,
-                    // distance: service.distance ? `${service.distance.toFixed(1)} km` : "Cerca",
-                    rating: service.Professional?.rating_avg || 5.0,
-                    //  reviews: service.Professional?.completed_jobs || 0
-                  }}
-                  onClick={handleServiceClick}
-                />
-              ))
+              services.map((service) => {
+                const prof = service.professional || service.Professional;
+                let calculatedDist: number | null = null;
+                if (userLocation && prof?.address?.[0]) {
+                  const addr = prof.address[0];
+                  if (addr.latitude != null && addr.longitude != null) {
+                    calculatedDist = calculateDistance(
+                      userLocation.lat,
+                      userLocation.lng,
+                      Number(addr.latitude),
+                      Number(addr.longitude),
+                    );
+                  }
+                }
+
+                const distanceStr =
+                  calculatedDist !== null
+                    ? `${calculatedDist.toFixed(2)} km`
+                    : "Cerca";
+
+                return (
+                  <NearbyServiceCard
+                    key={service.id}
+                    service={{
+                      ...service,
+                      professional: prof,
+                      Professional: prof,
+                      name: service.name,
+                      avatar:
+                        prof?.profile?.avatar_url ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(prof?.profile?.display_name || "P")}`,
+                      price: `$${service.base_price?.toLocaleString() || "0"}`,
+                      distance: distanceStr,
+                      rating: prof?.rating_avg || 1.0,
+                    }}
+                    onClick={handleServiceClick}
+                  />
+                );
+              })
             ) : (
               <div className="nearby-empty">
                 <MapPin size={40} />
@@ -192,15 +239,15 @@ export default function NearbyServicesSection({ userProvince = "Buenos Aires" }:
               >
                 <img
                   src={
-                    selectedService.Professional?.Profile?.avatar_url ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedService.Professional?.Profile?.display_name || "P")}`
+                    selectedService.professional?.profile?.avatar_url ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedService.professional?.profile?.display_name || "P")}`
                   }
                   alt="Professional"
                   className="prof-avatar"
                 />
                 <div>
                   <h4 className="prof-name">
-                    {selectedService.Professional?.Profile?.display_name ||
+                    {selectedService.professional?.profile?.display_name ||
                       "Profesional"}
                   </h4>
                   <p className="prof-label">Profesional Verificado</p>
@@ -218,11 +265,7 @@ export default function NearbyServicesSection({ userProvince = "Buenos Aires" }:
               <div className="service-stats">
                 <div className="stat">
                   <MapPin size={16} />
-                  <span>
-                    {selectedService.distance
-                      ? `${selectedService.distance.toFixed(1)} km`
-                      : "En tu zona"}
-                  </span>
+                  <span>{selectedService.distance || "En tu zona"}</span>
                 </div>
                 <div className="stat">
                   <Star

@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Loader2, Filter } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Loader2, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getServiceCategoriesAction } from "../../app/actions/categories";
 import {
@@ -11,11 +11,28 @@ import FilterPanel from "../../components/Filters/FilterPanel";
 import type { FilterSection } from "../../components/Filters/FilterPanel";
 import "./MapSidebar.css";
 
+interface MapSidebarProps {
+  onFilterChange: (filters: {
+    search: string;
+    categoryId?: string;
+    provinceId?: string;
+    departmentId?: string;
+  }) => void;
+  specialistsCount: number;
+  isLoading: boolean;
+  onProvinceCoordinatesChange?: (coords: { lat: number; lng: number } | null) => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+}
+
 export default function MapSidebar({
   onFilterChange,
   specialistsCount,
   isLoading,
-}) {
+  onProvinceCoordinatesChange,
+  isCollapsed,
+  onToggleCollapse,
+}: MapSidebarProps) {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProvince, setSelectedProvince] = useState("");
@@ -61,14 +78,14 @@ export default function MapSidebar({
     departmentId: selectedDepartment,
   };
 
-  const handleApply = () => {
+  const handleApply = useCallback(() => {
     onFilterChange({
       search,
       categoryId: selectedCategory === "all" ? undefined : selectedCategory,
       provinceId: selectedProvince || undefined,
       departmentId: selectedDepartment || undefined,
     });
-  };
+  }, [onFilterChange, search, selectedCategory, selectedProvince, selectedDepartment]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -76,7 +93,21 @@ export default function MapSidebar({
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [search, selectedCategory, selectedProvince, selectedDepartment]);
+  }, [handleApply]);
+
+  useEffect(() => {
+    if (!selectedProvince) {
+      onProvinceCoordinatesChange?.(null);
+      return;
+    }
+    const matchedProv = provinces.find((p: any) => String(p.id) === String(selectedProvince));
+    if (matchedProv && matchedProv.latitude != null && matchedProv.longitude != null) {
+      onProvinceCoordinatesChange?.({
+        lat: Number(matchedProv.latitude),
+        lng: Number(matchedProv.longitude),
+      });
+    }
+  }, [selectedProvince, provinces, onProvinceCoordinatesChange]);
 
   const sections: FilterSection[] = [
     {
@@ -119,42 +150,53 @@ export default function MapSidebar({
   };
 
   return (
-    <aside className="map-sidebar">
-      <div className="map-sidebar__header">
-        <h2 className="map-sidebar__title">Explorar Profesionales</h2>
-        <p className="map-sidebar__subtitle">Encuentra expertos cerca de ti</p>
-      </div>
+    <aside className={`map-sidebar ${isCollapsed ? "map-sidebar--collapsed" : ""}`}>
+      <button
+        type="button"
+        className="map-sidebar__toggle-btn"
+        onClick={onToggleCollapse}
+        aria-label={isCollapsed ? "Mostrar filtros" : "Ocultar filtros"}
+      >
+        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+      </button>
 
-      <FilterPanel
-        sections={sections}
-        filters={localFilters}
-        onFilterChange={handleFilterChange}
-      />
-
-      <div className="map-sidebar__footer">
-        <div className="map-sidebar__stats">
-          <span className="map-sidebar__stats-label">Encontrados:</span>
-          <span className="map-sidebar__stats-count">
-            {isLoading ? "..." : specialistsCount}
-          </span>
+      <div className="map-sidebar__body">
+        <div className="map-sidebar__header">
+          <h2 className="map-sidebar__title">Explorar Profesionales</h2>
+          <p className="map-sidebar__subtitle">Encuentra expertos cerca de ti</p>
         </div>
-        <button
-          className="map-sidebar__apply-btn"
-          onClick={handleApply}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="animate-spin" size={16} />
-              BUSCANDO...
-            </>
-          ) : (
-            <>
-              <Filter size={16} />
-              APLICAR FILTROS
-            </>
-          )}
-        </button>
+
+        <FilterPanel
+          sections={sections}
+          filters={localFilters}
+          onFilterChange={handleFilterChange}
+        />
+
+        <div className="map-sidebar__footer">
+          <div className="map-sidebar__stats">
+            <span className="map-sidebar__stats-label">Encontrados:</span>
+            <span className="map-sidebar__stats-count">
+              {isLoading ? "..." : specialistsCount}
+            </span>
+          </div>
+          <button
+            className="map-sidebar__apply-btn"
+            onClick={handleApply}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin" size={16} />
+                BUSCANDO...
+              </>
+            ) : (
+              <>
+                <Filter size={16} />
+                APLICAR FILTROS
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </aside>
   );
