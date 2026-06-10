@@ -27,15 +27,13 @@ import {
   ChevronRight,
 } from "lucide-react";
 import {
-  initGoogleCalendar,
-  requestAccessToken,
-  isSignedIn,
-  signOut,
-  listEvents,
-  createEvent,
-  deleteEvent,
-  type CalendarEvent,
-} from "../../../services/googleCalendar";
+  getGoogleCalendarEventsAction,
+  createGoogleCalendarEventAction,
+  deleteGoogleCalendarEventAction,
+  type BackendCalendarEvent as CalendarEvent,
+} from "../../../app/actions/googleCalendar";
+import { supabase } from "../../../services/supabaseClient";
+import { authService } from "../../../services/authService";
 import "./CalendarSection.css";
 
 type ViewKey = "month-grid" | "week" | "day";
@@ -117,13 +115,24 @@ export default function CalendarSection() {
   // ── sync helpers ───────────────────────────────────────────
 
   const fetchEvents = useCallback(async () => {
-    if (!isSignedIn()) return;
     setSyncing(true);
     try {
       const now = new Date();
       const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const end = new Date(now.getFullYear(), now.getMonth() + 3, 0);
-      const events = await listEvents(start.toISOString(), end.toISOString());
+
+      const response = await getGoogleCalendarEventsAction({
+        timeMin: start.toISOString(),
+        timeMax: end.toISOString(),
+      });
+
+      if (response.error) {
+        setConnected(false);
+        return;
+      }
+
+      setConnected(true);
+      const events = response.data || [];
       setGcalEvents(events);
 
       // update schedule-x
@@ -138,44 +147,66 @@ export default function CalendarSection() {
       eventsService.set(sxEvents as any);
     } catch (err) {
       console.error("Error fetching calendar events:", err);
+      setConnected(false);
     } finally {
       setSyncing(false);
+      setLoading(false);
     }
   }, [eventsService]);
 
   // ── init ───────────────────────────────────────────────────
 
   useEffect(() => {
-    const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!CLIENT_ID) {
-      setLoading(false);
-      return;
-    }
+    const initBackendCalendar = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        
+        const providerToken = session?.provider_token;
+        const providerRefreshToken = session?.provider_refresh_token;
 
-    initGoogleCalendar()
-      .then(() => {
-        const signed = isSignedIn();
-        setConnected(signed);
-        if (signed) fetchEvents();
-      })
-      .catch((err) => console.error("Google Calendar init failed:", err))
-      .finally(() => setLoading(false));
+        if (
+          providerToken &&
+          providerToken !== "null" &&
+          providerToken !== "undefined" &&
+          providerRefreshToken &&
+          providerRefreshToken !== "null" &&
+          providerRefreshToken !== "undefined"
+        ) {
+          console.log("Linking Google Calendar tokens found in session...");
+          await authService.linkGoogleCalendarTokens({
+            google_access_token: providerToken,
+            google_refresh_token: providerRefreshToken,
+          });
+        }
+        await fetchEvents();
+      } catch (err) {
+        console.error("Error init backend calendar", err);
+        setLoading(false);
+      }
+    };
+    initBackendCalendar();
   }, [fetchEvents]);
 
   // ── auth ───────────────────────────────────────────────────
 
   const handleConnect = async () => {
     try {
-      await requestAccessToken();
-      setConnected(true);
-      await fetchEvents();
+      const response = await authService.getGoogleCalendarLinkUrl(
+        window.location.origin + "/dashboard?tab=calendar",
+      );
+      if (response.url) {
+        window.location.href = response.url;
+      } else {
+        throw new Error("No URL returned from backend");
+      }
     } catch (err) {
-      console.error("Google sign-in failed:", err);
+      console.error("Google sign-in link failed:", err);
     }
   };
 
   const handleDisconnect = () => {
-    signOut();
     setConnected(false);
     setGcalEvents([]);
     eventsService.set([]);
@@ -199,13 +230,19 @@ export default function CalendarSection() {
 
     setFormError("");
     try {
-      const created = await createEvent({
+      const response = await createGoogleCalendarEventAction({
         title: form.title.trim(),
         start: new Date(start).toISOString(),
         end: new Date(end).toISOString(),
         description: form.description.trim(),
         location: form.location.trim(),
       });
+
+      if (response.error || !response.data) {
+        throw new Error("Failed to create event in backend");
+      }
+
+      const created = response.data;
 
       eventsService.add({
         id: created.id,

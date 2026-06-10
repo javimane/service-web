@@ -8,6 +8,9 @@ export const API_ENDPOINTS = {
     register: `${API_BASE_URL}/api/auth/register`,
     login: `${API_BASE_URL}/api/auth/login`,
     googleLogin: `${API_BASE_URL}/api/auth/login/google`,
+    syncOAuth: `${API_BASE_URL}/api/auth/sync-oauth`,
+    googleCalendarTokens: `${API_BASE_URL}/api/auth/google-calendar/tokens`,
+    googleCalendarLink: `${API_BASE_URL}/api/auth/google-calendar/link`,
     getSession: `${API_BASE_URL}/api/auth/session`,
     updateEmail: `${API_BASE_URL}/api/auth/update-email`,
     updatePassword: `${API_BASE_URL}/api/auth/update-password`,
@@ -199,5 +202,8 @@ export const API_ENDPOINTS = {
   userDataBank: {
     base: `${API_BASE_URL}/api/user-data-bank`,
     my: `${API_BASE_URL}/api/user-data-bank/my`,
+  },
+  googleCalendar: {
+    events: `${API_BASE_URL}/api/google-calendar/events`,
   },
 };

@@ -325,6 +325,13 @@ export default function ProposalCreator({ onBack }) {
       doc.text(`${currencySymbol} ${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 50, finalY + 17, { align: "right" });
     }
 
+    // Disclaimer
+    doc.setFontSize(8);
+    doc.setTextColor("#666666");
+    doc.setFont("helvetica", "italic");
+    doc.text("* Nota: Los valores expresados son referenciales y pueden sufrir modificaciones", 40, pageHeight - 95);
+    doc.text("debido a factores externos o fluctuaciones económicas.", 40, pageHeight - 85);
+
     // 6. Footer (Red block)
     doc.setFillColor(255, 77, 79);
     doc.rect(0, pageHeight - 80, pageWidth, 80, "F");
@@ -638,6 +645,10 @@ export default function ProposalCreator({ onBack }) {
             <span className="total-label">MONTO TOTAL</span>
             <h2 className="total-value">{currencySymbol} {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h2>
           </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '1rem', fontStyle: 'italic', textAlign: 'right' }}>
+            * Nota: Los valores expresados son referenciales y pueden sufrir<br />
+            modificaciones debido a factores externos o fluctuaciones económicas.
+          </p>
         </div>
       </section>
 

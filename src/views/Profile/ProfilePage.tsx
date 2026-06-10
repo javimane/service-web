@@ -399,14 +399,17 @@ export default function ProfilePage() {
   });
 
   const { data: allBankPromos = [] } = useQuery({
-    queryKey: ["all-bank-promotions"],
+    queryKey: ["all-bank-promotions", id],
     queryFn: async () => {
-      const result = await getBankPromotionsAction({});
+      const result = await getBankPromotionsAction({
+        professionalId: Number(id),
+      });
       const raw = (result?.data as any) ?? result;
       if (raw && Array.isArray(raw.items)) return raw.items;
       if (Array.isArray(raw)) return raw;
       return [];
     },
+    enabled: !!id && !isNaN(Number(id)),
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
   });
@@ -464,10 +467,6 @@ export default function ProfilePage() {
     enabled: !!id,
     staleTime: 1000 * 60 * 60, // 1 hora
   });
-
-  const profBankPromos = useMemo(() => {
-    return allBankPromos.filter((bp) => bp.Professional?.id === Number(id));
-  }, [allBankPromos, id]);
 
   useEffect(() => {
     if (professional?.seo_path) {
@@ -716,7 +715,8 @@ export default function ProfilePage() {
           <div className="profile-sidebar__info">
             <h1 className="name">{name}</h1>
             <p className="title">
-              {professional.bio?.slice(0, 50) || "Servicios Profesionales"}
+              {professional.specialty?.slice(0, 50) ||
+                "Servicios Profesionales"}
             </p>
             {professional.professional_categories &&
               professional.professional_categories.length > 0 && (
@@ -803,7 +803,7 @@ export default function ProfilePage() {
           <PaymentMethodsCard methods={paymentMethods} />
 
           <BankPromosCard
-            promotions={profBankPromos}
+            promotions={allBankPromos}
             onOpenPromos={() => setIsBankPromosModalOpen(true)}
           />
 
@@ -859,10 +859,7 @@ export default function ProfilePage() {
         <section className="profile-content">
           <header className="profile-content__header">
             <div className="location-info">
-              <span>
-                {company?.Address?.Province?.name || "Provincia"},{" "}
-                {company?.Address?.city || "Ciudad"}
-              </span>
+              <span>Descripcion</span>
             </div>
             <p className="bio">
               {professional.bio || "Sin biografía disponible."}
@@ -1159,7 +1156,7 @@ export default function ProfilePage() {
         title="Promociones Bancarias"
       >
         <div className="modal-bank-promos-grid">
-          {profBankPromos.map((promo) => {
+          {allBankPromos.map((promo) => {
             const bankNames = getBankNames(promo);
             return (
               <div
@@ -1169,7 +1166,7 @@ export default function ProfilePage() {
                   const path = promo.seo_path
                     ? promo.seo_path.replace(/^\/+/, "")
                     : "promo";
-                  router.push(`/promociones-bancarias/${path}?id=${promo.id}`);
+                  router.push(`/promociones-bancarias/${path}`);
                 }}
               >
                 <div className="bank-promo-header">
@@ -1204,7 +1201,7 @@ export default function ProfilePage() {
               </div>
             );
           })}
-          {profBankPromos.length === 0 && (
+          {allBankPromos.length === 0 && (
             <p className="empty-msg">No hay promociones bancarias vigentes.</p>
           )}
         </div>
@@ -1223,7 +1220,7 @@ export default function ProfilePage() {
               onClick={() => {
                 if (promo.seo_path) {
                   const path = promo.seo_path.replace(/^\/+/, "");
-                  router.push(`/promociones/${path}?id=${promo.id}`);
+                  router.push(`/promociones/${path}`);
                 } else {
                   router.push(`/promociones/promo?id=${promo.id}`);
                 }

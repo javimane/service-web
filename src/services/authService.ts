@@ -114,13 +114,51 @@ export const authService = {
   /**
    * @route POST /api/auth/login/google
    * @auth No
-   * @param {string} token - { access_token: string }
+   * @param {Object} tokens - Contains access_token and optionally google tokens
    * @returns {Promise<any>} Supabase auth response
    */
-  googleLogin: (token: string) =>
-    apiClient(API_ENDPOINTS.auth.googleLogin, {
+  googleLogin: (tokens: { access_token: string; google_access_token?: string; google_refresh_token?: string; google_expires_at?: number; google_scope?: string }) =>
+    apiClient<LoginResponse>(API_ENDPOINTS.auth.googleLogin, {
       method: "POST",
-      body: JSON.stringify({ access_token: token }),
+      body: JSON.stringify(tokens),
+    }),
+
+  /**
+   * @route POST /api/auth/sync-oauth
+   * @auth No
+   * @param {Object} data - Contains access_token and refresh_token from Supabase OAuth
+   * @returns {Promise<any>}
+   */
+  syncOAuth: (data: { access_token: string; refresh_token: string }) =>
+    apiClient(API_ENDPOINTS.auth.syncOAuth, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * @route POST /api/auth/google-calendar/tokens
+   * @auth Bearer
+   * @param {Object} tokens - Google calendar tokens to link
+   */
+  linkGoogleCalendarTokens: (tokens: { google_access_token: string; google_refresh_token?: string; google_expires_at?: number; google_scope?: string }) =>
+    apiClient(API_ENDPOINTS.auth.googleCalendarTokens, {
+      method: "POST",
+      body: JSON.stringify({
+        access_token: tokens.google_access_token,
+        refresh_token: tokens.google_refresh_token,
+        expires_at: tokens.google_expires_at?.toString(),
+        scope: tokens.google_scope,
+      }),
+    }),
+
+  /**
+   * @route GET /api/auth/google-calendar/link
+   * @auth Bearer
+   * @param {string} redirectTo
+   */
+  getGoogleCalendarLinkUrl: (redirectTo: string) =>
+    apiClient<{ url: string }>(`${API_ENDPOINTS.auth.googleCalendarLink}?redirectTo=${encodeURIComponent(redirectTo)}`, {
+      method: "GET",
     }),
 
   /**

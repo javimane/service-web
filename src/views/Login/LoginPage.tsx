@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { GoogleLogin } from "@react-oauth/google";
 import { ROUTES } from "../../routes/paths";
 import { authService } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
@@ -25,8 +26,29 @@ export default function LoginPage({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const { refreshSession, setSessionStatus } = useAuth();
+  const { refreshSession, setSessionStatus, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      let isNewUser = false;
+      if (user?.created_at && user?.last_sign_in_at) {
+        const created = new Date(user.created_at).getTime();
+        const lastSignIn = new Date(user.last_sign_in_at).getTime();
+        if (Math.abs(lastSignIn - created) < 30000) {
+          isNewUser = true;
+        }
+      }
+
+      if (isModal) {
+        onClose?.();
+        if (isNewUser) router.push("/dashboard?tab=subscription");
+      } else {
+        if (isNewUser) router.push("/dashboard?tab=subscription");
+        else router.push(ROUTES.home);
+      }
+    }
+  }, [user, isModal, onClose, router]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -173,10 +195,75 @@ export default function LoginPage({
           <span>O CONTINUAR CON</span>
         </div>
 
-        <div className="social-buttons">
-          <button type="button" className="btn-social">
-            G Google
-          </button>
+        <div
+          className="social-buttons"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
+          <GoogleLogin
+            onSuccess={async (credentialResponse) => {
+              setIsLoading(true);
+              setAuthError("");
+              try {
+                // Llamamos a tu API backend con el token de identidad
+                const response = await authService.googleLogin({
+                  access_token: credentialResponse.credential!,
+                });
+
+                // Sincronizar inicio de sesión en el chat de Supabase
+                const { error: chatLoginError } =
+                  await supabase.auth.signInWithIdToken({
+                    provider: "google",
+                    token: credentialResponse.credential!,
+                  });
+
+                if (chatLoginError) {
+                  console.error(
+                    "Error al iniciar sesión en el chat:",
+                    chatLoginError.message,
+                  );
+                }
+
+                if (response?.sessionStatus) {
+                  setSessionStatus(response.sessionStatus);
+                }
+
+                await refreshSession();
+
+                // Detect if it's a new user by checking timestamps
+                const user = response?.data?.user;
+                let isNewUser = false;
+                if (user?.created_at && user?.last_sign_in_at) {
+                  const created = new Date(user.created_at).getTime();
+                  const lastSignIn = new Date(user.last_sign_in_at).getTime();
+                  if (Math.abs(lastSignIn - created) < 30000) {
+                    isNewUser = true;
+                  }
+                }
+
+                if (isModal) {
+                  onClose?.();
+                  if (isNewUser) router.push("/dashboard?tab=subscription");
+                } else {
+                  if (isNewUser) router.push("/dashboard?tab=subscription");
+                  else router.push(ROUTES.home);
+                }
+              } catch (err: any) {
+                console.error("Login Error:", err);
+                setAuthError(
+                  err.message || "Error al autenticar con Google en la API.",
+                );
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            onError={() => {
+              setAuthError("Fallo al conectar con Google.");
+            }}
+            useOneTap={false}
+            theme="filled_blue"
+            shape="rectangular"
+            text="continue_with"
+          />
         </div>
 
         <p className="register-prompt">

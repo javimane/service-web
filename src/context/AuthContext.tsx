@@ -12,7 +12,7 @@ import {
   getFirebaseMessagingToken,
   subscribeToForegroundMessages,
 } from "../services/firebaseMessaging";
-import { clearSupabaseSession } from "../services/supabaseClient";
+import { supabase, clearSupabaseSession } from "../services/supabaseClient";
 import {
   notificationStorage,
   mapFirebasePayloadToNotification,
@@ -104,6 +104,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = async () => {
     try {
+      // 1. Check if the Supabase client has an active session (e.g. from OAuth redirect)
+      const { data: { session: supabaseSession } } = await supabase.auth.getSession();
+      
+      if (supabaseSession) {
+        try {
+          // Try to get NestJS session
+          const session = await authService.getSession();
+          const { nextUser, nextSessionStatus } = normalizeSessionPayload(session);
+          setUser(nextUser);
+          if (nextSessionStatus !== null) {
+            setSessionStatus(nextSessionStatus);
+          }
+          setLoading(false);
+          return;
+        } catch (apiErr) {
+          // If NestJS is not authenticated, sync the Supabase session
+          console.log("Syncing Supabase OAuth session with NestJS API...");
+          try {
+            const syncResponse = await authService.syncOAuth({
+              access_token: supabaseSession.access_token,
+              refresh_token: supabaseSession.refresh_token || "",
+            });
+            const { nextUser, nextSessionStatus } = normalizeSessionPayload(syncResponse);
+            setUser(nextUser);
+            if (nextSessionStatus !== null) {
+              setSessionStatus(nextSessionStatus);
+            }
+            setLoading(false);
+            return;
+          } catch (syncErr) {
+            console.error("Failed to sync Supabase OAuth session:", syncErr);
+          }
+        }
+      }
+
+      // 2. Default flow
       const session = await authService.getSession();
       const { nextUser, nextSessionStatus } = normalizeSessionPayload(session);
       setUser(nextUser);

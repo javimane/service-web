@@ -76,14 +76,21 @@
   right: -10px;
   width: 32px;
   height: 32px;
-  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  background: linear-gradient(
+    45deg,
+    #f09433 0%,
+    #e6683c 25%,
+    #dc2743 50%,
+    #cc2366 75%,
+    #bc1888 100%
+  );
   border: 2px solid var(--bg-card);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--white);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   animation: reel-icon-beat 1.4s ease-in-out infinite;
 }
 
@@ -94,18 +101,36 @@
 }
 
 @keyframes pulse-border {
-  0% { box-shadow: 0 0 0 0 rgba(188, 24, 136, 0.4); }
-  70% { box-shadow: 0 0 0 15px rgba(188, 24, 136, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(188, 24, 136, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(188, 24, 136, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(188, 24, 136, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(188, 24, 136, 0);
+  }
 }
 
 @keyframes reel-icon-beat {
-  0%   { transform: scale(1); }
-  14%  { transform: scale(1.2); }
-  28%  { transform: scale(1); }
-  42%  { transform: scale(1.15); }
-  56%  { transform: scale(1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.2);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.15);
+  }
+  56% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .profile-sidebar__info {
@@ -561,7 +586,8 @@
 /* Services Section */
 .services-scroll-container {
   overflow-x: auto;
-  padding-top: 15px; padding-bottom: 20px;
+  padding-top: 15px;
+  padding-bottom: 20px;
   cursor: grab;
   user-select: none;
   -ms-overflow-style: none; /* IE and Edge */
@@ -687,7 +713,8 @@
 /* Testimonials Section */
 .testimonials-scroll-container {
   overflow-x: auto;
-  padding-top: 15px; padding-bottom: 20px;
+  padding-top: 15px;
+  padding-bottom: 20px;
   cursor: grab;
   user-select: none;
   -ms-overflow-style: none;
@@ -1039,14 +1066,26 @@
   }
 
   /* These elements span full width but are capped and centered */
-  .profile-sidebar__social {
+  .profile-sidebar__categories {
+    justify-content: flex-start;
+  }
+
+  .profile-sidebar__address-card,
+  .profile-sidebar__social,
+  .payment-methods-card,
+  .bank-promos-card,
+  .cta-button {
     grid-column: 1 / -1;
     justify-self: center;
     width: 100%;
+    max-width: 500px;
+    margin-top: 0;
+  }
+
+  .profile-sidebar__social {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 8px;
-    max-width: 460px;
   }
 
   .profile-sidebar__social a {
@@ -1058,23 +1097,10 @@
     gap: 6px;
   }
 
-  .payment-methods-card,
-  .bank-promos-card {
-    grid-column: 1 / -1;
-    justify-self: center;
-    width: 100%;
-    max-width: 460px;
-  }
-
-  .cta-button.whatsapp {
-    grid-column: 1 / -1;
-    justify-self: center;
-    width: 100%;
+  .cta-button {
     padding: 14px;
     font-size: 0.82rem;
     border-radius: var(--radius-lg);
-    margin-top: 0;
-    max-width: 460px;
   }
 
   /* Content */
@@ -1403,7 +1429,9 @@
 }
 
 /* Premium Grids for Promotions and Products */
-.promotions-grid-premium, .bank-promos-grid-premium, .products-grid-premium {
+.promotions-grid-premium,
+.bank-promos-grid-premium,
+.products-grid-premium {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 24px;
@@ -1481,7 +1509,7 @@
 
 .bank-promo-card-premium:hover {
   transform: scale(1.02);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
 }
 
 .bank-promo-header {
@@ -1551,7 +1579,8 @@
 }
 
 /* Modal Grids */
-.modal-bank-promos-grid, .modal-promotions-grid {
+.modal-bank-promos-grid,
+.modal-promotions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
@@ -1586,7 +1615,12 @@
 }
 
 .promos-btn {
-  background: linear-gradient(135deg, var(--accent-color) 0%, var(--red-accent) 50%, var(--accent-color) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--accent-color) 0%,
+    var(--red-accent) 50%,
+    var(--accent-color) 100%
+  );
   background-size: 200% auto;
   color: #fff !important;
   border: none !important;
@@ -1612,11 +1646,16 @@
 }
 
 @keyframes shine-btn {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
-
 
 /* Promo Detail View Styling */
 .promo-detail-view {
@@ -1669,7 +1708,8 @@
   gap: 10px;
 }
 
-.bank-tag, .promo-type-tag {
+.bank-tag,
+.promo-type-tag {
   font-size: 0.75rem;
   font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
@@ -1764,7 +1804,7 @@
 .promo-detail-terms {
   margin-top: 10px;
   padding: 20px;
-  background: rgba(0,0,0,0.03);
+  background: rgba(0, 0, 0, 0.03);
   border-radius: 15px;
 }
 
@@ -1785,13 +1825,17 @@
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .bank-promo-card-premium:hover {
   transform: translateY(-4px);
   border-color: var(--highlight);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .bank-promo-header {
@@ -1838,7 +1882,7 @@
 
 /* Redesigned Sidebar Buttons */
 .cta-button.message-btn {
-  background: linear-gradient(135deg, var(--highlight) 0%, #ff8e53 100%) !important;
+  background: rgba(76, 235, 73, 0.874) !important;
   color: #000 !important;
   border: none !important;
   padding: 22px !important;
@@ -1860,13 +1904,18 @@
 }
 
 .cta-button.message-btn::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: 0.5s;
 }
 
@@ -1880,7 +1929,12 @@
 }
 
 .cta-button.store-btn {
-  background: linear-gradient(135deg, #f5c518 0%, var(--amber-color) 60%, #f5c518 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #f5c518 0%,
+    var(--amber-color) 60%,
+    #f5c518 100%
+  ) !important;
   color: var(--gray-900) !important;
   border: none !important;
   padding: 18px !important;
@@ -1902,7 +1956,12 @@
 .cta-button.store-btn:hover {
   transform: translateY(-4px) !important;
   box-shadow: 0 14px 36px rgba(245, 197, 24, 0.65) !important;
-  background: linear-gradient(135deg, var(--amber-color) 0%, #ff9500 50%, var(--accent-color) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    var(--amber-color) 0%,
+    #ff9500 50%,
+    var(--accent-color) 100%
+  ) !important;
   color: var(--white) !important;
 }
 
@@ -2084,8 +2143,12 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .review-modal {
@@ -2101,8 +2164,14 @@
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(30px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .review-modal__close {
@@ -2345,8 +2414,14 @@
 }
 
 @keyframes popIn {
-  from { transform: scale(0); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .review-modal__success h3 {
@@ -2707,6 +2782,20 @@
   flex: 0 0 auto;
   width: clamp(260px, 36vw, 400px);
   scroll-snap-align: start;
+}
+
+/* Tablet (≤1024px) Overrides */
+@media (max-width: 1024px) {
+  .profile-sidebar__categories {
+    justify-content: flex-start;
+  }
+}
+
+/* Small Mobile (≤480px) Overrides */
+@media (max-width: 480px) {
+  .profile-sidebar__categories {
+    justify-content: center;
+  }
 }
 
 /* ══════════════════════════════════════════

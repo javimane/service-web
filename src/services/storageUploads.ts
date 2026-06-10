@@ -1,8 +1,5 @@
-import { supabase } from "./supabaseClient";
 import { API_ENDPOINTS } from "./api.config";
 import { apiClient } from "./apiClient";
-import { multimediaService } from "./multimediaService";
-import { tryLoadManifestWithRetries } from "next/dist/server/load-components";
 
 type UploadInput = {
   file: Blob;
@@ -22,12 +19,60 @@ interface StorageConfig {
   publicUrl: string;
 }
 
+async function convertToWebP(file: Blob, quality: number = 0.8): Promise<Blob> {
+  if (
+    typeof window === "undefined" ||
+    !file.type.startsWith("image/") ||
+    file.type === "image/gif" ||
+    file.type === "image/webp"
+  ) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(file);
+
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const fileName = (file as File).name
+              ? (file as File).name.replace(/\.[^/.]+$/, "") + ".webp"
+              : "image.webp";
+            const webpFile = new File([blob], fileName, { type: "image/webp" });
+            resolve(webpFile);
+          } else {
+            resolve(file);
+          }
+        },
+        "image/webp",
+        quality,
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+
 async function uploadFile(configEndpoint: string, input: UploadInput) {
+  const optimizedFile = await convertToWebP(input.file);
+
   const config = await apiClient<StorageConfig>(configEndpoint, {
     method: "GET",
   });
 
-  await uploadToPresignedUrl(config.signedUrl, input.file);
+  await uploadToPresignedUrl(config.signedUrl, optimizedFile);
 
   return {
     publicUrl: config.publicUrl,

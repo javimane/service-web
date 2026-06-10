@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
 import AuthModal from "@/components/AuthModal/AuthModal";
 import SessionTimeoutOverlay from "@/components/SessionTimeoutOverlay/SessionTimeoutOverlay";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -24,15 +25,17 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <AuthModalProvider>
-            {children}
-            <AuthModal />
-            <SessionTimeoutOverlay />
-          </AuthModalProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "1028741369344-placeholder.apps.googleusercontent.com"}>
+        <ThemeProvider>
+          <AuthProvider>
+            <AuthModalProvider>
+              {children}
+              <AuthModal />
+              <SessionTimeoutOverlay />
+            </AuthModalProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </GoogleOAuthProvider>
     </QueryClientProvider>
   );
 }
