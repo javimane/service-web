@@ -111,17 +111,7 @@ export const authService = {
       body: JSON.stringify(data),
     }),
 
-  /**
-   * @route POST /api/auth/login/google
-   * @auth No
-   * @param {Object} tokens - Contains access_token and optionally google tokens
-   * @returns {Promise<any>} Supabase auth response
-   */
-  googleLogin: (tokens: { access_token: string; google_access_token?: string; google_refresh_token?: string; google_expires_at?: number; google_scope?: string }) =>
-    apiClient<LoginResponse>(API_ENDPOINTS.auth.googleLogin, {
-      method: "POST",
-      body: JSON.stringify(tokens),
-    }),
+
 
   /**
    * @route POST /api/auth/sync-oauth

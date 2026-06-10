@@ -73,6 +73,35 @@ function formatDateLabel(iso: string) {
   });
 }
 
+const formatForScheduleX = (isoString: any) => {
+  if (!isoString) return "";
+  let dateStr = "";
+  if (typeof isoString === "string") {
+    dateStr = isoString;
+  } else if (typeof isoString === "object") {
+    dateStr = isoString.dateTime || isoString.date || "";
+  }
+  if (!dateStr) return "";
+
+  try {
+    const Temporal = (window as any).Temporal;
+    if (!Temporal) return "";
+
+    if (dateStr.includes("T")) {
+      // Tiene hora y fecha, crear ZonedDateTime
+      const instant = Temporal.Instant.from(dateStr);
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return instant.toZonedDateTimeISO(tz);
+    } else {
+      // Es PlainDate
+      return Temporal.PlainDate.from(dateStr.split("T")[0]);
+    }
+  } catch (err) {
+    console.error("Error formatting date for Schedule-X", err);
+    return "";
+  }
+};
+
 // ── component ──────────────────────────────────────────────────
 
 export default function CalendarSection() {
@@ -136,14 +165,18 @@ export default function CalendarSection() {
       setGcalEvents(events);
 
       // update schedule-x
-      const sxEvents = events.map((e) => ({
-        id: e.id,
-        title: e.title,
-        start: e.start as any,
-        end: e.end as any,
-        description: e.description ?? "",
-        location: e.location ?? "",
-      }));
+      const sxEvents = events
+        .filter((e: any) => e.start && e.end)
+        .map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          start: formatForScheduleX(e.start as string),
+          end: formatForScheduleX(e.end as string),
+          description: e.description ?? "",
+          location: e.location ?? "",
+        }))
+        .filter((e: any) => e.start && e.end);
+
       eventsService.set(sxEvents as any);
     } catch (err) {
       console.error("Error fetching calendar events:", err);
@@ -162,7 +195,7 @@ export default function CalendarSection() {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        
+
         const providerToken = session?.provider_token;
         const providerRefreshToken = session?.provider_refresh_token;
 
@@ -191,26 +224,14 @@ export default function CalendarSection() {
 
   // ── auth ───────────────────────────────────────────────────
 
-  const handleConnect = async () => {
-    try {
-      const response = await authService.getGoogleCalendarLinkUrl(
-        window.location.origin + "/dashboard?tab=calendar",
-      );
-      if (response.url) {
-        window.location.href = response.url;
-      } else {
-        throw new Error("No URL returned from backend");
-      }
-    } catch (err) {
-      console.error("Google sign-in link failed:", err);
-    }
-  };
+  // El botón manual fue eliminado ya que el login de Google captura
+  // y almacena los tokens de Google Calendar automáticamente en la API.
 
-  const handleDisconnect = () => {
-    setConnected(false);
-    setGcalEvents([]);
-    eventsService.set([]);
-  };
+  //const handleDisconnect = () => {
+  //  setConnected(false);
+  //  setGcalEvents([]);
+  //  eventsService.set([]);
+  //};
 
   // ── create event ───────────────────────────────────────────
 
@@ -247,8 +268,8 @@ export default function CalendarSection() {
       eventsService.add({
         id: created.id,
         title: created.title,
-        start: created.start as any,
-        end: created.end as any,
+        start: formatForScheduleX(created.start as string),
+        end: formatForScheduleX(created.end as string),
         description: created.description ?? "",
         location: created.location ?? "",
       } as any);
@@ -332,6 +353,22 @@ export default function CalendarSection() {
               </button>
             </>
           )}
+          {!connected && !loading && !syncing && (
+            <div
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: "var(--text-sm)",
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-2)",
+              }}
+            >
+              <CalendarClock size={16} />
+              <span>
+                Sincronizado automáticamente si iniciaste sesión con Google.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -350,27 +387,6 @@ export default function CalendarSection() {
               Google Calendar.
             </p>
           </div>
-        </div>
-      )}
-
-      {hasCredentials && !connected && !loading && (
-        <div className="cal-connect-card">
-          <div className="cal-connect-card__icon-wrap">
-            <CalendarIcon size={36} />
-          </div>
-          <h2>Conectá tu Google Calendar</h2>
-          <p>
-            Sincronizá tus citas y agendá nuevas directamente desde tu
-            dashboard.
-          </p>
-          <button
-            type="button"
-            className="cal-btn cal-btn--google"
-            onClick={handleConnect}
-          >
-            <LogIn size={18} />
-            Conectar con Google
-          </button>
         </div>
       )}
 
@@ -441,15 +457,6 @@ export default function CalendarSection() {
                       </ul>
                     )}
                   </div>
-
-                  <button
-                    type="button"
-                    className="cal-btn cal-btn--disconnect"
-                    onClick={handleDisconnect}
-                  >
-                    <LogOut size={14} />
-                    Desconectar Google Calendar
-                  </button>
                 </>
               ) : (
                 <div className="upcoming-card upcoming-card--placeholder">

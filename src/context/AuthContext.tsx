@@ -164,6 +164,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  // Handle Chat DB login after returning from backend Google OAuth globally
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("auth") === "success") {
+        supabase.auth.getSession().then(({ data }) => {
+          if (!data.session) {
+            console.log("Iniciando sesión en Chat DB automáticamente...");
+            supabase.auth.signInWithOAuth({
+              provider: "google",
+              options: {
+                redirectTo: window.location.origin + window.location.pathname + window.location.search,
+              },
+            });
+          } else {
+            // Remove auth=success from URL to clean it up
+            urlParams.delete("auth");
+            const newSearch = urlParams.toString();
+            const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "");
+            window.history.replaceState({}, document.title, newUrl);
+          }
+        });
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const registerDeviceTokenIfPresent = async () => {
       if (!user || typeof window === "undefined") return;

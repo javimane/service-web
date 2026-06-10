@@ -246,6 +246,8 @@ export default function DashboardPage() {
     }
   }, [view, isMobileSidebarMode]);
 
+
+
   const handleSidebarToggle = () => {
     if (isMobileSidebarMode) {
       setIsMobileSidebarOpen((current) => !current);
