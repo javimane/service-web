@@ -153,7 +153,10 @@ export default function DashboardPage() {
     router.push(`${ROUTES.dashboard}?view=job-requests`);
 
   const isFreePlan = subscriptionPlan === "free";
-
+  const isUnsubscribedProfessional =
+    sessionStatus?.is_professional &&
+    !sessionStatus?.subscription_plan &&
+    !sessionStatus?.subscription;
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
 
   const openPromoModal = () => setIsPromoModalOpen(true);
@@ -211,7 +214,8 @@ export default function DashboardPage() {
     "referrals",
   ]);
   const shouldLockDashboardView =
-    !hasProfessionalSubscription && !openViewsForInactiveSubscription.has(view);
+    (!hasProfessionalSubscription || isUnsubscribedProfessional) &&
+    !openViewsForInactiveSubscription.has(view);
 
   useEffect(() => {
     setView(routeView || "overview");
@@ -298,6 +302,18 @@ export default function DashboardPage() {
         <main
           className={`dashboard-main ${isSidebarCollapsed ? "dashboard-main--collapsed" : ""} ${isMobileSidebarMode ? "dashboard-main--mobile" : ""}`}
         >
+          {isUnsubscribedProfessional && view !== "subscription" && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--accent-color)", borderRadius: "var(--radius-lg)", padding: "var(--space-4)", marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "var(--shadow-sm)" }}>
+              <div>
+                <h3 style={{ fontSize: "var(--text-lg)", fontWeight: "var(--weight-bold)", color: "var(--text-primary)", marginBottom: "0.25rem" }}>¡Activa tu suscripción profesional!</h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)" }}>Para desbloquear todas las herramientas de tu perfil, debes activar un plan de suscripción.</p>
+              </div>
+              <button className="btn-primary" onClick={handleShowSubscription}>
+                Ver planes
+              </button>
+            </div>
+          )}
+
           <div
             className={`dashboard-main-panel ${shouldLockDashboardView ? "dashboard-main-panel--locked" : ""}`}
           >
@@ -555,12 +571,15 @@ export default function DashboardPage() {
 
             {shouldLockDashboardView && (
               <div className="subscription-lock-overlay" role="alert">
-                <div className="subscription-lock-card">
+                <div className="subscription-lock-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)', textAlign: 'center' }}>
                   <h3>Suscripción profesional requerida</h3>
                   <p>
                     Para acceder a esta sección necesitás una suscripción
                     profesional activa.
                   </p>
+                  <button className="btn-primary" onClick={handleShowSubscription}>
+                    Ver planes
+                  </button>
                 </div>
               </div>
             )}

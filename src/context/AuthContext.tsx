@@ -17,6 +17,7 @@ import {
   notificationStorage,
   mapFirebasePayloadToNotification,
 } from "../services/notificationStorage";
+import Modal from "../components/Modal/Modal";
 import "./AuthContext.css";
 
 type SessionStatus = {
@@ -164,6 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const [showChatSyncModal, setShowChatSyncModal] = useState(false);
+
   // Handle Chat DB login after returning from backend Google OAuth globally
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -171,13 +174,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (urlParams.get("auth") === "success") {
         supabase.auth.getSession().then(({ data }) => {
           if (!data.session) {
-            console.log("Iniciando sesión en Chat DB automáticamente...");
-            supabase.auth.signInWithOAuth({
-              provider: "google",
-              options: {
-                redirectTo: window.location.origin + window.location.pathname + window.location.search,
-              },
-            });
+            console.log("Mostrando modal de sincronización de Chat DB...");
+            setShowChatSyncModal(true);
           } else {
             // Remove auth=success from URL to clean it up
             urlParams.delete("auth");
@@ -189,6 +187,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
   }, []);
+
+  const handleChatSyncConfirm = () => {
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin + window.location.pathname + window.location.search,
+      },
+    });
+  };
 
   useEffect(() => {
     const registerDeviceTokenIfPresent = async () => {
@@ -330,6 +337,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           </div>
         </div>
       )}
+      <Modal
+        isOpen={showChatSyncModal}
+        title="Sincronización de Chat"
+        onClose={() => setShowChatSyncModal(false)}
+      >
+        <p style={{ marginBottom: "1.5rem", color: "var(--text-secondary)" }}>
+          Acepta iniciar sesión para sincronizar tu cuenta con el chat en vivo y notificaciones.
+        </p>
+        <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
+          <button 
+            className="btn-secondary" 
+            onClick={() => setShowChatSyncModal(false)}
+          >
+            Cancelar
+          </button>
+          <button 
+            className="btn-primary" 
+            onClick={handleChatSyncConfirm}
+          >
+            Aceptar
+          </button>
+        </div>
+      </Modal>
     </AuthContext.Provider>
   );
 }

@@ -459,7 +459,7 @@
   width: 100%;
 }
 
-.dashboard-main-panel--locked .dashboard-content {
+.dashboard-main-panel--locked > *:not(.subscription-lock-overlay) {
   filter: blur(1px);
   opacity: 0.55;
   pointer-events: none;

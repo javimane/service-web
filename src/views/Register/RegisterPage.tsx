@@ -8,6 +8,7 @@ import BrandLogo from "../../components/BrandLogo/BrandLogo";
 
 import Modal from "../../components/Modal/Modal";
 import { supabase } from "../../services/supabaseClient";
+import { API_BASE_URL } from "../../services/api.config";
 import "./RegisterPage.css";
 
 type RegisterPageProps = {
@@ -28,6 +29,7 @@ export default function RegisterPage({
     password: "",
     confirmPassword: "",
   });
+  const [role, setRole] = useState<"normal" | "professional">("professional");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -100,6 +102,7 @@ export default function RegisterPage({
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        role: role,
       });
 
       setModalTitle("Registro exitoso");
@@ -116,23 +119,11 @@ export default function RegisterPage({
     }
   };
 
-  const handleGoogleRegister = async () => {
+  const handleGoogleRegister = () => {
     setIsLoading(true);
     setAuthError("");
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          scopes:
-            "https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events",
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
-          },
-          redirectTo: `${window.location.origin}/login?oauth=true`,
-        },
-      });
-      if (error) throw error;
+      window.location.href = `${API_BASE_URL}/api/auth/login/google?role=${role}`;
     } catch (err: any) {
       setAuthError(err.message || "Error al registrarse con Google.");
       setIsLoading(false);
@@ -160,6 +151,82 @@ export default function RegisterPage({
         onSubmit={handleSubmit}
         noValidate
       >
+        <div
+          className="role-selector"
+          style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}
+        >
+          <label
+            className={`role-option ${role === "professional" ? "active" : ""}`}
+            style={{
+              flex: 1,
+              padding: "1rem",
+              border: `1px solid ${role === "professional" ? "var(--accent-color)" : "var(--border-color)"}`,
+              borderRadius: "var(--radius-md)",
+              cursor: "pointer",
+              textAlign: "center",
+              background:
+                role === "professional"
+                  ? "var(--accent-transparent)"
+                  : "var(--bg-card)",
+            }}
+          >
+            <input
+              type="radio"
+              name="role"
+              value="professional"
+              checked={role === "professional"}
+              onChange={() => setRole("professional")}
+              style={{ display: "none" }}
+            />
+            <span
+              style={{
+                fontWeight: "var(--weight-bold)",
+                color:
+                  role === "professional"
+                    ? "var(--accent-color)"
+                    : "var(--text-secondary)",
+              }}
+            >
+              Soy Profesional
+            </span>
+          </label>
+          <label
+            className={`role-option ${role === "normal" ? "active" : ""}`}
+            style={{
+              flex: 1,
+              padding: "1rem",
+              border: `1px solid ${role === "normal" ? "var(--accent-color)" : "var(--border-color)"}`,
+              borderRadius: "var(--radius-md)",
+              cursor: "pointer",
+              textAlign: "center",
+              background:
+                role === "normal"
+                  ? "var(--accent-transparent)"
+                  : "var(--bg-card)",
+            }}
+          >
+            <input
+              type="radio"
+              name="role"
+              value="normal"
+              checked={role === "normal"}
+              onChange={() => setRole("normal")}
+              style={{ display: "none" }}
+            />
+            <span
+              style={{
+                fontWeight: "var(--weight-bold)",
+                color:
+                  role === "normal"
+                    ? "var(--accent-color)"
+                    : "var(--text-secondary)",
+              }}
+            >
+              Busco Servicios
+            </span>
+          </label>
+        </div>
+
         <div className="input-group">
           <label htmlFor="name">NOMBRE COMPLETO</label>
           <div className={`input-wrapper ${errors.name ? "has-error" : ""}`}>
@@ -271,11 +338,29 @@ export default function RegisterPage({
             onClick={handleGoogleRegister}
             disabled={isLoading}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                fill="#EA4335"
+              />
             </svg>
             <span>Continuar con Google</span>
           </button>
