@@ -20,6 +20,8 @@ export async function getGoogleCalendarEventsAction(params: {
   if (params.timeMax) query.append("timeMax", params.timeMax);
   if (params.maxResults)
     query.append("maxResults", params.maxResults.toString());
+  
+  query.append("_t", new Date().getTime().toString());
 
   const url = `${API_ENDPOINTS.googleCalendar.events}?${query.toString()}`;
 
