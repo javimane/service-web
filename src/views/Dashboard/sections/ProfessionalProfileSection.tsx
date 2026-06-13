@@ -1084,12 +1084,20 @@ export default function ProfessionalProfileSection() {
               </div>
               <button
                 type="button"
-                className="professional-profile__add-btn"
+                className={`professional-profile__add-btn ${subscriptionPlan === "free" ? "professional-profile__add-btn--disabled" : ""}`}
                 onClick={openVideoModal}
+                disabled={subscriptionPlan === "free"}
+                title={subscriptionPlan === "free" ? "Subir videos solo está disponible en los planes Básico y Premium" : undefined}
               >
                 Agregar video
               </button>
             </div>
+
+            {subscriptionPlan === "free" && (
+              <p className="professional-profile__video-note">
+                * La subida de videos de presentación solo está disponible para los planes Básico y Premium.
+              </p>
+            )}
 
             <div className="professional-profile__video-list">
               {videos.map((video) => (

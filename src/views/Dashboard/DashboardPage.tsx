@@ -177,7 +177,6 @@ export default function DashboardPage() {
 
   const blockedForFree = new Set([
     "proposals-create",
-    "proposals-view",
     "promotions-create",
     "promotions-all",
     "bank-promotions",
@@ -195,7 +194,9 @@ export default function DashboardPage() {
   // Override handlers to block access for free plan
   const handleShowProposalsCreateBlocked = () =>
     redirectIfFree("proposals-create");
-  const handleShowProposalsViewBlocked = () => redirectIfFree("proposals-view");
+  const handleShowProposalsViewBlocked = () => {
+    router.push(`${ROUTES.dashboard}?view=proposals-view`);
+  };
   const handleShowPromotionsCreateBlocked = (promo?: any) => {
     if (isFreePlan) return redirectIfFree();
     setEditingPromotion(promo || null);

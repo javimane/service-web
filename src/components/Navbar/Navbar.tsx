@@ -114,7 +114,7 @@ export default function Navbar() {
         .select("*", { count: "exact", head: true })
         .eq("receiver_id", user.id)
         .eq("is_read", false);
-      
+
       if (error) {
         console.error("Error fetching unread messages count:", error);
         return 0;
@@ -143,7 +143,7 @@ export default function Navbar() {
               queryKey: ["unread-messages-count", user.id],
             });
           }
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -159,7 +159,7 @@ export default function Navbar() {
               queryKey: ["unread-messages-count", user.id],
             });
           }
-        }
+        },
       )
       .subscribe();
 
@@ -181,18 +181,62 @@ export default function Navbar() {
 
   const dashboardLinks = [
     { label: "Dashboard", icon: LayoutDashboard, path: ROUTES.dashboard },
-    { label: "Perfil", icon: UserRound, path: `${ROUTES.dashboard}?view=profile` },
-    { label: "Solicitudes", icon: ClipboardList, path: `${ROUTES.dashboard}?view=job-requests` },
+    {
+      label: "Perfil",
+      icon: UserRound,
+      path: `${ROUTES.dashboard}?view=profile`,
+    },
+    {
+      label: "Solicitudes",
+      icon: ClipboardList,
+      path: `${ROUTES.dashboard}?view=job-requests`,
+    },
     { label: "Mensajes", icon: MessageSquare, path: ROUTES.messages },
-    { label: "Presupuestos", icon: FileText, path: `${ROUTES.dashboard}?view=proposals-view` },
-    { label: "Promociones", icon: Ticket, path: `${ROUTES.dashboard}?view=promotions-all` },
-    { label: "Promos Bancarias", icon: Landmark, path: `${ROUTES.dashboard}?view=bank-promotions` },
-    { label: "Productos", icon: Package, path: `${ROUTES.dashboard}?view=products` },
-    { label: "Servicios", icon: Briefcase, path: `${ROUTES.dashboard}?view=services` },
-    { label: "Agenda", icon: CalendarDays, path: `${ROUTES.dashboard}?view=calendar` },
-    { label: "Reels", icon: Clapperboard, path: `${ROUTES.dashboard}?view=reels` },
-    { label: "Referidos", icon: Users, path: `${ROUTES.dashboard}?view=referrals` },
-    { label: "Suscripción", icon: CreditCard, path: `${ROUTES.dashboard}?view=subscription` },
+    {
+      label: "Presupuestos",
+      icon: FileText,
+      path: `${ROUTES.dashboard}?view=proposals-view`,
+    },
+    {
+      label: "Promociones",
+      icon: Ticket,
+      path: `${ROUTES.dashboard}?view=promotions-all`,
+    },
+    {
+      label: "Promos Bancarias",
+      icon: Landmark,
+      path: `${ROUTES.dashboard}?view=bank-promotions`,
+    },
+    {
+      label: "Productos",
+      icon: Package,
+      path: `${ROUTES.dashboard}?view=products`,
+    },
+    {
+      label: "Servicios",
+      icon: Briefcase,
+      path: `${ROUTES.dashboard}?view=services`,
+    },
+    {
+      label: "Agenda",
+      icon: CalendarDays,
+      path: `${ROUTES.dashboard}?view=calendar`,
+    },
+    {
+      label: "Reels",
+      icon: Clapperboard,
+      path: `${ROUTES.dashboard}?view=reels`,
+    },
+    {
+      label: "Referidos",
+      icon: Users,
+      path: `${ROUTES.dashboard}?view=referrals`,
+    },
+    {
+      label: "Suscripción",
+      icon: CreditCard,
+      path: `${ROUTES.dashboard}?view=subscription`,
+    },
     { label: "Configuración", icon: Settings, path: ROUTES.settings },
   ];
 
@@ -421,27 +465,6 @@ export default function Navbar() {
                     </div>
 
                     <div className="dropdown__divider"></div>
-                    <div className="dropdown__section-label">Cuenta</div>
-                    <div className="dropdown__body">
-                      <Link
-                        href={ROUTES.profile}
-                        className="dropdown__item"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Settings size={16} />
-                        <span>Mi Cuenta</span>
-                      </Link>
-                      <Link
-                        href={ROUTES.favorites}
-                        className="dropdown__item"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Heart size={16} />
-                        <span>Favoritos</span>
-                      </Link>
-                    </div>
-
-                    <div className="dropdown__divider"></div>
                     <div className="dropdown__footer">
                       <button
                         className="dropdown__item dropdown__item--logout"
@@ -453,7 +476,6 @@ export default function Navbar() {
                     </div>
                   </div>
                 )}
-
               </div>
             </div>
           ) : (

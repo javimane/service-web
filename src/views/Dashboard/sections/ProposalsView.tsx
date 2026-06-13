@@ -22,7 +22,8 @@ import "./ProposalsView.css";
 type TabType = "received" | "sent";
 
 export default function ProposalsView() {
-  const { hasProfessionalSubscription } = useAuth();
+  const { hasProfessionalSubscription, subscriptionPlan } = useAuth();
+  const isFreePlan = subscriptionPlan === "free";
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<TabType>("received");
@@ -167,7 +168,7 @@ export default function ProposalsView() {
             <span>Los archivos se almacenan por 6 meses, después serán eliminados.</span>
           </p>
         </div>
-        {hasProfessionalSubscription && (
+        {hasProfessionalSubscription && !isFreePlan && (
           <button
             type="button"
             className="proposals-view__create-btn"

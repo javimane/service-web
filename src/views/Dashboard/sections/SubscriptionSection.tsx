@@ -13,6 +13,7 @@ import {
   Star,
   ChevronUp,
   Loader2,
+  X,
 } from "lucide-react";
 import {
   plans as staticPlans,
@@ -81,8 +82,16 @@ export default function SubscriptionSection() {
   const [showPlans, setShowPlans] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [localSubscription, setLocalSubscription] = useState<any>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const plansRef = useRef<HTMLDivElement>(null);
+
+  const showFeedback = (type: "success" | "error", text: string) => {
+    setFeedback({ type, text });
+    setTimeout(() => {
+      setFeedback((current) => (current?.text === text ? null : current));
+    }, 6000);
+  };
 
   const { data: apiSubscription, isLoading: loadingSub } = useQuery({
     queryKey: ["professional-subscription"],
@@ -168,6 +177,7 @@ export default function SubscriptionSection() {
       return current ? { ...current, status: "cancelled" } : current;
     });
     setShowCancelConfirm(false);
+    showFeedback("success", "Suscripción cancelada correctamente.");
   };
 
   const getCheckoutUrlByPlanId = (planId: string) => {
@@ -179,13 +189,16 @@ export default function SubscriptionSection() {
   const handleSelectPlan = async (planId: string) => {
     if (planId === "free" || planId === "gratuito") {
       setIsSubmitting(true);
+      setFeedback(null);
       try {
         const token = getAccessToken();
         await createProfessionalMeAction({ token });
         // Refresh session so AuthContext reflects the new professional status immediately
         await refreshSession();
-      } catch (error) {
+        showFeedback("success", "Plan gratuito activado correctamente. ¡Bienvenido!");
+      } catch (error: any) {
         console.error("Error al activar plan free:", error);
+        showFeedback("error", error.message || "Error al activar el plan gratuito. Por favor intente de nuevo.");
       } finally {
         setIsSubmitting(false);
       }
@@ -195,9 +208,11 @@ export default function SubscriptionSection() {
     const checkoutUrl = getCheckoutUrlByPlanId(planId);
     if (!checkoutUrl) {
       console.error(`Checkout URL no configurada para el plan: ${planId}`);
+      showFeedback("error", "URL de suscripción no configurada para este plan.");
       return;
     }
 
+    showFeedback("success", "Redirigiendo al portal de pago de Mercado Pago...");
     window.location.assign(checkoutUrl);
   };
 
@@ -213,6 +228,28 @@ export default function SubscriptionSection() {
           </p>
         </div>
       </div>
+
+      {/* Feedback Alert */}
+      {feedback && (
+        <div className={`subscription-feedback subscription-feedback--${feedback.type}`}>
+          <div className="subscription-feedback__icon">
+            {feedback.type === "success" ? (
+              <Check size={18} />
+            ) : (
+              <AlertTriangle size={18} />
+            )}
+          </div>
+          <span>{feedback.text}</span>
+          <button
+            type="button"
+            className="subscription-feedback__close"
+            onClick={() => setFeedback(null)}
+            aria-label="Cerrar mensaje"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Current plan card */}
       <div className="subscription-card">
@@ -376,12 +413,13 @@ export default function SubscriptionSection() {
             <button
               type="button"
               className="subscription-btn subscription-btn--reactivate"
-              onClick={() =>
+              onClick={() => {
                 setLocalSubscription((prev: any) => {
                   const current = prev || apiSubscription;
                   return current ? { ...current, status: "active" } : current;
-                })
-              }
+                });
+                showFeedback("success", "Suscripción reactivada correctamente.");
+              }}
             >
               <Check size={18} />
               <span>Reactivar suscripción</span>

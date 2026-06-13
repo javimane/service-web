@@ -21,3 +21,59 @@
   font-size: 14px;
   line-height: 1.4;
 }
+
+/* ===== CHAT SYNC MODAL ===== */
+.chat-sync-modal__text {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-6);
+}
+
+.chat-sync-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.chat-sync-modal__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  box-sizing: border-box;
+}
+
+.chat-sync-modal__btn--primary {
+  background: var(--accent-color);
+  border: 1px solid var(--accent-color);
+  color: white;
+}
+
+.chat-sync-modal__btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-transparent);
+}
+
+.chat-sync-modal__btn--secondary {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.chat-sync-modal__btn--secondary:hover {
+  background: var(--surface-soft);
+  border-color: var(--border-color);
+  transform: translateY(-1px);
+}

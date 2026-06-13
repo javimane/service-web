@@ -951,3 +951,21 @@
     font-size: 0.82rem;
   }
 }
+
+.professional-profile__add-btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  background: var(--surface-soft) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.professional-profile__video-note {
+  font-size: var(--text-sm);
+  color: var(--error-color);
+  margin-top: var(--space-2);
+  font-weight: var(--weight-semibold);
+  width: 100%;
+}

@@ -79,7 +79,7 @@ export default function DashboardSidebar({
   onJobRequestsClick,
 }: DashboardSidebarProps) {
   const router = useRouter();
-  const { logout, hasProfessionalSubscription, user, sessionStatus } =
+  const { logout, hasProfessionalSubscription, user, sessionStatus, subscriptionPlan } =
     useAuth();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     promotions:
@@ -103,8 +103,25 @@ export default function DashboardSidebar({
     "referrals",
   ]);
 
-  const isItemLocked = (key: string) =>
-    !hasProfessionalSubscription && !alwaysEnabledItems.has(key);
+  const isFreePlan = subscriptionPlan === "free";
+
+  const isItemLocked = (key: string) => {
+    if (!hasProfessionalSubscription) {
+      return !alwaysEnabledItems.has(key);
+    }
+    if (isFreePlan) {
+      const blockedForFree = new Set([
+        "proposals-create",
+        "promotions-create",
+        "promotions-all",
+        "bank-promotions",
+        "calendar",
+        "reels",
+      ]);
+      return blockedForFree.has(key);
+    }
+    return false;
+  };
 
   const getLockedTitle = (label: string, isLocked: boolean) =>
     isLocked ? `${label} · Requiere suscripción profesional activa` : label;
@@ -438,7 +455,7 @@ export default function DashboardSidebar({
       onClick:
         onProposalsCreate ?? (() => goToDashboardView("proposals-create")),
       isActive: activeItem === "proposals-create",
-      isLocked: isItemLocked("proposals"),
+      isLocked: isItemLocked("proposals-create"),
     },
     {
       key: "job-requests",

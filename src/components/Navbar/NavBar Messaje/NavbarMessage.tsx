@@ -20,6 +20,14 @@ import {
   ArrowLeft,
   Star,
   UserPlus,
+  UserRound,
+  ClipboardList,
+  Briefcase,
+  CalendarDays,
+  Clapperboard,
+  Users,
+  CreditCard,
+  Landmark,
 } from "lucide-react";
 import "./NavbarMessaje.css";
 import { useAuth } from "../../../context/AuthContext";
@@ -40,6 +48,67 @@ export default function NavbarMessage() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const dashboardLinks = [
+    { label: "Dashboard", icon: LayoutDashboard, path: ROUTES.dashboard },
+    {
+      label: "Perfil",
+      icon: UserRound,
+      path: `${ROUTES.dashboard}?view=profile`,
+    },
+    {
+      label: "Solicitudes",
+      icon: ClipboardList,
+      path: `${ROUTES.dashboard}?view=job-requests`,
+    },
+    { label: "Mensajes", icon: MessageSquare, path: ROUTES.messages },
+    {
+      label: "Presupuestos",
+      icon: FileText,
+      path: `${ROUTES.dashboard}?view=proposals-view`,
+    },
+    {
+      label: "Promociones",
+      icon: Ticket,
+      path: `${ROUTES.dashboard}?view=promotions-all`,
+    },
+    {
+      label: "Promos Bancarias",
+      icon: Landmark,
+      path: `${ROUTES.dashboard}?view=bank-promotions`,
+    },
+    {
+      label: "Productos",
+      icon: Package,
+      path: `${ROUTES.dashboard}?view=products`,
+    },
+    {
+      label: "Servicios",
+      icon: Briefcase,
+      path: `${ROUTES.dashboard}?view=services`,
+    },
+    {
+      label: "Agenda",
+      icon: CalendarDays,
+      path: `${ROUTES.dashboard}?view=calendar`,
+    },
+    {
+      label: "Reels",
+      icon: Clapperboard,
+      path: `${ROUTES.dashboard}?view=reels`,
+    },
+    {
+      label: "Referidos",
+      icon: Users,
+      path: `${ROUTES.dashboard}?view=referrals`,
+    },
+    {
+      label: "Suscripción",
+      icon: CreditCard,
+      path: `${ROUTES.dashboard}?view=subscription`,
+    },
+    { label: "Configuración", icon: Settings, path: ROUTES.settings },
+  ];
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const notifRef = useRef<HTMLDivElement | null>(null);
@@ -173,7 +242,7 @@ export default function NavbarMessage() {
               </button>
 
               {isMenuOpen && (
-                <div className="navbar__dropdown">
+                <div className="navbar__dropdown navbar__dropdown--wide">
                   <div className="dropdown__header">
                     <div className="dropdown__user-info">
                       <span className="dropdown__username">{displayName}</span>
@@ -181,47 +250,32 @@ export default function NavbarMessage() {
                     </div>
                   </div>
                   <div className="dropdown__divider"></div>
-                  <div className="dropdown__body">
-                    <Link
-                      href={ROUTES.profile}
-                      className="dropdown__item"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Settings size={18} />
-                      <span>Mi Cuenta</span>
-                    </Link>
-                    <Link
-                      href={ROUTES.dashboard}
-                      className="dropdown__item"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <LayoutDashboard size={18} />
-                      <span>Dashboard</span>
-                    </Link>
-                    <Link
-                      href={ROUTES.products}
-                      className="dropdown__item"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Package size={18} />
-                      <span>Productos</span>
-                    </Link>
-                    <Link
-                      href={ROUTES.dashboard}
-                      className="dropdown__item"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <BarChart3 size={18} />
-                      <span>Analíticas</span>
-                    </Link>
+
+                  <div className="dropdown__section-label">Mi Panel</div>
+                  <div className="dropdown__body dropdown__body--scroll">
+                    {dashboardLinks.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <Link
+                          key={link.label}
+                          href={link.path}
+                          className="dropdown__item"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <Icon size={16} />
+                          <span>{link.label}</span>
+                        </Link>
+                      );
+                    })}
                   </div>
+
                   <div className="dropdown__divider"></div>
                   <div className="dropdown__footer">
                     <button
                       className="dropdown__item dropdown__item--logout"
                       onClick={handleLogout}
                     >
-                      <LogOut size={18} />
+                      <LogOut size={16} />
                       <span>Cerrar Sesión</span>
                     </button>
                   </div>

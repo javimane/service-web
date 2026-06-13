@@ -342,18 +342,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title="Sincronización de Chat"
         onClose={() => setShowChatSyncModal(false)}
       >
-        <p style={{ marginBottom: "1.5rem", color: "var(--text-secondary)" }}>
+        <p className="chat-sync-modal__text">
           Acepta iniciar sesión para sincronizar tu cuenta con el chat en vivo y notificaciones.
         </p>
-        <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
+        <div className="chat-sync-modal__actions">
           <button 
-            className="btn-secondary" 
+            type="button"
+            className="chat-sync-modal__btn chat-sync-modal__btn--secondary" 
             onClick={() => setShowChatSyncModal(false)}
           >
             Cancelar
           </button>
           <button 
-            className="btn-primary" 
+            type="button"
+            className="chat-sync-modal__btn chat-sync-modal__btn--primary" 
             onClick={handleChatSyncConfirm}
           >
             Aceptar
