@@ -16,4 +16,5 @@ export const ROUTES = {
   favorites: "/favoritos",
   professionalStore: "/perfil/:id/tienda",
   reels: "/reels",
+  terms: "/terminos",
 };

@@ -9,6 +9,8 @@ import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import Modal from "../../components/Modal/Modal";
 import { supabase } from "../../services/supabaseClient";
 import { API_BASE_URL } from "../../services/api.config";
+import RegisterPlanSelection from "./RegisterPlanSelection";
+import { useAuth } from "../../context/AuthContext";
 import "./RegisterPage.css";
 
 type RegisterPageProps = {
@@ -38,6 +40,8 @@ export default function RegisterPage({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const { refreshSession } = useAuth();
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -104,6 +108,23 @@ export default function RegisterPage({
         password: formData.password,
         role: role,
       });
+
+      // Attempt to auto-login to create session
+      try {
+        const loginResp = await authService.login({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        // if login succeeds and role is professional, show plan modal
+        if (loginResp && role === "professional") {
+          await refreshSession();
+          setShowPlanModal(true);
+          return; // Skip the normal success modal
+        }
+      } catch (e) {
+        console.warn("Auto-login failed:", e);
+      }
 
       setModalTitle("Registro exitoso");
       setModalMessage(
@@ -424,6 +445,14 @@ export default function RegisterPage({
           <a href="#">SUPPORT</a>
         </div>
       </div>
+
+      {showPlanModal && (
+        <div className="subscription-confirm-overlay" style={{ zIndex: 1000, padding: "20px", overflowY: "auto", position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div style={{ position: "relative", maxWidth: "1000px", margin: "0 auto" }}>
+            <RegisterPlanSelection />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
