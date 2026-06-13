@@ -78,11 +78,18 @@ export type LoginResponse = {
     session: AuthSession;
   };
   error: unknown | null;
+  server_token?: string;
   sessionStatus: {
     is_professional: boolean;
     status?: boolean | string;
     professional_active: boolean;
+    subscription_plan?: string | null;
     subscription: SessionSubscription | null;
+    has_professional_address?: boolean;
+    profile_province_id?: number | null;
+    has_days_left?: boolean;
+    user_created_at?: string;
+    user_last_sign_in_at?: string;
   };
 };
 
@@ -111,8 +118,6 @@ export const authService = {
       body: JSON.stringify(data),
     }),
 
-
-
   /**
    * @route POST /api/auth/sync-oauth
    * @auth No
@@ -130,7 +135,12 @@ export const authService = {
    * @auth Bearer
    * @param {Object} tokens - Google calendar tokens to link
    */
-  linkGoogleCalendarTokens: (tokens: { google_access_token: string; google_refresh_token?: string; google_expires_at?: number; google_scope?: string }) =>
+  linkGoogleCalendarTokens: (tokens: {
+    google_access_token: string;
+    google_refresh_token?: string;
+    google_expires_at?: number;
+    google_scope?: string;
+  }) =>
     apiClient(API_ENDPOINTS.auth.googleCalendarTokens, {
       method: "POST",
       body: JSON.stringify({
@@ -147,9 +157,12 @@ export const authService = {
    * @param {string} redirectTo
    */
   getGoogleCalendarLinkUrl: (redirectTo: string) =>
-    apiClient<{ url: string }>(`${API_ENDPOINTS.auth.googleCalendarLink}?redirectTo=${encodeURIComponent(redirectTo)}`, {
-      method: "GET",
-    }),
+    apiClient<{ url: string }>(
+      `${API_ENDPOINTS.auth.googleCalendarLink}?redirectTo=${encodeURIComponent(redirectTo)}`,
+      {
+        method: "GET",
+      },
+    ),
 
   /**
    * @route GET /api/auth/session
@@ -167,9 +180,13 @@ export const authService = {
    * @returns {Promise<any>}
    */
   refresh: () =>
-    apiClient<any>((process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000") + "/api/auth/refresh", {
-      method: "POST",
-    }),
+    apiClient<any>(
+      (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000") +
+        "/api/auth/refresh",
+      {
+        method: "POST",
+      },
+    ),
 
   /**
    * @route POST /api/auth/logout
@@ -177,9 +194,13 @@ export const authService = {
    * @returns {Promise<any>}
    */
   logout: () =>
-    apiClient<any>((process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000") + "/api/auth/logout", {
-      method: "POST",
-    }),
+    apiClient<any>(
+      (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000") +
+        "/api/auth/logout",
+      {
+        method: "POST",
+      },
+    ),
 
   /**
    * @route PUT /api/auth/update-email

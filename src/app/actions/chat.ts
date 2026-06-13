@@ -2,11 +2,19 @@ import { supabase } from "@/services/supabaseClient";
 import { getProfileAction } from "./profile";
 
 export const getProfileByUserIdAction = async ({ id }: { id: string }) => {
-  const res = await getProfileAction({ id });
-  if (res?.validationErrors || res?.serverError) {
-    throw new Error(res?.serverError || "Error fetching profile");
+  if (!id || id === "undefined" || id === "null") return { data: null };
+  
+  try {
+    const res = await getProfileAction({ id });
+    if (res?.validationErrors || res?.serverError) {
+      console.error("Error fetching profile from getProfileAction:", res.serverError);
+      return { data: null, error: res.serverError };
+    }
+    return { data: res?.data };
+  } catch (error) {
+    console.error("Error in getProfileByUserIdAction:", error);
+    return { data: null, error };
   }
-  return { data: res?.data };
 };
 
 export const getMessagesAction = async ({ userId, receiverId }: { userId: string, receiverId: string }) => {

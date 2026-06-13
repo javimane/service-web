@@ -158,6 +158,28 @@ export default function DashboardPage() {
     !sessionStatus?.subscription_plan &&
     !sessionStatus?.subscription;
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !sessionStatus) return;
+    
+    const isProfessionalWithoutPlan = sessionStatus.is_professional && !sessionStatus.subscription_plan && !sessionStatus.subscription;
+    if (!isProfessionalWithoutPlan) return;
+
+    const createdAt = sessionStatus.user_created_at ? new Date(sessionStatus.user_created_at).getTime() : 0;
+    const lastSignIn = sessionStatus.user_last_sign_in_at ? new Date(sessionStatus.user_last_sign_in_at).getTime() : createdAt;
+    
+    if (createdAt === 0) return; // If dates are not available, don't show the first-time modal to be safe
+
+    // Consider it's the first time if last sign in is within 5 minutes of creation
+    const isFirstTime = Math.abs(createdAt - lastSignIn) < 5 * 60 * 1000;
+    const hasSeenWelcome = localStorage.getItem(`welcome_shown_${sessionStatus.email}`);
+    
+    if (isFirstTime && !hasSeenWelcome) {
+      setShowWelcomeModal(true);
+      localStorage.setItem(`welcome_shown_${sessionStatus.email}`, 'true');
+    }
+  }, [sessionStatus]);
 
   const openPromoModal = () => setIsPromoModalOpen(true);
   const closePromoModal = () => setIsPromoModalOpen(false);
@@ -667,6 +689,44 @@ export default function DashboardPage() {
                 <p>No hay videos subidos aún.</p>
               </div>
             )}
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={showWelcomeModal}
+          onClose={() => setShowWelcomeModal(false)}
+          title="¡Bienvenido a Sercio Profesional!"
+          maxWidth="600px"
+        >
+          <div style={{ padding: "var(--space-4)", textAlign: "center" }}>
+            <p style={{ marginBottom: "var(--space-6)", color: "var(--text-secondary)", fontSize: "var(--text-md)" }}>
+              Para comenzar a utilizar tu panel y acceder a todas las herramientas, debés elegir un plan. 
+              Esto es un resumen de lo que podrás hacer:
+            </p>
+            <ul style={{ textAlign: "left", marginBottom: "var(--space-8)", display: "flex", flexDirection: "column", gap: "var(--space-4)", padding: "0 var(--space-4)" }}>
+              <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
+                <span style={{ color: "var(--success-color)", marginTop: "2px" }}>✅</span>
+                <span><strong>Presupuestos:</strong> Recibir y enviar propuestas a clientes cercanos a tu zona.</span>
+              </li>
+              <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
+                <span style={{ color: "var(--success-color)", marginTop: "2px" }}>✅</span>
+                <span><strong>Promociones:</strong> Crear ofertas ilimitadas para destacar tus servicios y productos.</span>
+              </li>
+              <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
+                <span style={{ color: "var(--success-color)", marginTop: "2px" }}>✅</span>
+                <span><strong>Agenda:</strong> Sincronizar tu Google Calendar para gestionar tus citas automáticamente.</span>
+              </li>
+              <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
+                <span style={{ color: "var(--success-color)", marginTop: "2px" }}>✅</span>
+                <span><strong>Perfil Público:</strong> Tener un perfil profesional con tu portafolio de trabajos y reseñas de clientes.</span>
+              </li>
+            </ul>
+            <button className="btn-primary" style={{ width: "100%", padding: "var(--space-4)" }} onClick={() => {
+              setShowWelcomeModal(false);
+              handleShowSubscription();
+            }}>
+              Elegir mi plan ahora
+            </button>
           </div>
         </Modal>
       </div>

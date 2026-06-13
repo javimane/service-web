@@ -203,6 +203,9 @@ export default function DashboardProducts() {
     number | null
   >(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [newProductErrors, setNewProductErrors] = useState<
+    Record<string, string>
+  >({});
 
   // Delete confirmation modal
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -236,6 +239,9 @@ export default function DashboardProducts() {
   const [draggingEditImageIndex, setDraggingEditImageIndex] = useState<
     number | null
   >(null);
+  const [editProductErrors, setEditProductErrors] = useState<
+    Record<string, string>
+  >({});
 
   // Queries & Mutations
   const { data: productsData = [], isLoading: loadingProducts } = useQuery({
@@ -418,7 +424,7 @@ export default function DashboardProducts() {
   const [eanOfferPrice, setEanOfferPrice] = useState("");
 
   // Sorting
-  const toggleSort = (field) => {
+  const toggleSort = (field: string) => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -427,7 +433,7 @@ export default function DashboardProducts() {
     }
   };
 
-  const SortIcon = ({ field }) => {
+  const SortIcon = ({ field }: { field: string }) => {
     if (sortField !== field) return null;
     return sortDir === "asc" ? (
       <ChevronUp size={14} />
@@ -449,8 +455,8 @@ export default function DashboardProducts() {
       return matchesName && matchesEan && matchesCategory;
     });
     list.sort((a, b) => {
-      let valA = a[sortField];
-      let valB = b[sortField];
+      let valA = (a as any)[sortField];
+      let valB = (b as any)[sortField];
       if (typeof valA === "string") valA = valA.toLowerCase();
       if (typeof valB === "string") valB = valB.toLowerCase();
       if (valA < valB) return sortDir === "asc" ? -1 : 1;
@@ -651,8 +657,9 @@ export default function DashboardProducts() {
       offerPrice: "",
       currency_code: "ARG",
       percent_discount: "",
-      link_url: "", // Added link_url property
+      link_url: "",
     });
+    setNewProductErrors({});
     setFormPrice("");
     setFormStock("");
     setImageFiles([]);
@@ -669,7 +676,19 @@ export default function DashboardProducts() {
 
   // Add product
   const handleAddProduct = async () => {
-    if (!newProduct.name.trim() || !formPrice) return;
+    const errors: Record<string, string> = {};
+    if (!newProduct.name.trim()) errors.name = "El nombre es obligatorio.";
+    if (!newProduct.ean.trim()) errors.ean = "El EAN es obligatorio.";
+    if (!formPrice) errors.price = "El precio es obligatorio.";
+    if (!newProduct.categoryId)
+      errors.categoryId = "La categoría es obligatoria.";
+    if (!formStock) errors.stock = "El stock es obligatorio.";
+
+    if (Object.keys(errors).length > 0) {
+      setNewProductErrors(errors);
+      return;
+    }
+    setNewProductErrors({});
 
     const uploadedImageUrls: string[] = [];
 
@@ -698,7 +717,6 @@ export default function DashboardProducts() {
       categories_products_id: newProduct.categoryId
         ? Number(newProduct.categoryId)
         : undefined,
-      // Professional relationship data (sent in same request)
       professional_id: professionalId,
       price: Number(formPrice),
       sale_type: "unit",
@@ -713,7 +731,6 @@ export default function DashboardProducts() {
 
   // Open edit modal
   const openEditModal = (product: any) => {
-    // Find category ID from category name if possible, or adjust based on API response
     const categoryMatch = categories.find((c) => c.name === product.category);
 
     setEditProduct({
@@ -743,6 +760,7 @@ export default function DashboardProducts() {
     );
     setEditImageItems(initialImages.map((url) => ({ type: "existing", url })));
     setEditOriginalImageUrls(initialImages);
+    setEditProductErrors({});
     setEditOpen(true);
   };
 
@@ -798,7 +816,19 @@ export default function DashboardProducts() {
 
   // Save edited product
   const handleEditProduct = async () => {
-    if (!editProduct || !editProduct.name.trim() || !editProduct.price) return;
+    if (!editProduct) return;
+    const errors: Record<string, string> = {};
+    if (!editProduct.name.trim()) errors.name = "El nombre es obligatorio.";
+    if (!editProduct.price.toString().trim())
+      errors.price = "El precio es obligatorio.";
+    if (!editProduct.stock.toString().trim())
+      errors.stock = "El stock es obligatorio.";
+
+    if (Object.keys(errors).length > 0) {
+      setEditProductErrors(errors);
+      return;
+    }
+    setEditProductErrors({});
 
     const finalImages: string[] = [];
 
@@ -840,6 +870,7 @@ export default function DashboardProducts() {
     setEditProduct(null);
     setEditImageItems([]);
     setEditOriginalImageUrls([]);
+    setEditProductErrors({});
     setEditOpen(false);
   };
 
@@ -877,7 +908,8 @@ export default function DashboardProducts() {
           <div className="dash-products__no-address-banner">
             <Info size={16} />
             <span>
-              Por el momento solo pueden agregar productos los que tiene local fisico al Público.
+              Por el momento solo pueden agregar productos los que tiene local
+              fisico al Público.
             </span>
           </div>
         )}
@@ -1268,425 +1300,476 @@ export default function DashboardProducts() {
           <div
             className="dash-products__modal dash-products__modal--wide"
             onClick={(e) => e.stopPropagation()}
+            style={{ padding: 0, overflow: "hidden" }}
           >
-            <div className="dash-products__modal-header">
-              <h2>Agregar Producto</h2>
-              <button
-                className="dash-products__modal-close"
-                onClick={resetAddModal}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* EAN field with check */}
-            <div className="dash-products__modal-field dash-products__field--full">
-              <label>Código EAN / UPC</label>
-              <div className="dash-products__ean-row">
-                <div className="dash-products__modal-input-wrap dash-products__modal-input-wrap--flex">
-                  <Barcode size={16} />
-                  <input
-                    type="text"
-                    placeholder="Ej: 7790001234567"
-                    value={newProduct.ean}
-                    onChange={(e) =>
-                      setNewProduct({ ...newProduct, ean: e.target.value })
-                    }
-                  />
-                </div>
+            <div className="dash-products__modal-content">
+              <div className="dash-products__modal-header">
+                <h2>Agregar Producto</h2>
                 <button
-                  className="dash-products__ean-check-btn"
-                  onClick={handleCheckEan}
-                  disabled={!newProduct.ean.trim() || eanLoading}
+                  className="dash-products__modal-close"
+                  onClick={resetAddModal}
                 >
-                  {eanLoading ? "Buscando..." : "Verificar"}
+                  <X size={20} />
                 </button>
               </div>
-            </div>
 
-            {/* EAN Match found */}
-            {eanMatch && (
-              <div className="dash-products__ean-match">
-                <div
-                  className={`dash-products__ean-match-header ${eanMatch.isAlreadyAssigned ? "dash-products__ean-match-header--existing" : "dash-products__ean-match-header--new"}`}
-                >
-                  {eanMatch.isAlreadyAssigned ? (
-                    <Check size={16} />
-                  ) : (
-                    <Info size={16} />
-                  )}
-                  <span>
-                    {eanMatch.isAlreadyAssigned
-                      ? "Este producto ya se encuentra en tu catálogo."
-                      : "Este producto ya existe. Deberá asociarlo a su catálogo."}
-                  </span>
-                </div>
-
-                <div className="dash-products__ean-match-card">
-                  {eanMatch.image && (
-                    <img
-                      src={eanMatch.image}
-                      alt=""
-                      className="dash-products__ean-match-img"
+              {/* EAN field with check */}
+              <div className="dash-products__modal-field dash-products__field--full">
+                <label>Código EAN / UPC</label>
+                <div className="dash-products__ean-row">
+                  <div className="dash-products__modal-input-wrap dash-products__modal-input-wrap--flex">
+                    <Barcode size={16} />
+                    <input
+                      type="text"
+                      placeholder="Ej: 7790001234567"
+                      value={newProduct.ean}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, ean: e.target.value })
+                      }
                     />
-                  )}
-                  <div className="dash-products__ean-match-info">
-                    <span className="dash-products__ean-match-name">
-                      {eanMatch.title}
+                  </div>
+                  <button
+                    className="dash-products__ean-check-btn"
+                    onClick={handleCheckEan}
+                    disabled={!newProduct.ean.trim() || eanLoading}
+                  >
+                    {eanLoading ? "Buscando..." : "Verificar"}
+                  </button>
+                </div>
+                {newProductErrors.ean && (
+                  <span
+                    className="error-text"
+                    style={{ fontSize: "0.75rem", color: "var(--error-color)" }}
+                  >
+                    {newProductErrors.ean}
+                  </span>
+                )}
+              </div>
+
+              {/* EAN Match found */}
+              {eanMatch && (
+                <div className="dash-products__ean-match">
+                  <div
+                    className={`dash-products__ean-match-header ${eanMatch.isAlreadyAssigned ? "dash-products__ean-match-header--existing" : "dash-products__ean-match-header--new"}`}
+                  >
+                    {eanMatch.isAlreadyAssigned ? (
+                      <Check size={16} />
+                    ) : (
+                      <Info size={16} />
+                    )}
+                    <span>
+                      {eanMatch.isAlreadyAssigned
+                        ? "Este producto ya se encuentra en tu catálogo."
+                        : "Este producto ya existe. Deberá asociarlo a su catálogo."}
                     </span>
-                    <div className="dash-products__price-container dash-products__price-container--flex-start">
-                      <span
-                        className={`dash-products__ean-match-price ${eanMatch.offer_price > 0 ? "dash-products__price--offer" : ""}`}
-                      >
-                        {formatPrice(
-                          eanMatch.offer_price > 0
-                            ? eanMatch.offer_price
-                            : eanMatch.price,
-                        )}
+                  </div>
+
+                  <div className="dash-products__ean-match-card">
+                    {eanMatch.image && (
+                      <img
+                        src={eanMatch.image}
+                        alt=""
+                        className="dash-products__ean-match-img"
+                      />
+                    )}
+                    <div className="dash-products__ean-match-info">
+                      <span className="dash-products__ean-match-name">
+                        {eanMatch.title}
                       </span>
-                      {eanMatch.offer_price > 0 && (
-                        <span className="dash-products__price-original">
-                          {formatPrice(eanMatch.price)}
+                      <div className="dash-products__price-container dash-products__price-container--flex-start">
+                        <span
+                          className={`dash-products__ean-match-price ${eanMatch.offer_price > 0 ? "dash-products__price--offer" : ""}`}
+                        >
+                          {formatPrice(
+                            eanMatch.offer_price > 0
+                              ? eanMatch.offer_price
+                              : eanMatch.price,
+                          )}
+                        </span>
+                        {eanMatch.offer_price > 0 && (
+                          <span className="dash-products__price-original">
+                            {formatPrice(eanMatch.price)}
+                          </span>
+                        )}
+                      </div>
+                      {eanMatch.category && (
+                        <span className="dash-products__ean-match-cat">
+                          {eanMatch.category}
                         </span>
                       )}
                     </div>
-                    {eanMatch.category && (
-                      <span className="dash-products__ean-match-cat">
-                        {eanMatch.category}
-                      </span>
+                  </div>
+
+                  {!eanMatch.isAlreadyAssigned && (
+                    <div className="dash-products__form-grid dash-products__form-grid--mt">
+                      <div className="dash-products__modal-field">
+                        <label>Precio (ARS) *</label>
+                        <div className="dash-products__modal-input-wrap">
+                          <DollarSign size={16} />
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={eanCustomPrice}
+                            onChange={(e) => setEanCustomPrice(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="dash-products__modal-field">
+                        <label>Precio Oferta (ARS)</label>
+                        <div className="dash-products__modal-input-wrap">
+                          <DollarSign size={16} />
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={eanOfferPrice}
+                            onChange={(e) => setEanOfferPrice(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="dash-products__modal-field">
+                        <label>Stock disponible</label>
+                        <div className="dash-products__modal-input-wrap">
+                          <Package size={16} />
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={eanStock}
+                            onChange={(e) => setEanStock(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="dash-products__modal-footer">
+                    <button
+                      className="dash-products__modal-cancel"
+                      onClick={() => setEanMatch(null)}
+                    >
+                      {eanMatch.isAlreadyAssigned ? "Cerrar" : "Crear nuevo"}
+                    </button>
+                    {!eanMatch.isAlreadyAssigned && (
+                      <button
+                        className="dash-products__modal-apply"
+                        onClick={handleAddFromEan}
+                        disabled={
+                          !eanCustomPrice || parseInt(eanCustomPrice) <= 0
+                        }
+                      >
+                        Agregar a mi cuenta
+                      </button>
                     )}
                   </div>
                 </div>
+              )}
 
-                {!eanMatch.isAlreadyAssigned && (
-                  <div className="dash-products__form-grid dash-products__form-grid--mt">
-                    <div className="dash-products__modal-field">
-                      <label>Precio (ARS) *</label>
-                      <div className="dash-products__modal-input-wrap">
-                        <DollarSign size={16} />
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={eanCustomPrice}
-                          onChange={(e) => setEanCustomPrice(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="dash-products__modal-field">
-                      <label>Precio Oferta (ARS)</label>
-                      <div className="dash-products__modal-input-wrap">
-                        <DollarSign size={16} />
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={eanOfferPrice}
-                          onChange={(e) => setEanOfferPrice(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="dash-products__modal-field">
-                      <label>Stock disponible</label>
-                      <div className="dash-products__modal-input-wrap">
-                        <Package size={16} />
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={eanStock}
-                          onChange={(e) => setEanStock(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="dash-products__modal-footer">
-                  <button
-                    className="dash-products__modal-cancel"
-                    onClick={() => setEanMatch(null)}
-                  >
-                    {eanMatch.isAlreadyAssigned ? "Cerrar" : "Crear nuevo"}
-                  </button>
-                  {!eanMatch.isAlreadyAssigned && (
-                    <button
-                      className="dash-products__modal-apply"
-                      onClick={handleAddFromEan}
-                      disabled={
-                        !eanCustomPrice || parseInt(eanCustomPrice) <= 0
-                      }
-                    >
-                      Agregar a mi cuenta
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Regular form (hidden when EAN match is shown) */}
-            {!eanMatch && (
-              <>
-                <div className="dash-products__form-grid">
-                  <div className="dash-products__modal-field dash-products__field--full">
-                    <label>Nombre del producto *</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Taladro Bosch 550W"
-                      value={newProduct.name}
-                      onChange={(e) =>
-                        setNewProduct({ ...newProduct, name: e.target.value })
-                      }
-                    />
-                  </div>
-
-                  <div className="dash-products__modal-field">
-                    <label>Marca</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Bosch, Samsung..."
-                      value={newProduct.brand}
-                      onChange={(e) =>
-                        setNewProduct({ ...newProduct, brand: e.target.value })
-                      }
-                    />
-                  </div>
-
-                  <div className="dash-products__modal-field">
-                    <label>Precio *</label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      value={formPrice}
-                      onChange={(e) => setFormPrice(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="dash-products__modal-field">
-                    <label>Precio de Oferta</label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      value={newProduct.offerPrice}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          offerPrice: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="dash-products__modal-field">
-                    <label>Moneda *</label>
-                    <select
-                      value={newProduct.currency_code}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          currency_code: e.target.value,
-                        })
-                      }
-                      className="dash-products__modal-select"
-                    >
-                      <option value="ARG">Pesos ($)</option>
-                      <option value="USD">Dólares (USD $)</option>
-                    </select>
-                  </div>
-
-                  <div className="dash-products__modal-field">
-                    <label>Porcentaje de Descuento (%)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      placeholder="Ej: 10"
-                      value={newProduct.percent_discount}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          percent_discount: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="dash-products__modal-field">
-                    <label>Categoría</label>
-                    <select
-                      value={newProduct.categoryId}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          categoryId: e.target.value,
-                        })
-                      }
-                      className="dash-products__modal-select"
-                    >
-                      <option value="">Seleccionar categoría</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="dash-products__modal-field">
-                    <label>Stock</label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      value={formStock}
-                      onChange={(e) => setFormStock(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="dash-products__modal-field">
-                    <label>URL de página web</label>
-                    <div className="dash-products__modal-input-wrap">
-                      <LinkIcon size={16} />
+              {/* Regular form (hidden when EAN match is shown) */}
+              {!eanMatch && (
+                <>
+                  <div className="dash-products__form-grid">
+                    <div className="dash-products__modal-field dash-products__field--full">
+                      <label>Nombre del producto *</label>
                       <input
-                        type="url"
-                        placeholder="https://www.ejemplo.com/producto"
-                        value={newProduct.link_url}
+                        type="text"
+                        placeholder="Ej: Taladro Bosch 550W"
+                        value={newProduct.name}
+                        onChange={(e) =>
+                          setNewProduct({ ...newProduct, name: e.target.value })
+                        }
+                      />
+                      {newProductErrors.name && (
+                        <span
+                          className="error-text"
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--error-color)",
+                          }}
+                        >
+                          {newProductErrors.name}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="dash-products__modal-field">
+                      <label>Marca</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Bosch, Samsung..."
+                        value={newProduct.brand}
                         onChange={(e) =>
                           setNewProduct({
                             ...newProduct,
-                            link_url: e.target.value,
+                            brand: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="dash-products__modal-field">
+                      <label>Precio *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={formPrice}
+                        onChange={(e) => setFormPrice(e.target.value)}
+                      />
+                      {newProductErrors.price && (
+                        <span
+                          className="error-text"
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--error-color)",
+                          }}
+                        >
+                          {newProductErrors.price}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="dash-products__modal-field">
+                      <label>Precio de Oferta</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={newProduct.offerPrice}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            offerPrice: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="dash-products__modal-field">
+                      <label>Moneda *</label>
+                      <select
+                        value={newProduct.currency_code}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            currency_code: e.target.value,
+                          })
+                        }
+                        className="dash-products__modal-select"
+                      >
+                        <option value="ARG">Pesos ($)</option>
+                        <option value="USD">Dólares (USD $)</option>
+                      </select>
+                    </div>
+
+                    <div className="dash-products__modal-field">
+                      <label>Porcentaje de Descuento (%)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="Ej: 10"
+                        value={newProduct.percent_discount}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            percent_discount: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="dash-products__modal-field">
+                      <label>Categoría *</label>
+                      <select
+                        value={newProduct.categoryId}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            categoryId: e.target.value,
+                          })
+                        }
+                        className="dash-products__modal-select"
+                      >
+                        <option value="">Seleccionar categoría</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                      {newProductErrors.categoryId && (
+                        <span
+                          className="error-text"
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--error-color)",
+                          }}
+                        >
+                          {newProductErrors.categoryId}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="dash-products__modal-field">
+                      <label>Stock *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={formStock}
+                        onChange={(e) => setFormStock(e.target.value)}
+                      />
+                      {newProductErrors.stock && (
+                        <span
+                          className="error-text"
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--error-color)",
+                          }}
+                        >
+                          {newProductErrors.stock}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="dash-products__modal-field">
+                      <label>URL de página web</label>
+                      <div className="dash-products__modal-input-wrap">
+                        <LinkIcon size={16} />
+                        <input
+                          type="url"
+                          placeholder="https://www.ejemplo.com/producto"
+                          value={newProduct.link_url}
+                          onChange={(e) =>
+                            setNewProduct({
+                              ...newProduct,
+                              link_url: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Image upload */}
+                    <div className="dash-products__modal-field dash-products__field--full">
+                      <label>Imagen del producto</label>
+                      {imagePreviews.length > 0 && (
+                        <p className="dash-products__images-order-hint">
+                          Ordená las imágenes arrastrando o con las flechas. La
+                          primera será la principal.
+                        </p>
+                      )}
+                      <label className="dash-products__image-upload">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageChange}
+                          hidden
+                          disabled={imageFiles.length >= MAX_PRODUCT_IMAGES}
+                        />
+                        <Upload size={20} />
+                        <span>
+                          {imageFiles.length >= MAX_PRODUCT_IMAGES
+                            ? "Límite alcanzado"
+                            : "Subir imágenes"}
+                        </span>
+                        <span className="dash-products__image-upload-hint">
+                          JPG, PNG o WebP (máx. 5MB c/u). Hasta 4 imágenes.
+                        </span>
+                      </label>
+
+                      {imagePreviews.length > 0 && (
+                        <div className="dash-products__image-preview-grid">
+                          {imagePreviews.map((preview, index) => (
+                            <div
+                              key={`${preview}-${index}`}
+                              className={`dash-products__image-preview ${draggingNewImageIndex === index ? "dash-products__image-preview--dragging" : ""}`}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.effectAllowed = "move";
+                                setDraggingNewImageIndex(index);
+                              }}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={() => handleNewImageDrop(index)}
+                              onDragEnd={() => setDraggingNewImageIndex(null)}
+                            >
+                              <img src={preview} alt={`Preview ${index + 1}`} />
+                              <button
+                                className="dash-products__image-remove"
+                                onClick={() => removeImage(index)}
+                                type="button"
+                              >
+                                <X size={14} />
+                              </button>
+                              <div className="dash-products__image-order-controls">
+                                <button
+                                  className="dash-products__image-order-btn"
+                                  onClick={() => moveNewImage(index, index - 1)}
+                                  type="button"
+                                  disabled={index === 0}
+                                  aria-label="Mover imagen a la izquierda"
+                                  title="Mover a la izquierda"
+                                >
+                                  <ChevronLeft size={14} />
+                                </button>
+                                <button
+                                  className="dash-products__image-order-btn"
+                                  onClick={() => moveNewImage(index, index + 1)}
+                                  type="button"
+                                  disabled={index === imagePreviews.length - 1}
+                                  aria-label="Mover imagen a la derecha"
+                                  title="Mover a la derecha"
+                                >
+                                  <ChevronRight size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="dash-products__modal-field dash-products__field--full">
+                      <label>Descripción</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Descripción breve del producto..."
+                        value={newProduct.description}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            description: e.target.value,
                           })
                         }
                       />
                     </div>
                   </div>
 
-                  {/* Image upload */}
-                  <div className="dash-products__modal-field dash-products__field--full">
-                    <label>Imagen del producto</label>
-                    {imagePreviews.length > 0 && (
-                      <p className="dash-products__images-order-hint">
-                        Ordená las imágenes arrastrando o con las flechas. La
-                        primera será la principal.
-                      </p>
-                    )}
-                    <label className="dash-products__image-upload">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageChange}
-                        hidden
-                        disabled={imageFiles.length >= MAX_PRODUCT_IMAGES}
-                      />
-                      <Upload size={20} />
-                      <span>
-                        {imageFiles.length >= MAX_PRODUCT_IMAGES
-                          ? "Límite alcanzado"
-                          : "Subir imágenes"}
-                      </span>
-                      <span className="dash-products__image-upload-hint">
-                        JPG, PNG o WebP (máx. 5MB c/u). Hasta 4 imágenes.
-                      </span>
-                    </label>
-
-                    {imagePreviews.length > 0 && (
-                      <div className="dash-products__image-preview-grid">
-                        {imagePreviews.map((preview, index) => (
-                          <div
-                            key={`${preview}-${index}`}
-                            className={`dash-products__image-preview ${draggingNewImageIndex === index ? "dash-products__image-preview--dragging" : ""}`}
-                            draggable
-                            onDragStart={(e) => {
-                              e.dataTransfer.effectAllowed = "move";
-                              setDraggingNewImageIndex(index);
-                            }}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={() => handleNewImageDrop(index)}
-                            onDragEnd={() => setDraggingNewImageIndex(null)}
-                          >
-                            <img src={preview} alt={`Preview ${index + 1}`} />
-                            <button
-                              className="dash-products__image-remove"
-                              onClick={() => removeImage(index)}
-                              type="button"
-                            >
-                              <X size={14} />
-                            </button>
-                            <div className="dash-products__image-order-controls">
-                              <button
-                                className="dash-products__image-order-btn"
-                                onClick={() => moveNewImage(index, index - 1)}
-                                type="button"
-                                disabled={index === 0}
-                                aria-label="Mover imagen a la izquierda"
-                                title="Mover a la izquierda"
-                              >
-                                <ChevronLeft size={14} />
-                              </button>
-                              <button
-                                className="dash-products__image-order-btn"
-                                onClick={() => moveNewImage(index, index + 1)}
-                                type="button"
-                                disabled={index === imagePreviews.length - 1}
-                                aria-label="Mover imagen a la derecha"
-                                title="Mover a la derecha"
-                              >
-                                <ChevronRight size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  <div className="dash-products__modal-footer">
+                    <button
+                      className="dash-products__modal-cancel"
+                      onClick={resetAddModal}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      className="dash-products__modal-apply"
+                      onClick={handleAddProduct}
+                      disabled={createMutation.isPending}
+                    >
+                      {createMutation.isPending
+                        ? "Guardando..."
+                        : "Guardar Producto"}
+                    </button>
                   </div>
-
-                  <div className="dash-products__modal-field dash-products__field--full">
-                    <label>Descripción</label>
-                    <textarea
-                      rows={3}
-                      placeholder="Descripción breve del producto..."
-                      value={newProduct.description}
-                      onChange={(e) =>
-                        setNewProduct({
-                          ...newProduct,
-                          description: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="dash-products__modal-footer">
-                  <button
-                    className="dash-products__modal-cancel"
-                    onClick={resetAddModal}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    className="dash-products__modal-apply"
-                    onClick={handleAddProduct}
-                    disabled={
-                      !newProduct.name.trim() ||
-                      !newProduct.brand.trim() ||
-                      !newProduct.ean.trim() ||
-                      !newProduct.categoryId ||
-                      !formPrice ||
-                      !formStock ||
-                      !newProduct.description.trim() ||
-                      imageFiles.length === 0
-                    }
-                  >
-                    Agregar Producto
-                  </button>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1697,300 +1780,345 @@ export default function DashboardProducts() {
           <div
             className="dash-products__modal dash-products__modal--wide"
             onClick={(e) => e.stopPropagation()}
+            style={{ padding: 0, overflow: "hidden" }}
           >
-            <div className="dash-products__modal-header">
-              <h2>Editar Producto</h2>
-              <button
-                className="dash-products__modal-close"
-                onClick={resetEditModal}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="dash-products__form-grid">
-              <div className="dash-products__modal-field dash-products__field--full">
-                <label>Nombre del producto *</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Taladro Bosch 550W"
-                  value={editProduct.name}
-                  onChange={(e) =>
-                    setEditProduct({ ...editProduct, name: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="dash-products__modal-field">
-                <label>Marca</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Bosch, Samsung..."
-                  value={editProduct.brand}
-                  onChange={(e) =>
-                    setEditProduct({ ...editProduct, brand: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="dash-products__modal-field">
-                <label>Precio *</label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={editProduct.price}
-                  onChange={(e) =>
-                    setEditProduct({ ...editProduct, price: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="dash-products__modal-field">
-                <label>Precio de Oferta</label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={editProduct.offerPrice}
-                  onChange={(e) =>
-                    setEditProduct({
-                      ...editProduct,
-                      offerPrice: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="dash-products__modal-field">
-                <label>Moneda *</label>
-                <select
-                  value={editProduct.currency_code}
-                  onChange={(e) =>
-                    setEditProduct({
-                      ...editProduct,
-                      currency_code: e.target.value,
-                    })
-                  }
-                  className="dash-products__modal-select"
+            <div className="dash-products__modal-content">
+              <div className="dash-products__modal-header">
+                <h2>Editar Producto</h2>
+                <button
+                  className="dash-products__modal-close"
+                  onClick={resetEditModal}
                 >
-                  <option value="ARG">Pesos ($)</option>
-                  <option value="USD">Dólares (USD $)</option>
-                </select>
+                  <X size={20} />
+                </button>
               </div>
 
-              <div className="dash-products__modal-field">
-                <label>Porcentaje de Descuento (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  placeholder="Ej: 10"
-                  value={editProduct.percent_discount}
-                  onChange={(e) =>
-                    setEditProduct({
-                      ...editProduct,
-                      percent_discount: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="dash-products__modal-field">
-                <label>Categoría</label>
-                <select
-                  value={editProduct.categoryId}
-                  onChange={(e) =>
-                    setEditProduct({
-                      ...editProduct,
-                      categoryId: e.target.value,
-                    })
-                  }
-                  className="dash-products__modal-select"
-                >
-                  <option value="">Seleccionar categoría</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="dash-products__modal-field">
-                <label>Stock</label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={editProduct.stock}
-                  onChange={(e) =>
-                    setEditProduct({ ...editProduct, stock: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="dash-products__modal-field dash-products__field--full">
-                <label>Código EAN / UPC</label>
-                <div className="dash-products__ean-row">
-                  <div className="dash-products__modal-input-wrap dash-products__modal-input-wrap--flex">
-                    <Barcode size={16} />
-                    <input
-                      type="text"
-                      placeholder="Ej: 7790001234567"
-                      value={editProduct.ean}
-                      onChange={(e) =>
-                        setEditProduct({ ...editProduct, ean: e.target.value })
-                      }
-                    />
-                  </div>
-                  <button
-                    className="dash-products__ean-check-btn"
-                    onClick={handleEditCheckEan}
-                    disabled={!editProduct.ean.trim() || eanLoading}
-                  >
-                    {eanLoading ? "Buscando..." : "Verificar"}
-                  </button>
-                </div>
-              </div>
-
-              <div className="dash-products__modal-field dash-products__field--full">
-                <label>URL de página web</label>
-                <div className="dash-products__modal-input-wrap">
-                  <LinkIcon size={16} />
+              <div className="dash-products__form-grid">
+                <div className="dash-products__modal-field dash-products__field--full">
+                  <label>Nombre del producto *</label>
                   <input
-                    type="url"
-                    placeholder="https://www.ejemplo.com/producto"
-                    value={editProduct.webUrl}
+                    type="text"
+                    placeholder="Ej: Taladro Bosch 550W"
+                    value={editProduct.name}
+                    onChange={(e) =>
+                      setEditProduct({ ...editProduct, name: e.target.value })
+                    }
+                  />
+                  {editProductErrors.name && (
+                    <span
+                      className="error-text"
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--error-color)",
+                      }}
+                    >
+                      {editProductErrors.name}
+                    </span>
+                  )}
+                </div>
+
+                <div className="dash-products__modal-field">
+                  <label>Marca</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Bosch, Samsung..."
+                    value={editProduct.brand}
+                    onChange={(e) =>
+                      setEditProduct({ ...editProduct, brand: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="dash-products__modal-field">
+                  <label>Precio *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={editProduct.price}
+                    onChange={(e) =>
+                      setEditProduct({ ...editProduct, price: e.target.value })
+                    }
+                  />
+                  {editProductErrors.price && (
+                    <span
+                      className="error-text"
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--error-color)",
+                      }}
+                    >
+                      {editProductErrors.price}
+                    </span>
+                  )}
+                </div>
+
+                <div className="dash-products__modal-field">
+                  <label>Precio de Oferta</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={editProduct.offerPrice}
                     onChange={(e) =>
                       setEditProduct({
                         ...editProduct,
-                        webUrl: e.target.value,
+                        offerPrice: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="dash-products__modal-field">
+                  <label>Moneda *</label>
+                  <select
+                    value={editProduct.currency_code}
+                    onChange={(e) =>
+                      setEditProduct({
+                        ...editProduct,
+                        currency_code: e.target.value,
+                      })
+                    }
+                    className="dash-products__modal-select"
+                  >
+                    <option value="ARG">Pesos ($)</option>
+                    <option value="USD">Dólares (USD $)</option>
+                  </select>
+                </div>
+
+                <div className="dash-products__modal-field">
+                  <label>Porcentaje de Descuento (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="Ej: 10"
+                    value={editProduct.percent_discount}
+                    onChange={(e) =>
+                      setEditProduct({
+                        ...editProduct,
+                        percent_discount: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="dash-products__modal-field">
+                  <label>Categoría</label>
+                  <select
+                    value={editProduct.categoryId}
+                    onChange={(e) =>
+                      setEditProduct({
+                        ...editProduct,
+                        categoryId: e.target.value,
+                      })
+                    }
+                    className="dash-products__modal-select"
+                  >
+                    <option value="">Seleccionar categoría</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="dash-products__modal-field">
+                  <label>Stock *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={editProduct.stock}
+                    onChange={(e) =>
+                      setEditProduct({ ...editProduct, stock: e.target.value })
+                    }
+                  />
+                  {editProductErrors.stock && (
+                    <span
+                      className="error-text"
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--error-color)",
+                      }}
+                    >
+                      {editProductErrors.stock}
+                    </span>
+                  )}
+                </div>
+
+                <div className="dash-products__modal-field dash-products__field--full">
+                  <label>Código EAN / UPC</label>
+                  <div className="dash-products__ean-row">
+                    <div className="dash-products__modal-input-wrap dash-products__modal-input-wrap--flex">
+                      <Barcode size={16} />
+                      <input
+                        type="text"
+                        placeholder="Ej: 7790001234567"
+                        value={editProduct.ean}
+                        onChange={(e) =>
+                          setEditProduct({
+                            ...editProduct,
+                            ean: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <button
+                      className="dash-products__ean-check-btn"
+                      onClick={handleEditCheckEan}
+                      disabled={!editProduct.ean.trim() || eanLoading}
+                    >
+                      {eanLoading ? "Buscando..." : "Verificar"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="dash-products__modal-field dash-products__field--full">
+                  <label>URL de página web</label>
+                  <div className="dash-products__modal-input-wrap">
+                    <LinkIcon size={16} />
+                    <input
+                      type="url"
+                      placeholder="https://www.ejemplo.com/producto"
+                      value={editProduct.webUrl}
+                      onChange={(e) =>
+                        setEditProduct({
+                          ...editProduct,
+                          webUrl: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* Image upload */}
+                <div className="dash-products__modal-field dash-products__field--full">
+                  <label>Imágenes del producto</label>
+                  {editImageItems.length > 0 && (
+                    <p className="dash-products__images-order-hint">
+                      Ordená las imágenes arrastrando o con las flechas. La
+                      primera será la principal.
+                    </p>
+                  )}
+                  {editImageItems.length > 0 && (
+                    <div className="dash-products__image-preview-grid">
+                      {editImageItems.map((item, index) => (
+                        <div
+                          key={
+                            item.type === "existing"
+                              ? `${item.url}-${index}`
+                              : `${item.preview}-${index}`
+                          }
+                          className={`dash-products__image-preview ${item.type === "new" ? "dash-products__image-preview--selected" : ""} ${draggingEditImageIndex === index ? "dash-products__image-preview--dragging" : ""}`}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "move";
+                            setDraggingEditImageIndex(index);
+                          }}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => handleEditImageDrop(index)}
+                          onDragEnd={() => setDraggingEditImageIndex(null)}
+                        >
+                          <img
+                            src={
+                              item.type === "existing" ? item.url : item.preview
+                            }
+                            alt={`Imagen ${index + 1}`}
+                          />
+                          <button
+                            className="dash-products__image-remove"
+                            onClick={() => removeEditImageItem(index)}
+                            type="button"
+                          >
+                            <X size={14} />
+                          </button>
+                          <div className="dash-products__image-order-controls">
+                            <button
+                              className="dash-products__image-order-btn"
+                              onClick={() =>
+                                moveEditImageItem(index, index - 1)
+                              }
+                              type="button"
+                              disabled={index === 0}
+                              aria-label="Mover imagen a la izquierda"
+                              title="Mover a la izquierda"
+                            >
+                              <ChevronLeft size={14} />
+                            </button>
+                            <button
+                              className="dash-products__image-order-btn"
+                              onClick={() =>
+                                moveEditImageItem(index, index + 1)
+                              }
+                              type="button"
+                              disabled={index === editImageItems.length - 1}
+                              aria-label="Mover imagen a la derecha"
+                              title="Mover a la derecha"
+                            >
+                              <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <label className="dash-products__image-upload">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleEditImageChange}
+                      hidden
+                      disabled={editImageItems.length >= MAX_PRODUCT_IMAGES}
+                    />
+                    <Upload size={20} />
+                    <span>
+                      {editImageItems.length >= MAX_PRODUCT_IMAGES
+                        ? "Límite alcanzado"
+                        : "Agregar imágenes"}
+                    </span>
+                    <span className="dash-products__image-upload-hint">
+                      JPG, PNG o WebP (máx. 5MB c/u). Hasta 4 imágenes.
+                    </span>
+                  </label>
+                </div>
+
+                <div className="dash-products__modal-field dash-products__field--full">
+                  <label>Descripción</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Descripción breve del producto..."
+                    value={editProduct.description}
+                    onChange={(e) =>
+                      setEditProduct({
+                        ...editProduct,
+                        description: e.target.value,
                       })
                     }
                   />
                 </div>
               </div>
 
-              {/* Image upload */}
-              <div className="dash-products__modal-field dash-products__field--full">
-                <label>Imágenes del producto</label>
-                {editImageItems.length > 0 && (
-                  <p className="dash-products__images-order-hint">
-                    Ordená las imágenes arrastrando o con las flechas. La
-                    primera será la principal.
-                  </p>
-                )}
-                {editImageItems.length > 0 && (
-                  <div className="dash-products__image-preview-grid">
-                    {editImageItems.map((item, index) => (
-                      <div
-                        key={
-                          item.type === "existing"
-                            ? `${item.url}-${index}`
-                            : `${item.preview}-${index}`
-                        }
-                        className={`dash-products__image-preview ${item.type === "new" ? "dash-products__image-preview--selected" : ""} ${draggingEditImageIndex === index ? "dash-products__image-preview--dragging" : ""}`}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.effectAllowed = "move";
-                          setDraggingEditImageIndex(index);
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={() => handleEditImageDrop(index)}
-                        onDragEnd={() => setDraggingEditImageIndex(null)}
-                      >
-                        <img
-                          src={
-                            item.type === "existing" ? item.url : item.preview
-                          }
-                          alt={`Imagen ${index + 1}`}
-                        />
-                        <button
-                          className="dash-products__image-remove"
-                          onClick={() => removeEditImageItem(index)}
-                          type="button"
-                        >
-                          <X size={14} />
-                        </button>
-                        <div className="dash-products__image-order-controls">
-                          <button
-                            className="dash-products__image-order-btn"
-                            onClick={() => moveEditImageItem(index, index - 1)}
-                            type="button"
-                            disabled={index === 0}
-                            aria-label="Mover imagen a la izquierda"
-                            title="Mover a la izquierda"
-                          >
-                            <ChevronLeft size={14} />
-                          </button>
-                          <button
-                            className="dash-products__image-order-btn"
-                            onClick={() => moveEditImageItem(index, index + 1)}
-                            type="button"
-                            disabled={index === editImageItems.length - 1}
-                            aria-label="Mover imagen a la derecha"
-                            title="Mover a la derecha"
-                          >
-                            <ChevronRight size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <label className="dash-products__image-upload">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleEditImageChange}
-                    hidden
-                    disabled={editImageItems.length >= MAX_PRODUCT_IMAGES}
-                  />
-                  <Upload size={20} />
-                  <span>
-                    {editImageItems.length >= MAX_PRODUCT_IMAGES
-                      ? "Límite alcanzado"
-                      : "Agregar imágenes"}
-                  </span>
-                  <span className="dash-products__image-upload-hint">
-                    JPG, PNG o WebP (máx. 5MB c/u). Hasta 4 imágenes.
-                  </span>
-                </label>
+              <div className="dash-products__modal-footer">
+                <button
+                  className="dash-products__modal-cancel"
+                  onClick={resetEditModal}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="dash-products__modal-apply"
+                  onClick={handleEditProduct}
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending
+                    ? "Guardando..."
+                    : "Guardar Cambios"}
+                </button>
               </div>
-
-              <div className="dash-products__modal-field dash-products__field--full">
-                <label>Descripción</label>
-                <textarea
-                  rows={3}
-                  placeholder="Descripción breve del producto..."
-                  value={editProduct.description}
-                  onChange={(e) =>
-                    setEditProduct({
-                      ...editProduct,
-                      description: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="dash-products__modal-footer">
-              <button
-                className="dash-products__modal-cancel"
-                onClick={resetEditModal}
-              >
-                Cancelar
-              </button>
-              <button
-                className="dash-products__modal-apply"
-                onClick={handleEditProduct}
-                disabled={!editProduct.name.trim() || !editProduct.price}
-              >
-                Guardar Cambios
-              </button>
             </div>
           </div>
         </div>
@@ -2039,9 +2167,7 @@ export default function DashboardProducts() {
       {/* ===== Floating Delete Screen ===== */}
       {deleteConfirmOpen && (
         <div className="dash-products__floating-overlay">
-          <div
-            className="dash-products__floating-screen dash-products__floating-screen--danger"
-          >
+          <div className="dash-products__floating-screen dash-products__floating-screen--danger">
             <div className="dash-products__floating-icon dash-products__floating-icon--danger">
               <Trash2 size={28} />
             </div>

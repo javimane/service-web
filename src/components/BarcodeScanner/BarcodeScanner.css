@@ -1,0 +1,98 @@
+.barcode-scanner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+.barcode-scanner-modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 450px;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+}
+
+.barcode-scanner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.barcode-scanner-header h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+  font-weight: var(--weight-bold);
+}
+
+.barcode-scanner-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  transition: all 0.2s ease;
+}
+
+.barcode-scanner-close:hover {
+  background: var(--surface-soft);
+  color: var(--text-primary);
+}
+
+.barcode-scanner-reader {
+  width: 100%;
+  background: #000;
+}
+
+#reader {
+  border: none !important;
+}
+
+#reader__dashboard_section_csr span {
+  color: white !important;
+  font-family: var(--font-primary) !important;
+}
+
+#reader__dashboard_section_csr button {
+  background: var(--accent-color) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 8px 16px !important;
+  font-family: var(--font-primary) !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+}
+
+.barcode-scanner-hint {
+  padding: var(--space-4);
+  margin: 0;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  background: var(--surface-soft);
+  border-top: 1px solid var(--border-color);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

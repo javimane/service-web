@@ -25,29 +25,31 @@ export default function LoginPage({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const { refreshSession, setSessionStatus, user } = useAuth();
+  const { refreshSession, setSessionStatus, sessionStatus, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    // Handling Supabase OAuth redirects (e.g. from Google login)
+    if (user && sessionStatus) {
       let isNewUser = false;
-      if (user?.created_at && user?.last_sign_in_at) {
-        const created = new Date(user.created_at).getTime();
-        const lastSignIn = new Date(user.last_sign_in_at).getTime();
-        if (Math.abs(lastSignIn - created) < 30000) {
-          isNewUser = true;
-        }
+      const createdAt = sessionStatus.user_created_at ? new Date(sessionStatus.user_created_at).getTime() : 0;
+      const lastSignIn = sessionStatus.user_last_sign_in_at ? new Date(sessionStatus.user_last_sign_in_at).getTime() : createdAt;
+      
+      if (createdAt > 0 && Math.abs(lastSignIn - createdAt) < 5 * 60 * 1000) {
+        isNewUser = true;
       }
+      
+      const isProf = !!sessionStatus.is_professional;
 
       if (isModal) {
         onClose?.();
-        if (isNewUser) router.push("/dashboard?tab=subscription");
+        if (isNewUser && isProf) router.push(ROUTES.dashboard);
       } else {
-        if (isNewUser) router.push("/dashboard?tab=subscription");
+        if (isNewUser && isProf) router.push(ROUTES.dashboard);
         else router.push(ROUTES.home);
       }
     }
-  }, [user, isModal, onClose, router]);
+  }, [user, sessionStatus, isModal, onClose, router]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -106,8 +108,19 @@ export default function LoginPage({
         // Opcional: Decidir si el login general falla si el chat falla.
       }
 
+      let isNewUser = false;
+      let isProf = false;
       if (response?.sessionStatus) {
         setSessionStatus(response.sessionStatus);
+        const st = response.sessionStatus;
+        if (st.user_created_at && st.user_last_sign_in_at) {
+          const created = new Date(st.user_created_at).getTime();
+          const lastSignIn = new Date(st.user_last_sign_in_at).getTime();
+          if (Math.abs(lastSignIn - created) < 5 * 60 * 1000) {
+            isNewUser = true;
+          }
+        }
+        isProf = !!st.is_professional;
       }
 
       await refreshSession();
@@ -115,7 +128,11 @@ export default function LoginPage({
       if (isModal) {
         onClose?.();
       } else {
-        router.push(ROUTES.home);
+        if (isNewUser && isProf) {
+          router.push(ROUTES.dashboard);
+        } else {
+          router.push(ROUTES.home);
+        }
       }
     } catch (err: any) {
       setAuthError(

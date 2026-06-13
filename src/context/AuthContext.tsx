@@ -28,6 +28,9 @@ type SessionStatus = {
   profile_province_id?: number | null;
   full_name?: string;
   email?: string;
+  has_days_left?: boolean;
+  user_created_at?: string;
+  user_last_sign_in_at?: string;
   subscription?: {
     status?: string;
     professional_id?: number | string;
@@ -106,13 +109,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshSession = async () => {
     try {
       // 1. Check if the Supabase client has an active session (e.g. from OAuth redirect)
-      const { data: { session: supabaseSession } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session: supabaseSession },
+      } = await supabase.auth.getSession();
+
       if (supabaseSession) {
         try {
           // Try to get NestJS session
           const session = await authService.getSession();
-          const { nextUser, nextSessionStatus } = normalizeSessionPayload(session);
+          const { nextUser, nextSessionStatus } =
+            normalizeSessionPayload(session);
           setUser(nextUser);
           if (nextSessionStatus !== null) {
             setSessionStatus(nextSessionStatus);
@@ -127,7 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               access_token: supabaseSession.access_token,
               refresh_token: supabaseSession.refresh_token || "",
             });
-            const { nextUser, nextSessionStatus } = normalizeSessionPayload(syncResponse);
+            const { nextUser, nextSessionStatus } =
+              normalizeSessionPayload(syncResponse);
             setUser(nextUser);
             if (nextSessionStatus !== null) {
               setSessionStatus(nextSessionStatus);
@@ -180,7 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Remove auth=success from URL to clean it up
             urlParams.delete("auth");
             const newSearch = urlParams.toString();
-            const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "");
+            const newUrl =
+              window.location.pathname + (newSearch ? `?${newSearch}` : "");
             window.history.replaceState({}, document.title, newUrl);
           }
         });
@@ -192,7 +200,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin + window.location.pathname + window.location.search,
+        redirectTo:
+          window.location.origin +
+          window.location.pathname +
+          window.location.search,
       },
     });
   };
@@ -342,22 +353,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title="Sincronización de Chat"
         onClose={() => setShowChatSyncModal(false)}
       >
-        <p className="chat-sync-modal__text">
-          Acepta iniciar sesión para sincronizar tu cuenta con el chat en vivo y notificaciones.
+        <p style={{ marginBottom: "1.5rem", color: "var(--text-secondary)" }}>
+          Acepta iniciar sesión para sincronizar tu cuenta con el chat en vivo y
+          notificaciones.
         </p>
-        <div className="chat-sync-modal__actions">
-          <button 
-            type="button"
-            className="chat-sync-modal__btn chat-sync-modal__btn--secondary" 
+        <div
+          style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}
+        >
+          <button
+            className="btn-secondary"
             onClick={() => setShowChatSyncModal(false)}
           >
             Cancelar
           </button>
-          <button 
-            type="button"
-            className="chat-sync-modal__btn chat-sync-modal__btn--primary" 
-            onClick={handleChatSyncConfirm}
-          >
+          <button className="btn-primary" onClick={handleChatSyncConfirm}>
             Aceptar
           </button>
         </div>

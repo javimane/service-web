@@ -27,6 +27,11 @@ import {
   getProfessionalSubscriptionAction,
   createProfessionalMeAction,
 } from "@/app/actions/professionals";
+import {
+  getMercadoPagoPlansAction,
+  createMercadoPagoSubscriptionAction,
+  cancelMercadoPagoSubscriptionAction,
+} from "@/app/actions/mercadopago";
 import { getAccessToken } from "@/utils/auth";
 
 // Mapeo de los nombres de plan del API a los IDs internos
@@ -118,6 +123,16 @@ export default function SubscriptionSection() {
     staleTime: 1000 * 60 * 60, // 1 hour cache
   });
 
+  const { data: mpPlans } = useQuery({
+    queryKey: ["mercadopago-plans"],
+    queryFn: async () => {
+      const res = await getMercadoPagoPlansAction();
+      return res?.data || {};
+    },
+    staleTime: 1000 * 60 * 60,
+  });
+
+
   const currentStatus = useMemo(
     () => normalizeSubscriptionStatus(subscription?.status),
     [subscription?.status],
@@ -148,9 +163,6 @@ export default function SubscriptionSection() {
     [subscription],
   );
 
-  const basicCheckoutUrl = process.env.NEXT_PUBLIC_MP_BASIC_CHECKOUT_URL;
-  const premiumCheckoutUrl = process.env.NEXT_PUBLIC_MP_PREMIUM_CHECKOUT_URL;
-
   const currentPlan = useMemo(() => {
     if (!hasSubscription) return null;
 
@@ -171,49 +183,56 @@ export default function SubscriptionSection() {
     [subscription, currentPlan],
   );
 
-  const handleCancelSubscription = () => {
-    setLocalSubscription((prev: any) => {
-      const current = prev || apiSubscription;
-      return current ? { ...current, status: "cancelled" } : current;
-    });
-    setShowCancelConfirm(false);
-    showFeedback("success", "Suscripción cancelada correctamente.");
-  };
-
-  const getCheckoutUrlByPlanId = (planId: string) => {
-    if (planId === "profesional-premium") return premiumCheckoutUrl;
-    if (planId === "profesional-basico") return basicCheckoutUrl;
-    return "";
+  const handleCancelSubscription = async () => {
+    setIsSubmitting(true);
+    try {
+      await cancelMercadoPagoSubscriptionAction();
+      await refreshSession();
+      setLocalSubscription((prev: any) => {
+        const current = prev || apiSubscription;
+        return current ? { ...current, status: "cancelled" } : current;
+      });
+      setShowCancelConfirm(false);
+    } catch (error) {
+      console.error("Error al cancelar suscripción:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSelectPlan = async (planId: string) => {
-    if (planId === "free" || planId === "gratuito") {
-      setIsSubmitting(true);
-      setFeedback(null);
-      try {
-        const token = getAccessToken();
+    setIsSubmitting(true);
+    try {
+      if (planId === "free" || planId === "gratuito") {
+        const token = await getAccessToken();
         await createProfessionalMeAction({ token });
-        // Refresh session so AuthContext reflects the new professional status immediately
         await refreshSession();
         showFeedback("success", "Plan gratuito activado correctamente. ¡Bienvenido!");
-      } catch (error: any) {
-        console.error("Error al activar plan free:", error);
-        showFeedback("error", error.message || "Error al activar el plan gratuito. Por favor intente de nuevo.");
-      } finally {
-        setIsSubmitting(false);
+      } else {
+        const isPremium = planId === "profesional-premium";
+        const mpPlanId = mpPlans?.[isPremium ? "PROFESIONAL-PREMIUM" : "PROFESIONAL-BASICO"];
+
+        if (!mpPlanId) {
+          console.error(`ID de Mercado Pago no encontrado para el plan: ${planId}`);
+          return;
+        }
+
+        const response = await createMercadoPagoSubscriptionAction({
+          email: sessionStatus?.email || "",
+          planId: mpPlanId,
+        });
+
+        if (response?.data?.link) {
+          window.open(response.data.link, '_blank');
+        } else {
+          console.error("No se recibió link de pago", response);
+        }
       }
-      return;
+    } catch (error) {
+      console.error("Error al procesar suscripción:", error);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const checkoutUrl = getCheckoutUrlByPlanId(planId);
-    if (!checkoutUrl) {
-      console.error(`Checkout URL no configurada para el plan: ${planId}`);
-      showFeedback("error", "URL de suscripción no configurada para este plan.");
-      return;
-    }
-
-    showFeedback("success", "Redirigiendo al portal de pago de Mercado Pago...");
-    window.location.assign(checkoutUrl);
   };
 
   const StatusIcon = statusIcons[currentStatus];
