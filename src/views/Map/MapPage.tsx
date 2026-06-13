@@ -45,11 +45,13 @@ function MapUpdater({
 
 // Crear un icono personalizado con foto de perfil y efecto de pulso
 const createCustomIcon = (avatarUrl: string, hasPromotions: boolean) => {
+  const storeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: white;"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h2V14h8v8h2a2 2 0 0 0 2-2v-8"/><path d="M2 7h20v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
+
   return L.divIcon({
     className: `custom-map-marker ${hasPromotions ? "custom-map-marker--has-promotions" : ""}`,
     html: `
         <div class="custom-map-marker__pin">
-          <img src="${avatarUrl}" alt="avatar" />
+          ${storeSvg}
           ${hasPromotions ? '<span class="custom-map-marker__promo-badge">PROMO</span>' : ""}
         </div>
         <div class="custom-map-marker__pulse"></div>

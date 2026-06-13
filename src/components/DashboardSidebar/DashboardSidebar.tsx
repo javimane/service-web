@@ -79,8 +79,13 @@ export default function DashboardSidebar({
   onJobRequestsClick,
 }: DashboardSidebarProps) {
   const router = useRouter();
-  const { logout, hasProfessionalSubscription, user, sessionStatus, subscriptionPlan } =
-    useAuth();
+  const {
+    logout,
+    hasProfessionalSubscription,
+    user,
+    sessionStatus,
+    subscriptionPlan,
+  } = useAuth();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     promotions:
       activeItem === "promotions-create" || activeItem === "promotions-all",
@@ -176,7 +181,7 @@ export default function DashboardSidebar({
     },
     {
       key: "proposals",
-      label: "PROPOSALS",
+      label: "PRESUPUESTOS",
       icon: FileText,
       expandable: true,
       subItems: [
@@ -202,7 +207,7 @@ export default function DashboardSidebar({
     },
     {
       key: "promotions",
-      label: "PROMOTIONS",
+      label: "PROMOCIONES",
       icon: Ticket,
       expandable: true,
       subItems: [
@@ -223,14 +228,14 @@ export default function DashboardSidebar({
     },
     {
       key: "bank-promotions",
-      label: "BANK PROMOTIONS",
+      label: "PROM. BANCARIAS",
       icon: Landmark,
       onClick:
         onBankPromosClick ?? (() => goToDashboardView("bank-promotions")),
     },
     {
       key: "products",
-      label: "PRODUCTS",
+      label: "PRODUCTOS",
       icon: Package,
       onClick: onProductsClick ?? (() => goToDashboardView("products")),
     },
@@ -242,7 +247,7 @@ export default function DashboardSidebar({
     },
     {
       key: "calendar",
-      label: "CALENDAR",
+      label: "CALENDARIO",
       icon: CalendarDays,
       onClick: onCalendarClick ?? (() => goToDashboardView("calendar")),
     },
@@ -266,26 +271,26 @@ export default function DashboardSidebar({
     },
     {
       key: "messages",
-      label: "MESSAGES",
+      label: "MENSAJES",
       icon: MessageSquare,
       onClick: onMessagesClick ?? (() => router.push(ROUTES.messages)),
     },
     {
       key: "notifications",
-      label: "NOTIFICATIONS",
+      label: "NOTIFICACIONES",
       icon: Bell,
       onClick:
         onNotificationsClick ?? (() => goToDashboardView("notifications")),
     },
     {
       key: "subscription",
-      label: "SUBSCRIPTION",
+      label: "SUSCRIPCIÓN",
       icon: CreditCard,
       onClick: onSubscriptionClick ?? (() => goToDashboardView("subscription")),
     },
     {
       key: "settings",
-      label: "ACCOUNT SETTINGS",
+      label: "CONFIGURACIÓN",
       icon: Settings,
       onClick: () => router.push(ROUTES.settings),
     },
@@ -297,19 +302,19 @@ export default function DashboardSidebar({
         type="button"
         className="nav-item footer-link footer-link--support"
         onClick={() => handleNavigation(handleSupport)}
-        title="Support"
+        title="SOPORTE"
       >
         <HelpCircle size={20} />
-        <span className="nav-label">SUPPORT</span>
+        <span className="nav-label">SOPORTE</span>
       </button>
       <button
         type="button"
         className="nav-item footer-link footer-link--logout"
         onClick={() => handleNavigation(handleLogout)}
-        title="Logout"
+        title="CERRAR SESIÓN"
       >
         <LogOut size={20} />
-        <span className="nav-label">LOGOUT</span>
+        <span className="nav-label">CERRAR SESIÓN</span>
       </button>
     </>
   );
@@ -697,8 +702,6 @@ export default function DashboardSidebar({
             </section>
           </div>
         </aside>
-
-
       </>
     );
   }

@@ -92,7 +92,8 @@ const notifications = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, hasProfessionalSubscription } = useAuth();
+  const { user, logout, hasProfessionalSubscription, subscriptionPlan } =
+    useAuth();
   const { openAuth } = useAuthModal();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -258,6 +259,25 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Auto-open plans modal after professional registration
+  useEffect(() => {
+    if (!user) {
+      setIsPlansOpen(false);
+      return;
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      localStorage.getItem("show_plans_on_login") === "true"
+    ) {
+      localStorage.removeItem("show_plans_on_login");
+      // Only open if they don't already have a subscription
+      if (!subscriptionPlan) {
+        setIsPlansOpen(true);
+      }
+    }
+  }, [user, subscriptionPlan]);
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
     setIsNotifOpen(false);
@@ -325,20 +345,19 @@ export default function Navbar() {
 
           {/* Plans button */}
           {!hasProfessionalSubscription && (
-            <>
-              <button
-                className="navbar__plans-btn"
-                onClick={() => setIsPlansOpen(true)}
-              >
-                <Crown size={16} />
-                <span>Planes</span>
-              </button>
-              <PlansModal
-                isOpen={isPlansOpen}
-                onClose={() => setIsPlansOpen(false)}
-              />
-            </>
+            <button
+              className="navbar__plans-btn"
+              onClick={() => setIsPlansOpen(true)}
+            >
+              <Crown size={16} />
+              <span>Planes</span>
+            </button>
           )}
+
+          <PlansModal
+            isOpen={isPlansOpen}
+            onClose={() => setIsPlansOpen(false)}
+          />
 
           {/* Right side — authenticated */}
           {user ? (

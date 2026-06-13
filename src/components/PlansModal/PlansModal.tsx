@@ -1,5 +1,7 @@
 "use client";
 import { X, Check, Crown, Star, Zap, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ROUTES } from "../../routes/paths";
 import { useEffect, useState } from "react";
 import {
   plans,
@@ -12,6 +14,12 @@ import { useAuth } from "../../context/AuthContext";
 import { getAccessToken } from "../../utils/auth";
 import "./PlansModal.css";
 
+import { useQuery } from "@tanstack/react-query";
+import {
+  getMercadoPagoPlansAction,
+  createMercadoPagoSubscriptionAction,
+} from "../../app/actions/mercadopago";
+
 type PlansModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -22,10 +30,20 @@ function formatPrice(n: number) {
 }
 
 export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
-  const basicCheckoutUrl = process.env.NEXT_PUBLIC_MP_BASIC_CHECKOUT_URL;
-  const premiumCheckoutUrl = process.env.NEXT_PUBLIC_MP_PREMIUM_CHECKOUT_URL;
+  const router = useRouter();
   const [displayPlans, setDisplayPlans] = useState<Plan[]>(plans);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { refreshSession, sessionStatus } = useAuth();
+
+  const { data: mpPlans } = useQuery({
+    queryKey: ["mercadopago-plans"],
+    queryFn: async () => {
+      const res = await getMercadoPagoPlansAction();
+      return res?.data || {};
+    },
+    staleTime: 1000 * 60 * 60,
+  });
 
   useEffect(() => {
     getSubscriptionPricesAction()
@@ -53,35 +71,61 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
 
   if (!isOpen) return null;
 
-  const { refreshSession } = useAuth();
-
   const handleSelectPlan = async (plan: Plan) => {
-    if (plan.id === "free" || plan.id === "gratuito") {
-      setIsSubmitting(true);
-      try {
+    if (!sessionStatus) {
+      onClose();
+      router.push(ROUTES.register);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    try {
+      if (plan.id === "free" || plan.id === "gratuito") {
         const token = getAccessToken();
         await createProfessionalMeAction({ token });
         // Refresh the client session so AuthContext picks up the new professional status
         await refreshSession();
         onClose();
-      } catch (error) {
-        console.error("Error al seleccionar plan gratuito:", error);
-      } finally {
-        setIsSubmitting(false);
+        return;
       }
-      return;
+
+      const isPremium = plan.id === "profesional-premium";
+      const mpPlanId =
+        mpPlans?.[isPremium ? "PROFESIONAL-PREMIUM" : "PROFESIONAL-BASICO"];
+
+      if (!mpPlanId) {
+        console.error(
+          `ID de Mercado Pago no encontrado para el plan: ${plan.id}`,
+        );
+        setErrorMsg(
+          "Intente de nuevo o si el error persiste contacte con soporte.",
+        );
+        return;
+      }
+
+      const response = await createMercadoPagoSubscriptionAction({
+        email: sessionStatus?.email || "",
+        planId: mpPlanId,
+      });
+
+      if (response?.data?.initPoint) {
+        onClose();
+        window.location.assign(response.data.initPoint);
+      } else {
+        console.error("No se recibió link de pago", response);
+        setErrorMsg(
+          "Intente de nuevo o si el error persiste contacte con soporte.",
+        );
+      }
+    } catch (error) {
+      console.error("Error al procesar suscripción:", error);
+      setErrorMsg(
+        "Intente de nuevo o si el error persiste contacte con soporte.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const checkoutUrl =
-      plan.id === "profesional-premium" ? premiumCheckoutUrl : basicCheckoutUrl;
-
-    if (!checkoutUrl) {
-      console.error(`Checkout URL no configurada para el plan: ${plan.id}`);
-      return;
-    }
-
-    onClose();
-    window.location.assign(checkoutUrl);
   };
 
   return (
@@ -99,6 +143,21 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
           <p className="plans-modal__subtitle">
             Potenciá tu presencia profesional y llegá a más clientes.
           </p>
+          {errorMsg && (
+            <div
+              style={{
+                color: "var(--error-color)",
+                marginTop: "1rem",
+                backgroundColor: "rgba(250, 82, 82, 0.1)",
+                padding: "10px",
+                borderRadius: "var(--radius-md)",
+                fontSize: "var(--text-sm)",
+                textAlign: "center",
+              }}
+            >
+              {errorMsg}
+            </div>
+          )}
         </div>
 
         <div className="plans-modal__grid">

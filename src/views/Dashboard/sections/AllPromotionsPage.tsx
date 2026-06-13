@@ -177,7 +177,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
       {/* Header */}
       <div className="all-promos__header">
         <div>
-          <span className="all-promos__label">CAMPAIGN MANAGER</span>
+          <span className="all-promos__label">ADMINISTRADOR DE CAMPAÑAS</span>
           <h1 className="all-promos__title">Todas las Promociones</h1>
         </div>
         <button
@@ -220,13 +220,20 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
       {/* Stats Row */}
       <div className="all-promos__stats">
         {isLoading ? (
-          Array(3).fill(0).map((_, i) => (
-            <div key={i} className="promo-stat-card promo-stat-card--skeleton shimmer" />
-          ))
+          Array(3)
+            .fill(0)
+            .map((_, i) => (
+              <div
+                key={i}
+                className="promo-stat-card promo-stat-card--skeleton shimmer"
+              />
+            ))
         ) : (
           <>
             <div className="promo-stat-card">
-              <span className="promo-stat-card__value">{promosList.length}</span>
+              <span className="promo-stat-card__value">
+                {promosList.length}
+              </span>
               <span className="promo-stat-card__label">Total</span>
             </div>
             <div className="promo-stat-card promo-stat-card--active">
@@ -247,86 +254,85 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
 
       {/* Promotions Grid */}
       <div className="all-promos__grid">
-        {isLoading ? (
-          Array(6).fill(0).map((_, i) => <PromoSkeleton key={i} />)
-        ) : (
-          filtered.map((promo) => (
-            <article
-              key={promo.id}
-              className="promo-list-card promo-list-card--clickable"
-              onClick={() => handleView(promo.id)}
-            >
-              <div className="promo-list-card__image">
-                <img src={promo.image} alt={promo.title} loading="lazy" />
-                <span
-                  className={`promo-list-card__status promo-list-card__status--${promo.status}`}
-                >
-                  {STATUS_LABELS[promo.status]}
-                </span>
-                {promo.status === "expired" && (
-                  <div className="promo-list-card__expired-overlay">
-                    <span>EXPIRADA</span>
-                  </div>
-                )}
-                <span className="promo-list-card__offer-badge">
-                  <Ticket size={12} />
-                  {promo.offer}
-                </span>
-              </div>
-
-              <div className="promo-list-card__body">
-                <h3 className="promo-list-card__title">{promo.title}</h3>
-                <p className="promo-list-card__desc">{promo.description}</p>
-
-                <div className="promo-list-card__meta">
-                  <span className="promo-list-card__dates">
-                    <Calendar size={12} />
-                    {promo.validFrom} — {promo.validTo}
-                  </span>
-                  <code className="promo-list-card__code">
-                    PROMO-{promo.id.slice(0, 4).toUpperCase()}
-                  </code>
-                </div>
-              </div>
-
-              <div
-                className="promo-list-card__actions"
-                onClick={(e) => e.stopPropagation()}
+        {isLoading
+          ? Array(6)
+              .fill(0)
+              .map((_, i) => <PromoSkeleton key={i} />)
+          : filtered.map((promo) => (
+              <article
+                key={promo.id}
+                className="promo-list-card promo-list-card--clickable"
+                onClick={() => handleView(promo.id)}
               >
-                <button
-                  type="button"
-                  className="promo-list-card__action"
-                  title="Modificar"
-                  onClick={() => onEdit(promo._original)}
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="promo-list-card__action"
-                  title="Descargar Imagen"
-                  onClick={() => handleDownloadImage(promo.image, promo.title)}
-                >
-                  <Download size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="promo-list-card__action promo-list-card__action--danger"
-                  title="Eliminar"
-                  onClick={() => handleDelete(promo.id)}
-                  disabled={deleteMutation.isPending}
-                >
-                  {deleteMutation.isPending &&
-                  deleteMutation.variables === promo.id ? (
-                    <Loader2 className="animate-spin" size={16} />
-                  ) : (
-                    <Trash2 size={16} />
+                <div className="promo-list-card__image">
+                  <img src={promo.image} alt={promo.title} loading="lazy" />
+                  <span
+                    className={`promo-list-card__status promo-list-card__status--${promo.status}`}
+                  >
+                    {STATUS_LABELS[promo.status]}
+                  </span>
+                  {promo.status === "expired" && (
+                    <div className="promo-list-card__expired-overlay">
+                      <span>EXPIRADA</span>
+                    </div>
                   )}
-                </button>
-              </div>
-            </article>
-          ))
-        )}
+                  <span className="promo-list-card__offer-badge">
+                    <Ticket size={12} />
+                    {promo.offer}
+                  </span>
+                </div>
+
+                <div className="promo-list-card__body">
+                  <h3 className="promo-list-card__title">{promo.title}</h3>
+                  <p className="promo-list-card__desc">{promo.description}</p>
+
+                  <div className="promo-list-card__meta">
+                    <span className="promo-list-card__dates">
+                      <Calendar size={12} />
+                      {promo.validFrom} — {promo.validTo}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className="promo-list-card__actions"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className="promo-list-card__action"
+                    title="Modificar"
+                    onClick={() => onEdit(promo._original)}
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="promo-list-card__action"
+                    title="Descargar Imagen"
+                    onClick={() =>
+                      handleDownloadImage(promo.image, promo.title)
+                    }
+                  >
+                    <Download size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="promo-list-card__action promo-list-card__action--danger"
+                    title="Eliminar"
+                    onClick={() => handleDelete(promo.id)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending &&
+                    deleteMutation.variables === promo.id ? (
+                      <Loader2 className="animate-spin" size={16} />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                  </button>
+                </div>
+              </article>
+            ))}
 
         {!isLoading && filtered.length === 0 && (
           <div className="all-promos__empty">
@@ -373,10 +379,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
                     </div>
                     <div className="professional-info">
                       <span className="professional-name">
-                        {sessionStatus?.user?.display_name || "Tu Studio"}
-                      </span>
-                      <span className="professional-label">
-                        PROFESIONAL VERIFICADO
+                        {sessionStatus?.display_name || "Tu Studio"}
                       </span>
                     </div>
                   </div>

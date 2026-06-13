@@ -87,7 +87,10 @@ export default function SubscriptionSection() {
   const [showPlans, setShowPlans] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [localSubscription, setLocalSubscription] = useState<any>(null);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const plansRef = useRef<HTMLDivElement>(null);
 
@@ -131,7 +134,6 @@ export default function SubscriptionSection() {
     },
     staleTime: 1000 * 60 * 60,
   });
-
 
   const currentStatus = useMemo(
     () => normalizeSubscriptionStatus(subscription?.status),
@@ -207,13 +209,19 @@ export default function SubscriptionSection() {
         const token = await getAccessToken();
         await createProfessionalMeAction({ token });
         await refreshSession();
-        showFeedback("success", "Plan gratuito activado correctamente. ¡Bienvenido!");
+        showFeedback(
+          "success",
+          "Plan gratuito activado correctamente. ¡Bienvenido!",
+        );
       } else {
         const isPremium = planId === "profesional-premium";
-        const mpPlanId = mpPlans?.[isPremium ? "PROFESIONAL-PREMIUM" : "PROFESIONAL-BASICO"];
+        const mpPlanId =
+          mpPlans?.[isPremium ? "PROFESIONAL-PREMIUM" : "PROFESIONAL-BASICO"];
 
         if (!mpPlanId) {
-          console.error(`ID de Mercado Pago no encontrado para el plan: ${planId}`);
+          console.error(
+            `ID de Mercado Pago no encontrado para el plan: ${planId}`,
+          );
           return;
         }
 
@@ -223,7 +231,7 @@ export default function SubscriptionSection() {
         });
 
         if (response?.data?.link) {
-          window.open(response.data.link, '_blank');
+          window.open(response.data.link, "_blank");
         } else {
           console.error("No se recibió link de pago", response);
         }
@@ -250,7 +258,9 @@ export default function SubscriptionSection() {
 
       {/* Feedback Alert */}
       {feedback && (
-        <div className={`subscription-feedback subscription-feedback--${feedback.type}`}>
+        <div
+          className={`subscription-feedback subscription-feedback--${feedback.type}`}
+        >
           <div className="subscription-feedback__icon">
             {feedback.type === "success" ? (
               <Check size={18} />
@@ -437,7 +447,10 @@ export default function SubscriptionSection() {
                   const current = prev || apiSubscription;
                   return current ? { ...current, status: "active" } : current;
                 });
-                showFeedback("success", "Suscripción reactivada correctamente.");
+                showFeedback(
+                  "success",
+                  "Suscripción reactivada correctamente.",
+                );
               }}
             >
               <Check size={18} />

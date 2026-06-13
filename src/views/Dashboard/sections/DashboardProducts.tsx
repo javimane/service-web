@@ -23,6 +23,7 @@ import {
   Info,
   Loader2,
   Filter,
+  Camera,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import {
@@ -38,6 +39,7 @@ import {
 import { getProductCategoriesAction } from "../../../app/actions/categories";
 import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
+import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
 import "./DashboardProducts.css";
 
 const MAX_PRODUCT_IMAGES = 4;
@@ -203,6 +205,7 @@ export default function DashboardProducts() {
     number | null
   >(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [newProductErrors, setNewProductErrors] = useState<
     Record<string, string>
   >({});
@@ -1323,10 +1326,27 @@ export default function DashboardProducts() {
                       type="text"
                       placeholder="Ej: 7790001234567"
                       value={newProduct.ean}
+                      autoFocus
                       onChange={(e) =>
                         setNewProduct({ ...newProduct, ean: e.target.value })
                       }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (newProduct.ean.trim() && !eanLoading) {
+                            handleCheckEan();
+                          }
+                        }
+                      }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setIsScannerOpen(true)}
+                      title="Escanear con cámara"
+                      style={{ padding: "0 8px", background: "none", border: "none", cursor: "pointer", color: "var(--accent-color)" }}
+                    >
+                      <Camera size={18} />
+                    </button>
                   </div>
                   <button
                     className="dash-products__ean-check-btn"
@@ -1466,6 +1486,17 @@ export default function DashboardProducts() {
                     )}
                   </div>
                 </div>
+              )}
+
+              {/* Barcode Scanner Modal Component */}
+              {isScannerOpen && (
+                <BarcodeScanner
+                  onScan={(decodedText) => {
+                    setNewProduct({ ...newProduct, ean: decodedText });
+                    setIsScannerOpen(false);
+                  }}
+                  onClose={() => setIsScannerOpen(false)}
+                />
               )}
 
               {/* Regular form (hidden when EAN match is shown) */}

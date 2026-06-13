@@ -1238,7 +1238,23 @@ export default function ProfessionalProfileSection() {
                     key={video.id}
                     className="professional-profile__yt-card"
                   >
-                    <div className="professional-profile__yt-thumb">
+                    <div 
+                      className="professional-profile__yt-thumb"
+                      onClick={(e) => {
+                        const videoEl = e.currentTarget.querySelector("video");
+                        const overlayEl = e.currentTarget.querySelector(".professional-profile__yt-overlay") as HTMLElement | null;
+                        if (videoEl) {
+                          if (videoEl.paused) {
+                            videoEl.play();
+                            videoEl.controls = true;
+                            videoEl.style.pointerEvents = "auto";
+                            if (overlayEl) overlayEl.style.display = "none";
+                          } else {
+                            videoEl.pause();
+                          }
+                        }
+                      }}
+                    >
                       <video
                         src={video.url}
                         className="professional-profile__yt-video"

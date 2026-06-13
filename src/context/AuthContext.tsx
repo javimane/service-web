@@ -27,10 +27,12 @@ type SessionStatus = {
   has_professional_address?: boolean;
   profile_province_id?: number | null;
   full_name?: string;
-  email?: string;
   has_days_left?: boolean;
   user_created_at?: string;
   user_last_sign_in_at?: string;
+  user_id?: string | null;
+  email?: string | null;
+  display_name?: string | null;
   subscription?: {
     status?: string;
     professional_id?: number | string;

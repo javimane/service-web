@@ -17,13 +17,13 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
 
   // Compute discount % from offer_price if percent_discount is null
   const computedDiscount: number =
-    product.percent_discount != null
+    product.percent_discount != null && product.percent_discount > 1
       ? product.percent_discount
-      : offerPrice && regularPrice > 0
+      : offerPrice !== null && offerPrice > 1 && regularPrice > 1
         ? Math.round((1 - offerPrice / regularPrice) * 100)
         : 0;
 
-  const hasOffer = offerPrice !== null && offerPrice < regularPrice;
+  const hasOffer = offerPrice !== null && offerPrice > 1;
   const displayPrice = hasOffer ? offerPrice! : regularPrice;
 
   const name = info.name || "Producto";
@@ -39,9 +39,7 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
         <img src={primaryImage} alt={name} loading="lazy" />
 
         {/* OFERTA badge – top left */}
-        {hasOffer && (
-          <span className="product-badge-oferta">OFERTA</span>
-        )}
+        {hasOffer && <span className="product-badge-oferta">OFERTA</span>}
       </div>
 
       <div className="product-card-premium__content">
@@ -53,19 +51,28 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
             <>
               {/* Original price – crossed out */}
               <span className="original-price">
-                ${regularPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+                $
+                {regularPrice.toLocaleString("es-AR", {
+                  minimumFractionDigits: 0,
+                })}
               </span>
               {/* Offer price + discount % inline */}
               <div className="offer-row">
                 <span className="current-price current-price--offer">
-                  ${offerPrice!.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+                  $
+                  {offerPrice!.toLocaleString("es-AR", {
+                    minimumFractionDigits: 0,
+                  })}
                 </span>
                 <span className="discount-pill">-{computedDiscount}% OFF</span>
               </div>
             </>
           ) : (
             <span className="current-price">
-              ${displayPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+              $
+              {displayPrice.toLocaleString("es-AR", {
+                minimumFractionDigits: 0,
+              })}
             </span>
           )}
         </div>
@@ -75,4 +82,3 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
 };
 
 export default ProductCard;
-

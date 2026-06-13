@@ -118,6 +118,9 @@ export default function RegisterPage({
 
         // if login succeeds and role is professional, show plan modal
         if (loginResp && role === "professional") {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("show_plans_on_login", "true");
+          }
           await refreshSession();
           setShowPlanModal(true);
           return; // Skip the normal success modal

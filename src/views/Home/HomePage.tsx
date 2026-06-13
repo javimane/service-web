@@ -78,20 +78,26 @@ export default function HomePage() {
 
   useEffect(() => {
     if (typeof window === "undefined" || !sessionStatus) return;
-    
+
     if (sessionStatus.is_professional) return; // Professionals are welcomed in Dashboard
 
-    const createdAt = sessionStatus.user_created_at ? new Date(sessionStatus.user_created_at).getTime() : 0;
-    const lastSignIn = sessionStatus.user_last_sign_in_at ? new Date(sessionStatus.user_last_sign_in_at).getTime() : createdAt;
-    
+    const createdAt = sessionStatus.user_created_at
+      ? new Date(sessionStatus.user_created_at).getTime()
+      : 0;
+    const lastSignIn = sessionStatus.user_last_sign_in_at
+      ? new Date(sessionStatus.user_last_sign_in_at).getTime()
+      : createdAt;
+
     if (createdAt === 0) return;
 
     const isFirstTime = Math.abs(createdAt - lastSignIn) < 5 * 60 * 1000;
-    const hasSeenWelcome = localStorage.getItem(`welcome_shown_${sessionStatus.email}`);
-    
+    const hasSeenWelcome = localStorage.getItem(
+      `welcome_shown_${sessionStatus.email}`,
+    );
+
     if (isFirstTime && !hasSeenWelcome) {
       setShowWelcomeModal(true);
-      localStorage.setItem(`welcome_shown_${sessionStatus.email}`, 'true');
+      localStorage.setItem(`welcome_shown_${sessionStatus.email}`, "true");
     }
   }, [sessionStatus]);
 
@@ -199,7 +205,6 @@ export default function HomePage() {
         <FeaturedSpecialists userProvince={userProvince} />
         <NearbyProductsSection userProvince={userProvince} />
         <ProfessionalReelsSection userProvince={userProvince} />
-        <ProductsCarousel />
         <JoinCTASection />
       </main>
 
@@ -212,29 +217,92 @@ export default function HomePage() {
         maxWidth="600px"
       >
         <div style={{ padding: "var(--space-4)", textAlign: "center" }}>
-          <p style={{ marginBottom: "var(--space-6)", color: "var(--text-secondary)", fontSize: "var(--text-md)" }}>
-            Nos alegra tenerte acá. Ahora que sos parte de nuestra comunidad, 
+          <p
+            style={{
+              marginBottom: "var(--space-6)",
+              color: "var(--text-secondary)",
+              fontSize: "var(--text-md)",
+            }}
+          >
+            Nos alegra tenerte acá. Ahora que sos parte de nuestra comunidad,
             mirá todo lo que podés hacer:
           </p>
-          <ul style={{ textAlign: "left", marginBottom: "var(--space-8)", display: "flex", flexDirection: "column", gap: "var(--space-4)", padding: "0 var(--space-4)" }}>
-            <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>🔍</span>
-              <span><strong>Buscar Profesionales:</strong> Encontrá los mejores oficios y servicios cerca de tu zona.</span>
+          <ul
+            style={{
+              textAlign: "left",
+              marginBottom: "var(--space-8)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-4)",
+              padding: "0 var(--space-4)",
+            }}
+          >
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>
+                🔍
+              </span>
+              <span>
+                <strong>Buscar Profesionales:</strong> Encontrá los mejores
+                oficios y servicios cerca de tu zona.
+              </span>
             </li>
-            <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>💬</span>
-              <span><strong>Chat y Presupuestos:</strong> Contactate directo para pedir cotizaciones y agendar citas fácilmente.</span>
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>
+                💬
+              </span>
+              <span>
+                <strong>Chat y Presupuestos:</strong> Contactate directo para
+                pedir cotizaciones y agendar citas fácilmente.
+              </span>
             </li>
-            <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>🛍️</span>
-              <span><strong>Promociones y Productos:</strong> Accedé a ofertas exclusivas de los negocios de tu ciudad.</span>
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>
+                🛍️
+              </span>
+              <span>
+                <strong>Promociones y Productos:</strong> Accedé a ofertas
+                exclusivas de los negocios de tu ciudad.
+              </span>
             </li>
-            <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>⭐</span>
-              <span><strong>Reseñas:</strong> Leé y dejá opiniones reales sobre los trabajos que contrataste.</span>
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>
+                ⭐
+              </span>
+              <span>
+                <strong>Reseñas:</strong> Leé y dejá opiniones reales sobre los
+                trabajos que contrataste.
+              </span>
             </li>
           </ul>
-          <button className="btn-primary" style={{ width: "100%", padding: "var(--space-4)" }} onClick={() => setShowWelcomeModal(false)}>
+          <button
+            className="btn-primary"
+            style={{ width: "100%", padding: "var(--space-4)" }}
+            onClick={() => setShowWelcomeModal(false)}
+          >
             Comenzar a explorar
           </button>
         </div>

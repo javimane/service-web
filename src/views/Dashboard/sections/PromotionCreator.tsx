@@ -290,14 +290,10 @@ export default function PromotionCreator({
       {/* Header */}
       <div className="promo-creator__header">
         <div>
-          <span className="promo-creator__label">CAMPAIGN MANAGER</span>
+          <span className="promo-creator__label"></span>
           <h1 className="promo-creator__title">
             {promotionToEdit ? "Editar Promoción" : "Crear Nueva Promoción"}
           </h1>
-        </div>
-        <div className="promo-creator__status-badge">
-          <span className="status-dot" />
-          STATUS: {promotionToEdit?.state?.toUpperCase() || "DRAFT"}
         </div>
       </div>
 
@@ -308,7 +304,7 @@ export default function PromotionCreator({
           {/* Basic Info */}
           <section className="promo-card">
             <h2 className="promo-card__heading">
-              <Info size={18} /> Basic Info
+              <Info size={18} /> Información Básica
             </h2>
 
             <div
@@ -320,7 +316,7 @@ export default function PromotionCreator({
               <input
                 type="text"
                 className="promo-field__input"
-                placeholder="Ej. Summer Architecture Expo 2024"
+                placeholder="Ej. Descuento de Verano en Servicios de Peluquería"
                 value={form.title}
                 onChange={(e) => updateField("title", e.target.value)}
               />
@@ -351,12 +347,10 @@ export default function PromotionCreator({
             className={`promo-card ${errors.image ? "promo-card--error" : ""}`}
           >
             <h2 className="promo-card__heading">
-              <ImageIcon size={18} /> Visuals
+              <ImageIcon size={18} /> Visuales
             </h2>
             {errors.image && (
-              <span className="promo-field__error">
-                {errors.image}
-              </span>
+              <span className="promo-field__error">{errors.image}</span>
             )}
 
             {form.imagePreview ? (
@@ -405,7 +399,7 @@ export default function PromotionCreator({
           <div className="promo-creator__row">
             <section className="promo-card promo-card--half">
               <h2 className="promo-card__heading">
-                <Percent size={18} /> Discount Logic
+                <Percent size={18} /> Lógica de Descuento
               </h2>
 
               <div className="promo-field">
@@ -454,7 +448,7 @@ export default function PromotionCreator({
 
             <section className="promo-card promo-card--half">
               <h2 className="promo-card__heading">
-                <Sparkles size={18} /> Application
+                <Sparkles size={18} /> Aplicación
               </h2>
 
               <div className="promo-field">
@@ -480,7 +474,7 @@ export default function PromotionCreator({
           {/* Validity & Stock */}
           <section className="promo-card">
             <h2 className="promo-card__heading">
-              <Calendar size={18} /> Validity &amp; Stock
+              <Calendar size={18} /> Validez y Stock
             </h2>
 
             <div className="promo-creator__row">
@@ -544,17 +538,17 @@ export default function PromotionCreator({
                 <span className="promo-preview-card__badge">PREVIEW</span>
               </div>
               <div className="promo-preview-card__content">
-                <h3>{form.title || "Your Promo Title Here"}</h3>
+                <h3>{form.title || "Título de la Promoción"}</h3>
                 <p>
                   {form.description ||
-                    "Short description preview showing how the text will appear in the customer hub dashboard."}
+                    "Vista previa de la descripción corta que muestra cómo aparecerá el texto en el panel de clientes."}
                 </p>
                 <div className="promo-preview-card__footer">
                   <span className="promo-preview-card__offer">
                     {offerLabel}
                   </span>
                   <span className="promo-preview-card__studio">
-                    STUDIO ALPHA
+                    {user?.display_name || "Tu Studio"}
                   </span>
                 </div>
               </div>
@@ -572,10 +566,6 @@ export default function PromotionCreator({
 
       {/* Footer */}
       <footer className="promo-creator__footer">
-        <span className="promo-creator__last-edit">
-          ✦ ÚLTIMA EDICIÓN HACE 2 MINUTOS
-        </span>
-
         <div className="promo-creator__footer-actions">
           <button
             type="button"

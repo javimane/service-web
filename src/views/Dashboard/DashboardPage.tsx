@@ -6,17 +6,15 @@ import {
   Play,
   Plus,
   ChevronRight,
-  TrendingUp,
   Clapperboard,
   Eye,
 } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import Modal from "../../components/Modal/Modal";
 import { useAuth } from "../../context/AuthContext";
-import { activities, clips } from "../../data/dashboardData";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import { ROUTES } from "../../routes/paths";
 import { getProfessionalMeAction } from "../../app/actions/professionals";
@@ -24,7 +22,6 @@ import { getProposalsCountAction } from "../../app/actions/proposals";
 import { getProfessionalReelStatsAction } from "../../app/actions/reels";
 import { getVideosByProfessionalAction } from "../../app/actions/multimedia";
 import { getVideoStatsByProfessionalAction } from "../../app/actions/multimedia";
-import type { CountViewsReelsRow } from "../../types/database.types";
 import { getAccessToken } from "../../utils/auth";
 import ProposalCreator from "./sections/ProposalCreator";
 import ProposalsView from "./sections/ProposalsView";
@@ -162,22 +159,31 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (typeof window === "undefined" || !sessionStatus) return;
-    
-    const isProfessionalWithoutPlan = sessionStatus.is_professional && !sessionStatus.subscription_plan && !sessionStatus.subscription;
+
+    const isProfessionalWithoutPlan =
+      sessionStatus.is_professional &&
+      !sessionStatus.subscription_plan &&
+      !sessionStatus.subscription;
     if (!isProfessionalWithoutPlan) return;
 
-    const createdAt = sessionStatus.user_created_at ? new Date(sessionStatus.user_created_at).getTime() : 0;
-    const lastSignIn = sessionStatus.user_last_sign_in_at ? new Date(sessionStatus.user_last_sign_in_at).getTime() : createdAt;
-    
+    const createdAt = sessionStatus.user_created_at
+      ? new Date(sessionStatus.user_created_at).getTime()
+      : 0;
+    const lastSignIn = sessionStatus.user_last_sign_in_at
+      ? new Date(sessionStatus.user_last_sign_in_at).getTime()
+      : createdAt;
+
     if (createdAt === 0) return; // If dates are not available, don't show the first-time modal to be safe
 
     // Consider it's the first time if last sign in is within 5 minutes of creation
     const isFirstTime = Math.abs(createdAt - lastSignIn) < 5 * 60 * 1000;
-    const hasSeenWelcome = localStorage.getItem(`welcome_shown_${sessionStatus.email}`);
-    
+    const hasSeenWelcome = localStorage.getItem(
+      `welcome_shown_${sessionStatus.email}`,
+    );
+
     if (isFirstTime && !hasSeenWelcome) {
       setShowWelcomeModal(true);
-      localStorage.setItem(`welcome_shown_${sessionStatus.email}`, 'true');
+      localStorage.setItem(`welcome_shown_${sessionStatus.email}`, "true");
     }
   }, [sessionStatus]);
 
@@ -273,8 +279,6 @@ export default function DashboardPage() {
     }
   }, [view, isMobileSidebarMode]);
 
-
-
   const handleSidebarToggle = () => {
     if (isMobileSidebarMode) {
       setIsMobileSidebarOpen((current) => !current);
@@ -326,10 +330,39 @@ export default function DashboardPage() {
           className={`dashboard-main ${isSidebarCollapsed ? "dashboard-main--collapsed" : ""} ${isMobileSidebarMode ? "dashboard-main--mobile" : ""}`}
         >
           {isUnsubscribedProfessional && view !== "subscription" && (
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--accent-color)", borderRadius: "var(--radius-lg)", padding: "var(--space-4)", marginBottom: "var(--space-6)", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "var(--shadow-sm)" }}>
+            <div
+              style={{
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--accent-color)",
+                borderRadius: "var(--radius-lg)",
+                padding: "var(--space-4)",
+                marginBottom: "var(--space-6)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
               <div>
-                <h3 style={{ fontSize: "var(--text-lg)", fontWeight: "var(--weight-bold)", color: "var(--text-primary)", marginBottom: "0.25rem" }}>¡Activa tu suscripción profesional!</h3>
-                <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)" }}>Para desbloquear todas las herramientas de tu perfil, debes activar un plan de suscripción.</p>
+                <h3
+                  style={{
+                    fontSize: "var(--text-lg)",
+                    fontWeight: "var(--weight-bold)",
+                    color: "var(--text-primary)",
+                    marginBottom: "0.25rem",
+                  }}
+                >
+                  ¡Activa tu suscripción profesional!
+                </h3>
+                <p
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontSize: "var(--text-sm)",
+                  }}
+                >
+                  Para desbloquear todas las herramientas de tu perfil, debes
+                  activar un plan de suscripción.
+                </p>
               </div>
               <button className="btn-primary" onClick={handleShowSubscription}>
                 Ver planes
@@ -415,9 +448,7 @@ export default function DashboardPage() {
                       <LayoutDashboard size={24} className="icon-purple" />
                     </div>
                     <div className="stat-value-group">
-                      <span className="card-label">
-                        PRESUPUESTOS ACEPTADOS
-                      </span>
+                      <span className="card-label">PRESUPUESTOS ACEPTADOS</span>
                       <h2 className="big-value">
                         {acceptedProposalsCount !== null
                           ? acceptedProposalsCount.toLocaleString("es-AR")
@@ -594,13 +625,25 @@ export default function DashboardPage() {
 
             {shouldLockDashboardView && (
               <div className="subscription-lock-overlay" role="alert">
-                <div className="subscription-lock-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)', textAlign: 'center' }}>
+                <div
+                  className="subscription-lock-card"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "var(--space-4)",
+                    textAlign: "center",
+                  }}
+                >
                   <h3>Suscripción profesional requerida</h3>
                   <p>
                     Para acceder a esta sección necesitás una suscripción
                     profesional activa.
                   </p>
-                  <button className="btn-primary" onClick={handleShowSubscription}>
+                  <button
+                    className="btn-primary"
+                    onClick={handleShowSubscription}
+                  >
                     Ver planes
                   </button>
                 </div>
@@ -699,32 +742,104 @@ export default function DashboardPage() {
           maxWidth="600px"
         >
           <div style={{ padding: "var(--space-4)", textAlign: "center" }}>
-            <p style={{ marginBottom: "var(--space-6)", color: "var(--text-secondary)", fontSize: "var(--text-md)" }}>
-              Para comenzar a utilizar tu panel y acceder a todas las herramientas, debés elegir un plan. 
-              Esto es un resumen de lo que podrás hacer:
+            <p
+              style={{
+                marginBottom: "var(--space-6)",
+                color: "var(--text-secondary)",
+                fontSize: "var(--text-md)",
+              }}
+            >
+              Para comenzar a utilizar tu panel y acceder a todas las
+              herramientas, debés elegir un plan. Esto es un resumen de lo que
+              podrás hacer:
             </p>
-            <ul style={{ textAlign: "left", marginBottom: "var(--space-8)", display: "flex", flexDirection: "column", gap: "var(--space-4)", padding: "0 var(--space-4)" }}>
-              <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-                <span style={{ color: "var(--success-color)", marginTop: "2px" }}>✅</span>
-                <span><strong>Presupuestos:</strong> Recibir y enviar propuestas a clientes cercanos a tu zona.</span>
+            <ul
+              style={{
+                textAlign: "left",
+                marginBottom: "var(--space-8)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-4)",
+                padding: "0 var(--space-4)",
+              }}
+            >
+              <li
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "var(--space-3)",
+                }}
+              >
+                <span
+                  style={{ color: "var(--success-color)", marginTop: "2px" }}
+                >
+                  ✅
+                </span>
+                <span>
+                  <strong>Presupuestos:</strong> Recibir y enviar propuestas a
+                  clientes cercanos a tu zona.
+                </span>
               </li>
-              <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-                <span style={{ color: "var(--success-color)", marginTop: "2px" }}>✅</span>
-                <span><strong>Promociones:</strong> Crear ofertas ilimitadas para destacar tus servicios y productos.</span>
+              <li
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "var(--space-3)",
+                }}
+              >
+                <span
+                  style={{ color: "var(--success-color)", marginTop: "2px" }}
+                >
+                  ✅
+                </span>
+                <span>
+                  <strong>Promociones:</strong> Crear ofertas ilimitadas para
+                  destacar tus servicios y productos.
+                </span>
               </li>
-              <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-                <span style={{ color: "var(--success-color)", marginTop: "2px" }}>✅</span>
-                <span><strong>Agenda:</strong> Sincronizar tu Google Calendar para gestionar tus citas automáticamente.</span>
+              <li
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "var(--space-3)",
+                }}
+              >
+                <span
+                  style={{ color: "var(--success-color)", marginTop: "2px" }}
+                >
+                  ✅
+                </span>
+                <span>
+                  <strong>Agenda:</strong> Sincronizar tu Google Calendar para
+                  gestionar tus citas automáticamente.
+                </span>
               </li>
-              <li style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)" }}>
-                <span style={{ color: "var(--success-color)", marginTop: "2px" }}>✅</span>
-                <span><strong>Perfil Público:</strong> Tener un perfil profesional con tu portafolio de trabajos y reseñas de clientes.</span>
+              <li
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "var(--space-3)",
+                }}
+              >
+                <span
+                  style={{ color: "var(--success-color)", marginTop: "2px" }}
+                >
+                  ✅
+                </span>
+                <span>
+                  <strong>Perfil Público:</strong> Tener un perfil profesional
+                  con tu portafolio de trabajos y reseñas de clientes.
+                </span>
               </li>
             </ul>
-            <button className="btn-primary" style={{ width: "100%", padding: "var(--space-4)" }} onClick={() => {
-              setShowWelcomeModal(false);
-              handleShowSubscription();
-            }}>
+            <button
+              className="btn-primary"
+              style={{ width: "100%", padding: "var(--space-4)" }}
+              onClick={() => {
+                setShowWelcomeModal(false);
+                handleShowSubscription();
+              }}
+            >
               Elegir mi plan ahora
             </button>
           </div>
