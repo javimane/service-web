@@ -13,6 +13,8 @@ import {
   X,
   Upload,
   AlertTriangle,
+  Pencil,
+  Play,
 } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
 import { useRouter } from "next/navigation";
@@ -35,6 +37,7 @@ import {
   createVideoAction,
   deleteProfessionalImageAction,
   deleteVideoAction,
+  updateVideoAction,
   getMultimediaUploadUrlAction,
   getImagesByProfessionalAction,
   getVideoDetailAction,
@@ -106,6 +109,21 @@ export default function ProfessionalProfileSection() {
     setIsPromoModalOpen(false);
     router.push(`${ROUTES.dashboard}?view=subscription`);
   };
+
+  type TabId = "datos" | "horarios" | "imagenes" | "videos";
+  const [activeTab, setActiveTab] = useState<TabId>("datos");
+
+  const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    { id: "datos", label: "Datos Principales", icon: <UserRound size={16} /> },
+    {
+      id: "horarios",
+      label: "Horarios de atención",
+      icon: <Clock size={16} />,
+    },
+    { id: "imagenes", label: "Imágenes", icon: <ImagePlus size={16} /> },
+    { id: "videos", label: "Videos", icon: <Video size={16} /> },
+  ];
+
   const userId = user?.id;
   const professionalId = Number(
     sessionStatus?.subscription?.professional_id ??
@@ -261,6 +279,13 @@ export default function ProfessionalProfileSection() {
   // Modales para imagen y video
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isEditVideoModalOpen, setIsEditVideoModalOpen] = useState(false);
+  const [editVideoId, setEditVideoId] = useState<string | null>(null);
+  const [editVideoTitle, setEditVideoTitle] = useState("");
+  const [editVideoDescription, setEditVideoDescription] = useState("");
+  const [editVideoUrl, setEditVideoUrl] = useState("");
+  const [isUpdatingVideo, setIsUpdatingVideo] = useState(false);
+  const [editVideoError, setEditVideoError] = useState("");
 
   // Estado para imagen temporal
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
@@ -494,7 +519,6 @@ export default function ProfessionalProfileSection() {
     setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Video: solo se edita título y descripción, no el archivo
   const removeVideo = async (id: string) => {
     try {
       const result = await deleteVideoAction({
@@ -509,6 +533,51 @@ export default function ProfessionalProfileSection() {
       );
     } catch {
       setSavedMessage("No se pudo eliminar el video.");
+    }
+  };
+
+  const openEditVideoModal = (video: VideoItem) => {
+    setEditVideoId(video.id);
+    setEditVideoTitle(video.title);
+    setEditVideoDescription(video.description);
+    setEditVideoUrl(video.url);
+    setEditVideoError("");
+    setIsEditVideoModalOpen(true);
+  };
+
+  const handleUpdateVideo = async () => {
+    if (!editVideoId || !editVideoTitle.trim() || !editVideoUrl) return;
+    setIsUpdatingVideo(true);
+    setEditVideoError("");
+    try {
+      const result = await updateVideoAction({
+        id: editVideoId,
+        title: editVideoTitle.trim(),
+        description: editVideoDescription.trim(),
+        video_url: editVideoUrl,
+        token: getAccessToken(),
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      // Update cache immediately
+      queryClient.setQueryData(
+        ["videos", professionalId],
+        (current: VideoItem[] = []) =>
+          current.map((v) =>
+            v.id === editVideoId
+              ? {
+                  ...v,
+                  title: editVideoTitle.trim(),
+                  description: editVideoDescription.trim(),
+                }
+              : v,
+          ),
+      );
+      setSavedMessage("Video actualizado correctamente.");
+      setIsEditVideoModalOpen(false);
+    } catch (err: any) {
+      setEditVideoError(err.message || "Error al actualizar el video.");
+    } finally {
+      setIsUpdatingVideo(false);
     }
   };
 
@@ -767,51 +836,71 @@ export default function ProfessionalProfileSection() {
 
   return (
     <section className="professional-profile">
-      <div className="professional-profile__hero">
-        <div>
-          <p className="professional-profile__eyebrow">Perfil profesional</p>
-          <h1>Personalizá tu perfil público</h1>
-          <p className="professional-profile__subtitle">
-            Editá tu foto, nombre comercial, descripción y el contenido visual
-            que verán tus clientes.
-          </p>
-        </div>
-      </div>
-
       {savedMessage ? (
         <div className="professional-profile__notice">{savedMessage}</div>
       ) : null}
 
-      <div className="professional-profile__layout">
-        <aside className="professional-profile__preview-card">
-          <div className="professional-profile__avatar-wrap">
-            <img
-              src={profilePhoto || DEFAULT_AVATAR}
-              alt={displayName || "Tu nombre"}
+      {/* ── Profile Header Card ─────────────────────────── */}
+      <div className="professional-profile__header-card">
+        <div className="professional-profile__avatar-wrap">
+          <img
+            src={profilePhoto || DEFAULT_AVATAR}
+            alt={displayName || "Tu nombre"}
+          />
+          <label
+            className="professional-profile__avatar-edit"
+            title="Cambiar foto"
+          >
+            <Camera size={14} />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              hidden
             />
-          </div>
-          <h2>{commercialName || "Tu nombre comercial"}</h2>
-          <p className="professional-profile__preview-name">
-            {displayName || "Nombre del profesional"}
-          </p>
-          <p className="professional-profile__preview-description">
-            {description ||
-              "Agregá una descripción para mostrar tu propuesta de valor."}
-          </p>
+          </label>
+        </div>
 
-          <div className="professional-profile__metrics">
-            <div>
-              <strong>{images.length}</strong>
-              <span>Imágenes</span>
-            </div>
-            <div>
-              <strong>{videos.length}</strong>
-              <span>Videos</span>
-            </div>
-          </div>
-        </aside>
+        <h2 className="professional-profile__header-name">
+          {displayName || "Tu nombre profesional"}
+        </h2>
+        <p className="professional-profile__header-bio">
+          {description ||
+            "Agregá una descripción para mostrar tu propuesta de valor."}
+        </p>
 
-        <div className="professional-profile__editor">
+        <div className="professional-profile__header-stats">
+          <div className="professional-profile__stat">
+            <strong>{images.length}</strong>
+            <span>Imágenes</span>
+          </div>
+          <div className="professional-profile__stat-divider" />
+          <div className="professional-profile__stat">
+            <strong>{videos.length}</strong>
+            <span>Videos</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tab Selector ─────────────────────────────────── */}
+      <div className="professional-profile__tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            className={`professional-profile__tab ${activeTab === tab.id ? "professional-profile__tab--active" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+            type="button"
+          >
+            {tab.icon}
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab Panels ───────────────────────────────────── */}
+      <div className="professional-profile__panel">
+        {/* ── DATOS PRINCIPALES ── */}
+        {activeTab === "datos" && (
           <div className="professional-profile__card">
             <div className="professional-profile__card-header professional-profile__card-header--between">
               <div className="professional-profile__card-title">
@@ -830,7 +919,7 @@ export default function ProfessionalProfileSection() {
               >
                 {saveMutation.isPending ? (
                   <>
-                    <Loader2 size={18} className="professional-profile__spin" />
+                    <Loader2 size={18} className="professional-profile__spin" />{" "}
                     Guardando...
                   </>
                 ) : (
@@ -842,6 +931,16 @@ export default function ProfessionalProfileSection() {
             </div>
 
             <div className="professional-profile__field-grid">
+              <label className="professional-profile__field professional-profile__field--full">
+                <span>Nombre visible</span>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Tu nombre o nombre comercial"
+                />
+              </label>
+
               <label className="professional-profile__field professional-profile__field--full">
                 <span>Foto de perfil</span>
                 <div className="professional-profile__photo-upload">
@@ -936,7 +1035,10 @@ export default function ProfessionalProfileSection() {
               </label>
             </div>
           </div>
-          {/* Horarios de atención */}
+        )}
+
+        {/* ── HORARIOS ── */}
+        {activeTab === "horarios" && (
           <div className="professional-profile__card">
             <div className="professional-profile__card-header professional-profile__card-header--between">
               <div className="professional-profile__card-title">
@@ -951,7 +1053,7 @@ export default function ProfessionalProfileSection() {
               >
                 {isSavingSchedule ? (
                   <>
-                    <Loader2 size={16} className="professional-profile__spin" />
+                    <Loader2 size={16} className="professional-profile__spin" />{" "}
                     Guardando...
                   </>
                 ) : (
@@ -1034,6 +1136,10 @@ export default function ProfessionalProfileSection() {
               + Agregar horario
             </button>
           </div>
+        )}
+
+        {/* ── IMÁGENES ── */}
+        {activeTab === "imagenes" && (
           <div className="professional-profile__card">
             <div className="professional-profile__card-header professional-profile__card-header--between">
               <div className="professional-profile__card-title">
@@ -1049,33 +1155,43 @@ export default function ProfessionalProfileSection() {
               </button>
             </div>
 
-            <div className="professional-profile__media-grid">
-              {images.map((image) => (
-                <article
-                  key={image.id}
-                  className="professional-profile__media-card"
-                >
-                  <div className="professional-profile__image-preview">
-                    {image.url ? (
-                      <img src={image.url} alt="Imagen de presentación" />
-                    ) : (
-                      <div className="professional-profile__placeholder">
-                        Sin vista previa
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    className="professional-profile__remove-btn"
-                    onClick={() => removeImage(image.id)}
+            {images.length === 0 ? (
+              <p className="professional-profile__empty-text">
+                No tenés imágenes de presentación todavía. ¡Subí fotos de tus
+                trabajos!
+              </p>
+            ) : (
+              <div className="professional-profile__media-grid">
+                {images.map((image) => (
+                  <article
+                    key={image.id}
+                    className="professional-profile__media-card"
                   >
-                    <Trash2 size={16} /> Eliminar
-                  </button>
-                </article>
-              ))}
-            </div>
+                    <div className="professional-profile__image-preview">
+                      {image.url ? (
+                        <img src={image.url} alt="Imagen de presentación" />
+                      ) : (
+                        <div className="professional-profile__placeholder">
+                          Sin vista previa
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="professional-profile__remove-btn"
+                      onClick={() => removeImage(image.id)}
+                    >
+                      <Trash2 size={16} /> Eliminar
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
+        )}
 
+        {/* ── VIDEOS ── */}
+        {activeTab === "videos" && (
           <div className="professional-profile__card">
             <div className="professional-profile__card-header professional-profile__card-header--between">
               <div className="professional-profile__card-title">
@@ -1091,54 +1207,64 @@ export default function ProfessionalProfileSection() {
               </button>
             </div>
 
-            <div className="professional-profile__video-list">
-              {videos.map((video) => (
-                <article
-                  key={video.id}
-                  className="professional-profile__video-card"
-                >
-                  <div className="professional-profile__video-preview">
-                    <video
-                      src={video.url}
-                      className="professional-profile__video-element"
-                      controls
-                    />
-                  </div>
-
-                  <div className="professional-profile__video-details">
-                    <div className="professional-profile__field-grid professional-profile__field-grid--stacked">
-                      <label className="professional-profile__field">
-                        <span>Título</span>
-                        <input
-                          type="text"
-                          value={video.title}
-                          readOnly
-                          placeholder="Ej. Recorrido del local"
-                        />
-                      </label>
-
-                      <label className="professional-profile__field professional-profile__field--full">
-                        <span>Descripción del video</span>
-                        <textarea rows={3} value={video.description} readOnly />
-                      </label>
+            {videos.length === 0 ? (
+              <p className="professional-profile__empty-text">
+                No tenés videos todavía. Subí un video para mostrar tu trabajo.
+              </p>
+            ) : (
+              <div className="professional-profile__yt-grid">
+                {videos.map((video) => (
+                  <article
+                    key={video.id}
+                    className="professional-profile__yt-card"
+                  >
+                    <div className="professional-profile__yt-thumb">
+                      <video
+                        src={video.url}
+                        className="professional-profile__yt-video"
+                        preload="metadata"
+                      />
+                      <div className="professional-profile__yt-overlay">
+                        <Play size={28} fill="white" />
+                      </div>
                     </div>
-
-                    <button
-                      type="button"
-                      className="professional-profile__remove-btn"
-                      onClick={() => removeVideo(video.id)}
-                    >
-                      <Trash2 size={16} /> Eliminar
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
+                    <div className="professional-profile__yt-info">
+                      <p className="professional-profile__yt-title">
+                        {video.title}
+                      </p>
+                      {video.description && (
+                        <p className="professional-profile__yt-desc">
+                          {video.description}
+                        </p>
+                      )}
+                      <div className="professional-profile__yt-actions">
+                        <button
+                          type="button"
+                          className="professional-profile__yt-edit-btn"
+                          title="Modificar video"
+                          onClick={() => openEditVideoModal(video)}
+                        >
+                          <Pencil size={14} /> Modificar
+                        </button>
+                        <button
+                          type="button"
+                          className="professional-profile__yt-delete-btn"
+                          title="Eliminar video"
+                          onClick={() => removeVideo(video.id)}
+                        >
+                          <Trash2 size={14} /> Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Modal para subir imagen */}
+      {/* ── Modals ───────────────────────────────────────── */}
       <Modal
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
@@ -1237,6 +1363,68 @@ export default function ProfessionalProfileSection() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal para editar video */}
+      <Modal
+        isOpen={isEditVideoModalOpen}
+        onClose={() => setIsEditVideoModalOpen(false)}
+        title="Modificar video"
+      >
+        <div className="professional-profile__modal-content">
+          {editVideoError && (
+            <div className="professional-profile__modal-error">
+              <AlertTriangle size={16} />
+              <span>{editVideoError}</span>
+            </div>
+          )}
+          <div className="professional-profile__field-grid professional-profile__field-grid--stacked">
+            <label className="professional-profile__field">
+              <span>Título del video</span>
+              <input
+                type="text"
+                placeholder="Ej. Recorrido del local"
+                value={editVideoTitle}
+                onChange={(e) => setEditVideoTitle(e.target.value)}
+              />
+            </label>
+            <label className="professional-profile__field">
+              <span>Descripción</span>
+              <textarea
+                placeholder="Contá de qué se trata este video."
+                value={editVideoDescription}
+                onChange={(e) => setEditVideoDescription(e.target.value)}
+                rows={4}
+              />
+            </label>
+          </div>
+          <div className="professional-profile__modal-actions">
+            <button
+              type="button"
+              className="professional-profile__cancel-btn"
+              onClick={() => setIsEditVideoModalOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="professional-profile__save-btn"
+              onClick={handleUpdateVideo}
+              disabled={!editVideoTitle.trim() || isUpdatingVideo}
+            >
+              {isUpdatingVideo ? (
+                <>
+                  <Loader2 size={18} className="professional-profile__spin" />{" "}
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save size={18} /> Guardar cambios
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </Modal>
 
       <Modal
