@@ -23,6 +23,7 @@ const productListSchema = z.object({
   priceMax: z.number().optional(),
   brand: z.string().optional(),
   ean: z.string().optional(),
+  wholesale: z.boolean().optional(),
 });
 const authTokenSchema = z.string().optional();
 const tokenizedRecordSchema = z

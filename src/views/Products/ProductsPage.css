@@ -746,3 +746,29 @@
   color: var(--accent-color);
   background: var(--accent-transparent);
 }
+
+/* Wholesale styling */
+.product-card__wholesale {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.product-card__wholesale-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--white);
+  background: var(--accent-color);
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.product-card__wholesale-info {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
