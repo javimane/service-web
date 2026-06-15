@@ -29,6 +29,15 @@ export default function ProductFilters({
       ],
     },
     {
+      type: "chips",
+      label: "Venta Mayorista",
+      filterKey: "wholesale",
+      options: [
+        { value: "all", label: "Todos" },
+        { value: "true", label: "Por mayor" },
+      ],
+    },
+    {
       type: "select",
       label: "Provincia",
       filterKey: "provinceId",

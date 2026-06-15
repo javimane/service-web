@@ -41,6 +41,7 @@ const defaultFilters = {
   priceMax: "",
   brand: "",
   ean: "",
+  wholesale: "all",
   limit: "10",
   sortBy: "price-asc",
 };
@@ -153,6 +154,8 @@ export default function ProductsPage() {
           effectiveFilters.is_foreign === "all"
             ? undefined
             : effectiveFilters.is_foreign === "external",
+        wholesale:
+          effectiveFilters.wholesale === "true" ? true : undefined,
       };
       const result = await getProductsAction(params);
       return result?.data;
@@ -261,6 +264,9 @@ export default function ProductsPage() {
         freeShipping: false,
         description: product.description || "",
         is_foreign: product.is_foreign,
+        wholesale: firstSeller.wholesale,
+        wholesale_price: firstSeller.wholesale_price,
+        wholesale_unit: firstSeller.wholesale_unit,
         sellers: sellers,
         _original: item,
       };
@@ -572,6 +578,15 @@ export default function ProductsPage() {
                             </span>
                           )}
                         </div>
+                        {product.wholesale && (
+                          <div className="product-card__wholesale">
+                            <span className="product-card__wholesale-badge">Por mayor</span>
+                            <span className="product-card__wholesale-info">
+                              {product.currencyCode === "USD" ? "USD $" : "$"}
+                              {formatPrice(product.wholesale_price)} x {product.wholesale_unit} un.
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {viewMode === "list" && (

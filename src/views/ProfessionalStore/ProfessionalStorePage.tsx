@@ -42,6 +42,7 @@ const defaultFilters = {
   priceMin: "",
   priceMax: "",
   ean: "",
+  wholesale: false,
   sortBy: "price-asc",
 };
 
@@ -153,6 +154,7 @@ export default function ProfessionalStorePage() {
       filters.categoryId,
       filters.priceMin,
       filters.priceMax,
+      filters.wholesale,
       filters.sortBy,
       page,
     ],
@@ -167,6 +169,7 @@ export default function ProfessionalStorePage() {
         priceMin: filters.priceMin ? Number(filters.priceMin) : undefined,
         priceMax: filters.priceMax ? Number(filters.priceMax) : undefined,
         ean: debouncedEan || undefined,
+        wholesale: filters.wholesale || undefined,
         sortBy: filters.sortBy,
       });
       return result?.data;
@@ -240,6 +243,9 @@ export default function ProfessionalStorePage() {
         rating: myEntry?.Professional?.rating_avg || 5,
         sellers: sortedSellers,
         is_foreign: item.is_foreign,
+        wholesale: myEntry?.wholesale,
+        wholesale_price: myEntry?.wholesale_price,
+        wholesale_unit: myEntry?.wholesale_unit,
       };
     });
   }, [normalized, id]);
@@ -500,6 +506,18 @@ export default function ProfessionalStorePage() {
             </div>
 
             <div className="store-filter-section">
+              <label>Venta Mayorista</label>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.875rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={filters.wholesale}
+                  onChange={(e) => handleFilterChange("wholesale", e.target.checked)}
+                />
+                Solo por mayor
+              </label>
+            </div>
+
+            <div className="store-filter-section">
               <label>
                 <SlidersHorizontal size={14} /> Precio
               </label>
@@ -629,6 +647,15 @@ export default function ProfessionalStorePage() {
                             <span className="store-price--main">
                               {product.currencyCode === "USD" ? "USD $" : "$"}
                               {formatPrice(product.price)}
+                            </span>
+                          </div>
+                        )}
+                        {product.wholesale && (
+                          <div style={{ display: "flex", flexDirection: "column", marginTop: "4px", gap: "2px" }}>
+                            <span style={{ backgroundColor: "var(--accent-color)", color: "white", alignSelf: "flex-start", padding: "2px 6px", borderRadius: "4px", fontSize: "0.65rem", fontWeight: "bold", textTransform: "uppercase" }}>Por mayor</span>
+                            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                              {product.currencyCode === "USD" ? "USD $" : "$"}
+                              {formatPrice(product.wholesale_price)} x {product.wholesale_unit} un.
                             </span>
                           </div>
                         )}

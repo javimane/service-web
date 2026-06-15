@@ -76,6 +76,15 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
             </span>
           )}
         </div>
+        
+        {product.wholesale && (
+          <div className="product-card-premium__wholesale">
+            <span className="product-card-premium__wholesale-badge">Por mayor</span>
+            <span className="product-card-premium__wholesale-info">
+              ${Number(product.wholesale_price || 0).toLocaleString("es-AR", { minimumFractionDigits: 0 })} x {product.wholesale_unit} un.
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
