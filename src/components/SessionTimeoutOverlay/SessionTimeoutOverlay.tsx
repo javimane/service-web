@@ -9,7 +9,13 @@ export default function SessionTimeoutOverlay() {
 
   useEffect(() => {
     const handleExpired = () => {
-      setVisible(true);
+      const privateRoutes = ["/dashboard", "/mensajes", "/notificaciones", "/favoritos", "/settings"];
+      const isPrivatePage = privateRoutes.some(route => window.location.pathname.startsWith(route));
+      
+      if (isPrivatePage) {
+        setVisible(true);
+      }
+      
       // Optional: Clear tokens here if not done in apiClient
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");

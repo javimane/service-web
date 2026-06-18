@@ -1,0 +1,138 @@
+.stores-section {
+  padding: var(--section-padding-y) 0;
+  position: relative;
+  background: linear-gradient(135deg, var(--brand-blue) 0%, #112d59 100%);
+  color: white;
+  overflow: hidden;
+}
+
+.stores-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(255,255,255,0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.stores-section__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+  position: relative;
+  z-index: 2;
+}
+
+.stores-section__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stores-section__title {
+  font-size: clamp(1.5rem, 2.5vw, var(--text-2xl));
+  font-weight: var(--weight-black);
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.stores-section .section-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+.stores-section .section-link {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(4px);
+  transition: background 0.2s;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stores-section .section-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.stores-section__loading,
+.stores-section__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-xl);
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  backdrop-filter: blur(10px);
+  color: white;
+}
+
+.stores-section__empty h3 {
+  margin: 0;
+  font-size: var(--text-xl);
+  color: white;
+}
+
+.stores-section__empty p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 350px;
+}
+
+.stores-section .empty-icon {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.stores-section__carousel {
+  position: relative;
+  z-index: 2;
+}
+
+.stores-section__scroll {
+  display: flex;
+  gap: var(--space-5);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: var(--space-5) 0;
+  scrollbar-width: none;
+}
+
+.stores-section__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Adjust specialist cards to look good on dark background */
+.stores-section .specialist-card {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.stores-section .carousel-control {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--brand-blue);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.stores-section .carousel-control:hover {
+  background: #fff;
+  transform: translateY(-50%) scale(1.05);
+}
+
+@media (max-width: 640px) {
+  .stores-section {
+    padding: var(--space-8) 0;
+  }
+}

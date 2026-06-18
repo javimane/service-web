@@ -24,8 +24,12 @@ import {
   getUserConversationsAction,
   getProfileByUserIdAction,
 } from "../../app/actions/chat";
+import { sendNotificationAction } from "../../app/actions/notifications";
 import { supabase } from "../../services/supabaseClient";
-import { getFileSignedUrl, uploadChatImage } from "../../services/storageUploads";
+import {
+  getFileSignedUrl,
+  uploadChatImage,
+} from "../../services/storageUploads";
 import "./MessagesPage.css";
 
 type UIConversation = {
@@ -334,7 +338,9 @@ export default function MessagesPage() {
   const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   // Review reminder banner: track dismissed conversations
-  const [dismissedReviewBanners, setDismissedReviewBanners] = useState<Set<string>>(() => {
+  const [dismissedReviewBanners, setDismissedReviewBanners] = useState<
+    Set<string>
+  >(() => {
     try {
       const stored = localStorage.getItem("dismissed_review_banners");
       return stored ? new Set(JSON.parse(stored)) : new Set();
@@ -348,7 +354,10 @@ export default function MessagesPage() {
       const next = new Set(prev);
       next.add(convId);
       try {
-        localStorage.setItem("dismissed_review_banners", JSON.stringify(Array.from(next)));
+        localStorage.setItem(
+          "dismissed_review_banners",
+          JSON.stringify(Array.from(next)),
+        );
       } catch {}
       return next;
     });
@@ -521,7 +530,8 @@ export default function MessagesPage() {
         id: String(req.id),
         requestId: String(req.id),
         receiverId: otherId,
-        professionalId: Number(professional?.id || req.professional_id) || undefined,
+        professionalId:
+          Number(professional?.id || req.professional_id) || undefined,
         seoPath: professional?.seo_path || undefined,
         name,
         role: hasProfessionalId ? "Profesional" : "Usuario",
@@ -582,7 +592,8 @@ export default function MessagesPage() {
 
   const showReviewBanner =
     !!activeConversation &&
-    (activeConversation.role === "Profesional" || !!activeConversation.professionalId) &&
+    (activeConversation.role === "Profesional" ||
+      !!activeConversation.professionalId) &&
     !dismissedReviewBanners.has(activeConversation.id);
 
   useEffect(() => {
@@ -766,12 +777,45 @@ export default function MessagesPage() {
         );
       }
 
-      await sendMessageAction({
+      const result = await sendMessageAction({
         senderId: String(user.id),
         receiverId,
         content,
         fileUrl,
       });
+
+      const messageId = result?.data?.id;
+
+      // Verificación de Lectura diferida (5 segundos)
+      if (messageId) {
+        setTimeout(async () => {
+          try {
+            // Consultar en Supabase el estado is_read del mensaje enviado
+            const { data: msgData, error: msgErr } = await supabase
+              .from("messages")
+              .select("is_read")
+              .eq("id", messageId)
+              .single();
+
+            // Si sigue sin leerse, enviar la notificación
+            if (!msgErr && msgData && msgData.is_read === false) {
+              await sendNotificationAction({
+                user_id: receiverId,
+                sender_id: String(user.id),
+                type: "message",
+                title: user.user_metadata?.full_name || "Usuario",
+                content: content || "Archivo adjunto",
+                source_id: String(messageId),
+              });
+            }
+          } catch (notifErr) {
+            console.error(
+              "Error al verificar lectura diferida / enviar notificación:",
+              notifErr,
+            );
+          }
+        }, 10000);
+      }
 
       return { requestId: receiverId, content, fileUrl };
     },
@@ -840,7 +884,9 @@ export default function MessagesPage() {
     // Si no tenemos professionalId, pero es un Profesional o tiene un receiverId, intentamos buscarlo dinámicamente
     if (!professionalId && activeConversation.receiverId) {
       try {
-        const res = await getProfileByUserIdAction({ id: activeConversation.receiverId });
+        const res = await getProfileByUserIdAction({
+          id: activeConversation.receiverId,
+        });
         const profileData = res?.data || res;
         const professional = Array.isArray(profileData?.professionals)
           ? profileData.professionals[0]
@@ -851,7 +897,10 @@ export default function MessagesPage() {
           seoPath = professional.seo_path || undefined;
         }
       } catch (err) {
-        console.error("Error al buscar el perfil profesional dinámicamente:", err);
+        console.error(
+          "Error al buscar el perfil profesional dinámicamente:",
+          err,
+        );
       }
     }
 
@@ -968,9 +1017,7 @@ export default function MessagesPage() {
                         <span className="msg-conv__time">{conv.time}</span>
                       </div>
                       <div className="msg-conv__row">
-                        <p className="msg-conv__preview">
-                          {conv.lastMessage}
-                        </p>
+                        <p className="msg-conv__preview">{conv.lastMessage}</p>
                         {conv.unreadCount > 0 && (
                           <span className="msg-unread-badge">
                             {conv.unreadCount}
@@ -986,7 +1033,7 @@ export default function MessagesPage() {
             {sidebarCollapsed && (
               <div className="msg-panel__avatars">
                 {filteredConversations.map((conv) => (
-                    <button
+                  <button
                     key={conv.id}
                     className={`msg-avatar-btn ${activeConversation?.id === conv.id ? "msg-avatar-btn--active" : ""}`}
                     onClick={() => handleSelectConversation(conv)}
@@ -1004,9 +1051,7 @@ export default function MessagesPage() {
                       )}
                       {conv.online && <span className="msg-online-dot" />}
                       {conv.unreadCount > 0 && (
-                        <span
-                          className="msg-unread-badge msg-unread-badge--overlay"
-                        >
+                        <span className="msg-unread-badge msg-unread-badge--overlay">
                           {conv.unreadCount}
                         </span>
                       )}
@@ -1027,7 +1072,7 @@ export default function MessagesPage() {
                 <ArrowLeft size={18} />
               </button>
               <div
-                className={`msg-chat__header-avatar ${(activeConversation?.role === "Profesional" || activeConversation?.professionalId) ? "msg-chat__header-avatar--clickable" : ""}`}
+                className={`msg-chat__header-avatar ${activeConversation?.role === "Profesional" || activeConversation?.professionalId ? "msg-chat__header-avatar--clickable" : ""}`}
                 onClick={handleHeaderClick}
               >
                 {activeConversation?.avatarImage ? (
@@ -1044,13 +1089,16 @@ export default function MessagesPage() {
                 )}
               </div>
               <div
-                className={`msg-chat__header-info ${(activeConversation?.role === "Profesional" || activeConversation?.professionalId) ? "msg-chat__header-info--clickable" : ""}`}
+                className={`msg-chat__header-info ${activeConversation?.role === "Profesional" || activeConversation?.professionalId ? "msg-chat__header-info--clickable" : ""}`}
                 onClick={handleHeaderClick}
               >
                 <span
                   className="msg-chat__header-name"
                   onMouseEnter={(e) => {
-                    if (activeConversation?.role === "Profesional" || activeConversation?.professionalId) {
+                    if (
+                      activeConversation?.role === "Profesional" ||
+                      activeConversation?.professionalId
+                    ) {
                       e.currentTarget.style.textDecoration = "underline";
                     }
                   }}
@@ -1098,9 +1146,7 @@ export default function MessagesPage() {
               </div>
             )}
 
-            <div
-              className="msg-chat__messages"
-            >
+            <div className="msg-chat__messages">
               {messages.map((msg) => {
                 const isMe = msg.sender === "me";
                 const profileName = isMe
@@ -1115,15 +1161,19 @@ export default function MessagesPage() {
                   <div key={msg.id}>
                     {msg.date && (
                       <div className="msg-date-wrapper">
-                        <span className="msg-date-bubble">
-                          {msg.date}
-                        </span>
+                        <span className="msg-date-bubble">{msg.date}</span>
                       </div>
                     )}
-                    <div className={`msg-bubble-wrap msg-bubble-wrap--${isMe ? "sent" : "received"}`}>
-                      <div className={`msg-bubble msg-bubble--${isMe ? "sent" : "received"}`}>
+                    <div
+                      className={`msg-bubble-wrap msg-bubble-wrap--${isMe ? "sent" : "received"}`}
+                    >
+                      <div
+                        className={`msg-bubble msg-bubble--${isMe ? "sent" : "received"}`}
+                      >
                         {/* WhatsApp like Tail */}
-                        <div className={`msg-bubble__tail msg-bubble__tail--${isMe ? "sent" : "received"}`} />
+                        <div
+                          className={`msg-bubble__tail msg-bubble__tail--${isMe ? "sent" : "received"}`}
+                        />
 
                         {!isMe && (
                           <span className="msg-bubble__sender-name">
@@ -1193,7 +1243,9 @@ export default function MessagesPage() {
                               </span>
                             )}
                           </div>
-                          <span className={`msg-bubble__time ${isMe ? "msg-bubble__time--sent" : ""}`}>
+                          <span
+                            className={`msg-bubble__time ${isMe ? "msg-bubble__time--sent" : ""}`}
+                          >
                             {msg.time}
                             {isMe && (
                               <span
@@ -1250,10 +1302,7 @@ export default function MessagesPage() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
-              <div
-                className="msg-emoji-wrapper"
-                ref={emojiPickerRef}
-              >
+              <div className="msg-emoji-wrapper" ref={emojiPickerRef}>
                 <button
                   type="button"
                   className="msg-input__icon"

@@ -2,7 +2,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+import {
+  getNotificationsAction,
+  markAllNotificationsAsReadAction,
+  markNotificationAsReadAction,
+} from "../../app/actions/notifications";
 import { supabase } from "../../services/supabaseClient";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
@@ -41,53 +48,20 @@ import BrandLogo from "../BrandLogo/BrandLogo";
 
 import "./Navbar.css";
 
-const notifications = [
-  {
-    id: 1,
-    icon: FileText,
-    iconColor: "blue",
-    title: "Propuesta aceptada",
-    description: 'Tu propuesta "Remodelación Terraza" fue aprobada.',
-    time: "Hace 5 min",
-    unread: true,
-  },
-  {
-    id: 2,
-    icon: MessageSquare,
-    iconColor: "green",
-    title: "Nuevo mensaje",
-    description: "Julian Vargas te envió un mensaje.",
-    time: "Hace 30 min",
-    unread: true,
-  },
-  {
-    id: 3,
-    icon: Ticket,
-    iconColor: "orange",
-    title: "Promoción por vencer",
-    description: '"Descuento 20%" expira en 2 días.',
-    time: "Hace 1 hora",
-    unread: true,
-  },
-  {
-    id: 4,
-    icon: TrendingUp,
-    iconColor: "purple",
-    title: "Estadísticas semanales",
-    description: "Tu perfil creció un +12.4% esta semana.",
-    time: "Hace 3 horas",
-    unread: false,
-  },
-  {
-    id: 5,
-    icon: FileText,
-    iconColor: "blue",
-    title: "Nueva reseña",
-    description: "Elena Rossi dejó una reseña de 5 estrellas.",
-    time: "Ayer",
-    unread: false,
-  },
-];
+const getNotificationIcon = (type: string) => {
+  switch (type) {
+    case "like":
+      return { icon: Heart, color: "red" };
+    case "comment":
+      return { icon: MessageSquare, color: "blue" };
+    case "propossal":
+      return { icon: Briefcase, color: "purple" };
+    case "message":
+      return { icon: MessageSquare, color: "green" };
+    default:
+      return { icon: Bell, color: "gray" };
+  }
+};
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -102,9 +76,65 @@ export default function Navbar() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const notifRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
-  const [setIsReelsModalOpen] = useState(false);
 
   const queryClient = useQueryClient();
+
+  // Traer las notificaciones reales
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const res = await getNotificationsAction({});
+      if (res?.data) {
+        if (Array.isArray(res.data)) return res.data;
+        if (res.data.data && Array.isArray(res.data.data)) return res.data.data;
+      }
+      return [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      await markAllNotificationsAsReadAction({});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] });
+    },
+  });
+
+  const markAsReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await markNotificationAsReadAction({ id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] });
+    },
+  });
+
+  const handleNotificationClick = (notif: any) => {
+    if (!notif.is_read) {
+      markAsReadMutation.mutate(notif.id);
+    }
+    
+    setIsNotifOpen(false);
+    
+    switch (notif.type) {
+      case "proposal":
+      case "propossal":
+        router.push(`${ROUTES.dashboard}?view=proposals-view`);
+        break;
+      case "message":
+        router.push(ROUTES.messages);
+        break;
+      case "promotion":
+        router.push(`${ROUTES.dashboard}?view=promotions-all`);
+        break;
+      default:
+        router.push(`${ROUTES.dashboard}?view=notifications`);
+        break;
+    }
+  };
 
   const { data: unreadMessagesCount = 0 } = useQuery({
     queryKey: ["unread-messages-count", user?.id],
@@ -169,7 +199,7 @@ export default function Navbar() {
     };
   }, [user?.id, queryClient]);
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const unreadCount = notifications.filter((n: any) => !n.is_read).length;
 
   const navLinks = [
     { label: "Profesionales/Comercios", path: ROUTES.categories },
@@ -397,41 +427,58 @@ export default function Navbar() {
                         type="button"
                         className="notif-dropdown__mark-all"
                         aria-label="Marcar todas como leídas"
+                        onClick={() => markAllAsReadMutation.mutate()}
+                        disabled={markAllAsReadMutation.isPending || unreadCount === 0}
                       >
                         <CheckCheck size={16} />
                       </button>
                     </div>
                     <div className="notif-dropdown__list">
-                      {notifications.map((notif) => {
-                        const IconComp = notif.icon;
-                        return (
-                          <div
-                            key={notif.id}
-                            className={`notif-item ${notif.unread ? "notif-item--unread" : ""}`}
-                          >
+                      {notifications.length === 0 ? (
+                        <div className="notif-dropdown__empty">
+                          No tienes notificaciones
+                        </div>
+                      ) : (
+                        notifications.slice(0, 5).map((notif: any) => {
+                          const { icon: IconComp, color } = getNotificationIcon(notif.type);
+                          
+                          let timeStr = "";
+                          try {
+                            timeStr = formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: es });
+                          } catch (e) {
+                            timeStr = "Recientemente";
+                          }
+
+                          return (
                             <div
-                              className={`notif-item__icon notif-item__icon--${notif.iconColor}`}
+                              key={notif.id}
+                              className={`notif-item ${!notif.is_read ? "notif-item--unread" : ""}`}
+                              onClick={() => handleNotificationClick(notif)}
                             >
-                              <IconComp size={16} />
-                            </div>
-                            <div className="notif-item__content">
-                              <span className="notif-item__title">
-                                {notif.title}
+                              <div
+                                className={`notif-item__icon notif-item__icon--${color}`}
+                              >
+                                <IconComp size={16} />
+                              </div>
+                              <div className="notif-item__content">
+                                <span className="notif-item__title">
+                                  {notif.title}
+                                </span>
+                                <span className="notif-item__desc">
+                                  {notif.content}
+                                </span>
+                              </div>
+                              <span className="notif-item__time">
+                                {timeStr}
                               </span>
-                              <span className="notif-item__desc">
-                                {notif.description}
-                              </span>
                             </div>
-                            <span className="notif-item__time">
-                              {notif.time}
-                            </span>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
                     <div className="notif-dropdown__footer">
                       <Link
-                        href={ROUTES.dashboard}
+                        href={`${ROUTES.dashboard}?view=notifications`}
                         className="notif-dropdown__view-all"
                         onClick={() => setIsNotifOpen(false)}
                       >

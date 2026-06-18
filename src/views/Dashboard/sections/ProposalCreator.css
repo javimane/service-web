@@ -183,9 +183,14 @@
   align-items: center;
 }
 
+.items-header-actions {
+  display: flex;
+  gap: 16px;
+}
+
 .add-item-trigger {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--accent-color);
   color: var(--text-primary);
   padding: 8px 16px;
   border-radius: var(--radius-full);
@@ -195,6 +200,11 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-item-trigger:hover {
+  background: var(--accent-transparent);
 }
 
 .items-list-container {

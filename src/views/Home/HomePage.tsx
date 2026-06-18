@@ -14,6 +14,7 @@ import NearbyProductsSection from "./sections/NearbyProductsSection";
 import ProductsCarousel from "./sections/ProductsCarousel";
 import PromotionsSection from "./sections/PromotionsSection";
 import FeaturedSpecialists from "./sections/FeaturedSpecialists";
+import StoresSection from "./sections/StoresSection";
 import ProfessionalReelsSection from "./sections/ProfessionalReelsSection";
 import JoinCTASection from "./sections/JoinCTASection";
 import Footer from "../../components/Footer/Footer";
@@ -203,6 +204,7 @@ export default function HomePage() {
         <PromotionsSection userProvince={userProvince} />
         <NearbyServicesSection userProvince={userProvince} />
         <FeaturedSpecialists userProvince={userProvince} />
+        <StoresSection userProvince={userProvince} />
         <NearbyProductsSection userProvince={userProvince} />
         <ProfessionalReelsSection userProvince={userProvince} />
         <JoinCTASection />

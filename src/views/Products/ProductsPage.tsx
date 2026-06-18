@@ -26,7 +26,6 @@ function formatPrice(n) {
 }
 
 const sortOptions = [
-  { key: "relevant", label: "Más relevantes" },
   { key: "price-asc", label: "Menor precio" },
   { key: "price-desc", label: "Mayor precio" },
 ];
@@ -154,8 +153,7 @@ export default function ProductsPage() {
           effectiveFilters.is_foreign === "all"
             ? undefined
             : effectiveFilters.is_foreign === "external",
-        wholesale:
-          effectiveFilters.wholesale === "true" ? true : undefined,
+        wholesale: effectiveFilters.wholesale === "true" ? true : undefined,
       };
       const result = await getProductsAction(params);
       return result?.data;
@@ -531,13 +529,7 @@ export default function ProductsPage() {
                     type="button"
                     className={`product-card ${viewMode === "list" ? "product-card--list" : ""}`}
                     onClick={() => {
-                      const slug = product.title
-                        ? product.title
-                            .trim()
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")
-                        : `product-${product.id}`;
-                      router.push(`/productos/${slug}?id=${product.id}`);
+                      router.push(`/productos${product._original.seo_path}`);
                     }}
                   >
                     <div className="product-card__image">
@@ -580,10 +572,13 @@ export default function ProductsPage() {
                         </div>
                         {product.wholesale && (
                           <div className="product-card__wholesale">
-                            <span className="product-card__wholesale-badge">Por mayor</span>
+                            <span className="product-card__wholesale-badge">
+                              Por mayor
+                            </span>
                             <span className="product-card__wholesale-info">
                               {product.currencyCode === "USD" ? "USD $" : "$"}
-                              {formatPrice(product.wholesale_price)} x {product.wholesale_unit} un.
+                              {formatPrice(product.wholesale_price)} c/u Minimo{" "}
+                              {product.wholesale_unit} un.
                             </span>
                           </div>
                         )}

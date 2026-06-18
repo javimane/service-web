@@ -25,6 +25,9 @@ export default function LoginPage({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
   const { refreshSession, setSessionStatus, sessionStatus, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -79,6 +82,34 @@ export default function LoginPage({
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
     setAuthError("");
+    setResetMessage("");
+    setResetError("");
+  };
+
+  const handleForgotPassword = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!formData.email) {
+      setErrors((prev) => ({ ...prev, email: "Ingrese su correo electrónico para recuperar la contraseña" }));
+      return;
+    }
+    
+    if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
+      setErrors((prev) => ({ ...prev, email: "El formato del correo es inválido" }));
+      return;
+    }
+
+    setIsResetting(true);
+    setResetMessage("");
+    setResetError("");
+    setAuthError("");
+    try {
+      await authService.resetPassword({ email: formData.email });
+      setResetMessage("Le enviamos un correo con las instrucciones para restablecer su contraseña.");
+    } catch (err: any) {
+      setResetError(err.message || "Error al solicitar el restablecimiento de contraseña.");
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -170,9 +201,14 @@ export default function LoginPage({
         <div className="input-group">
           <div className="label-row">
             <label htmlFor="password">CONTRASEÑA</label>
-            <a href="#" className="forgot-password">
-              ¿OLVIDÓ SU CONTRASEÑA?
-            </a>
+            <button
+              type="button" 
+              className="forgot-password"
+              onClick={handleForgotPassword}
+              disabled={isResetting}
+            >
+              {isResetting ? "ENVIANDO..." : "¿OLVIDÓ SU CONTRASEÑA?"}
+            </button>
           </div>
           <div
             className={`input-wrapper ${errors.password ? "has-error" : ""}`}
@@ -202,8 +238,10 @@ export default function LoginPage({
         </div>
 
         {authError && <div className="auth-error-alert">{authError}</div>}
+        {resetError && <div className="auth-error-alert">{resetError}</div>}
+        {resetMessage && <div className="auth-error-alert" style={{ background: 'rgba(64, 192, 87, 0.1)', borderColor: 'var(--success-color)', color: 'var(--success-color)' }}>{resetMessage}</div>}
 
-        <button type="submit" className="btn-primary" disabled={isLoading}>
+        <button type="submit" className="btn-primary" disabled={isLoading || isResetting}>
           {isLoading ? "Ingresando..." : "Ingresar"}
         </button>
 
@@ -211,20 +249,16 @@ export default function LoginPage({
           <span>O CONTINUAR CON</span>
         </div>
 
-        <div
-          className="social-buttons"
-          style={{ display: "flex", justifyContent: "center" }}
-        >
+        <div className="social-buttons" style={{ display: "flex", justifyContent: "center" }}>
           <button
             type="button"
-            className="btn-secondary"
-            style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", width: "100%", justifyContent: "center" }}
+            className="btn-google"
             onClick={() => {
               const redirectTo = encodeURIComponent(window.location.origin + '/dashboard?auth=success');
               window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/auth/login/google?redirectTo=${redirectTo}`;
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>

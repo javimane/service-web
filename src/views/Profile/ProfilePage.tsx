@@ -18,6 +18,7 @@ import {
   CheckCircle,
   ShoppingBag,
   MapPin,
+  Clock,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ROUTES } from "../../routes/paths";
@@ -26,6 +27,7 @@ import {
   getCompanyLocationsAction,
 } from "../../app/actions/professionals";
 import { getServicesByProfessionalAction } from "../../app/actions/services";
+import { getAvailabilityByProfessionalAction } from "../../app/actions/availability";
 import {
   getImagesByProfessionalAction,
   getVideosByProfessionalAction,
@@ -259,6 +261,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
   const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
+  const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isBankPromosModalOpen, setIsBankPromosModalOpen] = useState(false);
   const [isPromosModalOpen, setIsPromosModalOpen] = useState(false);
   const [selectedPromoForDetail, setSelectedPromoForDetail] =
@@ -465,6 +468,18 @@ export default function ProfilePage() {
       return result?.data ?? null;
     },
     enabled: !!id,
+    staleTime: 1000 * 60 * 60, // 1 hora
+  });
+
+  const { data: availability = [] } = useQuery({
+    queryKey: ["professional-availability", id],
+    queryFn: async () => {
+      const result = await getAvailabilityByProfessionalAction({
+        professionalId: Number(id),
+      });
+      return result?.data ?? [];
+    },
+    enabled: !!id && !isNaN(Number(id)),
     staleTime: 1000 * 60 * 60, // 1 hora
   });
 
@@ -757,6 +772,30 @@ export default function ProfilePage() {
               )}
             </div>
           )}
+
+          <div
+            className="profile-sidebar__availability-wrapper"
+            style={{
+              padding: "0 0 var(--space-4) 0",
+              display: "flex",
+              justifyContent: "center",
+              width: "100%",
+            }}
+          >
+            <button
+              type="button"
+              className="address-card__map-btn"
+              style={{
+                width: "100%",
+                background: "var(--bg-card)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-color)",
+              }}
+              onClick={() => setIsAvailabilityModalOpen(true)}
+            >
+              <Clock size={14} /> Ver horarios de atención
+            </button>
+          </div>
 
           <div className="profile-sidebar__stats">
             <div className="stat-item">
@@ -1219,8 +1258,7 @@ export default function ProfilePage() {
               className="promo-card-premium"
               onClick={() => {
                 if (promo.seo_path) {
-                  const path = promo.seo_path.replace(/^\/+/, "");
-                  router.push(`/promociones/${path}`);
+                  router.push(`/promociones${promo.seo_path}`);
                 } else {
                   router.push(`/promociones/promo?id=${promo.id}`);
                 }
@@ -1313,12 +1351,46 @@ export default function ProfilePage() {
             <div className="video-expanded__info">
               <div className="video-expanded__header">
                 <h3>{selectedVideo.title}</h3>
-                <button
-                  className="video-like-btn"
-                  onClick={(e) => handleVideoLike(selectedVideo, e)}
+                <div
+                  style={{ display: "flex", gap: "12px", alignItems: "center" }}
                 >
-                  <Heart size={20} />
-                </button>
+                  <button
+                    className="video-like-btn"
+                    title="Compartir"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const professionalId =
+                        selectedVideo.professional_id || id;
+                      const basePath = window.location.pathname.includes(
+                        "/perfil/",
+                      )
+                        ? window.location.pathname
+                        : `/perfil/${seoPath}/${professionalId}`;
+                      const shareUrl = `${window.location.origin}${basePath}?video=${selectedVideo.id}`;
+
+                      if (navigator.share) {
+                        navigator
+                          .share({
+                            title: selectedVideo.title || "Video de Sercio",
+                            url: shareUrl,
+                          })
+                          .catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        alert("Enlace copiado al portapapeles");
+                      }
+                    }}
+                  >
+                    <Share2 size={20} />
+                  </button>
+                  <button
+                    className="video-like-btn"
+                    title="Me gusta"
+                    onClick={(e) => handleVideoLike(selectedVideo, e)}
+                  >
+                    <Heart size={20} />
+                  </button>
+                </div>
               </div>
               <p>{selectedVideo.description}</p>
             </div>
@@ -1415,6 +1487,73 @@ export default function ProfilePage() {
           }}
         />
       )}
+
+      {/* Availability Modal */}
+      <Modal
+        isOpen={isAvailabilityModalOpen}
+        onClose={() => setIsAvailabilityModalOpen(false)}
+        title="Horarios de Atención"
+        maxWidth="400px"
+      >
+        <div style={{ padding: "var(--space-4)" }}>
+          {availability.length === 0 ? (
+            <p style={{ textAlign: "center", color: "var(--text-secondary)" }}>
+              El profesional no ha definido sus horarios de atención.
+            </p>
+          ) : (
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-3)",
+              }}
+            >
+              {availability
+                .sort((a: any, b: any) => a.day_of_week - b.day_of_week)
+                .map((slot: any) => {
+                  const daysMap: Record<number, string> = {
+                    1: "Lunes",
+                    2: "Martes",
+                    3: "Miércoles",
+                    4: "Jueves",
+                    5: "Viernes",
+                    6: "Sábado",
+                    7: "Domingo",
+                  };
+                  return (
+                    <li
+                      key={slot.id}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "12px",
+                        background: "var(--bg-card)",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--border-color)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: "var(--weight-semibold)",
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        {daysMap[slot.day_of_week] || `Día ${slot.day_of_week}`}
+                      </span>
+                      <span style={{ color: "var(--text-secondary)" }}>
+                        {slot.start_time.slice(0, 5)} -{" "}
+                        {slot.end_time.slice(0, 5)}
+                      </span>
+                    </li>
+                  );
+                })}
+            </ul>
+          )}
+        </div>
+      </Modal>
 
       <Footer />
     </div>

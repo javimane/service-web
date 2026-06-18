@@ -6,6 +6,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { authService } from "../services/authService";
 import { userService } from "../services/userService";
 import {
@@ -80,7 +81,8 @@ const normalizeSessionPayload = (payload: any) => {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState(null);
+  const queryClient = useQueryClient();
+  const [user, setUser] = useState<any>(null);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(
     null,
   );
@@ -172,6 +174,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       localStorage.setItem("was_logged_in", "true");
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let eventSource: EventSource | null = null;
+    
+    // Conectar al endpoint SSE del backend
+    try {
+      const token = localStorage.getItem("access_token") || "";
+      const sseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/api/notifications/stream?token=${token}`;
+      eventSource = new EventSource(sseUrl, { withCredentials: true });
+
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          console.log("¡Nueva notificación recibida en vivo!", payload);
+          
+          // Inyectar en React Query caché (para la NavBar y NotificationsPage)
+          queryClient.setQueryData(["notifications", user.id], (old: any[]) => {
+            if (!old) return [payload];
+            return [payload, ...old];
+          });
+
+          // Mostrar la notificación flotante
+          setForegroundNotification({
+            title: payload.title || "Nueva Notificación",
+            body: payload.content || payload.message || "Tienes una nueva notificación",
+          });
+
+          // Ocultar la notificación flotante después de 5 segundos
+          setTimeout(() => {
+            setForegroundNotification(null);
+          }, 5000);
+        } catch (e) {
+          console.error("Error al procesar la notificación en vivo:", e);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error("Error en el stream de notificaciones (SSE):", error);
+        // Si hay error, cerrarlo para evitar ciclos infinitos si el auth falló
+        eventSource?.close();
+      };
+    } catch (e) {
+      console.error("Error inicializando SSE:", e);
+    }
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
   }, [user]);
 
   const [showChatSyncModal, setShowChatSyncModal] = useState(false);
@@ -277,9 +332,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setupForegroundNotifications();
 
+    const handleSessionExpired = () => {
+      setUser(null);
+      setSessionStatus(null);
+    };
+    window.addEventListener("session-expired", handleSessionExpired);
+
     return () => {
       if (unsubscribe) unsubscribe();
       if (clearToastTimer) clearTimeout(clearToastTimer);
+      window.removeEventListener("session-expired", handleSessionExpired);
     };
   }, []);
 

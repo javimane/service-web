@@ -14,6 +14,8 @@ export const API_ENDPOINTS = {
     getSession: `${API_BASE_URL}/api/auth/session`,
     updateEmail: `${API_BASE_URL}/api/auth/update-email`,
     updatePassword: `${API_BASE_URL}/api/auth/update-password`,
+    resetPassword: `${API_BASE_URL}/api/auth/reset-password`,
+    verifyOtp: `${API_BASE_URL}/api/auth/verify-otp`,
   },
   jobRequests: {
     base: `${API_BASE_URL}/api/job-requests`,
@@ -106,6 +108,9 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/api/communications/requests/user/${userId}`,
     professionalRequests: (professionalId: string) =>
       `${API_BASE_URL}/api/communications/requests/professional/${professionalId}`,
+  },
+  notifications: {
+    stream: `${API_BASE_URL}/api/notifications/stream`,
   },
   payments: {
     mercadopagoWebhook: `${API_BASE_URL}/api/webhooks/mercadopago`,

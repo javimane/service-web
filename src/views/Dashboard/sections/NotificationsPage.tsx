@@ -1,74 +1,126 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ROUTES } from "../../../routes/paths";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 import {
   Bell,
-  FileText,
+  Heart,
   MessageSquare,
-  Ticket,
-  TrendingUp,
-  Star,
-  UserPlus,
+  Briefcase,
   CheckCheck,
   Filter,
+  Trash2,
+  Ticket
 } from "lucide-react";
-import { notificationStorage } from "../../../services/notificationStorage";
+import { useAuth } from "../../../context/AuthContext";
+import {
+  getNotificationsAction,
+  markAllNotificationsAsReadAction,
+  markNotificationAsReadAction,
+  deleteNotificationAction,
+} from "../../../app/actions/notifications";
 import "./NotificationsPage.css";
 
-const CATEGORY_ICONS = {
-  proposals: FileText,
-  messages: MessageSquare,
-  promotions: Ticket,
-  analytics: TrendingUp,
-  reviews: Star,
-  followers: UserPlus,
-  all: Bell,
+const getNotificationIcon = (type: string) => {
+  switch (type) {
+    case "like":
+      return { icon: Heart, color: "red" };
+    case "comment":
+      return { icon: MessageSquare, color: "blue" };
+    case "propossal":
+      return { icon: Briefcase, color: "purple" };
+    case "message":
+      return { icon: MessageSquare, color: "green" };
+    case "promotion":
+      return { icon: Ticket, color: "orange" };
+    default:
+      return { icon: Bell, color: "gray" };
+  }
 };
 
 const filterOptions = [
   { key: "all", label: "Todas" },
   { key: "unread", label: "No leídas" },
-  { key: "proposals", label: "Propuestas" },
-  { key: "messages", label: "Mensajes" },
-  { key: "promotions", label: "Promociones" },
-  { key: "analytics", label: "Analíticas" },
+  { key: "propossal", label: "Propuestas" },
+  { key: "message", label: "Mensajes" },
 ];
 
 export default function NotificationsPage() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState("all");
-  const [notificationsList, setNotificationsList] = useState<any[]>([]);
 
-  useEffect(() => {
-    return notificationStorage.subscribe((notifs) => {
-      setNotificationsList(notifs);
-    });
-  }, []);
-
-  const filtered = notificationsList.filter((n) => {
-    if (activeFilter === "all") return true;
-    if (activeFilter === "unread") return n.unread;
-    return n.category === activeFilter;
+  const { data: notificationsList = [], isLoading } = useQuery({
+    queryKey: ["notifications", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const res = await getNotificationsAction({});
+      if (res?.data) {
+        if (Array.isArray(res.data)) return res.data;
+        if (res.data.data && Array.isArray(res.data.data)) return res.data.data;
+      }
+      return [];
+    },
+    enabled: !!user?.id,
   });
 
-  const unreadCount = notificationsList.filter((n) => n.unread).length;
-
-  // Group by date
-  const grouped = filtered.reduce<Record<string, typeof notificationsList>>(
-    (acc, n) => {
-      const dateKey = n.date || "Hoy";
-      if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(n);
-      return acc;
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      await markAllNotificationsAsReadAction({});
     },
-    {},
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] });
+    },
+  });
 
-  const handleMarkAllAsRead = () => {
-    notificationStorage.markAllAsRead();
+  const markAsReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await markNotificationAsReadAction({ id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await deleteNotificationAction({ id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] });
+    },
+  });
+
+  const handleNotificationClick = (notif: any) => {
+    if (!notif.is_read) {
+      markAsReadMutation.mutate(notif.id);
+    }
+    
+    switch (notif.type) {
+      case "proposal":
+      case "propossal":
+        router.push(`${ROUTES.dashboard}?view=proposals-view`);
+        break;
+      case "message":
+        router.push(ROUTES.messages);
+        break;
+      case "promotion":
+        router.push(`${ROUTES.dashboard}?view=promotions-all`);
+        break;
+    }
   };
 
-  const handleMarkSingleAsRead = (id: string | number) => {
-    notificationStorage.markAsRead(id);
-  };
+  const filtered = notificationsList.filter((n: any) => {
+    if (activeFilter === "all") return true;
+    if (activeFilter === "unread") return !n.is_read;
+    return n.type === activeFilter;
+  });
+
+  const unreadCount = notificationsList.filter((n: any) => !n.is_read).length;
 
   return (
     <div className="notifications-page">
@@ -84,7 +136,8 @@ export default function NotificationsPage() {
           <button 
             type="button" 
             className="notifications-page__mark-all"
-            onClick={handleMarkAllAsRead}
+            onClick={() => markAllAsReadMutation.mutate()}
+            disabled={markAllAsReadMutation.isPending || unreadCount === 0}
           >
             <CheckCheck size={16} />
             <span>Marcar todas como leídas</span>
@@ -107,51 +160,80 @@ export default function NotificationsPage() {
       </div>
 
       <div className="notifications-page__content">
-        {Object.entries(grouped).length === 0 ? (
+        {isLoading ? (
+          <div className="notifications-page__empty">
+            <p>Cargando notificaciones...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="notifications-page__empty">
             <Bell size={48} />
             <p>No hay notificaciones en esta categoría.</p>
           </div>
         ) : (
-          Object.entries(grouped).map(([date, items]) => (
-            <div key={date} className="notifications-group">
-              <h3 className="notifications-group__date">{date}</h3>
-              <div className="notifications-group__list">
-                {items.map((notif) => {
-                  const IconComp = CATEGORY_ICONS[notif.category as keyof typeof CATEGORY_ICONS] || Bell;
-                  return (
-                    <div
-                      key={notif.id}
-                      className={`notification-card ${notif.unread ? "notification-card--unread" : ""}`}
-                      onClick={() => handleMarkSingleAsRead(notif.id)}
-                    >
-                      <div
-                        className={`notification-card__icon notification-card__icon--${notif.iconColor || "blue"}`}
-                      >
-                        <IconComp size={20} />
-                      </div>
-                      <div className="notification-card__body">
-                        <div className="notification-card__top">
-                          <span className="notification-card__title">
-                            {notif.title}
-                          </span>
-                          <span className="notification-card__time">
-                            {notif.time}
-                          </span>
-                        </div>
-                        <p className="notification-card__desc">
-                          {notif.description}
-                        </p>
-                      </div>
-                      {notif.unread && (
-                        <div className="notification-card__unread-dot" />
-                      )}
+          <div className="notifications-group__list">
+            {filtered.map((notif: any) => {
+              const { icon: IconComp, color } = getNotificationIcon(notif.type);
+              
+              let timeStr = "";
+              try {
+                timeStr = formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: es });
+              } catch (e) {
+                timeStr = "Recientemente";
+              }
+
+              return (
+                <div
+                  key={notif.id}
+                  className={`notification-card ${!notif.is_read ? "notification-card--unread" : ""}`}
+                  onClick={() => handleNotificationClick(notif)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <div
+                    className={`notification-card__icon notification-card__icon--${color}`}
+                  >
+                    <IconComp size={20} />
+                  </div>
+                  <div className="notification-card__body">
+                    <div className="notification-card__top">
+                      <span className="notification-card__title">
+                        {notif.title}
+                      </span>
+                      <span className="notification-card__time">
+                        {timeStr}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))
+                    <p className="notification-card__desc">
+                      {notif.content}
+                    </p>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {!notif.is_read && (
+                      <div className="notification-card__unread-dot" />
+                    )}
+                    {!notif.is_read && (
+                      <button
+                        title="Marcar como leída"
+                        onClick={(e) => { e.stopPropagation(); markAsReadMutation.mutate(notif.id); }}
+                        disabled={markAsReadMutation.isPending}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--success-color)' }}
+                      >
+                        <CheckCheck size={20} />
+                      </button>
+                    )}
+                    <button
+                      title="Eliminar"
+                      onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(notif.id); }}
+                      disabled={deleteMutation.isPending}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--error-color)' }}
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

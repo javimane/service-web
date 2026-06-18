@@ -197,7 +197,10 @@ export default function DashboardProducts() {
     offerPrice: "",
     currency_code: "ARG",
     percent_discount: "",
-    link_url: "", // Added link_url property
+    link_url: "",
+    wholesale: false,
+    wholesale_price: "",
+    wholesale_unit: "",
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -234,6 +237,9 @@ export default function DashboardProducts() {
     images: string[];
     currency_code: string;
     percent_discount: string;
+    wholesale: boolean;
+    wholesale_price: string;
+    wholesale_unit: string;
   } | null>(null);
   const [editImageItems, setEditImageItems] = useState<EditImageItem[]>([]);
   const [editOriginalImageUrls, setEditOriginalImageUrls] = useState<string[]>(
@@ -317,6 +323,10 @@ export default function DashboardProducts() {
         item.percent_discount !== undefined
           ? item.percent_discount
           : item.Product?.percent_discount || 0,
+      wholesale: item.wholesale || item.Product?.wholesale || false,
+      wholesale_price:
+        item.wholesale_price || item.Product?.wholesale_price || 0,
+      wholesale_unit: item.wholesale_unit || item.Product?.wholesale_unit || 0,
     }));
   }, [productsData]);
 
@@ -661,6 +671,9 @@ export default function DashboardProducts() {
       currency_code: "ARG",
       percent_discount: "",
       link_url: "",
+      wholesale: false,
+      wholesale_price: "",
+      wholesale_unit: "",
     });
     setNewProductErrors({});
     setFormPrice("");
@@ -729,6 +742,9 @@ export default function DashboardProducts() {
       currency_code: newProduct.currency_code || "ARG",
       percent_discount: Number(newProduct.percent_discount) || 0,
       link_url: newProduct.link_url.trim() || undefined,
+      wholesale: newProduct.wholesale,
+      wholesale_price: Number(newProduct.wholesale_price) || 0,
+      wholesale_unit: Number(newProduct.wholesale_unit) || 0,
     });
   };
 
@@ -755,6 +771,9 @@ export default function DashboardProducts() {
         product.percent_discount !== null
           ? String(product.percent_discount)
           : "",
+      wholesale: product.wholesale || false,
+      wholesale_price: String(product.wholesale_price || ""),
+      wholesale_unit: String(product.wholesale_unit || ""),
     });
     const initialImages: string[] = getOrderedProductImages(
       product.images,
@@ -865,6 +884,9 @@ export default function DashboardProducts() {
         currency_code: editProduct.currency_code || "ARG",
         percent_discount: Number(editProduct.percent_discount) || 0,
         link_url: editProduct.webUrl.trim() || undefined,
+        wholesale: editProduct.wholesale,
+        wholesale_price: Number(editProduct.wholesale_price) || 0,
+        wholesale_unit: Number(editProduct.wholesale_unit) || 0,
       },
     });
   };
@@ -1343,7 +1365,13 @@ export default function DashboardProducts() {
                       type="button"
                       onClick={() => setIsScannerOpen(true)}
                       title="Escanear con cámara"
-                      style={{ padding: "0 8px", background: "none", border: "none", cursor: "pointer", color: "var(--accent-color)" }}
+                      style={{
+                        padding: "0 8px",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--accent-color)",
+                      }}
                     >
                       <Camera size={18} />
                     </button>
@@ -1667,6 +1695,58 @@ export default function DashboardProducts() {
                       )}
                     </div>
 
+                    {/* Wholesale options */}
+                    <div className="dash-products__modal-field dash-products__field--full">
+                      <label className="dash-products__checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={newProduct.wholesale}
+                          onChange={(e) =>
+                            setNewProduct({
+                              ...newProduct,
+                              wholesale: e.target.checked,
+                            })
+                          }
+                        />
+                        <span>Venta por mayor</span>
+                      </label>
+                    </div>
+
+                    {newProduct.wholesale && (
+                      <>
+                        <div className="dash-products__modal-field">
+                          <label>Precio por Unidad (Por Mayor)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={newProduct.wholesale_price}
+                            onChange={(e) =>
+                              setNewProduct({
+                                ...newProduct,
+                                wholesale_price: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="dash-products__modal-field">
+                          <label>Mínimo unidades por mayor</label>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Ej: 10"
+                            value={newProduct.wholesale_unit}
+                            onChange={(e) =>
+                              setNewProduct({
+                                ...newProduct,
+                                wholesale_unit: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </>
+                    )}
+
                     <div className="dash-products__modal-field">
                       <label>URL de página web</label>
                       <div className="dash-products__modal-input-wrap">
@@ -1978,6 +2058,58 @@ export default function DashboardProducts() {
                     </span>
                   )}
                 </div>
+
+                {/* Wholesale options Edit */}
+                <div className="dash-products__modal-field dash-products__field--full">
+                  <label className="dash-products__checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={editProduct.wholesale}
+                      onChange={(e) =>
+                        setEditProduct({
+                          ...editProduct,
+                          wholesale: e.target.checked,
+                        })
+                      }
+                    />
+                    <span>Venta por mayor</span>
+                  </label>
+                </div>
+
+                {editProduct.wholesale && (
+                  <>
+                    <div className="dash-products__modal-field">
+                      <label>Precio por Unidad (Por Mayor)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={editProduct.wholesale_price}
+                        onChange={(e) =>
+                          setEditProduct({
+                            ...editProduct,
+                            wholesale_price: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="dash-products__modal-field">
+                      <label>Mínimo unidades por mayor</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej: 10"
+                        value={editProduct.wholesale_unit}
+                        onChange={(e) =>
+                          setEditProduct({
+                            ...editProduct,
+                            wholesale_unit: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="dash-products__modal-field dash-products__field--full">
                   <label>Código EAN / UPC</label>

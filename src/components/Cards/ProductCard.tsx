@@ -1,5 +1,4 @@
 import React from "react";
-import { Tag } from "lucide-react";
 import "./ProductCard.css";
 
 const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
@@ -39,7 +38,7 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
         <img src={primaryImage} alt={name} loading="lazy" />
 
         {/* OFERTA badge – top left */}
-        {hasOffer && <span className="product-badge-oferta">OFERTA</span>}
+        {hasOffer && !product.wholesale && <span className="product-badge-oferta">OFERTA</span>}
       </div>
 
       <div className="product-card-premium__content">
@@ -47,7 +46,40 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
         <h3 className="product-title">{name}</h3>
 
         <div className="product-pricing">
-          {hasOffer ? (
+          {product.wholesale ? (
+            <div className="product-card-premium__wholesale">
+              <span
+                className="product-card-premium__wholesale-badge"
+                style={{ backgroundColor: "var(--brand-blue)" }}
+              >
+                Por mayor
+              </span>
+              <span className="current-price">
+                $
+                {Number(product.wholesale_price || 0).toLocaleString("es-AR", {
+                  minimumFractionDigits: 0,
+                })}{" "}
+                <span
+                  style={{
+                    fontSize: "0.85rem",
+                    fontWeight: "normal",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  c/u
+                </span>
+              </span>
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  color: "var(--text-secondary)",
+                  fontWeight: "var(--weight-medium)",
+                }}
+              >
+                Min. {product.wholesale_unit} un.
+              </span>
+            </div>
+          ) : hasOffer ? (
             <>
               {/* Original price – crossed out */}
               <span className="original-price">
@@ -76,15 +108,6 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
             </span>
           )}
         </div>
-        
-        {product.wholesale && (
-          <div className="product-card-premium__wholesale">
-            <span className="product-card-premium__wholesale-badge">Por mayor</span>
-            <span className="product-card-premium__wholesale-info">
-              ${Number(product.wholesale_price || 0).toLocaleString("es-AR", { minimumFractionDigits: 0 })} x {product.wholesale_unit} un.
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );

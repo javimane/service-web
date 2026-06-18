@@ -18,12 +18,9 @@ import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import PromotionDetailPage from "./PromotionDetailPage";
-import { Bank, BankPromotion } from "../../services/bankPromotionService";
-import { ProfessionalPromotion } from "../../services/professionalPromotionService";
-import { ProvinceRow } from "../../types/database.types";
-import { ROUTES } from "../../routes/paths";
+import { BankPromotion } from "../../services/bankPromotionService";
 import SEO from "../../components/SEO/SEO";
-import { getProfilePath, normalizeSeoPath } from "../../utils/utils";
+import { getProfilePath } from "../../utils/utils";
 import "./PromotionsPage.css";
 import {
   getBanksAction,
@@ -445,15 +442,7 @@ export default function PromotionsPage() {
                   key={discount.id}
                   className="promo-card"
                   onClick={() => {
-                    const slug = discount.description
-                      ? discount.description
-                          .trim()
-                          .toLowerCase()
-                          .replace(/\s+/g, "-")
-                      : `promocion-bancaria-${discount.id}`;
-                    router.push(
-                      `/promociones-bancarias/${slug}?id=${discount.id}`,
-                    );
+                    router.push(`/promociones-bancarias${discount.seo_path}`);
                   }}
                 >
                   {(() => {
@@ -467,12 +456,15 @@ export default function PromotionsPage() {
                       <>
                         <div
                           className="promo-card-image"
-                          style={{
-                            "--promo-bg": `url(${
-                              discount.Professional?.Profile?.portfolio_image_url ||
-                              "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600"
-                            })`
-                          } as React.CSSProperties}
+                          style={
+                            {
+                              "--promo-bg": `url(${
+                                discount.Professional?.Profile
+                                  ?.portfolio_image_url ||
+                                "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600"
+                              })`,
+                            } as React.CSSProperties
+                          }
                         >
                           <div className="promo-card-offer-badge overlay">
                             <span className="offer-num">
@@ -530,16 +522,21 @@ export default function PromotionsPage() {
                               {discount.description ||
                                 `Ahorrá hasta $${discount.refund} en tus compras.`}
                             </p>
-                            {discount.installments != null && discount.installments > 0 && (
-                              <div className="promo-installments-badge">
-                                <span className="promo-installments-num">
-                                  {discount.installments} cuotas
-                                </span>
-                                <span className={`promo-interest-label ${discount.with_interest === false ? 'no-interest' : 'with-interest'}`}>
-                                  {discount.with_interest === false ? 'sin interés' : 'con interés'}
-                                </span>
-                              </div>
-                            )}
+                            {discount.installments != null &&
+                              discount.installments > 0 && (
+                                <div className="promo-installments-badge">
+                                  <span className="promo-installments-num">
+                                    {discount.installments} cuotas
+                                  </span>
+                                  <span
+                                    className={`promo-interest-label ${discount.with_interest === false ? "no-interest" : "with-interest"}`}
+                                  >
+                                    {discount.with_interest === false
+                                      ? "sin interés"
+                                      : "con interés"}
+                                  </span>
+                                </div>
+                              )}
                           </div>
                           <div className="promo-meta">
                             <span className="promo-meta-item">
@@ -570,15 +567,16 @@ export default function PromotionsPage() {
                   key={promo.id}
                   className="promo-card"
                   onClick={() => {
-                    const slug = promo.title
-                      ? promo.title.trim().toLowerCase().replace(/\s+/g, "-")
-                      : `promo-${promo.id}`;
-                    router.push(`/promociones/${slug}?id=${promo.id}`);
+                    router.push(`/promociones${promo.seo_path}`);
                   }}
                 >
                   <div
                     className="promo-card-image"
-                    style={{ '--promo-bg': `url(${promo.image_url || "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600"})` } as React.CSSProperties}
+                    style={
+                      {
+                        "--promo-bg": `url(${promo.image_url || "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600"})`,
+                      } as React.CSSProperties
+                    }
                   >
                     <div className="promo-card-offer-badge overlay">
                       <span className="offer-num">

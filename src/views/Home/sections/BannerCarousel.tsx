@@ -8,6 +8,7 @@ import {
   Store,
   Star,
   ArrowRight,
+  Rocket,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { useAuthModal } from "../../../context/AuthModalContext";
@@ -15,6 +16,17 @@ import { ROUTES } from "../../../routes/paths";
 import "./BannerCarousel.css";
 
 const BANNERS = [
+  {
+    id: "future",
+    type: "future",
+    title: "EN UN FUTURO CERCANO",
+    highlight: "COMPRAS IN-APP",
+    text: "La revolución del comercio digital. Muy pronto podrás realizar compras sin salir de la plataforma.",
+    buttonText: "PRÓXIMAMENTE",
+    icon: Rocket,
+    cssClass: "banner-slide--future",
+    specialClass: "banner-future-fx",
+  },
   {
     id: "referrals",
     type: "referrals",
@@ -84,14 +96,18 @@ export default function BannerCarousel() {
       <div className="banner-carousel__container container">
         <div
           className="banner-carousel__track"
-          style={{ '--slide-offset': `translateX(-${current * 100}%)` } as React.CSSProperties}
+          style={
+            {
+              "--slide-offset": `translateX(-${current * 100}%)`,
+            } as React.CSSProperties
+          }
         >
           {BANNERS.map((banner) => {
-            const Icon = banner.icon;
+            const Icon = banner.icon!;
             return (
               <div
                 key={banner.id}
-                className={`banner-slide ${banner.cssClass} ${banner.specialClass || ""}`}
+                className={`banner-slide ${banner.cssClass} ${(banner as any).specialClass || ""}`}
               >
                 <div className="banner-slide__content">
                   <div className="banner-slide__info">
@@ -101,9 +117,9 @@ export default function BannerCarousel() {
                     <div className="banner-slide__text-group">
                       <h3>
                         {banner.title}{" "}
-                        {banner.highlight && (
+                        {(banner as any).highlight && (
                           <span className="banner-slide__highlight">
-                            {banner.highlight}
+                            {(banner as any).highlight}
                           </span>
                         )}
                       </h3>
@@ -112,9 +128,9 @@ export default function BannerCarousel() {
                   </div>
                   <button
                     className="banner-slide__btn"
-                    onClick={() => handleAction(banner)}
+                    onClick={() => handleAction(banner as any)}
                   >
-                    {banner.buttonText}
+                    {(banner as any).buttonText}
                     <ArrowRight size={18} />
                   </button>
                 </div>

@@ -174,26 +174,23 @@ axiosInstance.interceptors.response.use(
         
         // El nuevo token ya está en la cookie, así que reintentamos
         return axiosInstance(originalRequest);
-      } catch (err) {
+      } catch (err: any) {
         isRefreshing = false;
         processQueue(err, null);
         
         if (isBrowser) {
           const isRefreshEndpoint = originalRequest.url?.includes("/api/auth/refresh");
           const isLoginEndpoint = originalRequest.url?.includes("/api/auth/login");
-          if (!isRefreshEndpoint && !isLoginEndpoint) {
-            const isPublicPage = 
-              window.location.pathname === "/" || 
-              window.location.pathname === "/login" || 
-              window.location.pathname === "/registro";
-              
-            if (!isPublicPage) {
-              const wasLoggedIn = localStorage.getItem("was_logged_in") === "true";
-              if (wasLoggedIn) {
-                localStorage.removeItem("was_logged_in");
-                window.dispatchEvent(new CustomEvent("session-expired"));
-              }
-            }
+          
+          // Force logout if we explicitly see a refresh token already used error, or if we were logged in
+          const isAlreadyUsedError = 
+            err?.response?.data?.error_code === 'refresh_token_already_used' || 
+            err?.response?.data?.msg?.includes('Already Used') ||
+            err?.message?.includes('refresh_token_already_used');
+
+          if ((!isRefreshEndpoint && !isLoginEndpoint) || isAlreadyUsedError) {
+            localStorage.removeItem("was_logged_in");
+            window.dispatchEvent(new CustomEvent("session-expired"));
           }
         }
         

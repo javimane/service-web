@@ -225,4 +225,28 @@ export const authService = {
       method: "PUT",
       body: JSON.stringify({ password: newPassword }),
     }),
+
+  /**
+   * @route POST /api/auth/reset-password
+   * @auth No
+   * @param {Object} data - { email: string }
+   * @returns {Promise<any>}
+   */
+  resetPassword: (data: { email: string }) =>
+    apiClient(API_ENDPOINTS.auth.resetPassword, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  /**
+   * @route POST /api/auth/verify-otp
+   * @auth No
+   * @param {Object} data - { token_hash: string, type: string }
+   * @returns {Promise<any>}
+   */
+  verifyOtp: (data: { token_hash: string; type: string }) =>
+    apiClient(API_ENDPOINTS.auth.verifyOtp, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };

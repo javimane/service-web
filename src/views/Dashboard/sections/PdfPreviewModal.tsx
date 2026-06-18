@@ -7,7 +7,6 @@ import autoTable from "jspdf-autotable";
 import "./PdfPreviewModal.css";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { uploadProposalPdf } from "../../../services/storageUploads";
 import logoImage from "../../../images/Logo solo nombre sin fondo.png";
 
 type PdfItem = {
@@ -62,13 +61,12 @@ export default function PdfPreviewModal({
   items = [],
   totals = { subtotal: 0, tax: 0, total: 0 },
   client = { name: "", phone: "", address: "", email: "" },
-  proposalNumber = "01234",
+  proposalNumber = "",
   currencySymbol = "$",
 }: PdfPreviewModalProps) {
   const router = useRouter();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
-  const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Genera el PDF y lo muestra en un objeto URL
@@ -86,7 +84,11 @@ export default function PdfPreviewModal({
 
       doc.setFontSize(12);
       doc.setTextColor("#ff4d4f"); // Red color for number
-      doc.text(`N° ${proposalNumber}`, pageWidth - 40, 65, { align: "right" });
+      if (proposalNumber) {
+        doc.text(`N° ${proposalNumber}`, pageWidth - 40, 65, {
+          align: "right",
+        });
+      }
 
       // Date box
       const today = new Date();
@@ -229,24 +231,62 @@ export default function PdfPreviewModal({
       if (hasTax) {
         doc.setFont("helvetica", "normal");
         doc.text("Subtotal", pageWidth - 210, finalY + 17);
-        doc.text(`${currencySymbol} ${totals.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 50, finalY + 17, { align: "right" });
-        
+        doc.text(
+          `${currencySymbol} ${totals.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          pageWidth - 50,
+          finalY + 17,
+          { align: "right" },
+        );
+
         // Calculate tax percentage safely
-        const taxPercent = totals.subtotal > 0 ? Math.round((totals.tax / totals.subtotal) * 1000) / 10 : 0;
+        const taxPercent =
+          totals.subtotal > 0
+            ? Math.round((totals.tax / totals.subtotal) * 1000) / 10
+            : 0;
         doc.text(`IVA (${taxPercent}%)`, pageWidth - 210, finalY + 34);
-        doc.text(`${currencySymbol} ${totals.tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 50, finalY + 34, { align: "right" });
-        
+        doc.text(
+          `${currencySymbol} ${totals.tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          pageWidth - 50,
+          finalY + 34,
+          { align: "right" },
+        );
+
         doc.setDrawColor("#b8b8b8");
         doc.line(pageWidth - 210, finalY + 42, pageWidth - 50, finalY + 42);
-        
+
         doc.setFont("helvetica", "bold");
         doc.text("Total", pageWidth - 210, finalY + 57);
-        doc.text(`${currencySymbol} ${totals.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 50, finalY + 57, { align: "right" });
+        doc.text(
+          `${currencySymbol} ${totals.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          pageWidth - 50,
+          finalY + 57,
+          { align: "right" },
+        );
       } else {
         doc.setFont("helvetica", "bold");
         doc.text("Total", pageWidth - 210, finalY + 17);
-        doc.text(`${currencySymbol} ${totals.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, pageWidth - 50, finalY + 17, { align: "right" });
+        doc.text(
+          `${currencySymbol} ${totals.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          pageWidth - 50,
+          finalY + 17,
+          { align: "right" },
+        );
       }
+
+      // Disclaimer
+      doc.setFontSize(8);
+      doc.setTextColor("#666666");
+      doc.setFont("helvetica", "italic");
+      doc.text(
+        "* Nota: Los valores expresados son referenciales y pueden sufrir modificaciones",
+        40,
+        pageHeight - 95,
+      );
+      doc.text(
+        "debido a factores externos o fluctuaciones económicas.",
+        40,
+        pageHeight - 85,
+      );
 
       // 6. Footer (Red block)
       doc.setFillColor(255, 77, 79); // strong red
@@ -271,7 +311,6 @@ export default function PdfPreviewModal({
       const pdfBlob = doc.output("blob");
       setPdfBlob(pdfBlob);
       setPdfUrl(URL.createObjectURL(pdfBlob));
-      setUploadedPdfUrl(null);
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
@@ -279,33 +318,13 @@ export default function PdfPreviewModal({
     }
   };
 
-  const ensurePdfUploaded = async () => {
-    if (uploadedPdfUrl) return uploadedPdfUrl;
-    if (!pdfBlob) return null;
-
-    const uploaded = await uploadProposalPdf({
-      file: pdfBlob,
-      entityId: professional.name,
-      fileName: `presupuesto-${professional.name}.pdf`,
-      contentType: "application/pdf",
-    });
-
-    setUploadedPdfUrl(uploaded.publicUrl);
-    return uploaded.publicUrl;
-  };
-
   // Descargar PDF
-  const downloadPdf = async () => {
+  const downloadPdf = () => {
     if (!pdfUrl) return;
-    try {
-      await ensurePdfUploaded();
-    } catch {
-      // Aunque falle la subida, se mantiene la descarga local del PDF
-    }
 
     const a = document.createElement("a");
     a.href = pdfUrl;
-    a.download = "presupuesto.pdf";
+    a.download = `presupuesto ${client.name ? client.name.trim() : "cliente"}.pdf`;
     a.click();
   };
 
@@ -332,13 +351,6 @@ export default function PdfPreviewModal({
             <p>Generado ahora</p>
           </div>
           <div className="preview-btns">
-            <button
-              className="preview-action-btn"
-              disabled={loading}
-              onClick={generatePdf}
-            >
-              <Share2 size={18} />
-            </button>
             <button
               className="preview-action-btn"
               disabled={loading || !pdfUrl}
@@ -377,25 +389,6 @@ export default function PdfPreviewModal({
             onClick={downloadPdf}
           >
             Guardar como PDF
-          </button>
-          <button
-            className="btn-send-pdf"
-            onClick={async () => {
-              let uploadedUrl = uploadedPdfUrl;
-              try {
-                uploadedUrl = await ensurePdfUploaded();
-              } catch {
-                uploadedUrl = null;
-              }
-              const params = new URLSearchParams();
-              params.set("prefillAttachmentName", "presupuesto.pdf");
-              if (uploadedUrl) {
-                params.set("prefillAttachmentUrl", uploadedUrl);
-              }
-              router.push(`/mensajes?${params.toString()}`);
-            }}
-          >
-            Enviar presupuesto
           </button>
         </div>
       </div>

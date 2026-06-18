@@ -158,6 +158,10 @@ export default function ProductDetailPage() {
         : 0;
   const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
 
+  const isWholesale = professionalProduct?.wholesale === true || item.wholesale === true;
+  const wholesalePrice = professionalProduct?.wholesale_price || item.wholesale_price;
+  const wholesaleUnit = professionalProduct?.wholesale_unit || item.wholesale_unit;
+
   const handleContact = () => {
     const productUrl = window.location.href;
     const msg = `Hola, qué tal, pregunto por el producto: ${productName} - ${productUrl}`;
@@ -314,23 +318,40 @@ export default function ProductDetailPage() {
 
                   <div className="seller-card__price-row">
                     <div className="prices">
-                      {hasDiscount && (
-                        <span className="seller-original-price">
-                          {currencySymbol}
-                          {formatPrice(originalPrice)}
-                        </span>
-                      )}
-                      <div className="seller-current-price-row">
-                        <span className="seller-price">
-                          {currencySymbol}
-                          {formatPrice(offerPrice ? offerPrice : originalPrice)}
-                        </span>
-                        {discountVal > 0 && (
-                          <span className="seller-discount">
-                            {discountVal}% OFF
+                      {isWholesale ? (
+                        <div className="seller-current-price-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: "4px" }}>
+                          <span className="seller-discount" style={{ alignSelf: "flex-start", backgroundColor: "var(--brand-blue)" }}>
+                            Por Mayor
                           </span>
-                        )}
-                      </div>
+                          <span className="seller-price">
+                            {currencySymbol}
+                            {formatPrice(wholesalePrice)} <span style={{ fontSize: "var(--text-sm)", fontWeight: "var(--weight-normal)", color: "var(--text-secondary)" }}>c/u</span>
+                          </span>
+                          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)", fontWeight: "var(--weight-medium)" }}>
+                            Min. {wholesaleUnit} unidades
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          {hasDiscount && (
+                            <span className="seller-original-price">
+                              {currencySymbol}
+                              {formatPrice(originalPrice)}
+                            </span>
+                          )}
+                          <div className="seller-current-price-row">
+                            <span className="seller-price">
+                              {currencySymbol}
+                              {formatPrice(offerPrice ? offerPrice : originalPrice)}
+                            </span>
+                            {discountVal > 0 && (
+                              <span className="seller-discount">
+                                {discountVal}% OFF
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <button

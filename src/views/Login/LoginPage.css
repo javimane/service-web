@@ -189,6 +189,15 @@ label {
   font-size: 0.7rem;
   font-weight: var(--weight-semibold);
   color: var(--accent-color);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.forgot-password:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .input-wrapper {
@@ -323,6 +332,30 @@ input:focus {
 
 .btn-social:hover {
   background: var(--border-color);
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 12px;
+  border-radius: var(--radius-full);
+  font-weight: var(--weight-semibold);
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-google:hover {
+  background: var(--surface-soft);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: #d2d6dc;
 }
 
 .register-prompt {
