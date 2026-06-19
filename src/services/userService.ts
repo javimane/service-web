@@ -90,4 +90,9 @@ export const userService = {
       method: "DELETE",
       body: JSON.stringify({ token }),
     }),
+
+  getMobilePhone: () =>
+    apiClient<{ mobilePhone: string | null }>(API_ENDPOINTS.users.mobilePhone, {
+      method: "GET",
+    }),
 };

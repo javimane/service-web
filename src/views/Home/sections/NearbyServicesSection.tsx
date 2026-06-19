@@ -106,7 +106,10 @@ export default function NearbyServicesSection({
   });
 
   const handleServiceClick = (service) => {
-    setSelectedService(service);
+    const prof = service.Professional || service.professional;
+    if (prof?.id) {
+      handleViewProfile(prof.id, prof.seo_path);
+    }
   };
 
   const handleMessageProfessional = (professionalId) => {
@@ -220,92 +223,6 @@ export default function NearbyServicesSection({
         </div>
       </div>
 
-      <Modal
-        isOpen={Boolean(selectedService)}
-        onClose={() => setSelectedService(null)}
-        title="Detalle del Servicio"
-      >
-        {selectedService && (
-          <div className="service-modal">
-            <div className="service-modal__header">
-              <div
-                className="professional-mini-card"
-                onClick={() =>
-                  handleViewProfile(
-                    selectedService.Professional?.id,
-                    selectedService.Professional?.seo_path,
-                  )
-                }
-              >
-                <img
-                  src={
-                    selectedService.professional?.profile?.avatar_url ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedService.professional?.profile?.display_name || "P")}`
-                  }
-                  alt="Professional"
-                  className="prof-avatar"
-                />
-                <div>
-                  <h4 className="prof-name">
-                    {selectedService.professional?.profile?.display_name ||
-                      "Profesional"}
-                  </h4>
-                  <p className="prof-label">Profesional Verificado</p>
-                </div>
-              </div>
-              <div className="service-modal__price">
-                ${selectedService.base_price?.toLocaleString()}
-              </div>
-            </div>
-
-            <div className="service-modal__body">
-              <h3 className="service-name">{selectedService.name}</h3>
-              <p className="service-desc">{selectedService.description}</p>
-
-              <div className="service-stats">
-                <div className="stat">
-                  <MapPin size={16} />
-                  <span>{selectedService.distance || "En tu zona"}</span>
-                </div>
-                <div className="stat">
-                  <Star
-                    size={16}
-                    fill="var(--highlight)"
-                    color="var(--highlight)"
-                  />
-                  <span>
-                    {selectedService.Professional?.rating_avg || "5.0"} (
-                    {selectedService.Professional?.completed_jobs || 0}{" "}
-                    trabajos)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="service-modal__actions">
-              <button
-                className="btn-view-profile"
-                onClick={() =>
-                  handleViewProfile(
-                    selectedService.Professional?.id,
-                    selectedService.Professional?.seo_path,
-                  )
-                }
-              >
-                <User size={18} /> VER PERFIL
-              </button>
-              <button
-                className="btn-request-msg"
-                onClick={() =>
-                  handleMessageProfessional(selectedService.Professional?.id)
-                }
-              >
-                <MessageCircle size={18} /> SOLICITAR SERVICIO
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
     </section>
   );
 }

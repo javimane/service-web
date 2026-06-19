@@ -21,6 +21,7 @@ import {
 import { getProfilePath } from "@/utils/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
+import { useAlert } from "@/context/AlertContext";
 import { getAccessToken } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 
@@ -40,6 +41,7 @@ export default function ReelsTheaterModal({
   const router = useRouter();
   const { user } = useAuth();
   const { openAuth } = useAuthModal();
+  const { showSuccess } = useAlert();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
@@ -168,7 +170,7 @@ export default function ReelsTheaterModal({
         .catch(() => {});
     } else {
       navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("¡Enlace de compartir copiado al portapapeles!");
+        showSuccess("¡Enlace de compartir copiado al portapapeles!");
       });
     }
   };

@@ -14,6 +14,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAlert } from "../../context/AlertContext";
 import { ROUTES } from "../../routes/paths";
 import Modal from "../Modal/Modal";
 import { toJpeg } from "html-to-image";
@@ -33,6 +34,7 @@ export default function PromotionDetailModal({
   userProvince,
 }: PromotionDetailModalProps) {
   const router = useRouter();
+  const { showError } = useAlert();
   const couponRef = useRef<HTMLDivElement>(null);
   const [showTerms, setShowTerms] = useState(false);
 
@@ -108,7 +110,7 @@ export default function PromotionDetailModal({
       link.click();
     } catch (err) {
       console.error("Error downloading coupon:", err);
-      alert("No se pudo descargar el cupón en este momento.");
+      showError("No se pudo descargar el cupón en este momento.");
     }
   };
 

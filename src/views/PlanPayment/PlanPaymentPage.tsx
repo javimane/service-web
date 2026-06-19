@@ -11,6 +11,7 @@ import {
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import { plans, type Plan } from "../../data/plans";
+import { useAlert } from "../../context/AlertContext";
 import "./PlanPaymentPage.css";
 
 function formatPrice(n: number) {
@@ -21,6 +22,7 @@ export default function PlanPaymentPage() {
   const params = useParams<{ planId: string }>();
   const router = useRouter();
   const planId = params?.planId;
+  const { showInfo } = useAlert();
 
   const plan: Plan | undefined = plans.find((p) => p.id === planId);
 
@@ -48,7 +50,7 @@ export default function PlanPaymentPage() {
   }
 
   const handlePay = () => {
-    alert(
+    showInfo(
       `Redirigiendo al pago del plan "${plan.name}" por $${formatPrice(plan.price)}/${plan.period}...`,
     );
   };

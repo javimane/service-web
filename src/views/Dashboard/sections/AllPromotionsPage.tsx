@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
+import { useAlert } from "../../../context/AlertContext";
 import {
   createProfessionalPromotionAction,
   deleteProfessionalPromotionAction,
@@ -37,6 +38,7 @@ const STATUS_LABELS = {
 
 export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   const { sessionStatus } = useAuth();
+  const { showError } = useAlert();
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
     sessionStatus?.professional_id;
@@ -71,7 +73,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
       queryClient.invalidateQueries({ queryKey: ["professional-promotions"] });
     },
     onError: (err: any) => {
-      alert("Error al eliminar: " + err.message);
+      showError("Error al eliminar: " + err.message);
     },
   });
 
@@ -112,7 +114,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
       link.click();
     } catch (err) {
       console.error("Error al generar imagen:", err);
-      alert("No se pudo generar el archivo del cupón.");
+      showError("No se pudo generar el archivo del cupón.");
     }
   };
 

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
+import { useAlert } from "../../context/AlertContext";
 import NavbarMessage from "../../components/Navbar/NavBar Messaje/NavbarMessage";
 import { getProfessionalDetailAction } from "../../app/actions/professionals";
 import { getProfilePath } from "../../utils/utils";
@@ -310,6 +311,7 @@ export default function MessagesPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { showWarning, showError } = useAlert();
 
   const targetProfessional =
     searchParams?.get("to") || searchParams?.get("professionalId");
@@ -389,7 +391,7 @@ export default function MessagesPage() {
 
     const MAX_SIZE = 50 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      alert("El archivo excede el límite máximo permitido de 50MB.");
+      showWarning("El archivo excede el límite máximo permitido de 50MB.");
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
@@ -414,7 +416,7 @@ export default function MessagesPage() {
       });
     } catch (err: any) {
       console.error("Error al subir archivo", err);
-      alert(err.message || "Error al subir el archivo. Intente de nuevo.");
+      showError(err.message || "Error al subir el archivo. Intente de nuevo.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

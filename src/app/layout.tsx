@@ -22,16 +22,16 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   metadataBase: new URL("http://localhost:3003"),
   title: {
-    default: "TuApp - Servicios Profesionales y Productos",
-    template: "%s | TuApp",
+    default: "Sercio - Red de Servicios y Comercio",
+    template: "%s | Sercio",
   },
   description:
-    "Encontrá a los mejores profesionales y productos en un solo lugar. Servicios de plomería, gas, diseño y más.",
+    "Encontrá a los mejores profesionales y productos en un solo lugar.",
   keywords:
-    "servicios, profesionales, productos, hogar, construcción, reparaciones",
+    "servicios, profesionales, productos, hogar, construcción, reparaciones, comercio, local, confianza, calidad, presupuesto, opiniones",
   openGraph: {
     type: "website",
-    siteName: "TuApp",
+    siteName: "Sercio",
     images: [{ url: "/og-image.png" }],
   },
   twitter: {

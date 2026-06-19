@@ -11,7 +11,7 @@
 
 .geo-selector {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 1fr 1.2fr;
   height: 500px; /* Fixed height to force scroll if content is long */
   border-top: 1px solid var(--border-color);
   background: var(--bg-card);
@@ -27,7 +27,7 @@
 .geo-column--provinces {
   background: var(--bg-main);
   border-right: 1px solid var(--border-color);
-  min-width: 280px;
+  min-width: 0;
 }
 
 .geo-column__header {

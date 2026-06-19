@@ -13,7 +13,8 @@ import {
   CheckCheck,
   Filter,
   Trash2,
-  Ticket
+  Ticket,
+  Upload
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import {
@@ -36,6 +37,8 @@ const getNotificationIcon = (type: string) => {
       return { icon: MessageSquare, color: "green" };
     case "promotion":
       return { icon: Ticket, color: "orange" };
+    case "upload":
+      return { icon: Upload, color: "teal" };
     default:
       return { icon: Bell, color: "gray" };
   }
@@ -46,6 +49,7 @@ const filterOptions = [
   { key: "unread", label: "No leídas" },
   { key: "propossal", label: "Propuestas" },
   { key: "message", label: "Mensajes" },
+  { key: "upload", label: "Subidas" },
 ];
 
 export default function NotificationsPage() {
@@ -110,6 +114,9 @@ export default function NotificationsPage() {
         break;
       case "promotion":
         router.push(`${ROUTES.dashboard}?view=promotions-all`);
+        break;
+      case "upload":
+        router.push(`${ROUTES.dashboard}?view=reels`);
         break;
     }
   };

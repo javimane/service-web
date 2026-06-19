@@ -21,13 +21,19 @@ import {
   UserRound,
   Clapperboard,
   Briefcase,
-  Users,
   ClipboardList,
+  Mail,
+  MessageCircle,
+  Loader2,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
 import BrandLogo from "../BrandLogo/BrandLogo";
+import Modal from "../Modal/Modal";
+import { userService } from "../../services/userService";
+import { useAlert } from "@/context/AlertContext";
 
 type DashboardSidebarProps = {
   activeItem?: string;
@@ -92,6 +98,9 @@ export default function DashboardSidebar({
     proposals:
       activeItem === "proposals-create" || activeItem === "proposals-view",
   });
+  const { showError } = useAlert();
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [isLoadingWhatsApp, setIsLoadingWhatsApp] = useState(false);
 
   const toggleMenu = (key: string) => {
     setExpandedMenus((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -132,8 +141,31 @@ export default function DashboardSidebar({
     isLocked ? `${label} · Requiere suscripción profesional activa` : label;
 
   const handleSupport = () => {
+    setIsSupportModalOpen(true);
+  };
+
+  const handleEmailSupport = () => {
     if (typeof window !== "undefined") {
       window.open("mailto:support@obsidianpro.com", "_blank");
+    }
+  };
+
+  const handleWhatsAppSupport = async () => {
+    try {
+      setIsLoadingWhatsApp(true);
+      const response = await userService.getMobilePhone();
+      if (response && response.mobilePhone) {
+        // Clean the number from any non-numeric characters just in case
+        const cleanNumber = response.mobilePhone.replace(/\D/g, "");
+        window.open(`https://wa.me/${cleanNumber}`, "_blank");
+      } else {
+        showError("El número de WhatsApp no está disponible en este momento.");
+      }
+    } catch (error) {
+      console.error("Error fetching mobile phone:", error);
+      showError("Hubo un error al intentar obtener el número de soporte.");
+    } finally {
+      setIsLoadingWhatsApp(false);
     }
   };
 
@@ -707,26 +739,80 @@ export default function DashboardSidebar({
   }
 
   return (
-    <aside
-      className={`dashboard-sidebar ${isCollapsed ? "dashboard-sidebar--collapsed" : ""}`}
-      onMouseEnter={() => isCollapsed && onToggle?.()}
-      onMouseLeave={() => !isCollapsed && onToggle?.()}
-    >
-      <div className="sidebar-brand">
-        <button
-          type="button"
-          className="brand-logo-btn"
-          onClick={() => router.push(ROUTES.home)}
-          aria-label="Go to home"
-        >
-          <BrandLogo className="brand-logo" compact={isCollapsed} />
-        </button>
-      </div>
+    <>
+      <aside
+        className={`dashboard-sidebar ${isCollapsed ? "dashboard-sidebar--collapsed" : ""}`}
+        onMouseEnter={() => isCollapsed && onToggle?.()}
+        onMouseLeave={() => !isCollapsed && onToggle?.()}
+      >
+        <div className="sidebar-brand">
+          <button
+            type="button"
+            className="brand-logo-btn"
+            onClick={() => router.push(ROUTES.home)}
+            aria-label="Go to home"
+          >
+            <BrandLogo className="brand-logo" compact={isCollapsed} />
+          </button>
+        </div>
 
-      <nav className="sidebar-nav">
-        {renderNavItems()}
-        {renderSupportActions()}
-      </nav>
-    </aside>
+        <nav className="sidebar-nav">
+          {renderNavItems()}
+          {renderSupportActions()}
+        </nav>
+      </aside>
+      <Modal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+        title="Opciones de Soporte"
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            padding: "8px 0",
+          }}
+        >
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleEmailSupport}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+            }}
+          >
+            <Mail size={18} />
+            <span>Enviar Email</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleWhatsAppSupport}
+            disabled={isLoadingWhatsApp}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              borderColor: "#25D366",
+              color: "#25D366",
+              background: "rgba(37, 211, 102, 0.05)",
+            }}
+          >
+            {isLoadingWhatsApp ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <MessageCircle size={18} />
+            )}
+            <span>Mensaje por WhatsApp</span>
+          </button>
+        </div>
+      </Modal>
+    </>
   );
 }

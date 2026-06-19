@@ -96,8 +96,7 @@ type VideoItem = {
 const createId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-const DEFAULT_AVATAR =
-  "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80";
+const DEFAULT_AVATAR = "/foto-perfil.png";
 
 export default function ProfessionalProfileSection() {
   const { sessionStatus, subscriptionPlan, user } = useAuth();
@@ -224,6 +223,7 @@ export default function ProfessionalProfileSection() {
   const [isMatriculate, setIsMatriculate] = useState(false);
   const [attendsEmergency, setAttendsEmergency] = useState(false);
   const [webUrl, setWebUrl] = useState("");
+  const [yearsExperience, setYearsExperience] = useState<number | "">("");
   const [savedMessage, setSavedMessage] = useState("");
   const [isPublishingVideo, setIsPublishingVideo] = useState(false);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
@@ -250,6 +250,7 @@ export default function ProfessionalProfileSection() {
       setIsMatriculate(Boolean(professional.is_matriculate));
       setAttendsEmergency(Boolean(professional.emergency));
       setWebUrl(professional.web_url || "");
+      setYearsExperience(professional.years_experience ?? "");
     }
   }, [professional]);
 
@@ -730,6 +731,7 @@ export default function ProfessionalProfileSection() {
             is_matriculate: isMatriculate,
             emergency: attendsEmergency,
             web_url: webUrl || null,
+            years_experience: yearsExperience === "" ? null : Number(yearsExperience),
           },
           token: getAccessToken(),
         });
@@ -1009,6 +1011,17 @@ export default function ProfessionalProfileSection() {
               </label>
 
               <label className="professional-profile__field">
+                <span>Años de experiencia</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={yearsExperience}
+                  onChange={(e) => setYearsExperience(e.target.value === "" ? "" : Number(e.target.value))}
+                  placeholder="Ej: 5"
+                />
+              </label>
+
+              <label className="professional-profile__field">
                 <span>¿Sos matriculado?</span>
                 <select
                   value={isMatriculate ? "si" : "no"}
@@ -1238,11 +1251,13 @@ export default function ProfessionalProfileSection() {
                     key={video.id}
                     className="professional-profile__yt-card"
                   >
-                    <div 
+                    <div
                       className="professional-profile__yt-thumb"
                       onClick={(e) => {
                         const videoEl = e.currentTarget.querySelector("video");
-                        const overlayEl = e.currentTarget.querySelector(".professional-profile__yt-overlay") as HTMLElement | null;
+                        const overlayEl = e.currentTarget.querySelector(
+                          ".professional-profile__yt-overlay",
+                        ) as HTMLElement | null;
                         if (videoEl) {
                           if (videoEl.paused) {
                             videoEl.play();

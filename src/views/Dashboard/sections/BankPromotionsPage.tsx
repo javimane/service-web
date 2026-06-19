@@ -26,6 +26,7 @@ import {
   updateBankPromotionAction,
 } from "../../../app/actions/bankPromotions";
 import { formatDateDisplay } from "../../../utils/utils";
+import { useAlert } from "../../../context/AlertContext";
 import "./BankPromotionsPage.css";
 
 const DAYS_OF_WEEK = [
@@ -47,6 +48,7 @@ const PAYMENT_METHODS = [
 
 export default function BankPromotionsPage() {
   const queryClient = useQueryClient();
+  const { showError } = useAlert();
   const getAccessToken = () =>
     typeof window !== "undefined"
       ? localStorage.getItem("access_token") || undefined
@@ -103,7 +105,7 @@ export default function BankPromotionsPage() {
       setPromoToDelete(null);
     },
     onError: (err: any) => {
-      alert(err.message || "Error al eliminar la promoción");
+      showError(err.message || "Error al eliminar la promoción");
       setIsDeleteModalOpen(false);
     },
   });

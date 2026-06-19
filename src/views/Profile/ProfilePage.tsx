@@ -3,6 +3,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAuth } from "../../context/AuthContext";
+import { useAlert } from "../../context/AlertContext";
 import { supabase } from "../../services/supabaseClient";
 import {
   Star,
@@ -134,12 +135,11 @@ function ProfileVideoCard({
   const company = Array.isArray(companies) ? companies[0] : companies;
   const companyName = company?.name;
   const displayName = companyName || profile?.display_name || "Profesional";
-  const avatar =
-    profile?.avatar_url ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
+  const avatar = profile?.avatar_url || `/foto-perfil.png`;
   const professionalId = video.professional_id || professional?.id;
 
   const router = useRouter();
+  const { showSuccess } = useAlert();
 
   const handleProfessionalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -168,7 +168,7 @@ function ProfileVideoCard({
         .catch(() => {});
     } else {
       navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("¡Enlace de compartir copiado al portapapeles!");
+        showSuccess("¡Enlace de compartir copiado al portapapeles!");
       });
     }
   };
@@ -259,6 +259,7 @@ export default function ProfilePage() {
     : extractIdFromSlug(seoPath);
   const rawId = id;
   const router = useRouter();
+  const { showSuccess: showSuccessAlert } = useAlert();
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
   const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
@@ -898,7 +899,7 @@ export default function ProfilePage() {
         <section className="profile-content">
           <header className="profile-content__header">
             <div className="location-info">
-              <span>Descripcion</span>
+              <span>Descripción</span>
             </div>
             <p className="bio">
               {professional.bio || "Sin biografía disponible."}
@@ -1377,7 +1378,7 @@ export default function ProfilePage() {
                           .catch(() => {});
                       } else {
                         navigator.clipboard.writeText(shareUrl);
-                        alert("Enlace copiado al portapapeles");
+                        showSuccessAlert("Enlace copiado al portapapeles");
                       }
                     }}
                   >

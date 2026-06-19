@@ -30,6 +30,7 @@ import {
   uploadProposalPdf,
 } from "../../../services/storageUploads";
 import { useRouter } from "next/navigation";
+import { useAlert } from "../../../context/AlertContext";
 
 export default function ProposalCreator({ onBack }) {
   const { user } = useAuth();
@@ -56,6 +57,7 @@ export default function ProposalCreator({ onBack }) {
   const [isCustomClientMode, setIsCustomClientMode] = useState(false);
   const [customClientName, setCustomClientName] = useState("");
   const router = useRouter();
+  const { showSuccess, showError, showWarning } = useAlert();
 
   const handleDateChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -439,14 +441,14 @@ export default function ProposalCreator({ onBack }) {
 
   const handleSend = async () => {
     if (isCustomClientMode) {
-      alert(
+      showWarning(
         "No puedes enviar el presupuesto a través de la plataforma usando un nombre manual. Solo puedes descargarlo como PDF desde la previsualización.",
       );
       return;
     }
 
     if (!selectedClient) {
-      alert(
+      showWarning(
         "Por favor, selecciona un cliente de la lista para poder registrar y enviar el presupuesto.",
       );
       return;
@@ -485,7 +487,7 @@ export default function ProposalCreator({ onBack }) {
         throw new Error(res.serverError);
       }
 
-      alert(
+      showSuccess(
         "¡Presupuesto creado y guardado con éxito! Redirigiendo a tus mensajes...",
       );
 
@@ -494,7 +496,7 @@ export default function ProposalCreator({ onBack }) {
       router.push(`/mensajes?${params.toString()}`);
     } catch (error: any) {
       console.error("Error creating and sending proposal:", error);
-      alert(
+      showError(
         error.message ||
           "Ocurrió un error al procesar el presupuesto. Intentá nuevamente.",
       );

@@ -8,6 +8,8 @@ import { useAuth } from "../../context/AuthContext";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import { supabase } from "../../services/supabaseClient";
 import "./LoginPage.css";
+import Footer from "@/components/Footer/Footer";
+import RegisterPlanSelection from "../Register/RegisterPlanSelection";
 
 type LoginPageProps = {
   isModal?: boolean;
@@ -28,6 +30,7 @@ export default function LoginPage({
   const [resetMessage, setResetMessage] = useState("");
   const [resetError, setResetError] = useState("");
   const [isResetting, setIsResetting] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
   const { refreshSession, setSessionStatus, sessionStatus, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -35,13 +38,17 @@ export default function LoginPage({
     // Handling Supabase OAuth redirects (e.g. from Google login)
     if (user && sessionStatus) {
       let isNewUser = false;
-      const createdAt = sessionStatus.user_created_at ? new Date(sessionStatus.user_created_at).getTime() : 0;
-      const lastSignIn = sessionStatus.user_last_sign_in_at ? new Date(sessionStatus.user_last_sign_in_at).getTime() : createdAt;
-      
+      const createdAt = sessionStatus.user_created_at
+        ? new Date(sessionStatus.user_created_at).getTime()
+        : 0;
+      const lastSignIn = sessionStatus.user_last_sign_in_at
+        ? new Date(sessionStatus.user_last_sign_in_at).getTime()
+        : createdAt;
+
       if (createdAt > 0 && Math.abs(lastSignIn - createdAt) < 5 * 60 * 1000) {
         isNewUser = true;
       }
-      
+
       const isProf = !!sessionStatus.is_professional;
 
       if (isModal) {
@@ -89,12 +96,18 @@ export default function LoginPage({
   const handleForgotPassword = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!formData.email) {
-      setErrors((prev) => ({ ...prev, email: "Ingrese su correo electrónico para recuperar la contraseña" }));
+      setErrors((prev) => ({
+        ...prev,
+        email: "Ingrese su correo electrónico para recuperar la contraseña",
+      }));
       return;
     }
-    
+
     if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
-      setErrors((prev) => ({ ...prev, email: "El formato del correo es inválido" }));
+      setErrors((prev) => ({
+        ...prev,
+        email: "El formato del correo es inválido",
+      }));
       return;
     }
 
@@ -104,9 +117,13 @@ export default function LoginPage({
     setAuthError("");
     try {
       await authService.resetPassword({ email: formData.email });
-      setResetMessage("Le enviamos un correo con las instrucciones para restablecer su contraseña.");
+      setResetMessage(
+        "Le enviamos un correo con las instrucciones para restablecer su contraseña.",
+      );
     } catch (err: any) {
-      setResetError(err.message || "Error al solicitar el restablecimiento de contraseña.");
+      setResetError(
+        err.message || "Error al solicitar el restablecimiento de contraseña.",
+      );
     } finally {
       setIsResetting(false);
     }
@@ -156,6 +173,16 @@ export default function LoginPage({
 
       await refreshSession();
 
+      const needsPlan = typeof window !== "undefined" && localStorage.getItem("show_plans_on_login") === "true";
+      
+      if (isProf && needsPlan) {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("show_plans_on_login");
+        }
+        setShowPlanModal(true);
+        return; // Muestra el modal de planes y detiene la redirección estándar
+      }
+
       if (isModal) {
         onClose?.();
       } else {
@@ -202,7 +229,7 @@ export default function LoginPage({
           <div className="label-row">
             <label htmlFor="password">CONTRASEÑA</label>
             <button
-              type="button" 
+              type="button"
               className="forgot-password"
               onClick={handleForgotPassword}
               disabled={isResetting}
@@ -239,9 +266,24 @@ export default function LoginPage({
 
         {authError && <div className="auth-error-alert">{authError}</div>}
         {resetError && <div className="auth-error-alert">{resetError}</div>}
-        {resetMessage && <div className="auth-error-alert" style={{ background: 'rgba(64, 192, 87, 0.1)', borderColor: 'var(--success-color)', color: 'var(--success-color)' }}>{resetMessage}</div>}
+        {resetMessage && (
+          <div
+            className="auth-error-alert"
+            style={{
+              background: "rgba(64, 192, 87, 0.1)",
+              borderColor: "var(--success-color)",
+              color: "var(--success-color)",
+            }}
+          >
+            {resetMessage}
+          </div>
+        )}
 
-        <button type="submit" className="btn-primary" disabled={isLoading || isResetting}>
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={isLoading || isResetting}
+        >
           {isLoading ? "Ingresando..." : "Ingresar"}
         </button>
 
@@ -249,20 +291,42 @@ export default function LoginPage({
           <span>O CONTINUAR CON</span>
         </div>
 
-        <div className="social-buttons" style={{ display: "flex", justifyContent: "center" }}>
+        <div
+          className="social-buttons"
+          style={{ display: "flex", justifyContent: "center" }}
+        >
           <button
             type="button"
             className="btn-google"
             onClick={() => {
-              const redirectTo = encodeURIComponent(window.location.origin + '/dashboard?auth=success');
-              window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/auth/login/google?redirectTo=${redirectTo}`;
+              const redirectTo = encodeURIComponent(
+                window.location.origin + "/dashboard?auth=success",
+              );
+              window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/api/auth/login/google?redirectTo=${redirectTo}`;
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
             </svg>
             Continuar con Google
           </button>
@@ -289,36 +353,48 @@ export default function LoginPage({
   if (isModal) return formCard;
 
   return (
-    <div className="login-container">
-      <div className="login-left">
-        <div className="brand-content">
-          <div className="brand-title">
-            <BrandLogo className="brand-title__logo" />
-          </div>
-          <p className="brand-subtitle">
-            Encontrá servicios, promociones y productos cerca tuyo desde una
-            sola plataforma.
-          </p>
-
-          <div className="hero-graphic">
-            <div className="hero-mesh"></div>
-            <div className="status-pill">
-              <span className="status-dot"></span>
-              STATUS: ACTIVE
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div className="login-container" style={{ flex: 1, minHeight: 'auto' }}>
+        <div className="login-left">
+          <div className="brand-content">
+            <div className="brand-title">
+              <BrandLogo className="brand-title__logo" />
             </div>
+            <p className="brand-subtitle">
+              Encontrá servicios, promociones y productos cerca tuyo desde una
+              sola plataforma.
+            </p>
           </div>
         </div>
+
+        <div className="login-right">{formCard}</div>
       </div>
 
-      <div className="login-right">{formCard}</div>
+      <Footer />
 
-      <div className="footer-links">
-        <span>© 2026 SERCIO. TU RED DE SERVICIOS Y COMERCIOS.</span>
-        <div className="footer-right">
-          <a href="#">PRIVACY POLICY</a>
-          <a href="#">SUPPORT</a>
+      {showPlanModal && (
+        <div
+          className="subscription-confirm-overlay"
+          style={{
+            zIndex: 1000,
+            padding: "20px",
+            overflowY: "auto",
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "1000px",
+              margin: "0 auto",
+            }}
+          >
+            <RegisterPlanSelection />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

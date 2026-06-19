@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const avatar = professional?.Profile?.avatar_url;
       return {
         title: name,
-        description: `Perfil de ${name} en TuApp. Conocé sus servicios, productos y promociones.`,
+        description: `Perfil de ${name} en Sercio. Conocé sus servicios, productos y promociones.`,
         openGraph: {
           title: name,
           images: avatar ? [{ url: avatar }] : [],

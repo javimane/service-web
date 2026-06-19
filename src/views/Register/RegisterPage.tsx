@@ -12,6 +12,7 @@ import { API_BASE_URL } from "../../services/api.config";
 import RegisterPlanSelection from "./RegisterPlanSelection";
 import { useAuth } from "../../context/AuthContext";
 import "./RegisterPage.css";
+import Footer from "@/components/Footer/Footer";
 
 type RegisterPageProps = {
   isModal?: boolean;
@@ -103,11 +104,15 @@ export default function RegisterPage({
 
     try {
       await authService.register({
-        name: formData.name,
+        profileName: formData.name,
         email: formData.email,
         password: formData.password,
         role: role,
       });
+
+      if (role === "professional" && typeof window !== "undefined") {
+        localStorage.setItem("show_plans_on_login", "true");
+      }
 
       // Attempt to auto-login to create session
       try {
@@ -118,9 +123,6 @@ export default function RegisterPage({
 
         // if login succeeds and role is professional, show plan modal
         if (loginResp && role === "professional") {
-          if (typeof window !== "undefined") {
-            localStorage.setItem("show_plans_on_login", "true");
-          }
           await refreshSession();
           setShowPlanModal(true);
           return; // Skip the normal success modal
@@ -418,40 +420,46 @@ export default function RegisterPage({
   if (isModal) return formCard;
 
   return (
-    <div className="login-container">
-      <div className="login-left">
-        <div className="brand-content">
-          <div className="brand-title">
-            <BrandLogo className="brand-title__logo" />
-          </div>
-          <p className="brand-subtitle">
-            Sumate a la nueva plataforma para descubrir profesionales,
-            promociones y oportunidades cerca tuyo.
-          </p>
-
-          <div className="hero-graphic">
-            <div className="hero-mesh"></div>
-            <div className="status-pill status-pill--blue">
-              <span className="status-dot status-dot--blue"></span>
-              REGISTRATION: OPEN
+    <div
+      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+    >
+      <div className="login-container" style={{ flex: 1, minHeight: "auto" }}>
+        <div className="login-left">
+          <div className="brand-content">
+            <div className="brand-title">
+              <BrandLogo className="brand-title__logo" />
             </div>
+            <p className="brand-subtitle">
+              Sumate a la nueva plataforma para descubrir profesionales,
+              promociones y oportunidades cerca tuyo.
+            </p>
           </div>
         </div>
+
+        <div className="login-right">{formCard}</div>
       </div>
 
-      <div className="login-right">{formCard}</div>
-
-      <div className="footer-links">
-        <span>© 2026 SERCIO. TU RED DE SERVICIOS Y COMERCIOS.</span>
-        <div className="footer-right">
-          <a href="#">PRIVACY POLICY</a>
-          <a href="#">SUPPORT</a>
-        </div>
-      </div>
+      <Footer />
 
       {showPlanModal && (
-        <div className="subscription-confirm-overlay" style={{ zIndex: 1000, padding: "20px", overflowY: "auto", position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div style={{ position: "relative", maxWidth: "1000px", margin: "0 auto" }}>
+        <div
+          className="subscription-confirm-overlay"
+          style={{
+            zIndex: 1000,
+            padding: "20px",
+            overflowY: "auto",
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "1000px",
+              margin: "0 auto",
+            }}
+          >
             <RegisterPlanSelection />
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, MessageCircle, Image as ImageIcon } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import { useAlert } from "../../../context/AlertContext";
 import Modal from "../../../components/Modal/Modal";
 import { getAccessToken } from "../../../utils/auth";
 import { uploadJobRequestImage } from "../../../services/storageUploads";
@@ -31,6 +32,7 @@ interface JobRequestRow {
 
 export default function JobRequestsSection() {
   const { hasProfessionalSubscription, user } = useAuth();
+  const { showError } = useAlert();
   const queryClient = useQueryClient();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -158,7 +160,7 @@ export default function JobRequestsSection() {
       queryClient.invalidateQueries({ queryKey: ["job-requests"] });
     } catch (error) {
       console.error("Error creating job request:", error);
-      alert("Hubo un error al crear la solicitud.");
+      showError("Hubo un error al crear la solicitud.");
     } finally {
       setIsSubmitting(false);
     }
@@ -173,7 +175,7 @@ export default function JobRequestsSection() {
       queryClient.invalidateQueries({ queryKey: ["job-requests"] });
     } catch (error) {
       console.error("Error deleting request:", error);
-      alert("Hubo un error al eliminar la solicitud.");
+      showError("Hubo un error al eliminar la solicitud.");
     }
   };
 

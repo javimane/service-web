@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toJpeg } from "html-to-image";
 import { useAuth } from "../../../context/AuthContext";
+import { useAlert } from "../../../context/AlertContext";
 import { uploadPromotionImage } from "../../../services/storageUploads";
 import {
   createProfessionalPromotionAction,
@@ -61,6 +62,7 @@ export default function PromotionCreator({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const couponRef = useRef<HTMLDivElement>(null);
   const { sessionStatus, user } = useAuth();
+  const { showError, showWarning } = useAlert();
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
     sessionStatus?.professional_id;
@@ -149,7 +151,7 @@ export default function PromotionCreator({
       setTimeout(() => onViewAll(), 1500);
     },
     onError: (err: any) => {
-      alert("Error: " + err.message);
+      showError("Error: " + err.message);
     },
   });
 
@@ -225,14 +227,14 @@ export default function PromotionCreator({
       link.click();
     } catch (err) {
       console.error("Error al generar imagen:", err);
-      alert("No se pudo generar el archivo del cupón.");
+      showError("No se pudo generar el archivo del cupón.");
     }
   };
 
   const handleSave = async () => {
     if (!validateForm()) return;
     if (!professionalId) {
-      alert(
+      showWarning(
         "No se encontró el ID del profesional. Por favor, reintenta iniciar sesión.",
       );
       return;
@@ -265,7 +267,7 @@ export default function PromotionCreator({
         ...(promotionToEdit ? {} : { created_at: new Date().toISOString() }),
       });
     } catch (err: any) {
-      alert("Error: " + err.message);
+      showError("Error: " + err.message);
     }
   };
 

@@ -16,6 +16,8 @@ import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ProvinceNovedadesSection from "./sections/ProvinceNovedadesSection";
 import ActionsSection from "./sections/ActionsSection";
 import CompanyDisplaySection from "./sections/CompanyDisplaySection";
+import { useAlert } from "../../context/AlertContext";
+import { deleteUserAccountAction } from "../../app/actions/user";
 import { useAuth } from "../../context/AuthContext";
 import {
   getProfessionalMeAction,
@@ -33,6 +35,7 @@ import { getDepartmentsAction } from "../../app/actions/locations";
 import { getProvincesAction } from "../../app/actions/provinces";
 import { ROUTES } from "../../routes/paths";
 import { getAccessToken } from "../../utils/auth";
+import Navbar from "../../components/Navbar/Navbar";
 import "../Dashboard/DashboardPage.css";
 import "./SettingsPage.css";
 
@@ -40,7 +43,9 @@ export default function SettingsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
-  const { user, sessionStatus } = useAuth();
+  const { user, sessionStatus, logout } = useAuth();
+  const { showAlert, showSuccess, showError } = useAlert();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileSidebarMode, setIsMobileSidebarMode] = useState(false);
   const professionalId =
@@ -205,6 +210,37 @@ export default function SettingsPage() {
     setIsSidebarCollapsed((current) => !current);
   };
 
+  const handleDeleteAccount = () => {
+    showAlert({
+      title: "Eliminar cuenta",
+      message:
+        "Estás por eliminar tu cuenta. Se borrará toda tu información y no podrás recuperar tus datos. ¿Estás seguro de que deseás continuar?",
+      type: "warning",
+      showCancel: true,
+      confirmText: "Sí, eliminar cuenta",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        setIsDeleting(true);
+        try {
+          const token = getAccessToken();
+          const response = await deleteUserAccountAction({ token });
+          if (response?.serverError) {
+            throw new Error(response.serverError);
+          }
+          showSuccess("Tu cuenta ha sido eliminada exitosamente.");
+          await logout();
+          router.replace(ROUTES.home);
+        } catch (error) {
+          console.error("Error deleting account:", error);
+          showError(
+            "Hubo un error al intentar eliminar tu cuenta. Por favor, intentá de nuevo más tarde.",
+          );
+          setIsDeleting(false);
+        }
+      },
+    });
+  };
+
   // 3. Fetch Departments for selected provinces
   const selectedProvIds = useMemo(() => {
     return provinceList
@@ -359,6 +395,7 @@ export default function SettingsPage() {
 
   return (
     <div className="dashboard-page-wrapper">
+      {isMobileSidebarMode && <Navbar />}
       <div className="dashboard-page settings-page-layout">
         <DashboardSidebar
           activeItem="settings"
@@ -432,71 +469,79 @@ export default function SettingsPage() {
               )}
 
               {showEditForms && (
+                <div className="settings-forms-two-cols">
+                  <div className="settings-col-left">
+                    <BusinessInfoSection
+                      businessType={businessType}
+                      setBusinessType={setBusinessType}
+                      tradeName={tradeName}
+                      setTradeName={setTradeName}
+                      cuit={cuit}
+                      setCuit={setCuit}
+                    />
+
+                    <CategoriesSection
+                      selectedCategories={selectedCategories}
+                      onToggleCategory={(id: number) =>
+                        setSelectedCategories((curr) =>
+                          curr.includes(id)
+                            ? curr.filter((c) => c !== id)
+                            : [...curr, id],
+                        )
+                      }
+                      categoryList={serviceCategoryList}
+                    />
+                  </div>
+
+                  <div className="settings-col-right">
+                    <HeadquartersSection
+                      selectedProvinces={selectedProvinces}
+                      onToggleProvince={(option) =>
+                        toggleSelection(setSelectedProvinces, option)
+                      }
+                      selectedDepartments={selectedDepartments}
+                      onToggleDepartment={(option) =>
+                        toggleSelection(setSelectedDepartments, option)
+                      }
+                      provinceList={provinceList}
+                      departmentList={departmentList}
+                    />
+
+                    <OperationsSection
+                      hasStorefront={hasStorefront}
+                      setHasStorefront={setHasStorefront}
+                      provinceList={provinceList}
+                      departmentList={storeDepartmentList}
+                      storeStreet={storeStreet}
+                      setStoreStreet={setStoreStreet}
+                      storeNumber={storeNumber}
+                      setStoreNumber={setStoreNumber}
+                      storeFloor={storeFloor}
+                      setStoreFloor={setStoreFloor}
+                      storeZip={storeZip}
+                      setStoreZip={setStoreZip}
+                      storeProvinceId={storeProvinceId}
+                      setStoreProvinceId={setStoreProvinceId}
+                      storeDepartmentId={storeDepartmentId}
+                      setStoreDepartmentId={setStoreDepartmentId}
+                      storeLat={storeLat}
+                      setStoreLat={setStoreLat}
+                      storeLng={storeLng}
+                      setStoreLng={setStoreLng}
+                    />
+
+                    <PaymentMethodsSection
+                      selectedPayments={selectedPayments}
+                      onTogglePayment={(option) =>
+                        toggleSelection(setSelectedPayments, option)
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
+              {showEditForms && (
                 <>
-                  <BusinessInfoSection
-                    businessType={businessType}
-                    setBusinessType={setBusinessType}
-                    tradeName={tradeName}
-                    setTradeName={setTradeName}
-                    cuit={cuit}
-                    setCuit={setCuit}
-                  />
-
-                  <CategoriesSection
-                    selectedCategories={selectedCategories}
-                    onToggleCategory={(id: number) =>
-                      setSelectedCategories((curr) =>
-                        curr.includes(id)
-                          ? curr.filter((c) => c !== id)
-                          : [...curr, id],
-                      )
-                    }
-                    categoryList={serviceCategoryList}
-                  />
-
-                  <HeadquartersSection
-                    selectedProvinces={selectedProvinces}
-                    onToggleProvince={(option) =>
-                      toggleSelection(setSelectedProvinces, option)
-                    }
-                    selectedDepartments={selectedDepartments}
-                    onToggleDepartment={(option) =>
-                      toggleSelection(setSelectedDepartments, option)
-                    }
-                    provinceList={provinceList}
-                    departmentList={departmentList}
-                  />
-
-                  <OperationsSection
-                    hasStorefront={hasStorefront}
-                    setHasStorefront={setHasStorefront}
-                    provinceList={provinceList}
-                    departmentList={storeDepartmentList}
-                    storeStreet={storeStreet}
-                    setStoreStreet={setStoreStreet}
-                    storeNumber={storeNumber}
-                    setStoreNumber={setStoreNumber}
-                    storeFloor={storeFloor}
-                    setStoreFloor={setStoreFloor}
-                    storeZip={storeZip}
-                    setStoreZip={setStoreZip}
-                    storeProvinceId={storeProvinceId}
-                    setStoreProvinceId={setStoreProvinceId}
-                    storeDepartmentId={storeDepartmentId}
-                    setStoreDepartmentId={setStoreDepartmentId}
-                    storeLat={storeLat}
-                    setStoreLat={setStoreLat}
-                    storeLng={storeLng}
-                    setStoreLng={setStoreLng}
-                  />
-
-                  <PaymentMethodsSection
-                    selectedPayments={selectedPayments}
-                    onTogglePayment={(option) =>
-                      toggleSelection(setSelectedPayments, option)
-                    }
-                  />
-
                   {saveStatus !== "idle" && (
                     <div
                       className={`settings-status-banner settings-status-banner--${saveStatus}`}
@@ -532,6 +577,29 @@ export default function SettingsPage() {
                   </button>
                 </div>
               )}
+
+              {/* Danger Zone */}
+              <div className="settings-danger-zone" style={{ marginTop: "var(--space-8)", padding: "var(--space-6)", background: "var(--bg-card)", border: "1px solid var(--error-color)", borderRadius: "var(--radius-lg)" }}>
+                <h3 style={{ color: "var(--error-color)", fontSize: "var(--text-lg)", marginBottom: "var(--space-2)" }}>Zona de peligro</h3>
+                <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-4)" }}>Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, tené cuidado.</p>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                  style={{
+                    background: "var(--error-color)",
+                    color: "white",
+                    border: "none",
+                    padding: "var(--space-3) var(--space-6)",
+                    borderRadius: "var(--radius-md)",
+                    fontWeight: "var(--weight-semibold)",
+                    cursor: isDeleting ? "not-allowed" : "pointer",
+                    opacity: isDeleting ? 0.7 : 1,
+                  }}
+                >
+                  {isDeleting ? "Eliminando..." : "Eliminar cuenta"}
+                </button>
+              </div>
             </section>
           </div>
         </main>

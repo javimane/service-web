@@ -10,13 +10,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!plan) {
     return {
-      title: "Plan no encontrado - TuApp",
+      title: "Plan no encontrado - Sercio",
       description: "El plan solicitado no está disponible.",
     };
   }
 
   return {
-    title: `${plan.name} - Pago de plan - TuApp`,
+    title: `${plan.name} - Pago de plan - Sercio`,
     description: plan.description,
   };
 }

@@ -17,6 +17,7 @@ import Footer from "../../components/Footer/Footer";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import "./BankPromotionDetailPage.css";
 import { getBankPromotionDetailAction } from "../../app/actions/bankPromotions";
+import { useAlert } from "../../context/AlertContext";
 
 const DAYS_ES: Record<string, string> = {
   monday: "Lunes",
@@ -86,6 +87,7 @@ export default function BankPromotionDetailPage() {
     : extractIdFromSlug(seoPathRaw as string);
   const id = queryId || idFromPath;
   const router = useRouter();
+  const { showSuccess } = useAlert();
 
   const {
     data: promo,
@@ -177,7 +179,7 @@ export default function BankPromotionDetailPage() {
         .catch(() => {});
     } else {
       navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("¡Enlace de compartir copiado al portapapeles!");
+        showSuccess("¡Enlace de compartir copiado al portapapeles!");
       });
     }
   };

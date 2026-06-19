@@ -180,51 +180,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     let eventSource: EventSource | null = null;
-    
-    // Conectar al endpoint SSE del backend
-    try {
-      const token = localStorage.getItem("access_token") || "";
-      const sseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/api/notifications/stream?token=${token}`;
-      eventSource = new EventSource(sseUrl, { withCredentials: true });
+    let reconnectTimeout: NodeJS.Timeout;
 
-      eventSource.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          console.log("¡Nueva notificación recibida en vivo!", payload);
-          
-          // Inyectar en React Query caché (para la NavBar y NotificationsPage)
-          queryClient.setQueryData(["notifications", user.id], (old: any[]) => {
-            if (!old) return [payload];
-            return [payload, ...old];
-          });
+    const connectSSE = () => {
+      try {
+        const token = localStorage.getItem("access_token") || "";
+        const sseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/api/notifications/stream?token=${token}`;
 
-          // Mostrar la notificación flotante
-          setForegroundNotification({
-            title: payload.title || "Nueva Notificación",
-            body: payload.content || payload.message || "Tienes una nueva notificación",
-          });
-
-          // Ocultar la notificación flotante después de 5 segundos
-          setTimeout(() => {
-            setForegroundNotification(null);
-          }, 5000);
-        } catch (e) {
-          console.error("Error al procesar la notificación en vivo:", e);
+        if (eventSource) {
+          eventSource.close();
         }
-      };
 
-      eventSource.onerror = (error) => {
-        console.error("Error en el stream de notificaciones (SSE):", error);
-        // Si hay error, cerrarlo para evitar ciclos infinitos si el auth falló
-        eventSource?.close();
-      };
-    } catch (e) {
-      console.error("Error inicializando SSE:", e);
-    }
+        eventSource = new EventSource(sseUrl, { withCredentials: true });
+
+        eventSource.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            console.log("¡Nueva notificación recibida en vivo!", payload);
+
+            // Inyectar en React Query caché (para la NavBar y NotificationsPage)
+            queryClient.setQueryData(
+              ["notifications", user.id],
+              (old: any[]) => {
+                if (!old) return [payload];
+                return [payload, ...old];
+              },
+            );
+
+            // Mostrar la notificación flotante
+            setForegroundNotification({
+              title: payload.title || "Nueva Notificación",
+              body:
+                payload.content ||
+                payload.message ||
+                "Tienes una nueva notificación",
+            });
+
+            // Ocultar la notificación flotante después de 5 segundos
+            setTimeout(() => {
+              setForegroundNotification(null);
+            }, 5000);
+          } catch (e) {
+            console.error("Error al procesar la notificación en vivo:", e);
+          }
+        };
+
+        eventSource.onerror = () => {
+          console.warn("Stream de notificaciones desconectado temporalmente. Reintentando en breve...");
+          // Si hay error, cerrarlo para evitar ciclos infinitos si el auth falló
+          eventSource?.close();
+
+          // Volver a intentar conectarse cada 6 segundos
+          reconnectTimeout = setTimeout(() => {
+            connectSSE();
+          }, 6000);
+        };
+      } catch (e) {
+        console.error("Error inicializando SSE:", e);
+        reconnectTimeout = setTimeout(() => {
+          connectSSE();
+        }, 6000);
+      }
+    };
+
+    connectSSE();
 
     return () => {
       if (eventSource) {
         eventSource.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
       }
     };
   }, [user]);

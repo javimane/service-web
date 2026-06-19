@@ -17,6 +17,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
+import { useAlert } from "../../context/AlertContext";
 import "./PromotionDetailPage.css";
 
 export default function PromotionDetailPage({
@@ -29,6 +30,7 @@ export default function PromotionDetailPage({
   const searchParams = useSearchParams();
   const idFromQuery = searchParams?.get("id") ?? null;
   const router = useRouter();
+  const { showSuccess } = useAlert();
 
   const idFromPath = Array.isArray(seoPathRaw)
     ? seoPathRaw[seoPathRaw.length - 1]
@@ -127,7 +129,7 @@ export default function PromotionDetailPage({
         .catch(() => {});
     } else {
       navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("¡Enlace de compartir copiado al portapapeles!");
+        showSuccess("¡Enlace de compartir copiado al portapapeles!");
       });
     }
   };

@@ -53,6 +53,49 @@
   }
 }
 
+.settings-forms-two-cols {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+}
+
+.settings-col-left,
+.settings-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+@media (min-width: 1200px) {
+  .settings-content {
+    max-width: 1280px;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr; /* We no longer use CSS grid for the form sections */
+    grid-template-areas: none;
+    align-items: start;
+  }
+
+  .settings-forms-two-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+    grid-column: 1 / -1;
+  }
+
+  .settings-card--wide,
+  .register-company-cta,
+  .personal-info-section,
+  .province-novedades-section,
+  .company-display-section,
+  .settings-actions-card {
+    grid-column: 1 / -1;
+  }
+}
+
 .settings-card {
   background:
     radial-gradient(

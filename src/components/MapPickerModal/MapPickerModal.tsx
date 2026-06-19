@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useAlert } from "../../context/AlertContext";
 import {
   MapContainer,
   TileLayer,
@@ -68,6 +69,7 @@ export default function MapPickerModal({
   initialLat,
   initialLng,
 }: MapPickerModalProps) {
+  const { showError } = useAlert();
   const [markerPos, setMarkerPos] = useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>(defaultCenter);
   const [locating, setLocating] = useState(false);
@@ -85,7 +87,7 @@ export default function MapPickerModal({
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert("Tu navegador no soporta geolocalización.");
+      showError("Tu navegador no soporta geolocalización.");
       return;
     }
 
@@ -100,7 +102,7 @@ export default function MapPickerModal({
       },
       (error) => {
         console.error("Error getting location:", error);
-        alert(
+        showError(
           "No se pudo obtener tu ubicación. Por favor, verificá los permisos de tu navegador.",
         );
         setLocating(false);

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Play, Sparkles, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getProfilePath } from "@/utils/utils";
+import { useAlert } from "@/context/AlertContext";
 
 interface ReelCardProps {
   reel: any;
@@ -13,6 +14,7 @@ interface ReelCardProps {
 
 export default function ReelCard({ reel, isPremium, onClick }: ReelCardProps) {
   const router = useRouter();
+  const { showSuccess } = useAlert();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -59,7 +61,7 @@ export default function ReelCard({ reel, isPremium, onClick }: ReelCardProps) {
       }).catch(() => {});
     } else {
       navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("¡Enlace de compartir copiado al portapapeles!");
+        showSuccess("¡Enlace de compartir copiado al portapapeles!");
       });
     }
   };

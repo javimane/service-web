@@ -69,7 +69,7 @@ export default function OperationsSection({
   };
 
   return (
-    <article className="settings-card">
+    <article className="settings-card operations-section">
       <div className="section-header settings-header-compact">
         <div className="section-title">
           <span className="section-emoji">🏪</span>

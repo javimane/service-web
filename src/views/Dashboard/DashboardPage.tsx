@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import Modal from "../../components/Modal/Modal";
+import RegisterPlanSelection from "../Register/RegisterPlanSelection";
 import { useAuth } from "../../context/AuthContext";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import { ROUTES } from "../../routes/paths";
@@ -164,7 +165,6 @@ export default function DashboardPage() {
       sessionStatus.is_professional &&
       !sessionStatus.subscription_plan &&
       !sessionStatus.subscription;
-    if (!isProfessionalWithoutPlan) return;
 
     const createdAt = sessionStatus.user_created_at
       ? new Date(sessionStatus.user_created_at).getTime()
@@ -173,19 +173,24 @@ export default function DashboardPage() {
       ? new Date(sessionStatus.user_last_sign_in_at).getTime()
       : createdAt;
 
-    if (createdAt === 0) return; // If dates are not available, don't show the first-time modal to be safe
+    const isWelcomeParam = searchParams.get("welcome") === "true";
+    const hasSeenWelcome = localStorage.getItem(`welcome_shown_${sessionStatus.email}`);
 
-    // Consider it's the first time if last sign in is within 5 minutes of creation
-    const isFirstTime = Math.abs(createdAt - lastSignIn) < 5 * 60 * 1000;
-    const hasSeenWelcome = localStorage.getItem(
-      `welcome_shown_${sessionStatus.email}`,
-    );
+    // Si es profesional y no tiene plan, detenemos acá para que no muestre la bienvenida.
+    // La bienvenida se mostrará cuando seleccione el plan y sea redirigido con ?welcome=true
+    if (isProfessionalWithoutPlan) return;
 
-    if (isFirstTime && !hasSeenWelcome) {
+    if (isWelcomeParam && !hasSeenWelcome) {
       setShowWelcomeModal(true);
       localStorage.setItem(`welcome_shown_${sessionStatus.email}`, "true");
+    } else if (createdAt > 0) {
+      const isFirstTime = Math.abs(createdAt - lastSignIn) < 5 * 60 * 1000;
+      if (isFirstTime && !hasSeenWelcome) {
+        setShowWelcomeModal(true);
+        localStorage.setItem(`welcome_shown_${sessionStatus.email}`, "true");
+      }
     }
-  }, [sessionStatus]);
+  }, [sessionStatus, searchParams]);
 
   const openPromoModal = () => setIsPromoModalOpen(true);
   const closePromoModal = () => setIsPromoModalOpen(false);
@@ -837,14 +842,46 @@ export default function DashboardPage() {
               style={{ width: "100%", padding: "var(--space-4)" }}
               onClick={() => {
                 setShowWelcomeModal(false);
-                handleShowSubscription();
+                if (isUnsubscribedProfessional) {
+                  handleShowSubscription();
+                } else {
+                  router.replace(ROUTES.dashboard);
+                }
               }}
             >
-              Elegir mi plan ahora
+              ¡Empezar ahora!
             </button>
           </div>
         </Modal>
       </div>
+
+      {isUnsubscribedProfessional && (
+        <div
+          className="subscription-confirm-overlay"
+          style={{
+            zIndex: 1000,
+            padding: "20px",
+            overflowY: "auto",
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.8)",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "1000px",
+              width: "100%",
+              marginTop: "5vh"
+            }}
+          >
+            <RegisterPlanSelection />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

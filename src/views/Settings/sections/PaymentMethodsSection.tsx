@@ -13,7 +13,7 @@ export default function PaymentMethodsSection({
   onTogglePayment,
 }) {
   return (
-    <article className="settings-card">
+    <article className="settings-card payment-methods-section">
       <div className="section-header settings-header-compact">
         <div className="section-title">
           <span className="section-emoji">💳</span>

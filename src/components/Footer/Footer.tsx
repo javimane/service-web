@@ -1,14 +1,29 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import BrandLogo from "../BrandLogo/BrandLogo";
 import Modal from "../Modal/Modal";
-import { Phone, Mail } from "lucide-react";
+import { Phone, Mail, Loader2 } from "lucide-react";
 import { ROUTES } from "../../routes/paths";
+import { userService } from "../../services/userService";
 import "./Footer.css";
 
 export default function Footer() {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [mobilePhone, setMobilePhone] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isSupportOpen && !mobilePhone) {
+      userService
+        .getMobilePhone()
+        .then((res) => {
+          if (res && res.mobilePhone) {
+            setMobilePhone(res.mobilePhone);
+          }
+        })
+        .catch((err) => console.error("Error fetching mobile phone:", err));
+    }
+  }, [isSupportOpen, mobilePhone]);
 
   return (
     <footer className="footer">
@@ -51,18 +66,31 @@ export default function Footer() {
 
           <div className="support-channels">
             <a
-              href="https://wa.me/5491123456789?text=Hola,%20necesito%20soporte%20en%20Sercio"
-              target="_blank"
+              href={
+                mobilePhone
+                  ? `https://wa.me/${mobilePhone.replace(/\D/g, "")}?text=Hola,%20necesito%20soporte%20en%20Sercio`
+                  : "#"
+              }
+              target={mobilePhone ? "_blank" : undefined}
               rel="noopener noreferrer"
               className="support-channel support-channel--whatsapp"
+              onClick={(e) => {
+                if (!mobilePhone) {
+                  e.preventDefault();
+                }
+              }}
             >
               <div className="support-channel__icon">
-                <Phone size={20} />
+                {mobilePhone ? (
+                  <Phone size={20} />
+                ) : (
+                  <Loader2 size={20} className="animate-spin" />
+                )}
               </div>
               <div className="support-channel__details">
                 <span className="support-channel__label">WhatsApp</span>
                 <span className="support-channel__value">
-                  +54 9 11 2345-6789
+                  {mobilePhone || "Cargando..."}
                 </span>
               </div>
             </a>

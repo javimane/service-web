@@ -9,7 +9,7 @@ export default function BusinessInfoSection({
   setCuit,
 }) {
   return (
-    <article className="settings-card settings-card--wide">
+    <article className="settings-card settings-card--wide business-info-section">
       <div className="section-header settings-header-compact">
         <div className="section-title">
           <span className="section-emoji">💼</span>

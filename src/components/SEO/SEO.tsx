@@ -13,7 +13,7 @@ interface SEOProps {
 }
 
 const SEO = ({
-  title = "TuApp - Servicios Profesionales y Productos",
+  title = "Sercio - Red de Servicios y Comercio",
   description = "Encontrá a los mejores profesionales y productos en un solo lugar.",
   schema,
 }: SEOProps) => {

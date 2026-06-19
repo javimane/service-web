@@ -26,6 +26,7 @@ import { getProfileAction } from "../../../app/actions/profile";
 import { getProfessionalDetailAction } from "../../../app/actions/professionals";
 import ReelsTheaterModal from "../../../components/ReelsTheater/ReelsTheaterModal";
 import { useAuth } from "../../../context/AuthContext";
+import { useAlert } from "../../../context/AlertContext";
 import { getAccessToken } from "../../../utils/auth";
 import "./ReelsSection.css";
 
@@ -49,6 +50,7 @@ const formatCompact = (value: number) => {
 
 export default function ReelsSection() {
   const { sessionStatus, user } = useAuth();
+  const { showSuccess } = useAlert();
   const professionalId = Number(
     sessionStatus?.subscription?.professional_id ??
       sessionStatus?.professional_id ??
@@ -157,7 +159,7 @@ export default function ReelsSection() {
         .catch(() => {});
     } else {
       navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("¡Enlace de compartir copiado al portapapeles!");
+        showSuccess("¡Enlace de compartir copiado al portapapeles!");
       });
     }
   };

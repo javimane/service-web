@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
+import { AlertProvider } from "@/context/AlertContext";
 import AuthModal from "@/components/AuthModal/AuthModal";
 import SessionTimeoutOverlay from "@/components/SessionTimeoutOverlay/SessionTimeoutOverlay";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -29,9 +30,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <ThemeProvider>
           <AuthProvider>
             <AuthModalProvider>
-              {children}
-              <AuthModal />
-              <SessionTimeoutOverlay />
+              <AlertProvider>
+                {children}
+                <AuthModal />
+                <SessionTimeoutOverlay />
+              </AlertProvider>
             </AuthModalProvider>
           </AuthProvider>
         </ThemeProvider>

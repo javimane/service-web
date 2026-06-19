@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
     roles: `${API_BASE_URL}/api/users/roles`,
     benefits: (userId: string) =>
       `${API_BASE_URL}/api/users/${userId}/benefits`,
+    mobilePhone: `${API_BASE_URL}/api/users/mobile-phone`,
   },
   chats: {
     base: `${API_BASE_URL}/api/chats`,

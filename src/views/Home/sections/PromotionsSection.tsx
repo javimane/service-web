@@ -24,8 +24,13 @@ import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./PromotionsSection.css";
 import { getProfessionalPromotionsAction } from "@/app/actions/professionalPromotions";
 import { getProvincesAction } from "@/app/actions/provinces";
+import { getProfilePath } from "../../../utils/utils";
 
-export default function PromotionsSection({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
+export default function PromotionsSection({
+  userProvince = "Buenos Aires",
+}: {
+  userProvince?: string;
+}) {
   const router = useRouter();
   const { sessionStatus } = useAuth();
   const [isProvinceModalOpen, setIsProvinceModalOpen] = useState(false);
@@ -99,11 +104,14 @@ export default function PromotionsSection({ userProvince = "Buenos Aires" }: { u
       verificationCode: `PROMO-${p.id.toString().slice(0, 4).toUpperCase()}`,
       professionalId: p.professional_id || p.Professional?.id,
       _original: p,
+      seoPath: `promociones${p.seo_path}`,
     }));
   }, [promotionsData]);
 
   const handlePromoClick = (promo) => {
-    setSelectedPromo(promo);
+    if (promo.professionalId) {
+      router.push(promo.seoPath);
+    }
   };
 
   const handleProvinceSelect = (provinceName: string) => {
@@ -203,13 +211,6 @@ export default function PromotionsSection({ userProvince = "Buenos Aires" }: { u
           )}
         </div>
       </div>
-
-      <PromotionDetailModal
-        isOpen={!!selectedPromo}
-        onClose={() => setSelectedPromo(null)}
-        promo={selectedPromo}
-        userProvince={userProvince}
-      />
 
       {/* Province Selector Modal */}
       <Modal

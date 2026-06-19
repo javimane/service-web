@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import ProductsPage from "@/views/Products/ProductsPage";
 
 export const metadata: Metadata = {
-  title: "Catálogo de Productos - TuApp",
+  title: "Catálogo de Productos - Sercio",
   description:
     "Explorá el catálogo de productos profesionales con filtros por categoría, precio y ubicación.",
 };
