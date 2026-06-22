@@ -57,39 +57,47 @@ export default function CategoriesFilters({
       type: "search",
       label: "BÚSQUEDA",
       placeholder: "Buscar nombre, rubro, o especialidad...",
-      filterKey: "search",
+      filterKey: "name",
     },
     {
-      type: "select",
+      type: "dropdown-select",
       label: "CATEGORÍA",
       filterKey: "categoryId",
-      allLabel: "Profesiones y Oficios",
-      allValue: "Todas",
-      options: categoryOptions
-        .filter((c) => c.label !== "Todas")
-        .map((c) => ({ value: c.label, label: c.label })),
+      placeholder: "Profesiones y Oficios",
+      options: [
+        { value: "Todas", label: "Todas" },
+        ...categoryOptions
+          .filter((c) => c.label !== "Todas")
+          .map((c) => ({ value: c.label, label: c.label }))
+      ],
     },
     {
-      type: "select",
+      type: "dropdown-select",
       label: "PROVINCIA",
       filterKey: "provinceId",
-      allLabel: "Todas las provincias",
-      allValue: "Todas",
-      options: provinceOptions
-        .filter((p) => p !== "Todas")
-        .map((p) => ({ value: p, label: p })),
+      placeholder: "Todas las provincias",
+      options: [
+        { value: "Todas", label: "Todas" },
+        ...provinceOptions
+          .filter((p) => p !== "Todas")
+          .map((p) => ({ value: p, label: p }))
+      ],
+    },
+    {
+      type: "reset",
+      label: "Limpiar filtros",
     },
   ];
 
   const filters = {
-    search: searchTerm,
+    name: searchTerm,
     categoryId: selectedCategory,
     provinceId: selectedProvince,
   };
 
   const handleFilterChange = (key: string, value: any) => {
     switch (key) {
-      case "search":
+      case "name":
         onSearchChange(value);
         break;
       case "categoryId":

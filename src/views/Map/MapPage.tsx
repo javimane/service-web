@@ -79,12 +79,12 @@ export default function MapPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [center, setCenter] = useState(getInitialCenter);
   const [filters, setFilters] = useState<{
-    search: string;
+    name: string;
     categoryId?: string;
     provinceId?: string;
     departmentId?: string;
   }>({
-    search: "",
+    name: "",
     categoryId: undefined,
     provinceId: undefined,
     departmentId: undefined,
@@ -149,7 +149,7 @@ export default function MapPage() {
         lng: center.lng,
         radius: 20,
         public_trade: "true",
-        name: filters.search || undefined,
+        name: filters.name || undefined,
         categoryId: filters.categoryId || undefined,
         province_id: filters.provinceId || undefined,
         department_id: filters.departmentId || undefined,

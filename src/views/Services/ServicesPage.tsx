@@ -6,56 +6,63 @@ import { useRouter } from "next/navigation";
 import { getServicesAction } from "../../app/actions/services";
 import { getServiceCategoriesAction } from "../../app/actions/categories";
 import { getProvincesAction } from "../../app/actions/provinces";
+import { getDepartmentsAction } from "../../app/actions/locations";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ServiceCard from "../../components/Cards/ServiceCard";
 import ServicesFilters from "./ServicesFilters";
 import SEO from "../../components/SEO/SEO";
 import { ROUTES } from "../../routes/paths";
+import { priceRangeOptions } from "./serviceUtils";
 import "./ServicesPage.css";
 
 export default function ServicesPage() {
   const [filters, setFilters] = useState({
-    search: "",
+    name: "",
     categoryId: "All",
     provinceId: "All",
     cityId: "All",
+    priceRange: "all",
+    isActive: "All",
     type: "all",
     onlyUrgent: false,
     onlyPublic: false,
     onlyVerified: false,
   });
+  const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState("grid");
   const router = useRouter();
 
   const {
-    data: servicesData = [],
+    data: queryData,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["services", filters],
+    queryKey: ["services", filters, page],
     queryFn: async () => {
+      const range = priceRangeOptions.find((o) => o.id === filters.priceRange);
+
       const result = await getServicesAction({
-        ...(filters.search ? { search: filters.search } : {}),
-        ...(filters.categoryId === "All"
-          ? {}
-          : { categoryId: filters.categoryId }),
-        ...(filters.provinceId === "All"
-          ? {}
-          : { provinceId: filters.provinceId }),
-        ...(filters.cityId === "All" ? {} : { cityId: filters.cityId }),
-        ...(filters.type === "all" ? {} : { type: filters.type }),
-        ...(filters.onlyUrgent ? { onlyUrgent: true } : {}),
-        ...(filters.onlyPublic ? { onlyPublic: true } : {}),
-        ...(filters.onlyVerified ? { onlyVerified: true } : {}),
+        page,
+        limit: 20,
+        name: filters.name || undefined,
+        categoryId: filters.categoryId !== "All" ? Number(filters.categoryId) : undefined,
+        provinceId: filters.provinceId !== "All" ? Number(filters.provinceId) : undefined,
+        departmentId: filters.cityId !== "All" ? Number(filters.cityId) : undefined,
+        minPrice: range && range.min > 0 ? range.min : undefined,
+        maxPrice: range && range.max < Infinity ? range.max : undefined,
+        isActive: filters.isActive === "All" ? undefined : filters.isActive === "true" ? true : false,
       });
 
-      return result?.data ?? [];
+      return result?.data || { items: [], page: 1, limit: 20, total: 0, totalPages: 1, hasPrev: false, hasNext: false, prevPage: null, nextPage: null };
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 15,
   });
+
+  const servicesData = queryData?.items || [];
+  const totalPages = queryData?.totalPages || 1;
 
   const { data: categories = [] } = useQuery({
     queryKey: ["service-categories"],
@@ -77,21 +84,46 @@ export default function ServicesPage() {
     gcTime: 1000 * 60 * 60 * 24,
   });
 
-  const handleFilterChange = (updates) => {
-    setFilters((prev) => ({ ...prev, ...updates }));
+  const { data: departments = [] } = useQuery({
+    queryKey: ["departments", filters.provinceId],
+    queryFn: async () => {
+      if (filters.provinceId === "All") return [];
+      const result = await getDepartmentsAction({
+        provinceId: filters.provinceId,
+      });
+      return result?.data ?? [];
+    },
+    enabled: filters.provinceId !== "All",
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
+  });
+
+  const handleFilterChange = (updates: any) => {
+    setFilters((prev) => {
+      const newFilters = { ...prev, ...updates };
+      // Si cambia la provincia, reseteamos la ciudad
+      if (updates.provinceId && updates.provinceId !== prev.provinceId) {
+        newFilters.cityId = "All";
+      }
+      return newFilters;
+    });
+    setPage(1); // Reset page on filter change
   };
 
   const handleResetFilters = () => {
     setFilters({
-      search: "",
+      name: "",
       categoryId: "All",
       provinceId: "All",
       cityId: "All",
+      priceRange: "all",
+      isActive: "All",
       type: "all",
       onlyUrgent: false,
       onlyPublic: false,
       onlyVerified: false,
     });
+    setPage(1);
   };
 
   const currentCategoryName = useMemo(() => {
@@ -123,6 +155,7 @@ export default function ServicesPage() {
           filters={filters}
           categories={categories}
           provinces={provinces}
+          departments={departments}
           onFilterChange={handleFilterChange}
           onReset={handleResetFilters}
         />
@@ -211,19 +244,48 @@ export default function ServicesPage() {
                 </div>
               </div>
             ) : (
-              servicesData.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  viewMode={viewMode}
-                  onClick={(svc) => {
-                    const slug = svc.name
-                      ? svc.name.trim().toLowerCase().replace(/\s+/g, "-")
-                      : `service-${svc.id}`;
-                    router.push(`/servicios/${slug}?id=${svc.id}`);
-                  }}
-                />
-              ))
+              <>
+                <div className={`services-results-grid view-${viewMode}`} style={{ width: "100%", display: viewMode === "grid" ? "grid" : "flex", flexDirection: viewMode === "grid" ? "row" : "column", gap: "var(--space-6)" }}>
+                  {servicesData.map((service: any) => (
+                    <ServiceCard
+                      key={service.id}
+                      service={service}
+                      viewMode={viewMode}
+                      onClick={(svc) => {
+                        const slug = svc.name
+                          ? svc.name.trim().toLowerCase().replace(/\s+/g, "-")
+                          : `service-${svc.id}`;
+                        router.push(`/servicios/${slug}?id=${svc.id}`);
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="store-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "16px", marginTop: "32px", width: "100%" }}>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      style={{ padding: "8px 16px" }}
+                    >
+                      Anterior
+                    </button>
+                    <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--text-secondary)" }}>
+                      Página {page} de {totalPages}
+                    </span>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      style={{ padding: "8px 16px" }}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </main>

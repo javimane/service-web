@@ -12,13 +12,45 @@ const tokenizedRecordSchema = z
   .object({ token: authTokenSchema })
   .catchall(z.any());
 
+export interface PaginatedServicesResponse {
+  items: any[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasPrev: boolean;
+  hasNext: boolean;
+  prevPage: number | null;
+  nextPage: number | null;
+}
+
 export const getServicesAction = publicAction
-  .schema(serviceListSchema)
+  .schema(
+    z
+      .object({
+        page: z.number().optional(),
+        limit: z.number().optional(),
+        name: z.string().optional(),
+        categoryId: z.number().optional(),
+        minPrice: z.number().optional(),
+        maxPrice: z.number().optional(),
+        provinceId: z.number().optional(),
+        province: z.string().optional(),
+        departmentId: z.number().optional(),
+        isActive: z.boolean().optional(),
+        lat: z.number().optional(),
+        lng: z.number().optional(),
+        radius: z.number().optional(),
+        is_premium: z.boolean().optional(),
+      })
+      .optional(),
+  )
   .action(async ({ parsedInput, ctx }) => {
     const params = new URLSearchParams();
     if (parsedInput) {
       Object.entries(parsedInput).forEach(([key, value]) => {
-        if (value !== undefined) params.append(key, String(value));
+        if (value !== undefined && value !== null)
+          params.append(key, String(value));
       });
     }
     const queryString = params.toString() ? `?${params.toString()}` : "";
@@ -28,7 +60,7 @@ export const getServicesAction = publicAction
       const response = await axios.get(url, {
         headers: ctx.headers,
       });
-      return response.data;
+      return response.data as PaginatedServicesResponse;
     } catch (error: any) {
       console.error("Error fetching services:", error.message);
       throw new Error(

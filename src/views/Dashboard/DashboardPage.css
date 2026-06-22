@@ -33,7 +33,7 @@
 
 /* Sidebar */
 .dashboard-sidebar {
-  width: 280px;
+  width: 300px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-left: none;
@@ -381,8 +381,7 @@
 
 .footer-link--support,
 .footer-link--logout {
-  width: 140px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .footer-link--logout:hover {
@@ -415,11 +414,9 @@
 
 .dashboard-sidebar--collapsed .footer-link--support,
 .dashboard-sidebar--collapsed .footer-link--logout {
-  padding: 10px;
+  padding-left: 12px;
+  padding-right: 12px;
   justify-content: center;
-  width: auto;
-  align-self: center;
-  border-radius: 50%;
 }
 
 .dashboard-sidebar--collapsed .footer-links {
@@ -525,7 +522,7 @@
 
 .welcome-copy {
   flex: 1;
-  min-width: 280px;
+  min-width: 300px;
 }
 
 .welcome-actions {
@@ -1087,7 +1084,7 @@
   }
 
   .dashboard-sidebar {
-    width: 280px;
+    width: 300px;
     padding: 20px 16px;
     border-radius: 0 22px 22px 0;
   }
@@ -1099,9 +1096,9 @@
 
   .dashboard-main {
     padding: 10px 10px 10px 0;
-    margin-left: 280px;
-    width: calc(100% - 280px);
-    max-width: calc(100vw - 280px);
+    margin-left: 300px;
+    width: calc(100% - 300px);
+    max-width: calc(100vw - 300px);
   }
 
   .dashboard-main--collapsed {

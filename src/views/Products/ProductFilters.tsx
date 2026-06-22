@@ -20,16 +20,6 @@ export default function ProductFilters({
   const sections: FilterSection[] = [
     {
       type: "chips",
-      label: "Origen",
-      filterKey: "is_foreign",
-      options: [
-        { value: "all", label: "Todos" },
-        { value: "internal", label: "Locales" },
-        { value: "external", label: "Externos" },
-      ],
-    },
-    {
-      type: "chips",
       label: "Venta Mayorista",
       filterKey: "wholesale",
       options: [

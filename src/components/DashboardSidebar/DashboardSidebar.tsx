@@ -326,6 +326,12 @@ export default function DashboardSidebar({
       icon: Settings,
       onClick: () => router.push(ROUTES.settings),
     },
+    {
+      key: "faq",
+      label: "PREGUNTAS FRECUENTES",
+      icon: HelpCircle,
+      onClick: () => goToDashboardView("faq"),
+    },
   ];
 
   const renderSupportActions = () => (

@@ -123,7 +123,7 @@ export default function CategoriesPage() {
         isVerified: verifiedOnly ? "true" : undefined,
         emergency: urgentOnly ? "true" : undefined,
         publicTrade: publicStoreOnly ? "true" : undefined,
-        query: searchTerm.length >= 3 ? searchTerm : undefined,
+        name: searchTerm.length >= 3 ? searchTerm : undefined,
         limit: 100,
       });
 

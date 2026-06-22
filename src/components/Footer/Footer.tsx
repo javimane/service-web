@@ -38,6 +38,9 @@ export default function Footer() {
         </div>
 
         <div className="footer__links">
+          <Link href={ROUTES.faq} className="footer__link-btn">
+            Preguntas Frecuentes
+          </Link>
           <Link href={ROUTES.terms} className="footer__link-btn">
             Términos y Condiciones
           </Link>

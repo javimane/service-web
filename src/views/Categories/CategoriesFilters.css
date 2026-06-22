@@ -7,6 +7,7 @@
   border-radius: var(--radius-xl);
   padding: var(--space-6);
   box-shadow: var(--shadow-card);
+  height: fit-content;
 }
 
 .categories-sidebar__header {

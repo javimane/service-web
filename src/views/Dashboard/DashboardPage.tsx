@@ -28,6 +28,7 @@ import ProposalCreator from "./sections/ProposalCreator";
 import ProposalsView from "./sections/ProposalsView";
 import PromotionCreator from "./sections/PromotionCreator";
 import AllPromotionsPage from "./sections/AllPromotionsPage";
+import ProductCreator from "./sections/ProductCreator";
 import NotificationsPage from "./sections/NotificationsPage";
 import DashboardProducts from "./sections/DashboardProducts";
 import SubscriptionSection from "./sections/SubscriptionSection";
@@ -39,6 +40,7 @@ import "./DashboardPage.css";
 import DashboardServices from "./sections/DashboardServices";
 import DashboardReferrals from "./sections/DashboardReferrals";
 import JobRequestsSection from "./sections/JobRequestsSection";
+import FAQSection from "../FAQ/FAQSection";
 import Navbar from "../../components/Navbar/Navbar";
 
 export default function DashboardPage() {
@@ -174,7 +176,9 @@ export default function DashboardPage() {
       : createdAt;
 
     const isWelcomeParam = searchParams.get("welcome") === "true";
-    const hasSeenWelcome = localStorage.getItem(`welcome_shown_${sessionStatus.email}`);
+    const hasSeenWelcome = localStorage.getItem(
+      `welcome_shown_${sessionStatus.email}`,
+    );
 
     // Si es profesional y no tiene plan, detenemos acá para que no muestre la bienvenida.
     // La bienvenida se mostrará cuando seleccione el plan y sea redirigido con ?welcome=true
@@ -386,6 +390,8 @@ export default function DashboardPage() {
               <CalendarSection />
             ) : view === "subscription" ? (
               <SubscriptionSection />
+            ) : view === "products-create" ? (
+              <ProductCreator onBack={handleShowProducts} />
             ) : view === "products" ? (
               <DashboardProducts />
             ) : view === "services" ? (
@@ -413,6 +419,8 @@ export default function DashboardPage() {
               <DashboardReferrals />
             ) : view === "job-requests" ? (
               <JobRequestsSection />
+            ) : view === "faq" ? (
+              <FAQSection />
             ) : (
               <div className="dashboard-content">
                 <div className="welcome-section">
@@ -875,7 +883,7 @@ export default function DashboardPage() {
               position: "relative",
               maxWidth: "1000px",
               width: "100%",
-              marginTop: "5vh"
+              marginTop: "5vh",
             }}
           >
             <RegisterPlanSelection />

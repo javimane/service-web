@@ -13,14 +13,16 @@ import "./MapSidebar.css";
 
 interface MapSidebarProps {
   onFilterChange: (filters: {
-    search: string;
+    name: string;
     categoryId?: string;
     provinceId?: string;
     departmentId?: string;
   }) => void;
   specialistsCount: number;
   isLoading: boolean;
-  onProvinceCoordinatesChange?: (coords: { lat: number; lng: number } | null) => void;
+  onProvinceCoordinatesChange?: (
+    coords: { lat: number; lng: number } | null,
+  ) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
@@ -33,7 +35,7 @@ export default function MapSidebar({
   isCollapsed,
   onToggleCollapse,
 }: MapSidebarProps) {
-  const [search, setSearch] = useState("");
+  const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
@@ -72,7 +74,7 @@ export default function MapSidebar({
   });
 
   const localFilters = {
-    search,
+    name,
     categoryId: selectedCategory,
     provinceId: selectedProvince,
     departmentId: selectedDepartment,
@@ -80,12 +82,18 @@ export default function MapSidebar({
 
   const handleApply = useCallback(() => {
     onFilterChange({
-      search,
+      name,
       categoryId: selectedCategory === "all" ? undefined : selectedCategory,
       provinceId: selectedProvince || undefined,
       departmentId: selectedDepartment || undefined,
     });
-  }, [onFilterChange, search, selectedCategory, selectedProvince, selectedDepartment]);
+  }, [
+    onFilterChange,
+    name,
+    selectedCategory,
+    selectedProvince,
+    selectedDepartment,
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -100,8 +108,14 @@ export default function MapSidebar({
       onProvinceCoordinatesChange?.(null);
       return;
     }
-    const matchedProv = provinces.find((p: any) => String(p.id) === String(selectedProvince));
-    if (matchedProv && matchedProv.latitude != null && matchedProv.longitude != null) {
+    const matchedProv = provinces.find(
+      (p: any) => String(p.id) === String(selectedProvince),
+    );
+    if (
+      matchedProv &&
+      matchedProv.latitude != null &&
+      matchedProv.longitude != null
+    ) {
       onProvinceCoordinatesChange?.({
         lat: Number(matchedProv.latitude),
         lng: Number(matchedProv.longitude),
@@ -114,10 +128,10 @@ export default function MapSidebar({
       type: "search",
       label: "BÚSQUEDA RÁPIDA",
       placeholder: "Nombre o especialidad...",
-      filterKey: "search",
+      filterKey: "name",
     },
     {
-      type: "chips",
+      type: "dropdown-select",
       label: "CATEGORÍAS",
       filterKey: "categoryId",
       options: [
@@ -129,19 +143,26 @@ export default function MapSidebar({
       ],
     },
     {
-      type: "select",
+      type: "dropdown-select",
       label: "UBICACIÓN",
       filterKey: "provinceId",
-      allLabel: "Todas las provincias",
-      options: provinces.map((prov: any) => ({
-        value: String(prov.id),
-        label: prov.name,
-      })),
+      placeholder: "Todas las provincias",
+      options: [
+        { value: "all", label: "Todas las provincias" },
+        ...provinces.map((prov: any) => ({
+          value: String(prov.id),
+          label: prov.name,
+        })),
+      ],
+    },
+    {
+      type: "reset",
+      label: "Limpiar filtros",
     },
   ];
 
   const handleFilterChange = (key: string, value: any) => {
-    if (key === "search") setSearch(value);
+    if (key === "name") setName(value);
     if (key === "categoryId") setSelectedCategory(value);
     if (key === "provinceId") {
       setSelectedProvince(value);
@@ -149,8 +170,23 @@ export default function MapSidebar({
     }
   };
 
+  const handleReset = useCallback(() => {
+    setName("");
+    setSelectedCategory("all");
+    setSelectedProvince("");
+    setSelectedDepartment("");
+    onFilterChange({
+      name: "",
+      categoryId: undefined,
+      provinceId: undefined,
+      departmentId: undefined,
+    });
+  }, [onFilterChange]);
+
   return (
-    <aside className={`map-sidebar ${isCollapsed ? "map-sidebar--collapsed" : ""}`}>
+    <aside
+      className={`map-sidebar ${isCollapsed ? "map-sidebar--collapsed" : ""}`}
+    >
       <button
         type="button"
         className="map-sidebar__toggle-btn"
@@ -163,13 +199,16 @@ export default function MapSidebar({
       <div className="map-sidebar__body">
         <div className="map-sidebar__header">
           <h2 className="map-sidebar__title">Explorar Profesionales</h2>
-          <p className="map-sidebar__subtitle">Encuentra expertos cerca de ti</p>
+          <p className="map-sidebar__subtitle">
+            Encuentra expertos cerca de ti
+          </p>
         </div>
 
         <FilterPanel
           sections={sections}
           filters={localFilters}
           onFilterChange={handleFilterChange}
+          onReset={handleReset}
         />
 
         <div className="map-sidebar__footer">

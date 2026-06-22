@@ -224,13 +224,27 @@ export default function ProductsPage() {
       const sellers = product.ProfessionalProducts || [];
       const firstSeller = sellers[0] || {};
 
-      const displayPrice = product.price || firstSeller.price || 0;
-      const displayDiscount =
+      let displayPrice = product.price || firstSeller.price || 0;
+      let displayDiscount =
         product.percent_discount ||
         firstSeller.percent_discount ||
         firstSeller.discount_percentage ||
         0;
-      const displayOriginalPrice = firstSeller.original_price;
+      let displayOriginalPrice = firstSeller.original_price;
+
+      if (sellers.length === 1 && firstSeller.offer_price) {
+        const originalP = firstSeller.price || product.price;
+        const offerP = firstSeller.offer_price;
+
+        if (originalP && offerP < originalP) {
+          displayPrice = offerP;
+          displayOriginalPrice = originalP;
+          if (!displayDiscount) {
+            displayDiscount = Math.round((1 - offerP / originalP) * 100);
+          }
+        }
+      }
+
       const currencyCode =
         product.currency_code || firstSeller.currency_code || "ARG";
 

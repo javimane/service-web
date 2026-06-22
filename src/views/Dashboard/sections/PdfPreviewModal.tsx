@@ -116,7 +116,7 @@ export default function PdfPreviewModal({
           img.onload = resolve;
           img.onerror = reject;
         });
-        doc.addImage(img, "PNG", 40, 40, 120, 60);
+        doc.addImage(img, "PNG", 40, 40, 120, 35);
       } catch (err) {
         // Fallback if logo fails
         doc.setFontSize(24);
@@ -145,9 +145,7 @@ export default function PdfPreviewModal({
       doc.setTextColor("#000000");
       if (professional.companyName) {
         doc.setFont("helvetica", "bold");
-        doc.text(professional.companyName, textX, 125);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Prof: ${professional.name}`, textX, 140);
+        doc.text(professional.companyName, textX, 135);
       } else {
         doc.setFont("helvetica", "bold");
         doc.text(professional.name, textX, 135);

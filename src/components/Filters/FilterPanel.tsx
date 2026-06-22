@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Search, ChevronDown, RotateCcw } from "lucide-react";
+import Select from "react-dropdown-select";
 import "./FilterPanel.css";
 
 function SearchInputWrapper({ section, filterKey, value, onFilterChange }: { section: any; filterKey: string; value: string; onFilterChange: (key: string, value: any) => void }) {
@@ -91,6 +92,14 @@ type ResetSection = SectionBase & {
   label?: string;
 };
 
+type DropdownSelectSection = SectionBase & {
+  type: "dropdown-select";
+  options: { value: string; label: string }[];
+  filterKey: string;
+  placeholder?: string;
+  searchable?: boolean;
+};
+
 export type FilterSection =
   | SearchSection
   | SelectSection
@@ -98,7 +107,8 @@ export type FilterSection =
   | TextSection
   | PriceRangeSection
   | PriceSelectSection
-  | ResetSection;
+  | ResetSection
+  | DropdownSelectSection;
 
 interface FilterPanelProps {
   sections: FilterSection[];
@@ -140,6 +150,38 @@ function renderSection(
               ))}
             </select>
             <ChevronDown size={14} className="filter-panel__select-arrow" />
+          </div>
+        </div>
+      );
+    }
+
+    case "dropdown-select": {
+      return (
+        <div className="filter-panel__section" key={section.id || section.filterKey}>
+          {section.label && (
+            <span className="filter-panel__label">{section.label}</span>
+          )}
+          <div className="filter-panel__dropdown-wrapper" style={{ marginTop: '4px' }}>
+            <Select
+              options={section.options}
+              values={section.options.filter(opt => opt.value === filters[section.filterKey])}
+              onChange={(values) => onFilterChange(section.filterKey, values.length > 0 ? values[0].value : "")}
+              placeholder={section.placeholder || "Seleccionar..."}
+              searchable={section.searchable !== false}
+              color="var(--accent-color)"
+              style={{
+                borderRadius: 'var(--radius-md)',
+                borderColor: 'var(--border-color)',
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-primary)',
+                padding: 'var(--space-2)'
+              }}
+              dropdownPosition="auto"
+              dropdownHandle={false}
+              keepSelectedInList={true}
+              clearable={true}
+            />
           </div>
         </div>
       );

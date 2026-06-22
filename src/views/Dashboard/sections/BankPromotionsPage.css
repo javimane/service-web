@@ -38,7 +38,7 @@
   font-weight: var(--weight-bold);
   margin: 0;
   color: var(--text-primary);
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -479,7 +479,7 @@
 
 .bank-promo-field input {
   background: var(--input-bg, rgba(0, 0, 0, 0.2));
-  border: 1px solid var(--border-color);
+  border: 1px solid #a1a1aa;
   border-radius: 20px;
   padding: 12px 40px 12px 40px;
   color: var(--text-primary);
@@ -596,7 +596,11 @@
 }
 
 .bank-promo-btn--primary {
-  background: linear-gradient(135deg, #10b981, #059669); /* Elegant green for creation/saving */
+  background: linear-gradient(
+    135deg,
+    #10b981,
+    #059669
+  ); /* Elegant green for creation/saving */
   color: white;
   box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
 }
@@ -628,9 +632,18 @@
 }
 
 @keyframes pulse-red {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
 }
 
 .bank-promo-modal__confirm-content h2 {
@@ -693,7 +706,7 @@
 
 .bank-promo-input-wrapper--textarea textarea {
   background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border-color);
+  border: 1px solid #a1a1aa;
   border-radius: 20px;
   padding: 12px 12px 12px 40px;
   color: var(--text-primary);
@@ -809,8 +822,12 @@
 }
 
 @keyframes checkbox-pop {
-  0% { transform: scale(0); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .bank-name {

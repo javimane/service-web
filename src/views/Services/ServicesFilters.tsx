@@ -6,6 +6,7 @@ export default function ServicesFilters({
   filters,
   categories,
   provinces,
+  departments = [],
   onFilterChange,
   onReset,
 }) {
@@ -13,6 +14,7 @@ export default function ServicesFilters({
     {
       type: "search",
       label: "BÚSQUEDA",
+      filterKey: "name",
       placeholder: "Buscar servicio...",
     },
     {
@@ -38,8 +40,20 @@ export default function ServicesFilters({
       })),
     },
     {
+      type: "select",
+      label: "CIUDAD / DEPARTAMENTO",
+      filterKey: "cityId",
+      allLabel: "Todas las ciudades",
+      allValue: "All",
+      options: departments.map((d: any) => ({
+        value: String(d.id),
+        label: d.name,
+      })),
+    },
+    {
       type: "price-select",
       label: "PRECIO",
+      filterKey: "price",
       options: priceRangeOptions,
     },
     { type: "reset" },

@@ -92,14 +92,14 @@ export default function NearbyServicesSection({
       });
 
       if (result?.data) {
-        return result.data;
+        return result.data.items || [];
       }
 
       if (result?.serverError) {
         throw new Error(result.serverError);
       }
 
-      return null;
+      return [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 15,
