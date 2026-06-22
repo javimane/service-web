@@ -63,19 +63,39 @@ const quickLinks = [
 export default function HomePage() {
   const router = useRouter();
   const [heroQuery, setHeroQuery] = useState("");
-  const [userProvince, setUserProvince] = useState("Buenos Aires");
+  const [userProvince, setUserProvince] = useState("Mendoza");
   const [isProvinceModalOpen, setIsProvinceModalOpen] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const { sessionStatus } = useAuth();
+
+  const { data: provinces = [] } = useQuery({
+    queryKey: ["provinces"],
+    queryFn: async () => {
+      const result = await getProvincesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("userProvince");
       if (stored) {
         setUserProvince(stored);
+        return;
       }
     }
-  }, []);
+
+    // Si no hay provincia guardada en local y el usuario tiene una configurada en su perfil
+    if (sessionStatus?.profile_province_id && provinces.length > 0) {
+      const found = provinces.find(
+        (p: any) => p.id === sessionStatus.profile_province_id,
+      );
+      if (found) {
+        setUserProvince(found.name);
+      }
+    }
+  }, [sessionStatus, provinces]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !sessionStatus) return;
@@ -102,15 +122,6 @@ export default function HomePage() {
     }
   }, [sessionStatus]);
 
-  const { data: provinces = [] } = useQuery({
-    queryKey: ["provinces"],
-    queryFn: async () => {
-      const result = await getProvincesAction();
-      return result?.data ?? [];
-    },
-    staleTime: 1000 * 60 * 60 * 24, // 24 horas
-  });
-
   const handleProvinceSelect = (provinceName) => {
     setUserProvince(provinceName);
     if (typeof window !== "undefined") {
@@ -127,6 +138,11 @@ export default function HomePage() {
       );
     }
   };
+
+  const currentProvinceObj = provinces.find(
+    (p: any) => p.name === userProvince,
+  );
+  const userProvinceId = currentProvinceObj?.id;
 
   return (
     <div className="home-page">
@@ -201,12 +217,30 @@ export default function HomePage() {
 
         <BannerCarousel />
         <CategoriesSection />
-        <PromotionsSection userProvince={userProvince} />
-        <NearbyServicesSection userProvince={userProvince} />
-        <FeaturedSpecialists userProvince={userProvince} />
-        <StoresSection userProvince={userProvince} />
-        <NearbyProductsSection userProvince={userProvince} />
-        <ProfessionalReelsSection userProvince={userProvince} />
+        <PromotionsSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+        <NearbyServicesSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+        <FeaturedSpecialists
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+        <StoresSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+        <NearbyProductsSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+        <ProfessionalReelsSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
         <JoinCTASection />
       </main>
 

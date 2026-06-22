@@ -46,7 +46,13 @@ function ReelThumbnail({ src }: { src: string }) {
   );
 }
 
-export default function ProfessionalReelsSection({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
+export default function ProfessionalReelsSection({
+  userProvince = "Buenos Aires",
+  userProvinceId
+}: {
+  userProvince?: string;
+  userProvinceId?: number;
+}) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
@@ -56,19 +62,7 @@ export default function ProfessionalReelsSection({ userProvince = "Buenos Aires"
 
   // Using userProvince from props
   // Fetch Provinces to get the ID for filtering
-  const { data: provinces = [] } = useQuery({
-    queryKey: ["provinces"],
-    queryFn: async () => {
-      const result = await getProvincesAction();
-      return result?.data ?? [];
-    },
-    staleTime: 1000 * 60 * 60 * 24, // 24 horas
-    gcTime: 1000 * 60 * 60 * 24,
-  });
-
-  const provinceId = useMemo(() => {
-    return provinces.find((p) => p.name === userProvince)?.id;
-  }, [provinces, userProvince]);
+  const provinceId = userProvinceId;
 
   const { data: allReels = [], isLoading: isLoadingReels } = useQuery<
     ProfessionalReelRow[]

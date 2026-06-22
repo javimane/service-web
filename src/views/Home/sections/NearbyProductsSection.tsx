@@ -27,8 +27,10 @@ type UserLocation = {
 
 export default function NearbyProductsSection({
   userProvince = "Buenos Aires",
+  userProvinceId
 }: {
   userProvince?: string;
+  userProvinceId?: number;
 }) {
   const router = useRouter();
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -59,18 +61,7 @@ export default function NearbyProductsSection({
     );
   }, []);
 
-  const { data: provinces = [] } = useQuery({
-    queryKey: ["provinces"],
-    queryFn: async () => {
-      const result = await getProvincesAction();
-      return result?.data ?? [];
-    },
-    staleTime: 1000 * 60 * 60 * 24, // 24 horas
-  });
-
-  const provinceId = useMemo(() => {
-    return provinces.find((p: any) => p.name === userProvince)?.id;
-  }, [provinces, userProvince]);
+  const provinceId = userProvinceId;
 
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["nearby-products", userLocation, provinceId],

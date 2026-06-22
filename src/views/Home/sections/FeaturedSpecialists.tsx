@@ -13,7 +13,13 @@ import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./FeaturedSpecialists.css";
 import { getProfessionalsAction } from "@/app/actions/professionals";
 
-export default function FeaturedSpecialists({ userProvince = "Buenos Aires" }: { userProvince?: string }) {
+export default function FeaturedSpecialists({ 
+  userProvince = "Buenos Aires",
+  userProvinceId
+}: { 
+  userProvince?: string;
+  userProvinceId?: number;
+}) {
   const sliderRef = useRef(null);
 
   // Using userProvince from props
@@ -28,10 +34,10 @@ export default function FeaturedSpecialists({ userProvince = "Buenos Aires" }: {
   } = useCarouselDrag(sliderRef, ".specialist-card");
 
   const { data: professionals = [], isLoading } = useQuery({
-    queryKey: ["featured-professionals", userProvince],
+    queryKey: ["featured-professionals", userProvinceId],
     queryFn: async () => {
       const result = await getProfessionalsAction({
-        provinceId: userProvince,
+        provinceId: userProvinceId,
         limit: 20,
         sortBy: "rating",
       });

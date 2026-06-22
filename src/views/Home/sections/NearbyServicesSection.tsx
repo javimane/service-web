@@ -45,8 +45,10 @@ function calculateDistance(
 
 export default function NearbyServicesSection({
   userProvince = "Buenos Aires",
+  userProvinceId
 }: {
   userProvince?: string;
+  userProvinceId?: number;
 }) {
   const router = useRouter();
   const [selectedService, setSelectedService] = useState<any>(null);
@@ -79,10 +81,10 @@ export default function NearbyServicesSection({
   }, []);
 
   const { data: services = [], isLoading } = useQuery({
-    queryKey: ["nearby-services", userLocation, userProvince],
+    queryKey: ["nearby-services", userLocation, userProvinceId],
     queryFn: async () => {
       const result = await getServicesAction({
-        province: userProvince,
+        provinceId: userProvinceId,
         // we can still pass lat/lng for sorting by distance if getServicesAction supports it
         lat: userLocation?.lat,
         lng: userLocation?.lng,

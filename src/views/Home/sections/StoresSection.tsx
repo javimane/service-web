@@ -15,8 +15,10 @@ import { getProfessionalsAction } from "@/app/actions/professionals";
 
 export default function StoresSection({
   userProvince = "Buenos Aires",
+  userProvinceId
 }: {
   userProvince?: string;
+  userProvinceId?: number;
 }) {
   const sliderRef = useRef(null);
 
@@ -31,10 +33,10 @@ export default function StoresSection({
   } = useCarouselDrag(sliderRef, ".specialist-card");
 
   const { data: stores = [], isLoading } = useQuery({
-    queryKey: ["featured-stores", userProvince],
+    queryKey: ["featured-stores", userProvinceId],
     queryFn: async () => {
       const result = await getProfessionalsAction({
-        provinceId: userProvince,
+        provinceId: userProvinceId,
         limit: 20,
         sortBy: "rating",
         publicTrade: "true",

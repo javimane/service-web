@@ -28,8 +28,10 @@ import { getProfilePath } from "../../../utils/utils";
 
 export default function PromotionsSection({
   userProvince = "Buenos Aires",
+  userProvinceId,
 }: {
   userProvince?: string;
+  userProvinceId?: number;
 }) {
   const router = useRouter();
   const { sessionStatus } = useAuth();
@@ -60,11 +62,12 @@ export default function PromotionsSection({
   });
 
   // Fetch Promotions based on province
-  const { data: promotionsData, isLoading } = useQuery({
-    queryKey: ["promotions", userProvince],
+  const { data: promotionsData = [], isLoading } = useQuery({
+    queryKey: ["promotions", userProvinceId],
     queryFn: async () => {
       const result = await getProfessionalPromotionsAction({
-        province: userProvince,
+        provinceId: userProvinceId,
+        isActive: true,
       });
       const raw = (result?.data as any) ?? result;
       // Handle both paginated { items, ... } and plain array responses
