@@ -32,18 +32,6 @@ axiosInstance.interceptors.request.use(
       } catch (e) {
         // Ignore error if not in Next.js SSR context
       }
-    } else {
-      // In the browser, always attach the Authorization header explicitly
-      // to avoid cross-domain cookie issues on AWS Amplify.
-      try {
-        const { getAccessToken } = await import("../utils/auth");
-        const token = getAccessToken();
-        if (token && !config.headers.Authorization && !config.headers.authorization) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch (e) {
-        // Ignore import errors
-      }
     }
     return config;
   },

@@ -3,7 +3,7 @@ import { get } from "node:http";
 const isBrowser = typeof window !== "undefined";
 
 export const API_BASE_URL = isBrowser
-  ? "" // On client, use relative URL to route through Next.js proxy
+  ? "" // Dejar la URL relativa en el navegador para usar el Proxy de Amplify
   : (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000");
 
 export const API_ENDPOINTS = {
