@@ -49,6 +49,8 @@ export const API_ENDPOINTS = {
     detail: (id: string) => `${API_BASE_URL}/api/professionals/${id}`,
     incrementViews: (id: string) =>
       `${API_BASE_URL}/api/professionals/${id}/views`,
+    cancelFreeSubscription: (id: string | number) =>
+      `${API_BASE_URL}/api/professionals/${id}/cancel-free-subscription`,
   },
   availability: {
     byProfessional: (professionalId: string | number) =>

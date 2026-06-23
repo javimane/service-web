@@ -61,9 +61,9 @@ export default function RegisterPlanSelection() {
           // We still MUST redirect the user to the dashboard so they aren't stuck.
         }
 
-        // Force a hard navigation so the entire app (including server components)
-        // recognizes the new session and professional role immediately.
-        window.location.href = `${ROUTES.dashboard}?welcome=true`;
+        // Refresh the client session so AuthContext picks up the new professional status
+        router.refresh();
+        router.push(`${ROUTES.dashboard}?welcome=true`);
         return;
       }
 

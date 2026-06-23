@@ -26,6 +26,7 @@ import { getSubscriptionPricesAction } from "@/app/actions/plans";
 import {
   getProfessionalSubscriptionAction,
   createProfessionalMeAction,
+  cancelFreeSubscriptionAction,
 } from "@/app/actions/professionals";
 import {
   getMercadoPagoPlansAction,
@@ -188,13 +189,27 @@ export default function SubscriptionSection() {
   const handleCancelSubscription = async () => {
     setIsSubmitting(true);
     try {
-      await cancelMercadoPagoSubscriptionAction();
+      const isFreePlan =
+        subscription?.plan === "free" || subscription?.plan === "gratuito";
+
+      if (isFreePlan) {
+        const token = await getAccessToken();
+        const profId = subscription?.professional_id;
+        if (!profId) throw new Error("No se pudo identificar al profesional");
+        await cancelFreeSubscriptionAction({ id: profId, token });
+      } else {
+        await cancelMercadoPagoSubscriptionAction();
+      }
+
       await refreshSession();
       setLocalSubscription((prev: any) => {
         const current = prev || apiSubscription;
         return current ? { ...current, status: "cancelled" } : current;
       });
       setShowCancelConfirm(false);
+
+      // 👇 Refresca la pantalla independientemente del plan
+      window.location.reload();
     } catch (error) {
       console.error("Error al cancelar suscripción:", error);
     } finally {
@@ -213,6 +228,7 @@ export default function SubscriptionSection() {
           "success",
           "Plan gratuito activado correctamente. ¡Bienvenido!",
         );
+        window.location.reload();
       } else {
         const isPremium = planId === "profesional-premium";
         const mpPlanId =

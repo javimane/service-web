@@ -235,3 +235,29 @@ export const createProfessionalMeAction = publicAction
       );
     }
   });
+
+export const cancelFreeSubscriptionAction = publicAction
+  .schema(
+    z.object({
+      id: z.string().or(z.number()),
+      token: authTokenSchema,
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professionals/${parsedInput.id}/cancel-free-subscription`;
+
+    try {
+      const response = await axios.post(
+        url,
+        {},
+        {
+          headers: await buildActionHeaders(ctx, parsedInput.token),
+        },
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Error canceling free subscription",
+      );
+    }
+  });

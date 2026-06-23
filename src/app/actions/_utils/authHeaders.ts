@@ -16,12 +16,14 @@ export async function buildActionHeaders(
 
   let finalToken = token;
 
-  // Si no se proveyó un token explícitamente, intentar leerlo de las cookies
-  if (!finalToken) {
+  // Si no se proveyó un token explícitamente, o viene serializado como "$undefined" por Next.js
+  if (!finalToken || finalToken === "$undefined" || finalToken === "undefined") {
     const cookieStore = await cookies();
     const accessCookie = cookieStore.get("access_token");
     if (accessCookie) {
       finalToken = accessCookie.value;
+    } else {
+      finalToken = undefined;
     }
   }
 
