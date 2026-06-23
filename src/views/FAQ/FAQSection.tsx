@@ -1,6 +1,16 @@
 "use client";
 import React, { useState } from "react";
-import { ChevronDown, Package, Settings, CreditCard, LayoutDashboard, MessageSquare, Ticket, CalendarDays, Clapperboard } from "lucide-react";
+import {
+  ChevronDown,
+  Package,
+  Settings,
+  CreditCard,
+  LayoutDashboard,
+  MessageSquare,
+  Ticket,
+  CalendarDays,
+  Clapperboard,
+} from "lucide-react";
 import "./FAQPage.css"; // Reuse the same CSS for styling
 
 const faqData = [
@@ -32,7 +42,7 @@ const faqData = [
     questions: [
       {
         q: "¿Qué planes existen?",
-        a: "Ofrecemos diferentes planes (Gratuito, Estándar, Premium) adaptados a tus necesidades. Los planes de pago te permiten acceder a la creación de promociones, presupuesto, reels y otras herramientas avanzadas.",
+        a: "Ofrecemos diferentes planes (Gratuito, Estándar, Premium) adaptados a tus necesidades. Los planes de pago te permiten acceder a la creación de promociones, presupuesto, historias y otras herramientas avanzadas.",
       },
       {
         q: "¿Cómo cancelo o cambio mi plan?",
@@ -124,7 +134,10 @@ const faqData = [
 
 export default function FAQSection() {
   const [openCategory, setOpenCategory] = useState<number | null>(0);
-  const [openQuestion, setOpenQuestion] = useState<{ catIndex: number; qIndex: number } | null>(null);
+  const [openQuestion, setOpenQuestion] = useState<{
+    catIndex: number;
+    qIndex: number;
+  } | null>(null);
 
   const toggleCategory = (index: number) => {
     setOpenCategory((prev) => (prev === index ? null : index));
@@ -132,23 +145,34 @@ export default function FAQSection() {
 
   const toggleQuestion = (catIndex: number, qIndex: number) => {
     setOpenQuestion((prev) =>
-      prev?.catIndex === catIndex && prev?.qIndex === qIndex ? null : { catIndex, qIndex }
+      prev?.catIndex === catIndex && prev?.qIndex === qIndex
+        ? null
+        : { catIndex, qIndex },
     );
   };
 
   return (
     <div className="faq-content">
-      <div className="faq-header" style={{ textAlign: "left", marginBottom: "var(--space-6)" }}>
+      <div
+        className="faq-header"
+        style={{ textAlign: "left", marginBottom: "var(--space-6)" }}
+      >
         <h1>Preguntas Frecuentes</h1>
-        <p style={{ margin: "0", maxWidth: "100%" }}>Encuentra rápidamente la respuesta a tus dudas y aprende a sacarle el máximo provecho a la plataforma.</p>
+        <p style={{ margin: "0", maxWidth: "100%" }}>
+          Encuentra rápidamente la respuesta a tus dudas y aprende a sacarle el
+          máximo provecho a la plataforma.
+        </p>
       </div>
-      
+
       {faqData.map((cat, catIndex) => {
         const Icon = cat.icon;
         const isCatOpen = openCategory === catIndex;
 
         return (
-          <div key={cat.category} className={`faq-category ${isCatOpen ? "faq-category--open" : ""}`}>
+          <div
+            key={cat.category}
+            className={`faq-category ${isCatOpen ? "faq-category--open" : ""}`}
+          >
             <button
               className="faq-category__header"
               onClick={() => toggleCategory(catIndex)}
@@ -175,10 +199,15 @@ export default function FAQSection() {
             >
               <div className="faq-questions">
                 {cat.questions.map((item, qIndex) => {
-                  const isQOpen = openQuestion?.catIndex === catIndex && openQuestion?.qIndex === qIndex;
+                  const isQOpen =
+                    openQuestion?.catIndex === catIndex &&
+                    openQuestion?.qIndex === qIndex;
 
                   return (
-                    <div key={qIndex} className={`faq-question ${isQOpen ? "faq-question--open" : ""}`}>
+                    <div
+                      key={qIndex}
+                      className={`faq-question ${isQOpen ? "faq-question--open" : ""}`}
+                    >
                       <button
                         className="faq-question__header"
                         onClick={() => toggleQuestion(catIndex, qIndex)}

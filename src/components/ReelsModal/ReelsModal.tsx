@@ -38,12 +38,12 @@ export default function ReelsModal({
   onSubmit,
 }: ReelsModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Tus Reels">
+    <Modal isOpen={isOpen} onClose={onClose} title="Tus Historias">
       <div className="reels-modal-content">
         <section className="reels-modal-content__panel">
           <div className="reels-modal-content__header">
             <div>
-              <h3>Tus reels publicados</h3>
+              <h3>Tus historias publicadas</h3>
               <p>
                 Un espacio más compacto para revisar y cargar nuevo contenido.
               </p>
@@ -70,7 +70,7 @@ export default function ReelsModal({
 
           <form className="reels-modal-content__form" onSubmit={onSubmit}>
             <div className="reels-modal-content__form-title">
-              Agregar nuevo reel
+              Agregar nueva historia
             </div>
             <label className="reels-modal-content__field">
               <span>Archivo de video</span>
@@ -86,7 +86,7 @@ export default function ReelsModal({
               <span>Título</span>
               <input
                 type="text"
-                placeholder="Título del reel"
+                placeholder="Título de la historia"
                 value={newReelTitle}
                 onChange={(event) => onTitleChange(event.target.value)}
                 required

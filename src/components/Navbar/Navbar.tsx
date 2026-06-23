@@ -116,9 +116,9 @@ export default function Navbar() {
     if (!notif.is_read) {
       markAsReadMutation.mutate(notif.id);
     }
-    
+
     setIsNotifOpen(false);
-    
+
     switch (notif.type) {
       case "proposal":
       case "propossal":
@@ -204,7 +204,7 @@ export default function Navbar() {
   const navLinks = [
     { label: "Profesionales/Comercios", path: ROUTES.categories },
     { label: "Mapa", path: ROUTES.map },
-    { label: "Reels", path: ROUTES.reels },
+    { label: "Historias", path: ROUTES.reels },
     { label: "Servicios", path: ROUTES.services },
     { label: "Productos", path: ROUTES.products },
     { label: "Promociones", path: ROUTES.promotions },
@@ -254,7 +254,7 @@ export default function Navbar() {
       path: `${ROUTES.dashboard}?view=calendar`,
     },
     {
-      label: "Reels",
+      label: "Historias",
       icon: Clapperboard,
       path: `${ROUTES.dashboard}?view=reels`,
     },
@@ -428,7 +428,9 @@ export default function Navbar() {
                         className="notif-dropdown__mark-all"
                         aria-label="Marcar todas como leídas"
                         onClick={() => markAllAsReadMutation.mutate()}
-                        disabled={markAllAsReadMutation.isPending || unreadCount === 0}
+                        disabled={
+                          markAllAsReadMutation.isPending || unreadCount === 0
+                        }
                       >
                         <CheckCheck size={16} />
                       </button>
@@ -440,11 +442,16 @@ export default function Navbar() {
                         </div>
                       ) : (
                         notifications.slice(0, 5).map((notif: any) => {
-                          const { icon: IconComp, color } = getNotificationIcon(notif.type);
-                          
+                          const { icon: IconComp, color } = getNotificationIcon(
+                            notif.type,
+                          );
+
                           let timeStr = "";
                           try {
-                            timeStr = formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: es });
+                            timeStr = formatDistanceToNow(
+                              new Date(notif.created_at),
+                              { addSuffix: true, locale: es },
+                            );
                           } catch (e) {
                             timeStr = "Recientemente";
                           }

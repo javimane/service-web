@@ -93,7 +93,7 @@ export default function NavbarMessage() {
       path: `${ROUTES.dashboard}?view=calendar`,
     },
     {
-      label: "Reels",
+      label: "Historias",
       icon: Clapperboard,
       path: `${ROUTES.dashboard}?view=reels`,
     },
@@ -161,7 +161,13 @@ export default function NavbarMessage() {
       <div className="navbar__inner container">
         {/* Back to home */}
         <Link href={ROUTES.home} className="navbar__logo">
-          <Image src={logoImage} alt="Logo" width={100} height={40} style={{ objectFit: 'contain' }} />
+          <Image
+            src={logoImage}
+            alt="Logo"
+            width={100}
+            height={40}
+            style={{ objectFit: "contain" }}
+          />
         </Link>
 
         {/* Right side */}
@@ -193,7 +199,10 @@ export default function NavbarMessage() {
                 </div>
                 <div className="notif-dropdown__list">
                   {notificationsList.slice(0, 5).map((notif) => {
-                    const IconComp = CATEGORY_ICONS[notif.category as keyof typeof CATEGORY_ICONS] || Bell;
+                    const IconComp =
+                      CATEGORY_ICONS[
+                        notif.category as keyof typeof CATEGORY_ICONS
+                      ] || Bell;
                     return (
                       <div
                         key={notif.id}
