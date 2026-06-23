@@ -47,8 +47,8 @@ function ReelThumbnail({ src }: { src: string }) {
 }
 
 export default function ProfessionalReelsSection({
-  userProvince = "Buenos Aires",
-  userProvinceId
+  userProvince = "Mendoza",
+  userProvinceId,
 }: {
   userProvince?: string;
   userProvinceId?: number;
@@ -75,7 +75,7 @@ export default function ProfessionalReelsSection({
       if (Array.isArray(raw)) return raw;
       return [];
     },
-    enabled: !!provinceId || userProvince === "Buenos Aires",
+    enabled: !!provinceId || userProvince === "Mendoza",
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 15,
   });
@@ -222,7 +222,9 @@ export default function ProfessionalReelsSection({
       <div className="home-section-container">
         <div className="professional-reels__header">
           <div className="professional-reels__title-group">
-            <h2 className="professional-reels__title">Reels Profesionales</h2>
+            <h2 className="professional-reels__title">
+              Historias Profesionales
+            </h2>
             <span className="professional-reels__location">
               <MapPin size={14} />
               {userProvince}
@@ -231,7 +233,7 @@ export default function ProfessionalReelsSection({
           <button
             type="button"
             className="section-link"
-            onClick={() => window.location.href = ROUTES.reels}
+            onClick={() => (window.location.href = ROUTES.reels)}
           >
             Ver todo <span>&gt;</span>
           </button>
@@ -243,12 +245,12 @@ export default function ProfessionalReelsSection({
           {isLoading ? (
             <div className="reels-loading">
               <Loader2 className="animate-spin" size={32} />
-              <p>Cargando reels...</p>
+              <p>Cargando historias...</p>
             </div>
           ) : processedReels.length === 0 ? (
             <div className="reels-empty">
               <Sparkles size={40} />
-              <p>Aún no hay reels en {userProvince}</p>
+              <p>Aún no hay historias en {userProvince}</p>
             </div>
           ) : (
             <>
@@ -315,7 +317,7 @@ export default function ProfessionalReelsSection({
             Object.entries(subscriptionsMap).map(([id, sub]: any) => [
               id,
               sub?.type === "premium" || sub?.is_premium,
-            ])
+            ]),
           )}
         />
       )}
