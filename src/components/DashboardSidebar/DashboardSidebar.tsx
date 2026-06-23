@@ -129,7 +129,6 @@ export default function DashboardSidebar({
         "promotions-create",
         "promotions-all",
         "bank-promotions",
-        "calendar",
         "reels",
       ]);
       return blockedForFree.has(key);

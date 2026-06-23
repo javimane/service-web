@@ -217,7 +217,6 @@ export default function DashboardPage() {
     "promotions-create",
     "promotions-all",
     "bank-promotions",
-    "calendar",
     "reels",
   ]);
 
@@ -240,7 +239,6 @@ export default function DashboardPage() {
     router.push(`${ROUTES.dashboard}?view=promotions-create`);
   };
   const handleShowPromotionsAllBlocked = () => redirectIfFree("promotions-all");
-  const handleShowCalendarBlocked = () => redirectIfFree("calendar");
   const handleShowBankPromosBlocked = () => redirectIfFree("bank-promotions");
   const handleShowReelsBlocked = () => redirectIfFree("reels");
 
@@ -327,7 +325,7 @@ export default function DashboardPage() {
             onProductsClick={handleShowProducts}
             onServicesClick={handleShowServices}
             onSubscriptionClick={handleShowSubscription}
-            onCalendarClick={handleShowCalendarBlocked}
+            onCalendarClick={handleShowCalendar}
             onBankPromosClick={handleShowBankPromosBlocked}
             onProfileClick={handleShowProfile}
             onReelsClick={handleShowReelsBlocked}
