@@ -1,7 +1,10 @@
 import { get } from "node:http";
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+const isBrowser = typeof window !== "undefined";
+
+export const API_BASE_URL = isBrowser
+  ? "" // On client, use relative URL to route through Next.js proxy
+  : (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000");
 
 export const API_ENDPOINTS = {
   auth: {
