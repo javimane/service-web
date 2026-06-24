@@ -210,12 +210,14 @@ function ProfileVideoCard({
         />
         <div className="video-stats-overlay">
           <div className="stat" onClick={handleLike}>
-            <Heart 
-              size={14} 
-              fill={isLiked ? "var(--error-color)" : "white"} 
+            <Heart
+              size={14}
+              fill={isLiked ? "var(--error-color)" : "white"}
               color={isLiked ? "var(--error-color)" : "white"}
             />
-            <span>{likesCount !== undefined ? likesCount : (video.likes_count || 0)}</span>
+            <span>
+              {likesCount !== undefined ? likesCount : video.likes_count || 0}
+            </span>
           </div>
           <div className="stat">
             <Eye size={14} fill="white" />
@@ -294,53 +296,6 @@ export default function ProfilePage() {
       ? (localStorage.getItem("access_token") ?? undefined)
       : undefined;
 
-  const [likedVideos, setLikedVideos] = useState<Set<string | number>>(new Set());
-
-  // Update likedVideos when videos or user changes
-  useEffect(() => {
-    if (user?.id && videos.length > 0) {
-      setLikedVideos((prev) => {
-        const next = new Set(prev);
-        videos.forEach((v: any) => {
-          if (v.liked_user_ids?.includes(user.id)) {
-            next.add(v.id);
-          }
-        });
-        return next;
-      });
-    }
-  }, [videos, user?.id]);
-
-  const handleVideoLike = async (video: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user) {
-      openAuth("login");
-      return;
-    }
-    const alreadyLiked = likedVideos.has(video.id);
-    const newIsLike = !alreadyLiked;
-
-    setLikedVideos((prev) => {
-      const next = new Set(prev);
-      if (newIsLike) next.add(video.id);
-      else next.delete(video.id);
-      return next;
-    });
-
-    try {
-      const token = getAccessToken();
-      await upsertVideoLikeAction({ id: video.id, is_like: newIsLike, token });
-    } catch {
-      // Revert on error
-      setLikedVideos((prev) => {
-        const next = new Set(prev);
-        if (alreadyLiked) next.add(video.id);
-        else next.delete(video.id);
-        return next;
-      });
-    }
-  };
-
   const servicesScroll = useDraggableScroll();
   const videosScroll = useDraggableScroll();
   const reelsScroll = useDraggableScroll();
@@ -404,6 +359,55 @@ export default function ProfilePage() {
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
   });
+
+  const [likedVideos, setLikedVideos] = useState<Set<string | number>>(
+    new Set(),
+  );
+
+  // Update likedVideos when videos or user changes
+  useEffect(() => {
+    if (user?.id && videos.length > 0) {
+      setLikedVideos((prev) => {
+        const next = new Set(prev);
+        videos.forEach((v: any) => {
+          if (v.liked_user_ids?.includes(user.id)) {
+            next.add(v.id);
+          }
+        });
+        return next;
+      });
+    }
+  }, [videos, user?.id]);
+
+  const handleVideoLike = async (video: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      openAuth("login");
+      return;
+    }
+    const alreadyLiked = likedVideos.has(video.id);
+    const newIsLike = !alreadyLiked;
+
+    setLikedVideos((prev) => {
+      const next = new Set(prev);
+      if (newIsLike) next.add(video.id);
+      else next.delete(video.id);
+      return next;
+    });
+
+    try {
+      const token = getAccessToken();
+      await upsertVideoLikeAction({ id: video.id, is_like: newIsLike, token });
+    } catch {
+      // Revert on error
+      setLikedVideos((prev) => {
+        const next = new Set(prev);
+        if (alreadyLiked) next.add(video.id);
+        else next.delete(video.id);
+        return next;
+      });
+    }
+  };
 
   const { data: profReels = [] } = useQuery({
     queryKey: ["professional-reels", id],
@@ -1446,21 +1450,39 @@ export default function ProfilePage() {
                     className="video-like-btn"
                     title="Me gusta"
                     onClick={(e) => handleVideoLike(selectedVideo, e)}
-                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
                   >
-                    <Heart 
-                      size={20} 
-                      fill={likedVideos.has(selectedVideo.id) ? "var(--error-color)" : "none"}
-                      color={likedVideos.has(selectedVideo.id) ? "var(--error-color)" : "currentColor"}
+                    <Heart
+                      size={20}
+                      fill={
+                        likedVideos.has(selectedVideo.id)
+                          ? "var(--error-color)"
+                          : "none"
+                      }
+                      color={
+                        likedVideos.has(selectedVideo.id)
+                          ? "var(--error-color)"
+                          : "currentColor"
+                      }
                     />
                     <span style={{ fontSize: "14px", fontWeight: "600" }}>
                       {(() => {
                         const baseCount = selectedVideo.likes_count || 0;
-                        const initiallyLiked = user?.id && selectedVideo.liked_user_ids?.includes(user.id);
-                        const currentlyLiked = likedVideos.has(selectedVideo.id);
-                        
-                        if (initiallyLiked && !currentlyLiked) return Math.max(0, baseCount - 1);
-                        if (!initiallyLiked && currentlyLiked) return baseCount + 1;
+                        const initiallyLiked =
+                          user?.id &&
+                          selectedVideo.liked_user_ids?.includes(user.id);
+                        const currentlyLiked = likedVideos.has(
+                          selectedVideo.id,
+                        );
+
+                        if (initiallyLiked && !currentlyLiked)
+                          return Math.max(0, baseCount - 1);
+                        if (!initiallyLiked && currentlyLiked)
+                          return baseCount + 1;
                         return baseCount;
                       })()}
                     </span>
