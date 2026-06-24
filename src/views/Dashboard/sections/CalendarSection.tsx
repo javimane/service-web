@@ -25,6 +25,7 @@ import {
   CalendarRange,
   CalendarClock,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 import {
   getGoogleCalendarEventsAction,
@@ -250,13 +251,14 @@ export default function CalendarSection() {
     }
 
     setFormError("");
+    setSyncing(true);
     try {
       const response = await createGoogleCalendarEventAction({
-        title: form.title.trim(),
-        start: new Date(start).toISOString(),
-        end: new Date(end).toISOString(),
-        description: form.description.trim(),
-        location: form.location.trim(),
+        title: form.title,
+        start,
+        end,
+        description: form.description,
+        location: form.location,
       });
 
       if (response.error || !response.data) {
@@ -287,10 +289,33 @@ export default function CalendarSection() {
     } catch (err) {
       console.error("Error creating event:", err);
       setFormError("No se pudo crear el evento. Intentá de nuevo.");
+    } finally {
+      setSyncing(false);
     }
   };
 
-  // ── upcoming events ────────────────────────────────────────
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar esta cita?")) return;
+
+    try {
+      setSyncing(true);
+      const res = await deleteGoogleCalendarEventAction(eventId);
+      if (res.error) {
+        console.error("Error al eliminar la cita:", res.error);
+        alert("Ocurrió un error al eliminar la cita.");
+        return;
+      }
+      eventsService.remove(eventId);
+      setGcalEvents(prev => prev.filter(e => e.id !== eventId));
+    } catch (e) {
+      console.error(e);
+      alert("Ocurrió un error al eliminar la cita.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // ── derived ────────────────────────────────────────────────
 
   const upcomingEvents = gcalEvents
     .filter((e) => new Date(e.start) >= new Date())
@@ -448,10 +473,16 @@ export default function CalendarSection() {
                                 </span>
                               )}
                             </div>
-                            <ChevronRight
-                              size={14}
-                              className="upcoming-item__chevron"
-                            />
+                            <button 
+                              className="upcoming-item__delete"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteEvent(ev.id);
+                              }}
+                              title="Eliminar cita"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </li>
                         ))}
                       </ul>
