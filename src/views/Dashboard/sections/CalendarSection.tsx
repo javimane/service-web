@@ -254,11 +254,11 @@ export default function CalendarSection() {
     setSyncing(true);
     try {
       const response = await createGoogleCalendarEventAction({
-        title: form.title,
-        start,
-        end,
-        description: form.description,
-        location: form.location,
+        title: form.title.trim(),
+        start: new Date(start).toISOString(),
+        end: new Date(end).toISOString(),
+        description: form.description.trim(),
+        location: form.location.trim(),
       });
 
       if (response.error || !response.data) {
@@ -295,7 +295,8 @@ export default function CalendarSection() {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!window.confirm("¿Estás seguro de que deseas eliminar esta cita?")) return;
+    if (!window.confirm("¿Estás seguro de que deseas eliminar esta cita?"))
+      return;
 
     try {
       setSyncing(true);
@@ -306,7 +307,7 @@ export default function CalendarSection() {
         return;
       }
       eventsService.remove(eventId);
-      setGcalEvents(prev => prev.filter(e => e.id !== eventId));
+      setGcalEvents((prev) => prev.filter((e) => e.id !== eventId));
     } catch (e) {
       console.error(e);
       alert("Ocurrió un error al eliminar la cita.");
@@ -473,7 +474,7 @@ export default function CalendarSection() {
                                 </span>
                               )}
                             </div>
-                            <button 
+                            <button
                               className="upcoming-item__delete"
                               onClick={(e) => {
                                 e.stopPropagation();

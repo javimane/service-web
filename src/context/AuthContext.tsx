@@ -457,7 +457,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         >
           <button
             className="btn-secondary"
-            style={{ margin: 0 }}
+            style={{ 
+              margin: 0,
+              color: "var(--error-color)",
+              borderColor: "var(--error-color)"
+            }}
             onClick={() => setShowChatSyncModal(false)}
           >
             Cancelar
