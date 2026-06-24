@@ -301,6 +301,7 @@ export interface ProfessionalReelRow {
   readonly created_at: string | null;
   readonly updated_at: string | null;
   readonly likes_count: number | null;
+  readonly liked_user_ids?: string[] | null;
   readonly activate: boolean | null;
   readonly seo_path: string | null;
   // Relationships
@@ -327,6 +328,8 @@ export interface ProfessionalVideoRow {
   readonly created_at: string | null;
   readonly updated_at: string | null;
   readonly likes: number | null;
+  readonly likes_count?: number | null;
+  readonly liked_user_ids?: string[] | null;
   readonly views_count: number | null;
   readonly activate?: boolean | null;
   // Relationships

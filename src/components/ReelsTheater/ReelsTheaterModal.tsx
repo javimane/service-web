@@ -45,7 +45,17 @@ export default function ReelsTheaterModal({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
-  const [likedReels, setLikedReels] = useState<Set<string | number>>(new Set());
+  const [likedReels, setLikedReels] = useState<Set<string | number>>(() => {
+    const initial = new Set<string | number>();
+    if (user?.id) {
+      reels.forEach((r) => {
+        if (r.liked_user_ids?.includes(user.id)) {
+          initial.add(r.id);
+        }
+      });
+    }
+    return initial;
+  });
   const theaterVideoRef = useRef<HTMLVideoElement>(null);
   const initialUrlRef = useRef(typeof window !== "undefined" ? window.location.pathname + window.location.search : "");
 
@@ -294,9 +304,20 @@ export default function ReelsTheaterModal({
           >
             <Heart
               size={22}
-              fill={likedReels.has(activeReel.id) ? "currentColor" : "none"}
+              fill={likedReels.has(activeReel.id) ? "var(--error-color)" : "none"}
+              color={likedReels.has(activeReel.id) ? "var(--error-color)" : "currentColor"}
             />
-            <span>{activeReel.likes_count || 0}</span>
+            <span>
+              {(() => {
+                const baseCount = activeReel.likes_count || 0;
+                const initiallyLiked = user?.id && activeReel.liked_user_ids?.includes(user.id);
+                const currentlyLiked = likedReels.has(activeReel.id);
+                
+                if (initiallyLiked && !currentlyLiked) return Math.max(0, baseCount - 1);
+                if (!initiallyLiked && currentlyLiked) return baseCount + 1;
+                return baseCount;
+              })()}
+            </span>
           </button>
 
           {/* Sound Button */}
