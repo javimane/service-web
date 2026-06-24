@@ -448,15 +448,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           notificaciones.
         </p>
         <div
-          style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}
+          style={{
+            display: "flex",
+            gap: "1rem",
+            justifyContent: "flex-end",
+            alignItems: "center",
+          }}
         >
           <button
             className="btn-secondary"
+            style={{ margin: 0 }}
             onClick={() => setShowChatSyncModal(false)}
           >
             Cancelar
           </button>
-          <button className="btn-primary" onClick={handleChatSyncConfirm}>
+          <button
+            className="btn-primary"
+            style={{ margin: 0 }}
+            onClick={handleChatSyncConfirm}
+          >
             Aceptar
           </button>
         </div>
