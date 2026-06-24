@@ -44,6 +44,9 @@ export default function Footer() {
           <Link href={ROUTES.terms} className="footer__link-btn">
             Términos y Condiciones
           </Link>
+          <Link href={ROUTES.privacy} className="footer__link-btn">
+            Privacidad
+          </Link>
           <button
             type="button"
             className="footer__link-btn"

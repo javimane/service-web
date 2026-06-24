@@ -52,7 +52,10 @@
   font-size: var(--text-base);
   color: var(--text-secondary);
   line-height: 1.7;
-  white-space: pre-line;
+}
+
+.terms-section__text p {
+  margin-bottom: var(--space-4);
 }
 
 .terms-section__text ul {

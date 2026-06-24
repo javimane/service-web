@@ -17,5 +17,6 @@ export const ROUTES = {
   professionalStore: "/perfil/:id/tienda",
   reels: "/reels",
   terms: "/terminos",
+  privacy: "/privacidad",
   faq: "/preguntas-frecuentes",
 };
