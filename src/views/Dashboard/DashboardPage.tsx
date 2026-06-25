@@ -40,6 +40,7 @@ import "./DashboardPage.css";
 import DashboardServices from "./sections/DashboardServices";
 import DashboardReferrals from "./sections/DashboardReferrals";
 import JobRequestsSection from "./sections/JobRequestsSection";
+import DashboardOnboarding from "./sections/DashboardOnboarding";
 import FAQSection from "../FAQ/FAQSection";
 import Navbar from "../../components/Navbar/Navbar";
 
@@ -380,6 +381,8 @@ export default function DashboardPage() {
           <div
             className={`dashboard-main-panel ${shouldLockDashboardView ? "dashboard-main-panel--locked" : ""}`}
           >
+            <DashboardOnboarding />
+
             {view === "proposals-create" ? (
               <ProposalCreator onBack={handleGoBack} />
             ) : view === "proposals-view" ? (

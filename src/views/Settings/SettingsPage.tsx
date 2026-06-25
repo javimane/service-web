@@ -378,7 +378,22 @@ export default function SettingsPage() {
     },
   });
 
-  const handleSave = () => saveMutation.mutate();
+  const handleSave = () => {
+    if (!tradeName || tradeName.trim() === "") {
+      showError("Por favor, ingresa el nombre de la empresa o comercio.");
+      return;
+    }
+    if (selectedCategories.length === 0) {
+      showError("Debes seleccionar al menos una categoría de servicio.");
+      return;
+    }
+    if (selectedProvinces.length === 0) {
+      showError("Debes indicar tu cobertura geográfica seleccionando al menos una provincia.");
+      return;
+    }
+
+    saveMutation.mutate();
+  };
 
   const toggleSelection = (setter: any, option: string) => {
     setter((currentValues: string[]) =>

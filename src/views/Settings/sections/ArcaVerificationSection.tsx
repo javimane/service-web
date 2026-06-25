@@ -112,7 +112,14 @@ const ArcaVerificationSection = React.memo(
     return (
       <article className="arca-container">
         {isVerified ? (
-          <div className="arca-badge arca-badge--verified" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            className="arca-badge arca-badge--verified"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <div className="arca-badge-content">
               <CheckCircle size={20} />
               <div className="arca-badge-text">
@@ -155,54 +162,55 @@ const ArcaVerificationSection = React.memo(
 
         {showForm && (
           <div className="arca-form-card animate-slide-down">
-                <div className="settings-fields">
-                  <div className="two-columns">
-                    <label className="settings-field">
-                      <span>CUIT</span>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={cuit}
-                        onChange={(e) => setCuit(e.target.value)}
-                        placeholder="Ej: 20123456789 (solo números sin puntos ni guiones)"
-                        maxLength={11}
-                      />
-                    </label>
+            <div className="settings-fields">
+              <div className="two-columns">
+                <label className="settings-field">
+                  <span>CUIT</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={cuit}
+                    onChange={(e) => setCuit(e.target.value)}
+                    placeholder="Ej: 20123456789 (solo números sin puntos ni guiones)"
+                    maxLength={11}
+                  />
+                </label>
 
-                    <label className="settings-field">
-                      <span>Razón Social</span>
-                      <input
-                        type="text"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="Nombre de la empresa (Tal cual figura en ARCA)"
-                      />
-                    </label>
-                  </div>
+                <label className="settings-field">
+                  <span>Razón Social</span>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Nombre de la empresa (Tal cual figura en ARCA)"
+                  />
+                </label>
+              </div>
 
-                  <div className="arca-actions">
-                    <button
-                      type="button"
-                      className="arca-verify-btn"
-                      onClick={handleVerifyArca}
-                      disabled={verificationStatus === "loading"}
-                    >
-                      {verificationStatus === "loading"
-                        ? "Verificando..."
-                        : "Verificar datos en ARCA"}
-                    </button>
-                  </div>
+              <div className="arca-actions">
+                <button
+                  type="button"
+                  className="arca-verify-btn"
+                  onClick={handleVerifyArca}
+                  disabled={verificationStatus === "loading"}
+                >
+                  {verificationStatus === "loading"
+                    ? "Verificando..."
+                    : "Verificar datos en ARCA"}
+                </button>
+              </div>
 
-                  {verificationStatus !== "idle" && (
-                    <div
-                      className={`arca-verification-message arca-verification-message--${verificationStatus}`}
-                      role="status"
-                    >
-                      {verificationMessage}
-                    </div>
-                  )}
+              {verificationStatus !== "idle" && (
+                <div
+                  className={`arca-verification-message arca-verification-message--${verificationStatus}`}
+                  role="status"
+                >
+                  {verificationMessage}
                 </div>
-            )}
+              )}
+            </div>
+          </div>
+        )}
       </article>
     );
   },

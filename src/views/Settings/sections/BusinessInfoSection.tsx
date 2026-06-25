@@ -13,7 +13,7 @@ export default function BusinessInfoSection({
       <div className="section-header settings-header-compact">
         <div className="section-title">
           <span className="section-emoji">💼</span>
-          <h2>Business Information</h2>
+          <h2>Información comercial</h2>
         </div>
       </div>
 

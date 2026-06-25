@@ -17,7 +17,7 @@ export default function PaymentMethodsSection({
       <div className="section-header settings-header-compact">
         <div className="section-title">
           <span className="section-emoji">💳</span>
-          <h2>Payment Methods</h2>
+          <h2>Métodos de Pago</h2>
         </div>
       </div>
 

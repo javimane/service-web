@@ -178,7 +178,6 @@ export default function CategoriesPage() {
           mainAddress?.Province?.name ||
           prof.company_provinces?.[0]?.Province?.name ||
           "Desconocida",
-        city: mainAddress?.Department?.name || prof.city || "Desconocida",
         accountType: isCompany ? "Comercio" : "Autónomo",
         emergency: prof.emergency || false,
         verified:

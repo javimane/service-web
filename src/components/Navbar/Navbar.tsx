@@ -211,7 +211,7 @@ export default function Navbar() {
   ];
 
   const dashboardLinks = [
-    { label: "Dashboard", icon: LayoutDashboard, path: ROUTES.dashboard },
+    { label: "Panel", icon: LayoutDashboard, path: ROUTES.dashboard },
     {
       label: "Perfil",
       icon: UserRound,

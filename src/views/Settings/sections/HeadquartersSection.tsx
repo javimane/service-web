@@ -113,7 +113,10 @@ export default function HeadquartersSection({
                   <input
                     type="checkbox"
                     checked={selectedProvinces.includes(p.name)}
-                    onChange={() => onToggleProvince(p.name)}
+                    onChange={() => {
+                      onToggleProvince(p.name);
+                      setActiveProvinceId(p.id);
+                    }}
                   />
                   <div className="checkbox-box">
                     <Check size={12} />

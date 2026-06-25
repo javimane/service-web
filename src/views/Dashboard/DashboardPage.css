@@ -33,11 +33,11 @@
 
 /* Sidebar */
 .dashboard-sidebar {
-  width: 300px;
+  width: 250px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-left: none;
-  padding: 32px 24px;
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -82,25 +82,33 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-size: 1.5rem;
-  font-weight: var(--weight-extrabold);
-  margin-bottom: 32px;
-  color: var(--highlight);
+  margin-bottom: 24px;
   flex-shrink: 0;
 }
 
-.brand-logo-btn {
+.brand-home-btn {
   background: transparent;
   border: none;
-  color: inherit;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding: 0;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: inherit;
-  font-weight: inherit;
-  min-width: 0;
+  font-size: 1rem;
+  font-weight: var(--weight-bold);
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.brand-home-btn:hover {
+  background: var(--bg-color);
+}
+
+.brand-home-btn svg {
+  flex-shrink: 0;
 }
 
 .brand-logo {
@@ -173,12 +181,12 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 14px;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
   font-weight: var(--weight-bold);
   transition: all 0.2s ease;
   background: transparent;
@@ -240,11 +248,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px;
-  border-radius: 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
   color: var(--text-secondary);
-  font-size: 0.85rem;
-  font-weight: var(--weight-bold);
+  font-size: 0.8125rem;
+  font-weight: var(--weight-medium);
   letter-spacing: 0;
   transition: all 0.2s ease;
   background: transparent;
@@ -406,7 +414,8 @@
 
 .dashboard-sidebar--collapsed .nav-item,
 .dashboard-sidebar--collapsed .footer-link,
-.dashboard-sidebar--collapsed .create-proposal-btn {
+.dashboard-sidebar--collapsed .create-proposal-btn,
+.dashboard-sidebar--collapsed .brand-home-btn {
   justify-content: center;
   padding-left: 12px;
   padding-right: 12px;

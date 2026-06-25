@@ -18,6 +18,7 @@ import {
   CreditCard,
   CalendarDays,
   Landmark,
+  Home,
   UserRound,
   Clapperboard,
   Briefcase,
@@ -30,7 +31,6 @@ import {
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
-import BrandLogo from "../BrandLogo/BrandLogo";
 import Modal from "../Modal/Modal";
 import { userService } from "../../services/userService";
 import { useAlert } from "@/context/AlertContext";
@@ -341,7 +341,7 @@ export default function DashboardSidebar({
         onClick={() => handleNavigation(handleSupport)}
         title="SOPORTE"
       >
-        <HelpCircle size={20} />
+        <HelpCircle size={18} />
         <span className="nav-label">SOPORTE</span>
       </button>
       <button
@@ -350,7 +350,7 @@ export default function DashboardSidebar({
         onClick={() => handleNavigation(handleLogout)}
         title="CERRAR SESIÓN"
       >
-        <LogOut size={20} />
+        <LogOut size={18} />
         <span className="nav-label">CERRAR SESIÓN</span>
       </button>
     </>
@@ -385,7 +385,7 @@ export default function DashboardSidebar({
                 title={getLockedTitle(label, isParentLocked)}
                 disabled={isParentLocked}
               >
-                <Icon size={20} />
+                <Icon size={18} />
                 <span className="nav-label">{label}</span>
                 <ChevronDown
                   size={14}
@@ -434,7 +434,7 @@ export default function DashboardSidebar({
             title={getLockedTitle(label, isItemLocked(key))}
             disabled={isItemLocked(key)}
           >
-            <Icon size={20} />
+            <Icon size={18} />
             <span className="nav-label">{label}</span>
           </button>
         );
@@ -577,11 +577,11 @@ export default function DashboardSidebar({
             <div className="dashboard-mobile-sheet__identity">
               <button
                 type="button"
-                className="brand-logo-btn"
+                className="brand-home-btn"
                 onClick={() => router.push(ROUTES.home)}
-                aria-label="Go to home"
               >
-                <BrandLogo className="brand-logo" />
+                <Home size={18} />
+                <span>Inicio</span>
               </button>
 
               <div className="dashboard-mobile-sheet__profile-card">
@@ -753,11 +753,12 @@ export default function DashboardSidebar({
         <div className="sidebar-brand">
           <button
             type="button"
-            className="brand-logo-btn"
+            className="brand-home-btn"
             onClick={() => router.push(ROUTES.home)}
-            aria-label="Go to home"
+            title="Ir a Inicio"
           >
-            <BrandLogo className="brand-logo" compact={isCollapsed} />
+            <Home size={18} />
+            {!isCollapsed && <span>Inicio</span>}
           </button>
         </div>
 
