@@ -421,6 +421,37 @@
   transform: translateY(-4px);
 }
 
+.subscription-plans__card--gratuito,
+.subscription-plans__card--free {
+  background: var(--bg-card);
+  border-color: #a0aec0; /* Distinct border for Free */
+}
+
+.subscription-plans__card--profesional-basico {
+  background: var(--bg-card);
+  border-color: var(--brand-blue); /* Distinct border for Basic */
+}
+
+.subscription-plans__free-alert {
+  background: var(--error-color);
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  line-height: 1.4;
+  box-shadow: var(--shadow-sm);
+}
+
+.subscription-plans__free-alert svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .subscription-plans__card--recommended {
   border-color: var(--accent-color);
   background: var(--bg-card);

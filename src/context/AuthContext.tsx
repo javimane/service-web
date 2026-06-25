@@ -196,6 +196,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         eventSource.onmessage = (event) => {
           try {
             const payload = JSON.parse(event.data);
+
+            // Ignorar los eventos de tipo ping que mantienen viva la conexión
+            if (payload.type === "ping") {
+              return;
+            }
+
             console.log("¡Nueva notificación recibida en vivo!", payload);
 
             // Inyectar en React Query caché (para la NavBar y NotificationsPage)
@@ -226,7 +232,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
 
         eventSource.onerror = () => {
-          console.warn("Stream de notificaciones desconectado temporalmente. Reintentando en breve...");
+          console.warn(
+            "Stream de notificaciones desconectado temporalmente. Reintentando en breve...",
+          );
           // Si hay error, cerrarlo para evitar ciclos infinitos si el auth falló
           eventSource?.close();
 
@@ -457,10 +465,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         >
           <button
             className="btn-secondary"
-            style={{ 
+            style={{
               margin: 0,
               color: "var(--error-color)",
-              borderColor: "var(--error-color)"
+              borderColor: "var(--error-color)",
             }}
             onClick={() => setShowChatSyncModal(false)}
           >

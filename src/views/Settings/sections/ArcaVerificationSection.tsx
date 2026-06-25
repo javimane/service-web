@@ -112,7 +112,7 @@ const ArcaVerificationSection = React.memo(
     return (
       <article className="arca-container">
         {isVerified ? (
-          <div className="arca-badge arca-badge--verified">
+          <div className="arca-badge arca-badge--verified" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="arca-badge-content">
               <CheckCircle size={20} />
               <div className="arca-badge-text">
@@ -122,6 +122,13 @@ const ArcaVerificationSection = React.memo(
                 </span>
               </div>
             </div>
+            <button
+              className="arca-toggle-form-btn"
+              onClick={() => setShowForm(!showForm)}
+            >
+              {showForm ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              {showForm ? "Cerrar" : "Volver a verificar"}
+            </button>
           </div>
         ) : (
           <div className="arca-unverified-wrapper">
@@ -143,9 +150,11 @@ const ArcaVerificationSection = React.memo(
                 {showForm ? "Cerrar" : "Verificar ahora"}
               </button>
             </div>
+          </div>
+        )}
 
-            {showForm && (
-              <div className="arca-form-card animate-slide-down">
+        {showForm && (
+          <div className="arca-form-card animate-slide-down">
                 <div className="settings-fields">
                   <div className="two-columns">
                     <label className="settings-field">
@@ -193,10 +202,7 @@ const ArcaVerificationSection = React.memo(
                     </div>
                   )}
                 </div>
-              </div>
             )}
-          </div>
-        )}
       </article>
     );
   },

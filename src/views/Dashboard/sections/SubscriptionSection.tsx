@@ -525,7 +525,7 @@ export default function SubscriptionSection() {
             {availablePlans.map((plan) => (
               <div
                 key={plan.id}
-                className={`subscription-plans__card ${activePlanId !== null && plan.id === activePlanId ? "subscription-plans__card--current" : ""} ${plan.recommended ? "subscription-plans__card--recommended" : ""}`}
+                className={`subscription-plans__card subscription-plans__card--${plan.id} ${activePlanId !== null && plan.id === activePlanId ? "subscription-plans__card--current" : ""} ${plan.recommended ? "subscription-plans__card--recommended" : ""}`}
               >
                 {plan.recommended && (
                   <div className="subscription-plans__badge">
@@ -547,6 +547,15 @@ export default function SubscriptionSection() {
                   </div>
                   <h3 className="subscription-plans__name">{plan.name}</h3>
                   <p className="subscription-plans__desc">{plan.description}</p>
+                  {(plan.id === "gratuito" || plan.id === "free") && (
+                    <div className="subscription-plans__free-alert">
+                      <AlertTriangle size={18} />
+                      <span>
+                        Este plan solo dura 4 meses cuando se activa, luego la
+                        cuenta se cancelará y deberás pasar a un plan de pago.
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="subscription-plans__pricing">

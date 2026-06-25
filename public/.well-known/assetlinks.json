@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "TU_PAQUETE_DE_FLUTTER",
+      "sha256_cert_fingerprints": [
+        "TU_FIRMA_SHA_256_AQUÍ"
+      ]
+    }
+  }
+]

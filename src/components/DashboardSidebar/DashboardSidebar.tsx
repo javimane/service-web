@@ -206,7 +206,7 @@ export default function DashboardSidebar({
   const navItems = [
     {
       key: "dashboard",
-      label: "DASHBOARD",
+      label: "PANEL",
       icon: LayoutDashboard,
       onClick: onDashboardClick ?? (() => router.push(ROUTES.dashboard)),
     },

@@ -1,0 +1,277 @@
+/* MapPromotionsModal.css */
+.map-promotions-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.map-promotions-modal {
+  background: var(--bg-card);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--border-color);
+}
+
+.map-promotions-modal__close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: var(--surface-soft);
+  border: none;
+  border-radius: var(--radius-full);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.map-promotions-modal__close:hover {
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+}
+
+.map-promotions-modal__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  margin: 0;
+}
+
+.map-promotions-modal__tabs {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-6);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.map-promotions-modal__tab {
+  background: none;
+  border: none;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.map-promotions-modal__tab:hover {
+  color: var(--accent-color);
+}
+
+.map-promotions-modal__tab--active {
+  color: var(--accent-color);
+}
+
+.map-promotions-modal__tab--active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-color);
+  border-radius: 2px 2px 0 0;
+}
+
+.map-promotions-modal__content {
+  padding: var(--space-6);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.map-promotions-modal__grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.map-promotions-modal__loading,
+.map-promotions-modal__empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: var(--space-8) 0;
+  font-size: var(--text-md);
+}
+
+/* Cards */
+.map-promo-card {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.map-promo-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-color);
+  box-shadow: var(--shadow-md);
+}
+
+/* Bank Promo Card */
+.map-promo-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.map-promo-card__banks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.map-promo-card__badge {
+  background: var(--brand-blue);
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+}
+
+.map-promo-card__discount {
+  background: var(--success-color);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-extrabold);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.map-promo-card__desc {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.map-promo-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--weight-medium);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--border-color);
+}
+
+.map-promo-card__days {
+  color: var(--accent-color);
+  font-weight: var(--weight-bold);
+  letter-spacing: 2px;
+}
+
+/* Normal Promo Card */
+.map-promo-card--normal {
+  flex-direction: row;
+  align-items: center;
+  padding: var(--space-3);
+}
+
+.map-promo-card__img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.map-promo-card__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.map-promo-card__badge-normal {
+  align-self: flex-start;
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+}
+
+.map-promo-card__card-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.map-promo-card__expires {
+  font-size: var(--text-xs);
+  color: var(--error-color);
+  font-weight: var(--weight-medium);
+  margin-top: var(--space-1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .map-promotions-overlay {
+    padding: var(--space-2);
+    align-items: flex-end;
+  }
+
+  .map-promotions-modal {
+    max-height: 85vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  .map-promotions-modal__title {
+    font-size: var(--text-xl);
+  }
+}

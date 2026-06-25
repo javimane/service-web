@@ -11,7 +11,6 @@ import CategoriesSection from "./sections/CategoriesSection";
 import HeadquartersSection from "./sections/HeadquartersSection";
 import OperationsSection from "./sections/OperationsSection";
 import PaymentMethodsSection from "./sections/PaymentMethodsSection";
-import ArcaVerificationSection from "./sections/ArcaVerificationSection";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
 import ProvinceNovedadesSection from "./sections/ProvinceNovedadesSection";
 import ActionsSection from "./sections/ActionsSection";
@@ -579,9 +578,34 @@ export default function SettingsPage() {
               )}
 
               {/* Danger Zone */}
-              <div className="settings-danger-zone" style={{ marginTop: "var(--space-8)", padding: "var(--space-6)", background: "var(--bg-card)", border: "1px solid var(--error-color)", borderRadius: "var(--radius-lg)" }}>
-                <h3 style={{ color: "var(--error-color)", fontSize: "var(--text-lg)", marginBottom: "var(--space-2)" }}>Zona de peligro</h3>
-                <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-4)" }}>Una vez que elimines tu cuenta, no hay vuelta atrás. Por favor, tené cuidado.</p>
+              <div
+                className="settings-danger-zone"
+                style={{
+                  marginTop: "var(--space-8)",
+                  padding: "var(--space-6)",
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--error-color)",
+                  borderRadius: "var(--radius-lg)",
+                }}
+              >
+                <h3
+                  style={{
+                    color: "var(--error-color)",
+                    fontSize: "var(--text-lg)",
+                    marginBottom: "var(--space-2)",
+                  }}
+                >
+                  Zona de peligro
+                </h3>
+                <p
+                  style={{
+                    color: "var(--text-secondary)",
+                    marginBottom: "var(--space-4)",
+                  }}
+                >
+                  Una vez que elimines tu cuenta, no hay vuelta atrás. Por
+                  favor, tené cuidado.
+                </p>
                 <button
                   type="button"
                   onClick={handleDeleteAccount}

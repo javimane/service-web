@@ -25,15 +25,17 @@ export const plans: Plan[] = [
     price: 0,
     period: "mes",
     description:
-      "Crea tu perfil profesional y comienza a ofrecer tus servicios en la plataforma sin costo alguno. Ideal para profesionales que están empezando y quieren probar la plataforma.",
+      "Crea tu perfil profesional y comienza a ofrecer tus servicios en la plataforma sin costo alguno. Ideal para probar la plataforma.",
     features: [
       { text: "Perfil profesional básico" },
       { text: "Posicionamiento en la web" },
-      { text: "Publicación de productos" },
-      { text: "Publicación de servicios" },
+      { text: "Publicación de productos sin límite" },
+      { text: "Publicación de servicios sin límite" },
       { text: "Mensajes directos con clientes" },
       { text: "Métricas de tráfico en tu perfil" },
       { text: "Tienda de productos" },
+      { text: "Gestión de citas y agenda" },
+      { text: "Vista de trabajos solicitados" },
     ],
   },
   {
@@ -44,14 +46,16 @@ export const plans: Plan[] = [
     description: "Aumentá tu visibilidad con herramientas profesionales.",
     features: [
       { text: "Todo lo del plan Gratuito" },
-      { text: "Videos reels de tu trabajo", highlighted: true },
-      { text: "Publicación de videos", highlighted: true },
+      { text: "Videos de tu trabajo sin límite", highlighted: true },
+      { text: "Publicación de historias sin límite", highlighted: true },
       {
-        text: "Creación de promociones y promociones bancarias",
+        text: "Creación de promociones y promociones bancarias sin límite",
         highlighted: true,
       },
-      { text: "Creación y envío de presupuestos", highlighted: true },
-      { text: "Gestión de citas y agenda", highlighted: true },
+      {
+        text: "Creación y envío de presupuestos sin límite",
+        highlighted: true,
+      },
     ],
   },
   {
@@ -64,10 +68,13 @@ export const plans: Plan[] = [
     features: [
       { text: "Todo lo del plan Básico" },
       {
-        text: "Mejor posicionamiento en el ranking de profesionales",
+        text: "Mejor posicionamiento en el ranking de profesionales dentro de la plataforma",
         highlighted: true,
       },
-      { text: "Mejor posicionamiento en búsquedas", highlighted: true },
+      {
+        text: "Mejor posicionamiento en búsquedas de la plataforma",
+        highlighted: true,
+      },
     ],
     recommended: true,
   },

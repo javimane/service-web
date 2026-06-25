@@ -13,6 +13,7 @@ import {
 import Navbar from "../../components/Navbar/Navbar";
 import MapSidebar from "./MapSidebar";
 import { AlertCircle, CheckCircle2, Star, User } from "lucide-react";
+import MapPromotionsModal from "./MapPromotionsModal";
 import "./MapPage.css";
 
 const defaultCenter = {
@@ -89,6 +90,8 @@ export default function MapPage() {
     provinceId: undefined,
     departmentId: undefined,
   });
+
+  const [selectedProfessionalForPromos, setSelectedProfessionalForPromos] = useState<number | string | null>(null);
 
   const handleProvinceCoordinatesChange = useCallback((coords: { lat: number; lng: number } | null) => {
     if (coords) {
@@ -316,7 +319,7 @@ export default function MapPage() {
                           onClick={(e) => {
                             e.preventDefault();
                             incrementProfessionalViewsAction({ id: prof.id });
-                            router.push(`${prof.profileUrl}?view=promotions`);
+                            setSelectedProfessionalForPromos(prof.id);
                           }}
                         >
                           Promociones
@@ -341,6 +344,12 @@ export default function MapPage() {
           </MapContainer>
         </div>
       </main>
+
+      <MapPromotionsModal 
+        isOpen={!!selectedProfessionalForPromos}
+        onClose={() => setSelectedProfessionalForPromos(null)}
+        professionalId={selectedProfessionalForPromos}
+      />
     </div>
   );
 }

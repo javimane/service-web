@@ -93,6 +93,14 @@ export default function TermsPage() {
             abono de una suscripción mensual. Las tarifas están sujetas a la
             estructura de costos y al contexto económico.
           </p>
+          <ul>
+            <li>
+              <strong>Plan Gratuito:</strong> El plan gratuito tiene una duración
+              máxima de 4 (cuatro) meses desde su activación. Transcurrido este 
+              período, la cuenta será cancelada a menos que el usuario opte por 
+              pasar a un plan de pago (Básico o Premium).
+            </li>
+          </ul>
           <p>
             Sercio se reserva el derecho de modificar los valores de las
             suscripciones. Ante cualquier modificación o ajuste de precios, los
