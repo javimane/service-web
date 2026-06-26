@@ -95,7 +95,9 @@ export default function ReelsSection() {
   const [savedMessage, setSavedMessage] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedReelIndex, setSelectedReelIndex] = useState<number | null>(null);
+  const [selectedReelIndex, setSelectedReelIndex] = useState<number | null>(
+    null,
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   const userId = user?.id;
@@ -127,8 +129,10 @@ export default function ReelsSection() {
     return reels.map((reel) => ({
       ...reel,
       video_url: reel.url || (reel as any).video_url,
-      likes_count: reel.likes !== undefined ? reel.likes : (reel as any).likes_count || 0,
-      views_count: reel.views !== undefined ? reel.views : (reel as any).views_count || 0,
+      likes_count:
+        reel.likes !== undefined ? reel.likes : (reel as any).likes_count || 0,
+      views_count:
+        reel.views !== undefined ? reel.views : (reel as any).views_count || 0,
       professional: {
         ...(professional || {}),
         profile: profile || professional?.profile || professional?.Profile,
@@ -307,21 +311,21 @@ export default function ReelsSection() {
       <div className="reels-section__hero">
         <div>
           <p className="reels-section__eyebrow">Contenido en video</p>
-          <h1>Gestioná tus reels desde un solo lugar</h1>
+          <h1>Gestioná tus historias desde un solo lugar</h1>
           <p className="reels-section__subtitle">
-            Subí nuevos videos, revisá el rendimiento de cada reel y mantené tu
-            perfil activo con contenido visual.
+            Subí nuevos videos, revisá el rendimiento de cada historia y mantené
+            tu perfil activo con contenido visual.
           </p>
           <p className="reels-section__expiry-note">
             <Clock size={14} />
-            <span>Los reels caducan en 24hs</span>
+            <span>Las historias caducan en 24hs</span>
           </p>
         </div>
 
         <div className="reels-section__hero-actions">
           <div className="reels-section__hero-badge">
             <Sparkles size={18} />
-            <span>{reels.length} reels activos</span>
+            <span>{reels.length} historias activos</span>
           </div>
           <button
             type="button"
@@ -329,7 +333,7 @@ export default function ReelsSection() {
             onClick={() => setIsModalOpen(true)}
           >
             <Plus size={18} />
-            <span>Crear Reel</span>
+            <span>Crear Historia</span>
           </button>
         </div>
       </div>
@@ -364,7 +368,7 @@ export default function ReelsSection() {
         <div className="reels-section__content-card">
           <div className="reels-section__card-header">
             <div>
-              <h2>Tus reels creados</h2>
+              <h2>Tus historias creadas</h2>
               <p>Una vista rápida del contenido que ya está cargado.</p>
             </div>
           </div>
@@ -427,8 +431,8 @@ export default function ReelsSection() {
             {reels.length === 0 && !isLoading && (
               <div className="reels-section__empty-state">
                 <Video size={48} className="reels-section__empty-icon" />
-                <h3>No tenés reels todavía</h3>
-                <p>Hacé clic en "Crear Reel" para subir tu primer video.</p>
+                <h3>No tenés historias todavía</h3>
+                <p>Hacé clic en "Crear Historia" para subir tu primer video.</p>
               </div>
             )}
           </div>
@@ -446,7 +450,7 @@ export default function ReelsSection() {
             </button>
             <div className="reels-section__card-header">
               <div>
-                <h2>Subir nuevo reel</h2>
+                <h2>Subir nueva historia</h2>
                 <p>Cargá un video con título y descripción breve.</p>
               </div>
             </div>
@@ -484,7 +488,7 @@ export default function ReelsSection() {
                   rows={4}
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Contá qué muestra este reel y por qué es importante."
+                  placeholder="Contá qué muestra esta historia y por qué es importante."
                 />
               </label>
 
@@ -495,7 +499,7 @@ export default function ReelsSection() {
                 disabled={!selectedFile || !title.trim() || isPublishing}
               >
                 <Video size={18} />
-                <span>{isPublishing ? "Procesando..." : "Crear reel"}</span>
+                <span>{isPublishing ? "Procesando..." : "Crear historia"}</span>
               </button>
             </div>
           </aside>
@@ -507,7 +511,8 @@ export default function ReelsSection() {
           initialIndex={selectedReelIndex}
           onClose={() => setSelectedReelIndex(null)}
           isPremiumMap={{
-            [professionalId]: sessionStatus?.subscription?.plan === "premium" || false,
+            [professionalId]:
+              sessionStatus?.subscription?.plan === "premium" || false,
           }}
         />
       )}

@@ -24,6 +24,29 @@ function formatPrice(n: number | null | undefined) {
   return Number(n).toLocaleString("es-AR");
 }
 
+const formatDescription = (text: string) => {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const result: React.ReactNode[] = [];
+  
+  let key = 0;
+  lines.forEach((line) => {
+    // split the line by '*' (lookahead to keep the asterisk)
+    const parts = line.split(/(?=\*)/);
+    parts.forEach(part => {
+      if (part.trim()) {
+        result.push(
+          <span key={key++} style={{ display: "block", marginTop: part.trim().startsWith("*") ? "4px" : "0" }}>
+            {part}
+          </span>
+        );
+      }
+    });
+  });
+  
+  return result;
+};
+
 export default function ProductDetailPage() {
   const params = useParams<{ seoPath: string | string[] }>();
   const searchParams = useSearchParams();
@@ -278,15 +301,26 @@ export default function ProductDetailPage() {
                     {productEan || "No informado"}
                   </span>
                 </div>
+                {(item.weight || item.width || item.height || item.depth) && (
+                  <div className="product-detail__fact-row">
+                    <span className="fact-label">Dimensiones</span>
+                    <span className="fact-value">
+                      {item.weight ? `${item.weight}kg ` : ""}
+                      {item.width && item.height && item.depth
+                        ? `(${item.width}x${item.height}x${item.depth} cm)`
+                        : ""}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             {productDescription && (
               <div className="product-detail__description-container">
                 <h3>Descripción</h3>
-                <p className="product-detail__description">
-                  {productDescription}
-                </p>
+                <div className="product-detail__description" style={{ whiteSpace: "pre-wrap" }}>
+                  {formatDescription(productDescription)}
+                </div>
               </div>
             )}
           </div>

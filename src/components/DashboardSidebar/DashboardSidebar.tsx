@@ -34,6 +34,7 @@ import { useAuth } from "../../context/AuthContext";
 import Modal from "../Modal/Modal";
 import { userService } from "../../services/userService";
 import { useAlert } from "@/context/AlertContext";
+import logoWordmark from "../../images/Logo solo nombre sin fondo.png";
 
 type DashboardSidebarProps = {
   activeItem?: string;
@@ -290,7 +291,7 @@ export default function DashboardSidebar({
     },
     {
       key: "reels",
-      label: "REELS",
+      label: "HISTORIAS",
       icon: Clapperboard,
       onClick: onReelsClick ?? (() => goToDashboardView("reels")),
     },
@@ -750,7 +751,27 @@ export default function DashboardSidebar({
         onMouseEnter={() => isCollapsed && onToggle?.()}
         onMouseLeave={() => !isCollapsed && onToggle?.()}
       >
-        <div className="sidebar-brand">
+        <div
+          className="sidebar-brand"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          {!isCollapsed && (
+            <img
+              src={logoWordmark.src}
+              alt="Sercio"
+              style={{
+                width: "100%",
+                maxWidth: "120px",
+                objectFit: "contain",
+                marginBottom: "16px",
+                marginTop: "8px",
+              }}
+            />
+          )}
           <button
             type="button"
             className="brand-home-btn"

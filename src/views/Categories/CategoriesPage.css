@@ -271,10 +271,15 @@
 
 .profile-result-card__stats {
   display: flex;
+  align-items: center;
   gap: 12px;
   font-size: var(--text-base);
   font-weight: var(--weight-bold);
   color: var(--text-primary);
+}
+
+.profile-result-card__stats span:nth-child(2) {
+  margin-top: 1px;
 }
 
 .profile-result-card__button {

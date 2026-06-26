@@ -85,9 +85,33 @@ export const getProductDetailAction = publicAction
   });
 
 export const getProductsByProfessionalAction = publicAction
-  .schema(z.object({ professionalId: z.number() }))
+  .schema(
+    z.object({
+      professionalId: z.number(),
+      wholesale: z.boolean().optional(),
+      ean: z.string().optional(),
+      name: z.string().optional(),
+      categoryId: z.number().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
-    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${parsedInput.professionalId}`;
+    const { professionalId, ...queryParams } = parsedInput;
+    const query = new URLSearchParams();
+    if (queryParams.wholesale !== undefined)
+      query.append("wholesale", String(queryParams.wholesale));
+    if (queryParams.ean) query.append("ean", queryParams.ean);
+    if (queryParams.name) query.append("name", queryParams.name);
+    if (queryParams.categoryId !== undefined)
+      query.append("categoryId", String(queryParams.categoryId));
+    if (queryParams.page !== undefined)
+      query.append("page", String(queryParams.page));
+    if (queryParams.limit !== undefined)
+      query.append("limit", String(queryParams.limit));
+
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${professionalId}${queryString}`;
 
     try {
       const response = await axios.get(url, {
@@ -148,6 +172,41 @@ export const createProductAction = publicAction
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || "Error creating product",
+      );
+    }
+  });
+
+export const updateProductAction = publicAction
+  .schema(
+    z
+      .object({
+        id: z.string().or(z.number()),
+        token: authTokenSchema,
+        ean: z.string().optional(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        brand: z.string().optional(),
+        categories_products_id: z.number().optional(),
+        weight: z.number().optional(),
+        width: z.number().optional(),
+        has_ean: z.boolean().optional(),
+        height: z.number().optional(),
+        depth: z.number().optional(),
+      })
+      .catchall(z.any()),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/${parsedInput.id}`;
+    const { id, token, ...updateData } = parsedInput;
+
+    try {
+      const response = await axios.put(url, updateData, {
+        headers: await buildActionHeaders(ctx, token),
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Error updating product",
       );
     }
   });

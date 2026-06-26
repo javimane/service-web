@@ -56,6 +56,7 @@ export default function DashboardPage() {
 
   const [view, setView] = useState("overview");
   const [editingPromotion, setEditingPromotion] = useState<any>(null);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileSidebarMode, setIsMobileSidebarMode] = useState(false);
   const [isVideosModalOpen, setIsVideosModalOpen] = useState(false);
@@ -137,6 +138,10 @@ export default function DashboardPage() {
   };
   const handleShowPromotionsAll = () =>
     router.push(`${ROUTES.dashboard}?view=promotions-all`);
+  const handleShowProductsCreate = (product?: any) => {
+    setEditingProduct(product || null);
+    router.push(`${ROUTES.dashboard}?view=products-create`);
+  };
   const handleShowProducts = () =>
     router.push(`${ROUTES.dashboard}?view=products`);
   const handleShowServices = () =>
@@ -392,9 +397,9 @@ export default function DashboardPage() {
             ) : view === "subscription" ? (
               <SubscriptionSection />
             ) : view === "products-create" ? (
-              <ProductCreator onBack={handleShowProducts} />
+              <ProductCreator onBack={handleShowProducts} productToEdit={editingProduct} />
             ) : view === "products" ? (
-              <DashboardProducts />
+              <DashboardProducts onCreateNew={() => handleShowProductsCreate()} onEdit={handleShowProductsCreate} />
             ) : view === "services" ? (
               <DashboardServices />
             ) : view === "notifications" ? (
@@ -476,11 +481,11 @@ export default function DashboardPage() {
                       <div className="play-icon-bg">
                         <Play size={20} fill="currentColor" />
                       </div>
-                      <h3 className="mid-value">Reels y videos</h3>
+                      <h3 className="mid-value">Historias y videos</h3>
                     </div>
                     <div className="reels-stats-row">
                       <div className="stat-value-group">
-                        <span className="card-label">VISTAS (REELS)</span>
+                        <span className="card-label">VISTAS (HISTORIAS)</span>
                         <h2 className="mid-value">
                           {reelsStats?.total_views !== undefined
                             ? reelsStats.total_views >= 1000
@@ -490,7 +495,7 @@ export default function DashboardPage() {
                         </h2>
                       </div>
                       <div className="stat-value-group">
-                        <span className="card-label">ME GUSTA (REELS)</span>
+                        <span className="card-label">ME GUSTA (HISTORIAS)</span>
                         <h2 className="mid-value">
                           {reelsStats?.total_likes !== undefined
                             ? reelsStats.total_likes >= 1000
@@ -609,7 +614,7 @@ export default function DashboardPage() {
                           onClick={handleShowReelsBlocked}
                         >
                           <Clapperboard size={18} />
-                          <span>Gestionar Reels</span>
+                          <span>Gestionar Historias</span>
                           <ChevronRight size={18} />
                         </button>
                         <button

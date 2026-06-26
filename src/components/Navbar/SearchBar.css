@@ -33,8 +33,12 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .search-bar__input {
@@ -69,7 +73,8 @@
   border: none;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  height: 100%;
+  height: calc(100% + 2px);
+  margin: 1px 1px 1px 0;
   align-self: stretch;
 }
 
@@ -93,8 +98,14 @@
 }
 
 @keyframes dropdownIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .search-dropdown__item {

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -162,7 +162,13 @@ type EditImageItem =
   | { type: "existing"; url: string }
   | { type: "new"; file: File; preview: string };
 
-export default function DashboardProducts() {
+export default function DashboardProducts({
+  onCreateNew,
+  onEdit,
+}: {
+  onCreateNew?: () => void;
+  onEdit?: (product: any) => void;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { sessionStatus, hasAddress } = useAuth();
@@ -176,6 +182,10 @@ export default function DashboardProducts() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sortField, setSortField] = useState("title");
   const [sortDir, setSortDir] = useState("asc");
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   // Bulk price modal
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -255,16 +265,42 @@ export default function DashboardProducts() {
   >({});
 
   // Queries & Mutations
-  const { data: productsData = [], isLoading: loadingProducts } = useQuery({
-    queryKey: ["professional-products", professionalId],
+  const { data: queryData = {}, isLoading: loadingProducts } = useQuery({
+    queryKey: [
+      "professional-products",
+      professionalId,
+      page,
+      limit,
+      searchQuery,
+      eanSearchQuery,
+      categoryFilter,
+    ],
     queryFn: async () => {
       const result = await getProductsByProfessionalAction({
         professionalId,
+        page,
+        limit,
+        name: searchQuery || undefined,
+        ean: eanSearchQuery || undefined,
+        categoryId: categoryFilter ? Number(categoryFilter) : undefined,
       });
-      return result?.data ?? [];
+      return (result?.data as any) || {};
     },
     enabled: !!professionalId,
   });
+
+  const productsData = Array.isArray(queryData?.data)
+    ? queryData.data
+    : Array.isArray(queryData)
+      ? queryData
+      : [];
+  const totalServerProducts =
+    typeof queryData?.total === "number"
+      ? queryData.total
+      : Array.isArray(queryData)
+        ? queryData.length
+        : 0;
+  const totalPages = Math.ceil(totalServerProducts / limit) || 1;
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-products"],
@@ -317,6 +353,10 @@ export default function DashboardProducts() {
           )[0] || "",
       description: item.Product?.description || "",
       ean: item.Product?.ean || "",
+      weight: item.Product?.weight,
+      width: item.Product?.width,
+      height: item.Product?.height,
+      depth: item.Product?.depth,
       link_url: item.link_url || item.Product?.link_url || "",
       sale_type: item.sale_type,
       is_active: item.is_active,
@@ -457,18 +497,8 @@ export default function DashboardProducts() {
     );
   };
 
-  const filtered = useMemo(() => {
-    let list = productsList.filter((p) => {
-      const matchesName = p.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesEan = p.ean
-        .toLowerCase()
-        .includes(eanSearchQuery.toLowerCase());
-      const matchesCategory =
-        categoryFilter === "" || p.category.trim() === categoryFilter.trim();
-      return matchesName && matchesEan && matchesCategory;
-    });
+  const sortedList = useMemo(() => {
+    let list = [...productsList];
     list.sort((a, b) => {
       let valA = (a as any)[sortField];
       let valB = (b as any)[sortField];
@@ -479,17 +509,14 @@ export default function DashboardProducts() {
       return 0;
     });
     return list;
-  }, [
-    productsList,
-    searchQuery,
-    eanSearchQuery,
-    categoryFilter,
-    sortField,
-    sortDir,
-  ]);
+  }, [productsList, sortField, sortDir]);
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, eanSearchQuery, categoryFilter]);
 
   // Stats
-  const totalProducts = productsList.length;
   const totalStock = productsList.reduce((s, p) => s + (p.stock || 0), 0);
   const avgPrice =
     productsList.length > 0
@@ -752,6 +779,10 @@ export default function DashboardProducts() {
 
   // Open edit modal
   const openEditModal = (product: any) => {
+    if (onEdit) {
+      onEdit(product);
+      return;
+    }
     const categoryMatch = categories.find((c) => c.name === product.category);
 
     setEditProduct({
@@ -947,7 +978,9 @@ export default function DashboardProducts() {
         <div className="dash-products__stat">
           <Package size={18} />
           <div>
-            <span className="dash-products__stat-value">{totalProducts}</span>
+            <span className="dash-products__stat-value">
+              {totalServerProducts}
+            </span>
             <span className="dash-products__stat-label">Productos</span>
           </div>
         </div>
@@ -1076,7 +1109,7 @@ export default function DashboardProducts() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((product) => (
+              {sortedList.map((product) => (
                 <tr key={product.id} className="dash-products__row">
                   <td className="dash-products__cell-img">
                     {product.image ? (
@@ -1161,7 +1194,7 @@ export default function DashboardProducts() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
+              {sortedList.length === 0 && (
                 <tr>
                   <td colSpan={6} className="dash-products__empty">
                     No se encontraron productos en tu catálogo
@@ -1170,6 +1203,46 @@ export default function DashboardProducts() {
               )}
             </tbody>
           </table>
+        )}
+
+        {/* Pagination UI */}
+        {totalPages > 1 && (
+          <div
+            className="dash-products__pagination"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "16px",
+              marginTop: "24px",
+              paddingBottom: "24px",
+            }}
+          >
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Anterior
+            </button>
+            <span
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              Página {page} de {totalPages}
+            </span>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Siguiente
+            </button>
+          </div>
         )}
       </div>
 

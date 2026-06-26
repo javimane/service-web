@@ -177,7 +177,7 @@ export default function CategoriesPage() {
         province:
           mainAddress?.Province?.name ||
           prof.company_provinces?.[0]?.Province?.name ||
-          "Desconocida",
+          "Sin provincia",
         accountType: isCompany ? "Comercio" : "Autónomo",
         emergency: prof.emergency || false,
         verified:
@@ -439,8 +439,8 @@ export default function CategoriesPage() {
 
                       <div className="profile-result-card__tags">
                         <span className="tag">
-                          <MapPin size={14} /> {profile.city},{" "}
-                          {profile.province}
+                          <MapPin size={14} />{" "}
+                          {profile.province || "Sin provincia"}
                         </span>
                         <span className="tag">
                           <Store size={14} /> {profile.accountType}
@@ -461,10 +461,6 @@ export default function CategoriesPage() {
                           </span>
                         )}
                       </div>
-
-                      <p className="profile-result-card__description">
-                        {profile.description}
-                      </p>
 
                       <div className="profile-result-card__footer">
                         <div className="profile-result-card__stats">
