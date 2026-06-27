@@ -106,7 +106,8 @@ export default function AddItemModal({
         const result = await getProductsByProfessionalAction({
           professionalId,
         });
-        data = result?.data ?? [];
+        const rawData = result?.data as any;
+        data = Array.isArray(rawData?.data) ? rawData.data : Array.isArray(rawData) ? rawData : [];
       } else {
         const result = await getProductsAction(professionalId);
         data = result?.data || [];

@@ -88,9 +88,23 @@ export const getServiceDetailAction = publicAction
   });
 
 export const getServicesByProfessionalAction = publicAction
-  .schema(z.object({ professionalId: z.string().or(z.number()) }))
+  .schema(
+    z.object({
+      professionalId: z.string().or(z.number()),
+      name: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
-    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/services/professional/${parsedInput.professionalId}`;
+    const { professionalId, ...queryParams } = parsedInput;
+    const query = new URLSearchParams();
+    if (queryParams.name) query.append("name", queryParams.name);
+    if (queryParams.page !== undefined) query.append("page", String(queryParams.page));
+    if (queryParams.limit !== undefined) query.append("limit", String(queryParams.limit));
+
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/services/professional/${professionalId}${queryString}`;
 
     try {
       const response = await axios.get(url, {

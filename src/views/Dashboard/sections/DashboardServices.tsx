@@ -1,6 +1,6 @@
 "use client";
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -33,6 +33,7 @@ export default function DashboardServices() {
     sessionStatus?.professional_id;
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [submittedSearchQuery, setSubmittedSearchQuery] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -58,16 +59,62 @@ export default function DashboardServices() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Queries
-  const { data: services = [], isLoading: loadingServices } = useQuery({
-    queryKey: ["professional-services", professionalId],
-    queryFn: async () => {
+  // Infinite Query for Services
+  const {
+    data,
+    isLoading: loadingServices,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["professional-services", professionalId, submittedSearchQuery],
+    queryFn: async ({ pageParam = 1 }) => {
       const result = await getServicesByProfessionalAction({
-        professionalId,
+        professionalId: professionalId as number,
+        name: submittedSearchQuery || undefined,
+        page: pageParam,
+        limit: 10,
       });
-      return result?.data ?? [];
+      return (result?.data as any) ?? [];
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const items = Array.isArray(lastPage?.data)
+        ? lastPage.data
+        : Array.isArray(lastPage)
+          ? lastPage
+          : [];
+      if (items.length < 10) return undefined;
+      return allPages.length + 1;
     },
     enabled: !!professionalId,
+    initialPageParam: 1,
   });
+
+  const services = useMemo(() => {
+    if (!data) return [];
+    return data.pages.flatMap((page: any) =>
+      Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : []
+    );
+  }, [data]);
+
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["service-categories"],
@@ -151,11 +198,9 @@ export default function DashboardServices() {
     },
   });
 
-  const filteredServices = useMemo(() => {
-    return services.filter((s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
-  }, [services, searchQuery]);
+  const handleSearch = () => {
+    setSubmittedSearchQuery(searchQuery);
+  };
 
   const openAddModal = () => {
     setIsEditing(false);
@@ -239,14 +284,21 @@ export default function DashboardServices() {
 
       {/* Toolbar */}
       <div className="dash-services__toolbar">
-        <div className="dash-services__search">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Buscar por nombre..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="dash-services__search" style={{ display: "flex", gap: "8px", background: "transparent", border: "none", padding: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", background: "var(--input-bg)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", padding: "8px 12px", flex: 1 }}>
+            <Search size={18} color="var(--text-secondary)" />
+            <input
+              type="text"
+              placeholder="Buscar por nombre..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              style={{ border: "none", background: "transparent", outline: "none", paddingLeft: "8px", width: "100%", color: "var(--text-primary)" }}
+            />
+          </div>
+          <button className="btn-primary" onClick={handleSearch} style={{ height: "100%", padding: "0 16px" }}>
+            Buscar
+          </button>
         </div>
       </div>
 
@@ -257,7 +309,7 @@ export default function DashboardServices() {
             <Loader2 className="animate-spin" size={32} />
             <p>Cargando servicios...</p>
           </div>
-        ) : filteredServices.length === 0 ? (
+        ) : services.length === 0 ? (
           <div className="dash-services__empty">
             <Briefcase size={48} />
             <h3>No tenés servicios publicados</h3>
@@ -271,7 +323,7 @@ export default function DashboardServices() {
           </div>
         ) : (
           <div className="dash-services__grid">
-            {filteredServices.map((service) => (
+            {services.map((service) => (
               <div key={service.id} className="dash-services__card">
                 <div className="dash-services__card-header">
                   <div className="dash-services__card-info">
@@ -315,6 +367,18 @@ export default function DashboardServices() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        
+        {/* Infinite Scroll Observer Target */}
+        {hasNextPage && (
+          <div ref={observerTarget} style={{ padding: "20px", textAlign: "center", display: "flex", justifyContent: "center", gap: "8px", alignItems: "center" }}>
+            {isFetchingNextPage && (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>Cargando más servicios...</span>
+              </>
+            )}
           </div>
         )}
       </div>

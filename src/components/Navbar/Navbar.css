@@ -639,6 +639,10 @@
 
 
 @media (max-width: 640px) {
+  .navbar__logo .brand-lockup__wordmark {
+    display: none;
+  }
+
   .navbar__plans-btn {
     display: none;
   }

@@ -327,7 +327,12 @@ export default function ProfilePage() {
       const result = await getServicesByProfessionalAction({
         professionalId: id!,
       });
-      return result?.data ?? [];
+      const rawData = result?.data as any;
+      return Array.isArray(rawData?.data)
+        ? rawData.data
+        : Array.isArray(rawData)
+          ? rawData
+          : [];
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 10, // 10 minutos
@@ -473,7 +478,12 @@ export default function ProfilePage() {
       const result = await getProductsByProfessionalAction({
         professionalId: Number(id),
       });
-      return result?.data ?? [];
+      const rawData = result?.data as any;
+      return Array.isArray(rawData?.data)
+        ? rawData.data
+        : Array.isArray(rawData)
+          ? rawData
+          : [];
     },
     enabled: !!id && !isNaN(Number(id)),
     staleTime: 1000 * 60 * 10, // 10 minutos

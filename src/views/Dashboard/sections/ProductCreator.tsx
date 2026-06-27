@@ -20,6 +20,7 @@ import { getProductCategoriesAction } from "../../../app/actions/categories";
 import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
 import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
+import { cropImageToSquare } from "../../../utils/imageUtils";
 import "./DashboardProducts.css";
 import "./ProductCreator.css";
 import {
@@ -226,15 +227,20 @@ export default function ProductCreator({
   }, [productToEdit, categories]);
 
   /* ── Image handlers ── */
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(e.target.files || []);
     if (!incoming.length) return;
     const slots = MAX_PRODUCT_IMAGES - imagePreviews.length;
     if (slots <= 0) return;
     const toAdd = incoming.slice(0, slots);
-    setImageFiles((p) => [...p, ...toAdd]);
+
+    const croppedFiles = await Promise.all(
+      toAdd.map((file) => cropImageToSquare(file).catch(() => file))
+    );
+
+    setImageFiles((p) => [...p, ...croppedFiles]);
     Promise.all(
-      toAdd.map(
+      croppedFiles.map(
         (f) =>
           new Promise<string>((res) => {
             const r = new FileReader();
@@ -931,6 +937,11 @@ export default function ProductCreator({
                 />
                 Imágenes ({imageFiles.length}/{MAX_PRODUCT_IMAGES})
               </p>
+              
+              <div style={{ background: "rgba(233, 72, 35, 0.1)", color: "var(--accent-color)", padding: "10px 14px", borderRadius: "8px", fontSize: "0.85rem", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <AlertTriangle size={16} />
+                <strong>Sube fotos con formato 1:1 (cuadrada).</strong> Las imágenes se recortarán automáticamente desde el centro para mantener este formato.
+              </div>
 
               <div className="dash-products__image-preview-grid">
                 {imagePreviews.map((preview, idx) => (
