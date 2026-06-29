@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import JobsPage from "@/views/Jobs/JobsPage";
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function JobsRoute() {
-  return <JobsPage />;
+  return (
+    <Suspense fallback={<div>Cargando empleos...</div>}>
+      <JobsPage />
+    </Suspense>
+  );
 }

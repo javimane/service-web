@@ -51,10 +51,10 @@ export default function PublicationsPage() {
     queryKey: ["all-publications", debouncedSearchTerm, selectedProvince],
     queryFn: async ({ pageParam = 1 }) => {
       const activeFilters: any = {
-        title: debouncedSearchTerm || undefined,
         limit: 12,
         page: pageParam,
       };
+      if (debouncedSearchTerm) activeFilters.title = debouncedSearchTerm;
 
       if (selectedProvince) activeFilters.provinceId = Number(selectedProvince);
 

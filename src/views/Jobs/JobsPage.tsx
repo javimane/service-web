@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getJobsAction, Job } from "@/app/actions/jobs";
 import { getProvincesAction } from "@/app/actions/provinces";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ROUTES } from "@/routes/paths";
 import {
   Loader2,
@@ -32,6 +32,10 @@ export default function JobsPage() {
   });
   const [selectedProvince, setSelectedProvince] = useState("");
 
+  const searchParams = useSearchParams();
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],
     queryFn: async () => {
@@ -42,11 +46,10 @@ export default function JobsPage() {
   });
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["jobs-list", searchTerm, filters, selectedProvince],
+    queryKey: ["jobs-list", searchTerm, filters, selectedProvince, page, limit],
     queryFn: async () => {
-      const activeFilters: any = {
-        title: searchTerm || undefined,
-      };
+      const activeFilters: any = {};
+      if (searchTerm) activeFilters.title = searchTerm;
 
       if (filters.is_remote) activeFilters.is_remote = true;
       if (filters.is_in_person) activeFilters.is_in_person = true;
@@ -56,8 +59,8 @@ export default function JobsPage() {
       if (selectedProvince) activeFilters.province_id = Number(selectedProvince);
 
       const res = await getJobsAction({
-        limit: 50,
-        page: 1,
+        limit,
+        page,
         ...activeFilters,
       });
 
