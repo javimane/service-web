@@ -43,7 +43,7 @@ import { uploadProductImage } from "../../../services/storageUploads";
 import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
 import "./DashboardProducts.css";
 
-const MAX_PRODUCT_IMAGES = 4;
+const MAX_PRODUCT_IMAGES = 10;
 
 const formatPrice = (n: number, currencyCode?: string) => {
   const isUsd = currencyCode === "USD";

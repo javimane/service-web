@@ -31,7 +31,7 @@ import {
   updateProductAction,
 } from "@/app/actions/products";
 
-const MAX_PRODUCT_IMAGES = 4;
+const MAX_PRODUCT_IMAGES = 10;
 
 const moveArrayItem = <T,>(arr: T[], from: number, to: number) => {
   if (to < 0 || to >= arr.length || from === to) return arr;
@@ -91,9 +91,16 @@ export default function ProductCreator({
 
   const [eanLoading, setEanLoading] = useState(false);
   const [eanMatch, setEanMatch] = useState<any>(null);
+  const [eanCheckedAndFree, setEanCheckedAndFree] = useState(false);
   const [eanCustomPrice, setEanCustomPrice] = useState("");
   const [eanStock, setEanStock] = useState("");
   const [eanOfferPrice, setEanOfferPrice] = useState("");
+  const [eanCurrencyCode, setEanCurrencyCode] = useState("ARG");
+  const [eanLinkUrl, setEanLinkUrl] = useState("");
+  const [eanPercentDiscount, setEanPercentDiscount] = useState("");
+  const [eanWholesale, setEanWholesale] = useState(false);
+  const [eanWholesalePrice, setEanWholesalePrice] = useState("");
+  const [eanWholesaleUnit, setEanWholesaleUnit] = useState("");
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-products"],
@@ -163,7 +170,10 @@ export default function ProductCreator({
     },
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const isSaving =
+    isSubmitting ||
     createMutation.isPending ||
     assignMutation.isPending ||
     updateMutation.isPending ||
@@ -235,7 +245,7 @@ export default function ProductCreator({
     const toAdd = incoming.slice(0, slots);
 
     const croppedFiles = await Promise.all(
-      toAdd.map((file) => cropImageToSquare(file).catch(() => file))
+      toAdd.map((file) => cropImageToSquare(file).catch(() => file)),
     );
 
     setImageFiles((p) => [...p, ...croppedFiles]);
@@ -273,23 +283,29 @@ export default function ProductCreator({
     if (!ean) return;
     setEanLoading(true);
     setEanMatch(null);
+    setEanCheckedAndFree(false);
     try {
       const result = await getProductByEanAction({ ean, professionalId });
       const match = result?.data ?? null;
       if (match) {
         setEanMatch({
-          id: match.Product?.id || match.product_id,
-          title: match.Product?.name || "Sin nombre",
-          image: match.Product?.image_url || "",
-          category:
-            match.Product?.CategoryProduct?.name ||
-            (match.Product as any)?.category?.name ||
-            "General",
+          id: match.id,
+          title: match.name || "Sin nombre",
+          image: match.Images?.[0]?.image_url || "",
+          ean: match.ean,
           isAlreadyAssigned: (match as any).is_already_assigned,
         });
         setEanCustomPrice("");
         setEanStock("");
         setEanOfferPrice("");
+        setEanCurrencyCode("ARG");
+        setEanLinkUrl("");
+        setEanPercentDiscount("");
+        setEanWholesale(false);
+        setEanWholesalePrice("");
+        setEanWholesaleUnit("");
+      } else {
+        setEanCheckedAndFree(true);
       }
     } catch (err) {
       console.error("Error checking EAN:", err);
@@ -307,96 +323,147 @@ export default function ProductCreator({
       is_active: true,
       stock: Number(eanStock) || 0,
       offer_price: Number(eanOfferPrice) || 0,
+      currency_code: eanCurrencyCode || "ARG",
+      link_url: eanLinkUrl.trim() || null,
+      percent_discount: Number(eanPercentDiscount) || 0,
+      wholesale: eanWholesale,
+      wholesale_unit: eanWholesale ? Number(eanWholesaleUnit) || 0 : undefined,
+      wholesale_price: eanWholesale
+        ? Number(eanWholesalePrice) || 0
+        : undefined,
     });
   };
 
   /* ── Submit ── */
   const handleSubmit = async () => {
-    const e: Record<string, string> = {};
-    if (!newProduct.name.trim()) e.name = "El nombre es obligatorio.";
-    if (!newProduct.has_ean && !newProduct.ean.trim())
-      e.ean =
-        "El EAN es obligatorio si no marcas la opción 'No tiene código de barra'.";
-    if (!formPrice) e.price = "El precio es obligatorio.";
-    if (!newProduct.categoryId) e.categoryId = "La categoría es obligatoria.";
-    if (!formStock) e.stock = "El stock es obligatorio.";
-    if (!newProduct.weight.trim()) e.weight = "El peso es obligatorio.";
-    if (!newProduct.width.trim()) e.width = "El ancho es obligatorio.";
-    if (!newProduct.height.trim()) e.height = "El alto es obligatorio.";
-    if (!newProduct.depth.trim()) e.depth = "La profundidad es obligatoria.";
+    setIsSubmitting(true);
+    try {
+      const e: Record<string, string> = {};
+      if (!newProduct.name.trim()) e.name = "El nombre es obligatorio.";
+      if (!newProduct.has_ean && !newProduct.ean.trim())
+        e.ean =
+          "El EAN es obligatorio si no marcas la opción 'No tiene código de barra'.";
+      if (!formPrice) e.price = "El precio es obligatorio.";
+      if (!newProduct.categoryId) e.categoryId = "La categoría es obligatoria.";
+      if (!formStock) e.stock = "El stock es obligatorio.";
+      if (!newProduct.weight.trim()) e.weight = "El peso es obligatorio.";
+      if (!newProduct.width.trim()) e.width = "El ancho es obligatorio.";
+      if (!newProduct.height.trim()) e.height = "El alto es obligatorio.";
+      if (!newProduct.depth.trim()) e.depth = "La profundidad es obligatoria.";
 
-    if (Object.keys(e).length > 0) {
-      setErrors(e);
-      return;
-    }
-    setErrors({});
-
-    const images: string[] = [];
-    for (let i = 0; i < imagePreviews.length; i++) {
-      const file = imageFiles[i];
-      if (file) {
-        const up = await uploadProductImage({ file, entityId: newProduct.name });
-        images.push(up.publicUrl);
-      } else {
-        images.push(imagePreviews[i]);
+      if (Object.keys(e).length > 0) {
+        setErrors(e);
+        setIsSubmitting(false);
+        return;
       }
-    }
+      setErrors({});
 
-    const payload = {
-      ean: newProduct.has_ean ? undefined : newProduct.ean,
-      has_ean: newProduct.has_ean,
-      weight: Number(newProduct.weight),
-      width: Number(newProduct.width),
-      height: Number(newProduct.height),
-      depth: Number(newProduct.depth),
-      name: newProduct.name,
-      description: newProduct.description,
-      brand: newProduct.brand,
-      image_url: images,
-      display_order: images.map((_, i) => i + 1),
-      categories_products_id: newProduct.categoryId
-        ? Number(newProduct.categoryId)
-        : undefined,
-      professional_id: professionalId,
-      price: Number(formPrice),
-      sale_type: "unit",
-      stock: Number(formStock),
-      is_active: true,
-      offer_price: Number(newProduct.offerPrice) || 0,
-      currency_code: newProduct.currency_code || "ARG",
-      percent_discount: Number(newProduct.percent_discount) || 0,
-      link_url: newProduct.link_url.trim() || undefined,
-      wholesale: newProduct.wholesale,
-      wholesale_price: Number(newProduct.wholesale_price) || 0,
-      wholesale_unit: Number(newProduct.wholesale_unit) || 0,
-    };
+      const images_url: string[] = [];
+      const images_to_save: string[] = [];
+      const images: string[] = [];
 
-    if (productToEdit) {
-      const productId = productToEdit.id || productToEdit.product_id;
-      
-      // 1. Update the base product
-      await updateBaseMutation.mutateAsync({
-        id: productId,
-        ean: payload.ean,
-        name: payload.name,
-        description: payload.description,
-        brand: payload.brand,
-        categories_products_id: payload.categories_products_id,
-        weight: payload.weight,
-        width: payload.width,
-        has_ean: payload.has_ean,
-        height: payload.height,
-        depth: payload.depth,
-      });
+      for (let i = 0; i < imagePreviews.length; i++) {
+        const file = imageFiles[i];
+        if (file) {
+          const up = await uploadProductImage({
+            file,
+            entityId: newProduct.name,
+          });
+          images_to_save.push(up.publicUrl);
+          images.push(up.publicUrl);
+        } else {
+          images_url.push(imagePreviews[i]);
+          images.push(imagePreviews[i]);
+        }
+      }
 
-      // 2. Update the professional product relationship
-      updateMutation.mutate({
-        ...payload,
-        product_id: productId,
-        id: productId,
-      });
-    } else {
-      createMutation.mutate(payload);
+      const payload = {
+        ean: newProduct.has_ean ? undefined : newProduct.ean,
+        has_ean: newProduct.has_ean,
+        weight: Number(newProduct.weight),
+        width: Number(newProduct.width),
+        height: Number(newProduct.height),
+        depth: Number(newProduct.depth),
+        name: newProduct.name,
+        description: newProduct.description,
+        brand: newProduct.brand,
+        image_url: images,
+        display_order: images.map((_, i) => i + 1),
+        categories_products_id: newProduct.categoryId
+          ? Number(newProduct.categoryId)
+          : undefined,
+        professional_id: professionalId,
+        price: Number(formPrice),
+        sale_type: "unit",
+        stock: Number(formStock),
+        is_active: true,
+        offer_price: Number(newProduct.offerPrice) || 0,
+        currency_code: newProduct.currency_code || "ARG",
+        percent_discount: Number(newProduct.percent_discount) || 0,
+        link_url: newProduct.link_url.trim() || undefined,
+        wholesale: newProduct.wholesale,
+        wholesale_price: Number(newProduct.wholesale_price) || 0,
+        wholesale_unit: Number(newProduct.wholesale_unit) || 0,
+      };
+
+      if (productToEdit) {
+        const productId = productToEdit.id || productToEdit.product_id;
+
+        const originalUrls = productToEdit.images || [];
+        const images_to_delete = originalUrls.filter(
+          (url: string) => !payload.image_url.includes(url),
+        );
+
+        // 1. Update the base product
+        await updateBaseMutation.mutateAsync({
+          id: productId,
+          ean: payload.ean,
+          name: payload.name,
+          description: payload.description,
+          brand: payload.brand,
+          categories_products_id: payload.categories_products_id,
+          weight: payload.weight,
+          width: payload.width,
+          has_ean: payload.has_ean,
+          height: payload.height,
+          depth: payload.depth,
+          images_url: images_url,
+          images_to_save: images_to_save,
+          images_to_delete: images_to_delete,
+          display_order: payload.display_order,
+        });
+
+        // 2. Update the professional product relationship
+        updateMutation.mutate({
+          professionalId,
+          productId,
+          updates: {
+            price: payload.price,
+            sale_type: payload.sale_type,
+            stock: payload.stock,
+            is_active: payload.is_active,
+            offer_price: payload.offer_price,
+            currency_code: payload.currency_code,
+            percent_discount: payload.percent_discount,
+            link_url: payload.link_url,
+            wholesale: payload.wholesale,
+            wholesale_price: payload.wholesale_price,
+            wholesale_unit: payload.wholesale_unit,
+          },
+        });
+      } else {
+        createMutation.mutate({
+          ...payload,
+          image_url: payload.image_url[0] || "",
+          images_url: payload.image_url,
+          images_to_save: payload.image_url,
+        });
+      }
+    } catch (err) {
+      console.error("Error submitting product:", err);
+      // Wait, is there a visual way to alert? We'll just rethrow or set errors.
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -460,7 +527,11 @@ export default function ProductCreator({
                   type="text"
                   placeholder="Escanea o escribe el código..."
                   value={newProduct.has_ean ? "" : newProduct.ean}
-                  onChange={(e) => set("ean", e.target.value)}
+                  onChange={(e) => {
+                    set("ean", e.target.value);
+                    setEanCheckedAndFree(false);
+                    setEanMatch(null);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !newProduct.has_ean) {
                       e.preventDefault();
@@ -492,6 +563,23 @@ export default function ProductCreator({
                 )}
                 Verificar
               </button>
+              {eanCheckedAndFree && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    color: "var(--success-color)",
+                    background: "rgba(64, 192, 87, 0.1)",
+                    padding: "8px 12px",
+                    borderRadius: "var(--radius-sm)",
+                    fontSize: "0.85rem",
+                    fontWeight: "var(--weight-bold)",
+                  }}
+                >
+                  <Check size={16} /> EAN libre
+                </div>
+              )}
             </div>
             <div
               style={{
@@ -563,38 +651,135 @@ export default function ProductCreator({
               </div>
 
               {!eanMatch.isAlreadyAssigned && (
-                <div className="product-creator__grid" style={{ marginTop: 0 }}>
-                  <div className="product-creator__field">
-                    <label>Tu precio final *</label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="Ej: 1500"
-                      value={eanCustomPrice}
-                      onChange={(e) => setEanCustomPrice(e.target.value)}
-                    />
+                <>
+                  <div
+                    className="product-creator__grid"
+                    style={{ marginTop: 0 }}
+                  >
+                    <div className="product-creator__field">
+                      <label>Tu precio final *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej: 1500"
+                        value={eanCustomPrice}
+                        onChange={(e) => setEanCustomPrice(e.target.value)}
+                      />
+                    </div>
+                    <div className="product-creator__field">
+                      <label>Precio de oferta</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej: 1300"
+                        value={eanOfferPrice}
+                        onChange={(e) => setEanOfferPrice(e.target.value)}
+                      />
+                    </div>
+                    <div className="product-creator__field">
+                      <label>Descuento (%)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="Ej: 10"
+                        value={eanPercentDiscount}
+                        onChange={(e) => setEanPercentDiscount(e.target.value)}
+                      />
+                    </div>
+                    <div className="product-creator__field">
+                      <label>Stock inicial *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej: 10"
+                        value={eanStock}
+                        onChange={(e) => setEanStock(e.target.value)}
+                      />
+                    </div>
+                    <div className="product-creator__field">
+                      <label>Moneda</label>
+                      <select
+                        value={eanCurrencyCode}
+                        onChange={(e) => setEanCurrencyCode(e.target.value)}
+                        className="dash-products__modal-select"
+                        style={{
+                          width: "100%",
+                          padding: "14px",
+                          borderRadius: "var(--radius-sm)",
+                          border: "1px solid var(--border-color)",
+                          background: "var(--input-bg)",
+                          fontSize: "var(--text-base)",
+                        }}
+                      >
+                        <option value="ARG">Pesos ($)</option>
+                        <option value="USD">Dólares (USD)</option>
+                      </select>
+                    </div>
+                    <div className="product-creator__field product-creator__field--full">
+                      <label>Enlace del producto (Opcional)</label>
+                      <input
+                        type="url"
+                        placeholder="Ej: https://mi-sitio.com/producto"
+                        value={eanLinkUrl}
+                        onChange={(e) => setEanLinkUrl(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="product-creator__field">
-                    <label>Precio de oferta</label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="Ej: 1300"
-                      value={eanOfferPrice}
-                      onChange={(e) => setEanOfferPrice(e.target.value)}
-                    />
+
+                  {/* Wholesale */}
+                  <div style={{ marginTop: "16px", marginBottom: "16px" }}>
+                    <label
+                      className="product-creator__wholesale-row"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={eanWholesale}
+                        onChange={(e) => setEanWholesale(e.target.checked)}
+                        style={{ width: "auto", margin: 0 }}
+                      />
+                      <span>Habilitar venta por mayor</span>
+                    </label>
+
+                    {eanWholesale && (
+                      <div
+                        className="product-creator__grid"
+                        style={{ marginTop: "12px" }}
+                      >
+                        <div className="product-creator__field">
+                          <label>Precio por mayor</label>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Ej: 1000"
+                            value={eanWholesalePrice}
+                            onChange={(e) =>
+                              setEanWholesalePrice(e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="product-creator__field">
+                          <label>Unidad mínima de compra</label>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="Ej: 10"
+                            value={eanWholesaleUnit}
+                            onChange={(e) =>
+                              setEanWholesaleUnit(e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="product-creator__field">
-                    <label>Stock inicial *</label>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="Ej: 10"
-                      value={eanStock}
-                      onChange={(e) => setEanStock(e.target.value)}
-                    />
-                  </div>
-                </div>
+                </>
               )}
 
               <div className="product-creator__ean-actions">
@@ -620,7 +805,7 @@ export default function ProductCreator({
                     ) : (
                       <Check size={16} />
                     )}
-                    Agregar a mi catálogo
+                    {isSaving ? "Guardando..." : "Agregar a mi catálogo"}
                   </button>
                 )}
               </div>
@@ -937,10 +1122,24 @@ export default function ProductCreator({
                 />
                 Imágenes ({imageFiles.length}/{MAX_PRODUCT_IMAGES})
               </p>
-              
-              <div style={{ background: "rgba(233, 72, 35, 0.1)", color: "var(--accent-color)", padding: "10px 14px", borderRadius: "8px", fontSize: "0.85rem", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+
+              <div
+                style={{
+                  background: "rgba(233, 72, 35, 0.1)",
+                  color: "var(--accent-color)",
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  fontSize: "0.85rem",
+                  marginBottom: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
                 <AlertTriangle size={16} />
-                <strong>Sube fotos con formato 1:1 (cuadrada).</strong> Las imágenes se recortarán automáticamente desde el centro para mantener este formato.
+                <strong>Sube fotos con formato 1:1 (cuadrada).</strong> Las
+                imágenes se recortarán automáticamente desde el centro para
+                mantener este formato.
               </div>
 
               <div className="dash-products__image-preview-grid">
@@ -977,11 +1176,13 @@ export default function ProductCreator({
                     )}
                   </div>
                 ))}
-
               </div>
 
               {imagePreviews.length < MAX_PRODUCT_IMAGES && (
-                <label className="dash-products__image-upload" style={{ marginTop: "32px" }}>
+                <label
+                  className="dash-products__image-upload"
+                  style={{ marginTop: "32px" }}
+                >
                   <input
                     type="file"
                     accept="image/*"

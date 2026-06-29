@@ -19,4 +19,8 @@ export const ROUTES = {
   terms: "/terminos",
   privacy: "/privacidad",
   faq: "/preguntas-frecuentes",
+  publication: "/publicacion",
+  publications: "/publicaciones",
+  jobs: "/empleos",
+  job: "/empleo",
 };

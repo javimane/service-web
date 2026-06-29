@@ -207,7 +207,9 @@ export default function Navbar() {
     { label: "Historias", path: ROUTES.reels },
     { label: "Servicios", path: ROUTES.services },
     { label: "Productos", path: ROUTES.products },
+    { label: "Publicaciones", path: ROUTES.publications },
     { label: "Promociones", path: ROUTES.promotions },
+    { label: "Empleos", path: ROUTES.jobs },
   ];
 
   const dashboardLinks = [

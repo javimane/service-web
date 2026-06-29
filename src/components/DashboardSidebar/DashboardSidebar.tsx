@@ -27,6 +27,7 @@ import {
   MessageCircle,
   Loader2,
   Users,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
@@ -131,6 +132,8 @@ export default function DashboardSidebar({
         "promotions-all",
         "bank-promotions",
         "reels",
+        "jobs",
+        "publications",
       ]);
       return blockedForFree.has(key);
     }
@@ -276,6 +279,18 @@ export default function DashboardSidebar({
       label: "SERVICIOS",
       icon: Briefcase,
       onClick: onServicesClick ?? (() => goToDashboardView("services")),
+    },
+    {
+      key: "jobs",
+      label: "EMPLEOS",
+      icon: Briefcase,
+      onClick: () => goToDashboardView("jobs"),
+    },
+    {
+      key: "publications",
+      label: "PUBLICACIONES",
+      icon: ImageIcon,
+      onClick: () => goToDashboardView("publications"),
     },
     {
       key: "calendar",

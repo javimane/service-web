@@ -42,6 +42,8 @@ import ReviewModal from "./sections/ReviewModal";
 import { useAuthModal } from "../../context/AuthModalContext";
 import { getAccessToken } from "../../utils/auth";
 import { getPromotionsByProfessionalAction } from "../../app/actions/professionalPromotions";
+import DashboardPublications from "../Dashboard/sections/DashboardPublications";
+import PublicationSlider from "@/components/PublicationSlider/PublicationSlider";
 import { getBankPromotionsAction } from "../../app/actions/bankPromotions";
 import { getProductsByProfessionalAction } from "../../app/actions/products";
 import TestimonialCard from "./sections/TestimonialCard";
@@ -320,6 +322,8 @@ export default function ProfilePage() {
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
   });
+
+  const professionalId = professional?.id;
 
   const { data: services = [] } = useQuery({
     queryKey: ["professional-services", id],
@@ -1219,6 +1223,12 @@ export default function ProfilePage() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {professionalId && (
+            <div className="profile-section" style={{ paddingBottom: "2rem" }}>
+              <PublicationSlider professionalId={Number(professionalId)} />
             </div>
           )}
         </section>

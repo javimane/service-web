@@ -398,6 +398,60 @@
   justify-content: flex-end;
 }
 
+/* ===== Success Modal Styles ===== */
+.dash-products__modal--success {
+  text-align: center;
+  align-items: center;
+  padding: 40px 30px;
+  gap: 20px;
+}
+
+.modal-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  background: rgba(64, 192, 87, 0.15);
+  color: var(--success-color);
+  border-radius: 50%;
+  margin: 0 auto 8px;
+  box-shadow: 0 0 0 10px rgba(64, 192, 87, 0.05);
+  animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dash-products__modal--success h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dash-products__modal--success p {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+}
+
+.dash-products__modal--success .dash-products__modal-apply {
+  width: 100%;
+  max-width: 200px;
+  border-radius: var(--radius-full);
+  padding: 14px 24px;
+  font-size: var(--text-base);
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 640px) {
   .product-creator {

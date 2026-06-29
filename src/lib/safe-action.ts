@@ -2,7 +2,12 @@ import { createSafeActionClient } from "next-safe-action";
 import axios from "axios";
 import { env } from "./env";
 
-export const actionClient = createSafeActionClient();
+export const actionClient = createSafeActionClient({
+  handleServerError(e) {
+    console.error("Action Server Error:", e);
+    return e.message;
+  }
+});
 
 // Ensure server-side axios requests include the API key by default.
 const WEB_API_KEY = env.WEB_API_KEY || process.env.WEB_API_KEY;

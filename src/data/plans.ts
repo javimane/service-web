@@ -56,6 +56,8 @@ export const plans: Plan[] = [
         text: "Creación y envío de presupuestos sin límite",
         highlighted: true,
       },
+      { text: "Creación de Empleos sin límite", highlighted: true },
+      { text: "Creación de Publicaciones sin límite", highlighted: true },
     ],
   },
   {

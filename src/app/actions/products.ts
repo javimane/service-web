@@ -192,6 +192,11 @@ export const updateProductAction = publicAction
         has_ean: z.boolean().optional(),
         height: z.number().optional(),
         depth: z.number().optional(),
+        image_url: z.union([z.string(), z.array(z.string())]).optional(),
+        images_url: z.array(z.string()).optional(),
+        images_to_save: z.array(z.string()).optional(),
+        images_to_delete: z.array(z.string()).optional(),
+        display_order: z.array(z.number()).optional(),
       })
       .catchall(z.any()),
   )
@@ -236,7 +241,12 @@ export const updateProfessionalProductAction = publicAction
       productId: z.string().or(z.number()),
       updates: z.record(z.string(), z.any()),
       token: authTokenSchema,
-    }),
+      image_url: z.union([z.string(), z.array(z.string())]).optional(),
+      images_url: z.array(z.string()).optional(),
+      images_to_save: z.array(z.string()).optional(),
+      images_to_delete: z.array(z.string()).optional(),
+      display_order: z.array(z.number()).optional(),
+    }).catchall(z.any()),
   )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${parsedInput.professionalId}/product/${parsedInput.productId}`;

@@ -16,6 +16,8 @@ import PromotionsSection from "./sections/PromotionsSection";
 import FeaturedSpecialists from "./sections/FeaturedSpecialists";
 import StoresSection from "./sections/StoresSection";
 import ProfessionalReelsSection from "./sections/ProfessionalReelsSection";
+import PublicationSlider from "@/components/PublicationSlider/PublicationSlider";
+import JobSlider from "@/components/JobSlider/JobSlider";
 import JoinCTASection from "./sections/JoinCTASection";
 import Footer from "../../components/Footer/Footer";
 import { ROUTES } from "../../routes/paths";
@@ -57,6 +59,13 @@ const quickLinks = [
     icon: "/map.png",
     badge: "CERCA",
     badgeColor: "purple",
+  },
+  {
+    label: "Empleos",
+    path: ROUTES.jobs,
+    icon: "/jobs.png", // Assuming a jobs icon exists, if not, it will be a broken image or a default. The user asked for "un icono que diga empleos"
+    badge: "ENCONTRÁ",
+    badgeColor: "blue",
   },
 ];
 
@@ -241,6 +250,8 @@ export default function HomePage() {
           userProvince={userProvince}
           userProvinceId={userProvinceId}
         />
+        <PublicationSlider provinceId={userProvinceId} />
+        <JobSlider provinceId={userProvinceId} />
         <JoinCTASection />
       </main>
 

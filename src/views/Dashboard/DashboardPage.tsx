@@ -40,6 +40,8 @@ import "./DashboardPage.css";
 import DashboardServices from "./sections/DashboardServices";
 import DashboardReferrals from "./sections/DashboardReferrals";
 import JobRequestsSection from "./sections/JobRequestsSection";
+import DashboardPublications from "./sections/DashboardPublications";
+import DashboardJobs from "./sections/DashboardJobs";
 import DashboardOnboarding from "./sections/DashboardOnboarding";
 import FAQSection from "../FAQ/FAQSection";
 import Navbar from "../../components/Navbar/Navbar";
@@ -224,6 +226,8 @@ export default function DashboardPage() {
     "promotions-all",
     "bank-promotions",
     "reels",
+    "jobs",
+    "publications",
   ]);
 
   useEffect(() => {
@@ -397,9 +401,15 @@ export default function DashboardPage() {
             ) : view === "subscription" ? (
               <SubscriptionSection />
             ) : view === "products-create" ? (
-              <ProductCreator onBack={handleShowProducts} productToEdit={editingProduct} />
+              <ProductCreator
+                onBack={handleShowProducts}
+                productToEdit={editingProduct}
+              />
             ) : view === "products" ? (
-              <DashboardProducts onCreateNew={() => handleShowProductsCreate()} onEdit={handleShowProductsCreate} />
+              <DashboardProducts
+                onCreateNew={() => handleShowProductsCreate()}
+                onEdit={handleShowProductsCreate}
+              />
             ) : view === "services" ? (
               <DashboardServices />
             ) : view === "notifications" ? (
@@ -425,6 +435,10 @@ export default function DashboardPage() {
               <DashboardReferrals />
             ) : view === "job-requests" ? (
               <JobRequestsSection />
+            ) : view === "publications" ? (
+              <DashboardPublications />
+            ) : view === "jobs" ? (
+              <DashboardJobs professionalId={professionalId!} />
             ) : view === "faq" ? (
               <FAQSection />
             ) : (

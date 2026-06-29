@@ -160,3 +160,11 @@ async function uploadToPresignedUrl(uploadUrl: string, file: Blob) {
     throw new Error("No se pudo subir el archivo al bucket de AWS.");
   }
 }
+
+export async function uploadPublicationsImage(url: string, file: Blob) {
+  const optimizedFile = await convertToWebP(file);
+
+  await uploadToPresignedUrl(url, optimizedFile);
+
+}
+

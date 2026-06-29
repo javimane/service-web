@@ -36,10 +36,10 @@ export const multimediaService = {
         body: file,
       });
     } catch {
-        throw new Error(
+      throw new Error(
         "No se pudo iniciar la subida del archivo. Verifica CORS del bucket, URL prefirmada vigente y conectividad.",
-        );
-      }
+      );
+    }
 
     if (!response.ok) {
       throw new Error("No se pudo subir el archivo al bucket de AWS.");

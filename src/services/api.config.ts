@@ -153,6 +153,10 @@ export const API_ENDPOINTS = {
     byProfessional: (professionalId: string | number) =>
       `${API_BASE_URL}/api/professional-images/professional/${professionalId}`,
   },
+  professionalPublications: {
+    base: `${API_BASE_URL}/api/professional-publications`,
+    uploadUrl: `${API_BASE_URL}/api/professional-publications/upload-url`,
+  },
   bankPromotions: {
     base: `${API_BASE_URL}/api/bank-promotions`,
     my: `${API_BASE_URL}/api/bank-promotions/my-promotions`,
