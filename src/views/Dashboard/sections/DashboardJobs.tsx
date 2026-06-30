@@ -55,11 +55,9 @@ export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
   const { data: jobs = [], isLoading } = useQuery({
     queryKey: ["dashboard-jobs", professionalId],
     queryFn: async () => {
-      const res = await getJobsAction({
-        professional_id: professionalId,
-        limit: 50,
-        page: 1,
-      });
+      const query: any = { limit: 50, page: 1 };
+      if (professionalId) query.professional_id = professionalId;
+      const res = await getJobsAction(query);
       if (res.serverError) throw new Error(res.serverError);
       return res.data?.items || [];
     },

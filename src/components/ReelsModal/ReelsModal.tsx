@@ -57,7 +57,6 @@ export default function ReelsModal({
                   src={reel.url}
                   className="reels-modal-content__video"
                   controls
-                  muted
                   preload="metadata"
                 />
                 <div className="reels-modal-content__meta">

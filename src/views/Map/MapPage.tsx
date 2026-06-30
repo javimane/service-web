@@ -147,17 +147,20 @@ export default function MapPage() {
   const { data: professionals = [], isLoading } = useQuery({
     queryKey: ["map-professionals", center, filters],
     queryFn: async () => {
-      const result = await getProfessionalsAction({
+      const query: any = {
         lat: center.lat,
         lng: center.lng,
         radius: 20,
         public_trade: "true",
-        name: filters.name || undefined,
-        categoryId: filters.categoryId || undefined,
-        province_id: filters.provinceId || undefined,
-        department_id: filters.departmentId || undefined,
         has_promotions: true,
-      });
+      };
+
+      if (filters.name) query.name = filters.name;
+      if (filters.categoryId) query.categoryId = filters.categoryId;
+      if (filters.provinceId) query.province_id = filters.provinceId;
+      if (filters.departmentId) query.department_id = filters.departmentId;
+
+      const result = await getProfessionalsAction(query);
       const raw = (result?.data as any) ?? result;
       if (raw && Array.isArray(raw.items)) return raw.items;
       if (Array.isArray(raw)) return raw;

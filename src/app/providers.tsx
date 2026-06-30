@@ -9,6 +9,8 @@ import { AlertProvider } from "@/context/AlertContext";
 import AuthModal from "@/components/AuthModal/AuthModal";
 import SessionTimeoutOverlay from "@/components/SessionTimeoutOverlay/SessionTimeoutOverlay";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { Toaster } from "sileo";
+import "sileo/styles.css";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -34,6 +36,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 {children}
                 <AuthModal />
                 <SessionTimeoutOverlay />
+                <Toaster />
               </AlertProvider>
             </AuthModalProvider>
           </AuthProvider>

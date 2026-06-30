@@ -11,19 +11,20 @@ import {
   ArrowLeft,
   MoreVertical,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 import { useAlert } from "../../context/AlertContext";
 import NavbarMessage from "../../components/Navbar/NavBar Messaje/NavbarMessage";
 import { getProfessionalDetailAction } from "../../app/actions/professionals";
-import { getProfilePath } from "../../utils/utils";
 import {
   getMessagesAction,
   sendMessageAction,
   markMessagesAsReadAction,
   getUserConversationsAction,
   getProfileByUserIdAction,
+  deleteChatAction,
 } from "../../app/actions/chat";
 import { sendNotificationAction } from "../../app/actions/notifications";
 import { supabase } from "../../services/supabaseClient";
@@ -311,7 +312,7 @@ export default function MessagesPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { showWarning, showError } = useAlert();
+  const { showWarning, showError, showSuccess } = useAlert();
 
   const targetProfessional =
     searchParams?.get("to") || searchParams?.get("professionalId");
@@ -764,6 +765,49 @@ export default function MessagesPage() {
     };
   }, [user?.id, activeRequestId, queryClient]);
 
+  const deleteChatMutation = useMutation({
+    mutationFn: async (otherUserId: string) => {
+      if (!user?.id) throw new Error("No authenticated user");
+      return deleteChatAction({
+        userId: String(user.id),
+        otherUserId: String(otherUserId),
+      });
+    },
+    onSuccess: () => {
+      showSuccess("Conversación eliminada");
+      queryClient.invalidateQueries({
+        queryKey: ["my-conversations", user?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["chat-messages", activeRequestId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["unread-messages-count", user?.id],
+      });
+      setActiveConversationId("");
+      setMobileShowChat(false);
+      router.replace("/mensajes");
+    },
+    onError: (err: any) => {
+      showError(err.message || "Error al eliminar la conversación");
+    },
+  });
+
+  const handleDeleteChat = () => {
+    if (!activeConversation) return;
+    const otherUserId =
+      activeRequestId || activeConversation.receiverId || activeConversation.id;
+    if (!otherUserId) return;
+
+    if (
+      window.confirm(
+        `¿Estás seguro de que querés eliminar la conversación con ${activeConversation.name}?`,
+      )
+    ) {
+      deleteChatMutation.mutate(otherUserId);
+    }
+  };
+
   const sendMessageMutation = useMutation<
     { requestId: string; content: string; fileUrl?: string },
     Error,
@@ -1118,10 +1162,17 @@ export default function MessagesPage() {
               </div>
               <div className="msg-chat__header-actions">
                 <button
-                  className="msg-topbar__icon-btn"
-                  aria-label="Mas opciones"
+                  className="msg-topbar__icon-btn msg-topbar__icon-btn--delete"
+                  aria-label="Eliminar chat"
+                  onClick={handleDeleteChat}
+                  title="Eliminar chat"
+                  disabled={deleteChatMutation.isPending}
                 >
-                  <MoreVertical size={18} />
+                  {deleteChatMutation.isPending ? (
+                    <Loader2 size={18} className="msg-spin" />
+                  ) : (
+                    <Trash2 size={18} color="var(--error-color)" />
+                  )}
                 </button>
               </div>
             </div>

@@ -27,11 +27,9 @@ export default function JobSlider({ provinceId }: JobSliderProps) {
   const { data: jobs = [], isLoading } = useQuery({
     queryKey: ["jobs-slider", provinceId],
     queryFn: async () => {
-      const res = await getJobsAction({
-        limit: 20,
-        page: 1,
-        province_id: provinceId,
-      });
+      const query: any = { limit: 20, page: 1 };
+      if (provinceId) query.province_id = provinceId;
+      const res = await getJobsAction(query);
       if (res.serverError) throw new Error(res.serverError);
       return res.data?.items || [];
     },

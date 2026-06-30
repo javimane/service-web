@@ -44,7 +44,7 @@ export default function ReelsTheaterModal({
   const { showSuccess } = useAlert();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [likedReels, setLikedReels] = useState<Set<string | number>>(() => {
     const initial = new Set<string | number>();
     if (user?.id) {

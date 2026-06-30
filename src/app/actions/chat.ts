@@ -65,6 +65,19 @@ export const markMessagesAsReadAction = async ({ userId, senderId }: { userId: s
   return { success: true };
 };
 
+export const deleteChatAction = async ({ userId, otherUserId }: { userId: string, otherUserId: string }) => {
+  const { error } = await supabase
+    .from("messages")
+    .delete()
+    .in("sender_id", [userId, otherUserId])
+    .in("receiver_id", [userId, otherUserId]);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return { success: true };
+};
+
 export const getUserConversationsAction = async ({ userId }: { userId: string }) => {
   // Fetch all messages involving the user to determine active conversations
   const { data, error } = await supabase

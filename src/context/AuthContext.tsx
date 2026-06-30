@@ -19,6 +19,7 @@ import {
   mapFirebasePayloadToNotification,
 } from "../services/notificationStorage";
 import Modal from "../components/Modal/Modal";
+import { sileo } from "sileo";
 import "./AuthContext.css";
 
 type SessionStatus = {
@@ -87,10 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     null,
   );
   const [loading, setLoading] = useState(true);
-  const [foregroundNotification, setForegroundNotification] = useState<{
-    title: string;
-    body: string;
-  } | null>(null);
 
   const hasActiveStatusFlag =
     sessionStatus?.status === true || sessionStatus?.status === "active";
@@ -213,19 +210,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               },
             );
 
-            // Mostrar la notificación flotante
-            setForegroundNotification({
+            // Mostrar la notificación flotante con sileo
+            sileo.info({
               title: payload.title || "Nueva Notificación",
-              body:
+              description:
                 payload.content ||
                 payload.message ||
                 "Tienes una nueva notificación",
             });
-
-            // Ocultar la notificación flotante después de 5 segundos
-            setTimeout(() => {
-              setForegroundNotification(null);
-            }, 5000);
           } catch (e) {
             console.error("Error al procesar la notificación en vivo:", e);
           }
@@ -336,7 +328,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let unsubscribe: undefined | (() => void);
-    let clearToastTimer: ReturnType<typeof setTimeout> | undefined;
 
     const setupForegroundNotifications = async () => {
       unsubscribe = await subscribeToForegroundMessages((payload: any) => {
@@ -347,13 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const mapped = mapFirebasePayloadToNotification(payload);
         notificationStorage.addNotification(mapped);
 
-        setForegroundNotification({ title, body });
-        if (clearToastTimer) {
-          clearTimeout(clearToastTimer);
-        }
-        clearToastTimer = setTimeout(() => {
-          setForegroundNotification(null);
-        }, 5000);
+        sileo.info({ title, description: body });
 
         if (
           typeof window !== "undefined" &&
@@ -374,7 +359,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       if (unsubscribe) unsubscribe();
-      if (clearToastTimer) clearTimeout(clearToastTimer);
       window.removeEventListener("session-expired", handleSessionExpired);
     };
   }, []);
@@ -432,20 +416,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      {foregroundNotification && (
-        <div
-          className="foreground-notification"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="foreground-notification__title">
-            {foregroundNotification.title}
-          </div>
-          <div className="foreground-notification__body">
-            {foregroundNotification.body}
-          </div>
-        </div>
-      )}
       <Modal
         isOpen={showChatSyncModal}
         title="Sincronización de Chat"
