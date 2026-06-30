@@ -73,7 +73,7 @@ export const getJobsAction = publicAction
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/jobs?${urlParams.toString()}`;
 
     try {
-      const response = await axios.get(url);
+      const response = await axios.get(url, { headers: ctx.headers });
       return response.data as FindAllJobsResponse;
     } catch (error: any) {
       console.error("Error fetching jobs:", error.message);
@@ -89,11 +89,11 @@ const getJobByIdSchema = z.object({
 
 export const getJobByIdAction = publicAction
   .schema(getJobByIdSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/jobs/${parsedInput.id}`;
 
     try {
-      const response = await axios.get(url);
+      const response = await axios.get(url, { headers: ctx.headers });
       return response.data as Job;
     } catch (error: any) {
       console.error("Error fetching job by ID:", error.message);
