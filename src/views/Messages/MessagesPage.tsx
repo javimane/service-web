@@ -33,6 +33,7 @@ import {
   uploadChatImage,
 } from "../../services/storageUploads";
 import "./MessagesPage.css";
+import Navbar from "@/components/Navbar/Navbar";
 
 type UIConversation = {
   id: string;
@@ -311,7 +312,7 @@ export default function MessagesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, sessionStatus } = useAuth();
   const { showWarning, showError, showSuccess } = useAlert();
 
   const targetProfessional =
@@ -849,7 +850,11 @@ export default function MessagesPage() {
                 user_id: receiverId,
                 sender_id: String(user.id),
                 type: "message",
-                title: user.user_metadata?.full_name || "Usuario",
+                title:
+                  sessionStatus?.company_name ||
+                  sessionStatus?.display_name ||
+                  user.user_metadata?.full_name ||
+                  "Usuario",
                 content: content || "Archivo adjunto",
                 source_id: String(messageId),
               });
@@ -968,7 +973,7 @@ export default function MessagesPage() {
 
   return (
     <div className="msg-app">
-      <NavbarMessage />
+      <Navbar />
       <div className="msg-app__container">
         <header className="msg-topbar">
           <div className="msg-topbar__left">

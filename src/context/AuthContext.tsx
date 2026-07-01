@@ -35,6 +35,7 @@ type SessionStatus = {
   user_id?: string | null;
   email?: string | null;
   display_name?: string | null;
+  company_name?: string | null;
   subscription?: {
     status?: string;
     professional_id?: number | string;
@@ -254,6 +255,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
   }, [user]);
+
+  // Keep Supabase session alive and listen to auth changes
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`Supabase auth event: ${event}`);
+      if (event === "SIGNED_OUT") {
+        console.log("Supabase session cleared");
+      }
+    });
+
+    // Periodically call getSession to trigger auto-refresh of Supabase tokens
+    const interval = setInterval(
+      async () => {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            console.log("Supabase session verified / auto-refreshed");
+          }
+        } catch (err) {
+          console.error("Error refreshing Supabase session:", err);
+        }
+      },
+      1000 * 60 * 10,
+    ); // Every 10 minutes
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(interval);
+    };
+  }, []);
 
   const [showChatSyncModal, setShowChatSyncModal] = useState(false);
 
