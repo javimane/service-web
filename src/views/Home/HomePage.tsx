@@ -163,14 +163,14 @@ export default function HomePage() {
           <div className="home-hero__glow" aria-hidden="true" />
           <div className="home-hero__content">
             <p className="home-hero__eyebrow">
-              Tu plataforma de servicios profesionales
+              Tu red de Servicios y Comercios
             </p>
             <h1 className="home-hero__title">
               ¿Qué necesitas <span className="home-hero__accent">hoy</span>?
             </h1>
             <p className="home-hero__subtitle">
-              Encontrá al profesional ideal cerca tuyo. Electricistas, plomeros,
-              diseñadores y más — todo en un solo lugar.
+              Encontrá un comercio o profesional cerca tuyo. Electricistas,
+              plomeros, diseñadores, mayoristas y más — todo en un solo lugar.
             </p>
 
             <form className="home-hero__search" onSubmit={handleHeroSearch}>

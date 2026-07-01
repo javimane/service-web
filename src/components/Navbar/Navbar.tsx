@@ -251,6 +251,16 @@ export default function Navbar() {
       path: `${ROUTES.dashboard}?view=services`,
     },
     {
+      label: "Publicaciones",
+      icon: UploadCloud,
+      path: `${ROUTES.dashboard}?view=publications`,
+    },
+    {
+      label: "Empleos",
+      icon: Briefcase,
+      path: `${ROUTES.dashboard}?view=jobs`,
+    },
+    {
       label: "Agenda",
       icon: CalendarDays,
       path: `${ROUTES.dashboard}?view=calendar`,
