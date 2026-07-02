@@ -4,6 +4,9 @@ import { z } from "zod";
 import { publicAction } from "@/lib/safe-action";
 import { env } from "@/lib/env";
 import axios from "@/services/apiClient";
+import { buildActionHeaders } from "./_utils/authHeaders";
+
+const authTokenSchema = z.string().optional();
 
 export const getAvailabilityByProfessionalAction = publicAction
   .schema(z.object({ professionalId: z.number() }))
@@ -38,12 +41,21 @@ export const upsertAvailabilityBulkAction = publicAction
   });
 
 export const deleteAvailabilityAction = publicAction
-  .schema(z.object({ id: z.number() }))
+  .schema(
+    z.object({
+      id: z.string(),
+      token: authTokenSchema,
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
-    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional/availability/${parsedInput.id}`;
+    const availabilityId = parsedInput.id;
+
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional/availability/${availabilityId}`;
 
     try {
-      await axios.delete(url, { headers: ctx.headers });
+      await axios.delete(url, {
+        headers: await buildActionHeaders(ctx, parsedInput.token),
+      });
       return { success: true };
     } catch (error: any) {
       throw new Error(

@@ -93,6 +93,33 @@ type VideoItem = {
   description: string;
 };
 
+const EMPTY_AVAILABILITY: any[] = [];
+
+const areSameSlots = (a: AvailabilitySlot[], b: AvailabilitySlot[]) => {
+  if (a.length !== b.length) return false;
+
+  return a.every((slot, index) => {
+    const other = b[index];
+    if (!other) return false;
+
+    return (
+      slot.id === other.id &&
+      slot.day_of_week === other.day_of_week &&
+      slot.start_time === other.start_time &&
+      slot.end_time === other.end_time
+    );
+  });
+};
+
+const mapAvailabilityToSlots = (items: any[] = []): AvailabilitySlot[] =>
+  items.map((s) => ({
+    tempId: `srv-${s.id}`,
+    id: s.id,
+    day_of_week: s.day_of_week ?? DayOfWeek.LUNES,
+    start_time: s.start_time,
+    end_time: s.end_time,
+  }));
+
 const createId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -179,7 +206,7 @@ export default function ProfessionalProfileSection() {
   });
 
   // Availability Query
-  const { data: availabilityData = [] } = useQuery({
+  const { data: availabilityData, refetch: refetchAvailability } = useQuery({
     queryKey: ["availability", professionalId],
     queryFn: async () => {
       const result = await getAvailabilityByProfessionalAction({
@@ -255,17 +282,13 @@ export default function ProfessionalProfileSection() {
   }, [professional]);
 
   useEffect(() => {
-    if (availabilityData.length > 0) {
-      setLocalSlots(
-        availabilityData.map((s) => ({
-          tempId: `srv-${s.id}`,
-          id: s.id,
-          day_of_week: s.day_of_week ?? DayOfWeek.LUNES,
-          start_time: s.start_time,
-          end_time: s.end_time,
-        })),
-      );
-    }
+    const source = availabilityData ?? EMPTY_AVAILABILITY;
+    const nextSlots = mapAvailabilityToSlots(source);
+
+    setLocalSlots((prev) => {
+      if (areSameSlots(prev, nextSlots)) return prev;
+      return nextSlots;
+    });
   }, [availabilityData]);
 
   useEffect(() => {
@@ -731,7 +754,8 @@ export default function ProfessionalProfileSection() {
             is_matriculate: isMatriculate,
             emergency: attendsEmergency,
             web_url: webUrl || null,
-            years_experience: yearsExperience === "" ? null : Number(yearsExperience),
+            years_experience:
+              yearsExperience === "" ? null : Number(yearsExperience),
           },
           token: getAccessToken(),
         });
@@ -773,9 +797,14 @@ export default function ProfessionalProfileSection() {
     const slot = localSlots[index];
     if (!slot) return;
 
-    if (slot.id !== undefined) {
+    const availabilityId = slot.id;
+
+    if (availabilityId !== undefined && availabilityId !== null) {
       try {
-        const result = await deleteAvailabilityAction({ id: slot.id });
+        const result = await deleteAvailabilityAction({
+          id: String(availabilityId),
+          token: getAccessToken(),
+        });
         if (result?.serverError) throw new Error(result.serverError);
         queryClient.invalidateQueries({
           queryKey: ["availability", professionalId],
@@ -815,19 +844,12 @@ export default function ProfessionalProfileSection() {
         availability: items,
       });
       if (result?.serverError) throw new Error(result.serverError);
-      const saved = result?.data ?? [];
-      setLocalSlots(
-        saved.map((s) => ({
-          tempId: `srv-${s.id}`,
-          id: s.id,
-          day_of_week: s.day_of_week ?? DayOfWeek.LUNES,
-          start_time: s.start_time,
-          end_time: s.end_time,
-        })),
-      );
       queryClient.invalidateQueries({
         queryKey: ["availability", professionalId],
       });
+      const refreshed = await refetchAvailability();
+      const refreshedSlots = mapAvailabilityToSlots(refreshed.data ?? []);
+      setLocalSlots(refreshedSlots);
       setSavedMessage("Horarios guardados correctamente.");
     } catch {
       setSavedMessage("No se pudieron guardar los horarios.");
@@ -934,16 +956,6 @@ export default function ProfessionalProfileSection() {
 
             <div className="professional-profile__field-grid">
               <label className="professional-profile__field professional-profile__field--full">
-                <span>Nombre visible</span>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Tu nombre o nombre comercial"
-                />
-              </label>
-
-              <label className="professional-profile__field professional-profile__field--full">
                 <span>Foto de perfil</span>
                 <div className="professional-profile__photo-upload">
                   <label className="professional-profile__upload-btn">
@@ -1016,7 +1028,11 @@ export default function ProfessionalProfileSection() {
                   type="number"
                   min="0"
                   value={yearsExperience}
-                  onChange={(e) => setYearsExperience(e.target.value === "" ? "" : Number(e.target.value))}
+                  onChange={(e) =>
+                    setYearsExperience(
+                      e.target.value === "" ? "" : Number(e.target.value),
+                    )
+                  }
                   placeholder="Ej: 5"
                 />
               </label>
