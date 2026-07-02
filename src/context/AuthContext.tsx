@@ -279,8 +279,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("Error refreshing Supabase session:", err);
         }
       },
-      1000 * 60 * 10,
-    ); // Every 10 minutes
+      400 * 60 * 10,
+    ); // Every 4 minutes
 
     return () => {
       subscription.unsubscribe();

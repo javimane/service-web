@@ -17,6 +17,7 @@ const productListSchema = z.object({
   lng: z.number().optional(),
   radius: z.number().optional(),
   categoryId: z.number().optional(),
+  subcategoryId: z.string().optional(),
   is_foreign: z.boolean().optional(),
   price: z.number().optional(),
   priceMin: z.number().optional(),
@@ -92,6 +93,7 @@ export const getProductsByProfessionalAction = publicAction
       ean: z.string().optional(),
       name: z.string().optional(),
       categoryId: z.number().optional(),
+      subcategoryId: z.string().optional(),
       page: z.number().optional(),
       limit: z.number().optional(),
     }),
@@ -105,6 +107,8 @@ export const getProductsByProfessionalAction = publicAction
     if (queryParams.name) query.append("name", queryParams.name);
     if (queryParams.categoryId !== undefined)
       query.append("categoryId", String(queryParams.categoryId));
+    if (queryParams.subcategoryId)
+      query.append("subcategoryId", String(queryParams.subcategoryId));
     if (queryParams.page !== undefined)
       query.append("page", String(queryParams.page));
     if (queryParams.limit !== undefined)
@@ -187,6 +191,7 @@ export const updateProductAction = publicAction
         description: z.string().optional(),
         brand: z.string().optional(),
         categories_products_id: z.number().optional(),
+        sub_categories_products_id: z.string().optional(),
         weight: z.number().optional(),
         width: z.number().optional(),
         has_ean: z.boolean().optional(),
@@ -236,17 +241,19 @@ export const assignProductToProfessionalAction = publicAction
 
 export const updateProfessionalProductAction = publicAction
   .schema(
-    z.object({
-      professionalId: z.number(),
-      productId: z.string().or(z.number()),
-      updates: z.record(z.string(), z.any()),
-      token: authTokenSchema,
-      image_url: z.union([z.string(), z.array(z.string())]).optional(),
-      images_url: z.array(z.string()).optional(),
-      images_to_save: z.array(z.string()).optional(),
-      images_to_delete: z.array(z.string()).optional(),
-      display_order: z.array(z.number()).optional(),
-    }).catchall(z.any()),
+    z
+      .object({
+        professionalId: z.number(),
+        productId: z.string().or(z.number()),
+        updates: z.record(z.string(), z.any()),
+        token: authTokenSchema,
+        image_url: z.union([z.string(), z.array(z.string())]).optional(),
+        images_url: z.array(z.string()).optional(),
+        images_to_save: z.array(z.string()).optional(),
+        images_to_delete: z.array(z.string()).optional(),
+        display_order: z.array(z.number()).optional(),
+      })
+      .catchall(z.any()),
   )
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${parsedInput.professionalId}/product/${parsedInput.productId}`;

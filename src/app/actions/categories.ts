@@ -23,7 +23,68 @@ export const getProductCategoriesAction = publicAction
       return response.data;
     } catch (error: any) {
       console.error("Error fetching product categories:", error.message);
-      throw new Error(error.response?.data?.message || "Error fetching product categories");
+      throw new Error(
+        error.response?.data?.message || "Error fetching product categories",
+      );
+    }
+  });
+
+export const getProductSubcategoriesAction = publicAction
+  .schema(
+    z
+      .object({
+        categoryId: z.string().optional(),
+      })
+      .optional(),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const categoryId = parsedInput?.categoryId;
+    const hasValidCategoryId = categoryId !== undefined && categoryId !== "";
+    const query = hasValidCategoryId ? `?categoryId=${categoryId}` : "";
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/categories/products/subcategories${query}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          ...ctx.headers,
+        },
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error("Error fetching product subcategories:", error.message);
+      throw new Error(
+        error.response?.data?.message || "Error fetching product subcategories",
+      );
+    }
+  });
+
+export const getProductSubcategoryByIdAction = publicAction
+  .schema(
+    z.object({
+      id: z.string(),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/categories/products/subcategories/${parsedInput.id}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          ...ctx.headers,
+        },
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        "Error fetching product subcategory detail:",
+        error.message,
+      );
+      throw new Error(
+        error.response?.data?.message ||
+          "Error fetching product subcategory detail",
+      );
     }
   });
 
@@ -42,7 +103,9 @@ export const getServiceCategoriesAction = publicAction
       return response.data;
     } catch (error: any) {
       console.error("Error fetching service categories:", error.message);
-      throw new Error(error.response?.data?.message || "Error fetching service categories");
+      throw new Error(
+        error.response?.data?.message || "Error fetching service categories",
+      );
     }
   });
 
@@ -65,8 +128,8 @@ export const updateProfessionalCategoriesAction = publicAction
     } catch (error: any) {
       console.error("Error updating professional categories:", error.message);
       throw new Error(
-        error.response?.data?.message || "Error updating professional categories",
+        error.response?.data?.message ||
+          "Error updating professional categories",
       );
     }
   });
-

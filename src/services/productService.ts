@@ -14,6 +14,7 @@ export interface CreateProductRequest {
   image_url?: string[];
   display_order?: number[];
   categories_products_id?: number;
+  sub_categories_products_id?: string;
   // Professional relationship fields (handled in same request by API)
   professional_id?: number;
   price?: number;
@@ -33,6 +34,7 @@ export interface UpdateProductRequest {
   images_to_delete?: string[];
   display_order?: number[];
   categories_products_id?: number;
+  sub_categories_products_id?: string;
 }
 
 export interface UpdatePriceToManyRequest {
@@ -73,7 +75,11 @@ export const productService = {
     const urlParams = new URLSearchParams();
     if (params) {
       Object.keys(params).forEach((key) => {
-        if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
+        if (
+          params[key] !== undefined &&
+          params[key] !== null &&
+          params[key] !== ""
+        ) {
           urlParams.append(key, params[key].toString());
         }
       });

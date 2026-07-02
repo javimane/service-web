@@ -105,12 +105,28 @@ export default function AddItemModal({
       if (productSource === "mine" && professionalId) {
         const result = await getProductsByProfessionalAction({
           professionalId,
+          name: productSearch.trim() || undefined,
+          limit: 30,
+          page: 1,
         });
         const rawData = result?.data as any;
-        data = Array.isArray(rawData?.data) ? rawData.data : Array.isArray(rawData) ? rawData : [];
+        data = Array.isArray(rawData?.data)
+          ? rawData.data
+          : Array.isArray(rawData)
+            ? rawData
+            : [];
       } else {
-        const result = await getProductsAction(professionalId);
-        data = result?.data || [];
+        const result = await getProductsAction({
+          name: productSearch.trim() || undefined,
+          limit: 30,
+          page: 1,
+        });
+        const rawData = result?.data as any;
+        data = Array.isArray(rawData?.data)
+          ? rawData.data
+          : Array.isArray(rawData)
+            ? rawData
+            : [];
       }
 
       let filtered = data.map(mapProductData);

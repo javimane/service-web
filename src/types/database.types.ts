@@ -49,6 +49,12 @@ export interface CategoryProductRow {
   readonly name: string;
 }
 
+export interface SubCategoryProductRow {
+  readonly category_id: number;
+  readonly id: string;
+  readonly name: string;
+}
+
 export interface CategoryServiceRow {
   readonly id: number;
   readonly name: string;
@@ -151,11 +157,13 @@ export interface ProductRow {
   readonly created_at: string | null;
   readonly updated_at: string | null;
   readonly categories_products_id: number | null;
+  readonly sub_categories_products_id: string | null;
   readonly is_foreign: boolean | null;
   readonly seo_path?: string | null;
   readonly price?: number | null;
   // Relationships
   readonly CategoryProduct?: CategoryProductRow;
+  readonly SubCategory?: SubCategoryProductRow;
   readonly Images?: ImageRow[];
   readonly ProfessionalProducts?: ProfessionalProductRow[];
 }

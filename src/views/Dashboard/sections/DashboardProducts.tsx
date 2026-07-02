@@ -37,7 +37,10 @@ import {
   unassignProductFromProfessionalAction,
   updateProfessionalProductAction,
 } from "../../../app/actions/products";
-import { getProductCategoriesAction } from "../../../app/actions/categories";
+import {
+  getProductCategoriesAction,
+  getProductSubcategoriesAction,
+} from "../../../app/actions/categories";
 import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
 import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
@@ -180,6 +183,7 @@ export default function DashboardProducts({
   const [searchQuery, setSearchQuery] = useState("");
   const [eanSearchQuery, setEanSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [subcategoryFilter, setSubcategoryFilter] = useState("");
   const [sortField, setSortField] = useState("title");
   const [sortDir, setSortDir] = useState("asc");
 
@@ -202,6 +206,7 @@ export default function DashboardProducts({
     brand: "",
     price: "",
     categoryId: "",
+    subcategoryId: "",
     stock: "",
     image: "",
     description: "",
@@ -240,6 +245,7 @@ export default function DashboardProducts({
     brand: string;
     price: string;
     categoryId: string;
+    subcategoryId: string;
     stock: string;
     image: string;
     description: string;
@@ -274,6 +280,7 @@ export default function DashboardProducts({
       searchQuery,
       eanSearchQuery,
       categoryFilter,
+      subcategoryFilter,
     ],
     queryFn: async () => {
       const result = await getProductsByProfessionalAction({
@@ -283,6 +290,7 @@ export default function DashboardProducts({
         name: searchQuery || undefined,
         ean: eanSearchQuery || undefined,
         categoryId: categoryFilter ? Number(categoryFilter) : undefined,
+        subcategoryId: subcategoryFilter || undefined,
       });
       return (result?.data as any) || {};
     },
@@ -302,12 +310,33 @@ export default function DashboardProducts({
         : 0;
   const totalPages = Math.ceil(totalServerProducts / limit) || 1;
 
+  const selectedCategoryForSubcategories =
+    editProduct?.categoryId || newProduct.categoryId || categoryFilter;
+
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-products"],
     queryFn: async () => {
       const result = await getProductCategoriesAction();
       return result?.data ?? [];
     },
+  });
+
+  const { data: subcategories = [] } = useQuery({
+    queryKey: [
+      "categories-products-subcategories",
+      selectedCategoryForSubcategories,
+    ],
+    queryFn: async () => {
+      const categoryId = selectedCategoryForSubcategories;
+      if (!categoryId) return [];
+      const result = await getProductSubcategoriesAction({
+        categoryId,
+      });
+      return result?.data ?? [];
+    },
+    enabled: !!selectedCategoryForSubcategories,
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60 * 2,
   });
 
   // Map API data to component structure
@@ -337,6 +366,15 @@ export default function DashboardProducts({
         item.Product?.category?.name ||
         "General"
       ).trim(),
+      subcategory:
+        item.Product?.SubCategory?.name ||
+        item.Product?.subCategory?.name ||
+        "",
+      subcategoryId:
+        item.Product?.sub_categories_products_id ||
+        item.Product?.SubCategory?.id ||
+        item.Product?.subCategory?.id ||
+        "",
       stock: item.stock || 0,
       image: Array.isArray(item.Product?.Images)
         ? [...item.Product.Images]
@@ -514,7 +552,7 @@ export default function DashboardProducts({
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, eanSearchQuery, categoryFilter]);
+  }, [searchQuery, eanSearchQuery, categoryFilter, subcategoryFilter]);
 
   // Stats
   const totalStock = productsList.reduce((s, p) => s + (p.stock || 0), 0);
@@ -652,6 +690,9 @@ export default function DashboardProducts({
           categoryId: match.Product?.categories_products_id
             ? String(match.Product.categories_products_id)
             : editProduct.categoryId,
+          subcategoryId: match.Product?.sub_categories_products_id
+            ? String(match.Product.sub_categories_products_id)
+            : editProduct.subcategoryId,
           image: match.Product?.image_url || editProduct.image,
           description: match.Product?.description || editProduct.description,
           images: matchedImages.length > 0 ? matchedImages : editProduct.images,
@@ -692,6 +733,7 @@ export default function DashboardProducts({
       brand: "",
       price: "",
       categoryId: "",
+      subcategoryId: "",
       stock: "",
       image: "",
       description: "",
@@ -762,6 +804,7 @@ export default function DashboardProducts({
       categories_products_id: newProduct.categoryId
         ? Number(newProduct.categoryId)
         : undefined,
+      sub_categories_products_id: newProduct.subcategoryId || undefined,
       professional_id: professionalId,
       price: Number(formPrice),
       sale_type: "unit",
@@ -791,6 +834,7 @@ export default function DashboardProducts({
       brand: product.brand || "",
       price: String(product.price),
       categoryId: categoryMatch ? String(categoryMatch.id) : "",
+      subcategoryId: product.subcategoryId ? String(product.subcategoryId) : "",
       stock: String(product.stock || 0),
       image: product.image || "",
       description: product.description || "",
@@ -920,6 +964,7 @@ export default function DashboardProducts({
         wholesale: editProduct.wholesale,
         wholesale_price: Number(editProduct.wholesale_price) || 0,
         wholesale_unit: Number(editProduct.wholesale_unit) || 0,
+        sub_categories_products_id: editProduct.subcategoryId || undefined,
       },
     });
   };
@@ -1026,12 +1071,15 @@ export default function DashboardProducts({
           <Filter size={16} />
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setSubcategoryFilter("");
+            }}
             className="dash-products__category-select"
           >
             <option value="">Todas las categorías</option>
             {categories.map((cat) => (
-              <option key={cat.id} value={cat.name.trim()}>
+              <option key={cat.id} value={cat.id}>
                 {cat.name}
               </option>
             ))}
@@ -1046,13 +1094,36 @@ export default function DashboardProducts({
             <Search size={14} />
           </button>
         </div>
-        {(searchQuery || eanSearchQuery || categoryFilter) && (
+        <div className="dash-products__search">
+          <Filter size={16} />
+          <select
+            value={subcategoryFilter}
+            onChange={(e) => setSubcategoryFilter(e.target.value)}
+            className="dash-products__category-select"
+          >
+            <option value="">
+              {categoryFilter
+                ? "Todas las subcategorías"
+                : "Elegí una categoría primero"}
+            </option>
+            {subcategories.map((sub: any) => (
+              <option key={sub.id} value={sub.id}>
+                {sub.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {(searchQuery ||
+          eanSearchQuery ||
+          categoryFilter ||
+          subcategoryFilter) && (
           <button
             className="dash-products__clear-filters"
             onClick={() => {
               setSearchQuery("");
               setEanSearchQuery("");
               setCategoryFilter("");
+              setSubcategoryFilter("");
             }}
             title="Limpiar todos los filtros"
           >
@@ -1533,6 +1604,7 @@ export default function DashboardProducts({
                       setEditProduct({
                         ...editProduct,
                         categoryId: e.target.value,
+                        subcategoryId: "",
                       })
                     }
                     className="dash-products__modal-select"
@@ -1541,6 +1613,31 @@ export default function DashboardProducts({
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="dash-products__modal-field">
+                  <label>Subcategoría (Opcional)</label>
+                  <select
+                    value={editProduct.subcategoryId}
+                    onChange={(e) =>
+                      setEditProduct({
+                        ...editProduct,
+                        subcategoryId: e.target.value,
+                      })
+                    }
+                    className="dash-products__modal-select"
+                  >
+                    <option value="">
+                      {editProduct.categoryId
+                        ? "Seleccionar subcategoría"
+                        : "Seleccioná primero una categoría"}
+                    </option>
+                    {subcategories.map((sub: any) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
                       </option>
                     ))}
                   </select>

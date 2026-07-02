@@ -16,7 +16,10 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
-import { getProductCategoriesAction } from "../../../app/actions/categories";
+import {
+  getProductCategoriesAction,
+  getProductSubcategoriesAction,
+} from "../../../app/actions/categories";
 import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
 import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
@@ -61,6 +64,7 @@ export default function ProductCreator({
     name: "",
     brand: "",
     categoryId: "",
+    subcategoryId: "",
     description: "",
     ean: "",
     has_ean: false,
@@ -108,6 +112,20 @@ export default function ProductCreator({
       const result = await getProductCategoriesAction();
       return result?.data ?? [];
     },
+  });
+
+  const { data: subcategories = [] } = useQuery({
+    queryKey: ["categories-products-subcategories", newProduct.categoryId],
+    queryFn: async () => {
+      const categoryId = newProduct.categoryId;
+      const result = await getProductSubcategoriesAction({
+        categoryId,
+      });
+      return result?.data ?? [];
+    },
+    enabled: Number.isFinite(Number(newProduct.categoryId)),
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   const createMutation = useMutation({
@@ -189,6 +207,12 @@ export default function ProductCreator({
           categories
             .find((c: any) => c.name === productToEdit.category)
             ?.id?.toString() || "",
+        subcategoryId:
+          productToEdit.sub_categories_products_id?.toString() ||
+          productToEdit.subcategoryId?.toString() ||
+          productToEdit.SubCategory?.id?.toString() ||
+          productToEdit.subCategory?.id?.toString() ||
+          "",
         description: productToEdit.description || "",
         ean: productToEdit.ean || "",
         has_ean: !productToEdit.ean,
@@ -392,6 +416,7 @@ export default function ProductCreator({
         categories_products_id: newProduct.categoryId
           ? Number(newProduct.categoryId)
           : undefined,
+        sub_categories_products_id: newProduct.subcategoryId || undefined,
         professional_id: professionalId,
         price: Number(formPrice),
         sale_type: "unit",
@@ -422,6 +447,7 @@ export default function ProductCreator({
           description: payload.description,
           brand: payload.brand,
           categories_products_id: payload.categories_products_id,
+          sub_categories_products_id: payload.sub_categories_products_id,
           weight: payload.weight,
           width: payload.width,
           has_ean: payload.has_ean,
@@ -869,7 +895,10 @@ export default function ProductCreator({
                   <label>Categoría *</label>
                   <select
                     value={newProduct.categoryId}
-                    onChange={(e) => set("categoryId", e.target.value)}
+                    onChange={(e) => {
+                      set("categoryId", e.target.value);
+                      set("subcategoryId", "");
+                    }}
                     className="dash-products__modal-select"
                   >
                     <option value="">Seleccionar...</option>
@@ -884,6 +913,26 @@ export default function ProductCreator({
                       {errors.categoryId}
                     </span>
                   )}
+                </div>
+
+                <div className="product-creator__field">
+                  <label>Subcategoría (Opcional)</label>
+                  <select
+                    value={newProduct.subcategoryId}
+                    onChange={(e) => set("subcategoryId", e.target.value)}
+                    className="dash-products__modal-select"
+                  >
+                    <option value="">
+                      {newProduct.categoryId
+                        ? "Seleccionar subcategoría..."
+                        : "Seleccioná primero una categoría"}
+                    </option>
+                    {subcategories.map((s: any) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="product-creator__field product-creator__field--full">

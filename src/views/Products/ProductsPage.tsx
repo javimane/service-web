@@ -18,7 +18,10 @@ import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import ProductFilters from "./ProductFilters";
 import "./ProductsPage.css";
-import { getProductCategoriesAction } from "@/app/actions/categories";
+import {
+  getProductCategoriesAction,
+  getProductSubcategoriesAction,
+} from "@/app/actions/categories";
 import { getProvincesAction } from "@/app/actions/provinces";
 
 function formatPrice(n) {
@@ -33,6 +36,7 @@ const sortOptions = [
 const defaultFilters = {
   search: "",
   categoryId: "all",
+  subcategoryId: "all",
   provinceId: "all",
   is_foreign: "all", // "all", "national", "foreign"
   price: "",
@@ -117,6 +121,21 @@ export default function ProductsPage() {
     gcTime: 1000 * 60 * 60 * 24,
   });
 
+  const { data: subcategories = [] } = useQuery({
+    queryKey: ["product-subcategories", filters.categoryId],
+    queryFn: async () => {
+      const categoryId = filters.categoryId;
+      if (!categoryId) return [];
+      const result = await getProductSubcategoriesAction({
+        categoryId,
+      });
+      return result?.data ?? [];
+    },
+    enabled: !!filters.categoryId,
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
+  });
+
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["products", effectiveFilters, page],
     queryFn: async () => {
@@ -129,6 +148,10 @@ export default function ProductsPage() {
           effectiveFilters.categoryId === "all"
             ? undefined
             : Number(effectiveFilters.categoryId),
+        subcategoryId:
+          effectiveFilters.subcategoryId === "all"
+            ? undefined
+            : effectiveFilters.subcategoryId,
         provinceId:
           effectiveFilters.provinceId === "all"
             ? undefined
@@ -286,7 +309,17 @@ export default function ProductsPage() {
   }, [normalizedProductsResponse, professionalIdParam]);
 
   const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      if (key === "categoryId") {
+        return {
+          ...prev,
+          categoryId: value,
+          subcategoryId: "all",
+        };
+      }
+
+      return { ...prev, [key]: value };
+    });
     setPage(1);
   };
 
@@ -473,6 +506,7 @@ export default function ProductsPage() {
           <ProductFilters
             filters={filters}
             categories={categories}
+            subcategories={subcategories}
             provinces={provinces}
             onFilterChange={handleFilterChange}
             onClear={clearFilters}

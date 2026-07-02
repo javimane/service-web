@@ -26,24 +26,30 @@ function formatPrice(n: number | null | undefined) {
 
 const formatDescription = (text: string) => {
   if (!text) return null;
-  const lines = text.split('\n');
+  const lines = text.split("\n");
   const result: React.ReactNode[] = [];
-  
+
   let key = 0;
   lines.forEach((line) => {
     // split the line by '*' (lookahead to keep the asterisk)
     const parts = line.split(/(?=\*)/);
-    parts.forEach(part => {
+    parts.forEach((part) => {
       if (part.trim()) {
         result.push(
-          <span key={key++} style={{ display: "block", marginTop: part.trim().startsWith("*") ? "4px" : "0" }}>
+          <span
+            key={key++}
+            style={{
+              display: "block",
+              marginTop: part.trim().startsWith("*") ? "4px" : "0",
+            }}
+          >
             {part}
-          </span>
+          </span>,
         );
       }
     });
   });
-  
+
   return result;
 };
 
@@ -127,6 +133,10 @@ export default function ProductDetailPage() {
   const productBrand = item.brand;
   const productEan = item.ean;
   const productCategory = itemAny.Category?.name;
+  const productSubcategory =
+    itemAny.SubCategory?.name ||
+    itemAny.subCategory?.name ||
+    itemAny.sub_category?.name;
   const productOrigin = item.is_foreign ? "Externo" : "Local";
   const productImages = item.Images || [];
 
@@ -296,6 +306,12 @@ export default function ProductDetailPage() {
                   </span>
                 </div>
                 <div className="product-detail__fact-row">
+                  <span className="fact-label">Subcategoría</span>
+                  <span className="fact-value">
+                    {productSubcategory || "No informada"}
+                  </span>
+                </div>
+                <div className="product-detail__fact-row">
                   <span className="fact-label">EAN</span>
                   <span className="fact-value">
                     {productEan || "No informado"}
@@ -318,7 +334,10 @@ export default function ProductDetailPage() {
             {productDescription && (
               <div className="product-detail__description-container">
                 <h3>Descripción</h3>
-                <div className="product-detail__description" style={{ whiteSpace: "pre-wrap" }}>
+                <div
+                  className="product-detail__description"
+                  style={{ whiteSpace: "pre-wrap" }}
+                >
                   {formatDescription(productDescription)}
                 </div>
               </div>

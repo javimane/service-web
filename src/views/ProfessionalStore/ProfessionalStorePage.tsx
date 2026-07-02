@@ -19,7 +19,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { getProfessionalDetailAction } from "../../app/actions/professionals";
 import { getProductsAction } from "../../app/actions/products";
-import { getProductCategoriesAction } from "../../app/actions/categories";
+import {
+  getProductCategoriesAction,
+  getProductSubcategoriesAction,
+} from "../../app/actions/categories";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
@@ -39,6 +42,7 @@ const sortOptions = [
 const defaultFilters = {
   search: "",
   categoryId: "all",
+  subcategoryId: "all",
   priceMin: "",
   priceMax: "",
   ean: "",
@@ -122,6 +126,21 @@ export default function ProfessionalStorePage() {
     gcTime: 1000 * 60 * 60 * 24,
   });
 
+  const { data: subcategories = [] } = useQuery({
+    queryKey: ["store-product-subcategories", filters.categoryId],
+    queryFn: async () => {
+      const categoryId = filters.categoryId;
+      if (!categoryId) return [];
+      const result = await getProductSubcategoriesAction({
+        categoryId,
+      });
+      return result?.data ?? [];
+    },
+    enabled: !!filters.categoryId,
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60 * 2,
+  });
+
   // Fetch product name suggestions when debouncedSearchInput changes
   const { data: suggestions = [], isLoading: loadingSuggestions } = useQuery({
     queryKey: ["product-suggestions", id, debouncedSearchInput],
@@ -152,6 +171,7 @@ export default function ProfessionalStorePage() {
       filters.search,
       debouncedEan,
       filters.categoryId,
+      filters.subcategoryId,
       filters.priceMin,
       filters.priceMax,
       filters.wholesale,
@@ -166,6 +186,8 @@ export default function ProfessionalStorePage() {
         name: filters.search || undefined,
         categoryId:
           filters.categoryId !== "all" ? Number(filters.categoryId) : undefined,
+        subcategoryId:
+          filters.subcategoryId !== "all" ? filters.subcategoryId : undefined,
         priceMin: filters.priceMin ? Number(filters.priceMin) : undefined,
         priceMax: filters.priceMax ? Number(filters.priceMax) : undefined,
         ean: debouncedEan || undefined,
@@ -261,7 +283,17 @@ export default function ProfessionalStorePage() {
     profile?.portfolio_image_url || profile?.banner_url || null;
 
   const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      if (key === "categoryId") {
+        return {
+          ...prev,
+          categoryId: value,
+          subcategoryId: "all",
+        };
+      }
+
+      return { ...prev, [key]: value };
+    });
     setPage(1);
   };
 
@@ -506,12 +538,45 @@ export default function ProfessionalStorePage() {
             </div>
 
             <div className="store-filter-section">
+              <label>
+                <Package size={14} /> Subcategoría
+              </label>
+              <select
+                value={filters.subcategoryId}
+                onChange={(e) =>
+                  handleFilterChange("subcategoryId", e.target.value)
+                }
+              >
+                <option value="all">
+                  {filters.categoryId === "all"
+                    ? "Seleccioná primero una categoría"
+                    : "Todas las subcategorías"}
+                </option>
+                {subcategories.map((s: any) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="store-filter-section">
               <label>Venta Mayorista</label>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.875rem", cursor: "pointer" }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={filters.wholesale}
-                  onChange={(e) => handleFilterChange("wholesale", e.target.checked)}
+                  onChange={(e) =>
+                    handleFilterChange("wholesale", e.target.checked)
+                  }
                 />
                 Solo por mayor
               </label>
@@ -651,11 +716,38 @@ export default function ProfessionalStorePage() {
                           </div>
                         )}
                         {product.wholesale && (
-                          <div style={{ display: "flex", flexDirection: "column", marginTop: "4px", gap: "2px" }}>
-                            <span style={{ backgroundColor: "var(--accent-color)", color: "white", alignSelf: "flex-start", padding: "2px 6px", borderRadius: "4px", fontSize: "0.65rem", fontWeight: "bold", textTransform: "uppercase" }}>Por mayor</span>
-                            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              marginTop: "4px",
+                              gap: "2px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                backgroundColor: "var(--accent-color)",
+                                color: "white",
+                                alignSelf: "flex-start",
+                                padding: "2px 6px",
+                                borderRadius: "4px",
+                                fontSize: "0.65rem",
+                                fontWeight: "bold",
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              Por mayor
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "0.8rem",
+                                color: "var(--text-secondary)",
+                                fontWeight: 600,
+                              }}
+                            >
                               {product.currencyCode === "USD" ? "USD $" : "$"}
-                              {formatPrice(product.wholesale_price)} x {product.wholesale_unit} un.
+                              {formatPrice(product.wholesale_price)} x{" "}
+                              {product.wholesale_unit} un.
                             </span>
                           </div>
                         )}

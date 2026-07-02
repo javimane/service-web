@@ -94,6 +94,17 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/api/products/${productId}/professional/${professionalId}`,
     byEan: (ean: string) => `${API_BASE_URL}/api/products/ean/${ean}`,
   },
+  categoriesProducts: {
+    list: `${API_BASE_URL}/api/categories/products`,
+    detail: (id: number | string) =>
+      `${API_BASE_URL}/api/categories/products/${id}`,
+    subcategories: (categoryId?: number) =>
+      `${API_BASE_URL}/api/categories/products/subcategories${
+        categoryId !== undefined ? `?categoryId=${categoryId}` : ""
+      }`,
+    subcategoryDetail: (id: string) =>
+      `${API_BASE_URL}/api/categories/products/subcategories/${id}`,
+  },
   services: {
     list: `${API_BASE_URL}/api/services`,
     base: `${API_BASE_URL}/api/services`,

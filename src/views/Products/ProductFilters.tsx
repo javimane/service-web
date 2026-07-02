@@ -7,6 +7,7 @@ import "./ProductFilters.css";
 export default function ProductFilters({
   filters,
   categories,
+  subcategories,
   provinces,
   onFilterChange,
   onClear,
@@ -47,6 +48,20 @@ export default function ProductFilters({
       options: categories.map((c: any) => ({
         value: String(c.id),
         label: c.name,
+      })),
+    },
+    {
+      type: "select",
+      label: "Subcategoría",
+      filterKey: "subcategoryId",
+      allLabel:
+        filters.categoryId === "all"
+          ? "Seleccioná primero una categoría"
+          : "Todas las subcategorías",
+      allValue: "all",
+      options: (subcategories || []).map((s: any) => ({
+        value: String(s.id),
+        label: s.name,
       })),
     },
     {

@@ -117,33 +117,45 @@ export const getUserConversationsAction = async ({ userId }: { userId: string })
 };
 
 export const getChatClientsAction = async ({ userId }: { userId: string }) => {
-  // Fetch messages to get unique user IDs who have chatted with the user
-  const { data: messages, error: messagesError } = await supabase
-    .from("messages")
-    .select("sender_id, receiver_id")
-    .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+  try {
+    const current = String(userId);
+    const { data: messages, error: messagesError } = await supabase
+      .from("messages")
+      .select("sender_id, receiver_id")
+      .or(`sender_id.eq.${current},receiver_id.eq.${current}`);
 
-  if (messagesError) {
-    throw new Error(messagesError.message);
+    if (messagesError) {
+      console.error("Error fetching messages in getChatClientsAction:", messagesError);
+      throw new Error(messagesError.message);
+    }
+
+    const otherUserIds = new Set<string>();
+    messages?.forEach(msg => {
+      const sender = msg.sender_id ? String(msg.sender_id) : null;
+      const receiver = msg.receiver_id ? String(msg.receiver_id) : null;
+      if (sender === current && receiver && receiver !== current) {
+        otherUserIds.add(receiver);
+      } else if (receiver === current && sender && sender !== current) {
+        otherUserIds.add(sender);
+      }
+    });
+
+    if (otherUserIds.size === 0) return { data: [] };
+
+    // Fetch the profiles of these users
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("id", Array.from(otherUserIds));
+
+    if (profilesError) {
+      console.error("Error fetching profiles in getChatClientsAction:", profilesError);
+      throw new Error(profilesError.message);
+    }
+
+    return { data: profiles };
+  } catch (error) {
+    console.error("Exception in getChatClientsAction:", error);
+    throw error;
   }
-
-  const otherUserIds = new Set<string>();
-  messages?.forEach(msg => {
-    const otherId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
-    otherUserIds.add(otherId);
-  });
-
-  if (otherUserIds.size === 0) return { data: [] };
-
-  // Fetch the profiles of these users
-  const { data: profiles, error: profilesError } = await supabase
-    .from("profiles")
-    .select("*")
-    .in("id", Array.from(otherUserIds));
-
-  if (profilesError) {
-    throw new Error(profilesError.message);
-  }
-
-  return { data: profiles };
 };

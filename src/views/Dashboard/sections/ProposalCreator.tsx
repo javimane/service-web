@@ -572,7 +572,6 @@ export default function ProposalCreator({ onBack }) {
               ) : (
                 <>
                   <div className="search-input-wrapper">
-                    <Search size={18} className="search-icon" />
                     <input
                       type="text"
                       placeholder="Buscar cliente guardado..."
@@ -661,7 +660,6 @@ export default function ProposalCreator({ onBack }) {
                     value={estimatedDate}
                     onChange={(e) => handleDateChange(e, setEstimatedDate)}
                   />
-                  <Calendar size={18} className="date-icon" />
                 </div>
               </div>
             </div>
@@ -676,7 +674,6 @@ export default function ProposalCreator({ onBack }) {
                     value={dueDate}
                     onChange={(e) => handleDateChange(e, setDueDate)}
                   />
-                  <Calendar size={18} className="date-icon" />
                 </div>
               </div>
             </div>
