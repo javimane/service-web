@@ -161,6 +161,7 @@ export default function DashboardPage() {
     router.push(`${ROUTES.dashboard}?view=job-requests`);
 
   const isFreePlan = subscriptionPlan === "free";
+  const isProfessionalUser = !!sessionStatus?.is_professional;
   const isUnsubscribedProfessional =
     sessionStatus?.is_professional &&
     !sessionStatus?.subscription_plan &&
@@ -260,6 +261,7 @@ export default function DashboardPage() {
     "referrals",
   ]);
   const shouldLockDashboardView =
+    isProfessionalUser &&
     (!hasProfessionalSubscription || isUnsubscribedProfessional) &&
     !openViewsForInactiveSubscription.has(view);
 

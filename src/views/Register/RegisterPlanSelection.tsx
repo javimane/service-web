@@ -16,11 +16,14 @@ import { createProfessionalMeAction } from "@/app/actions/professionals";
 import { getAccessToken } from "@/utils/auth";
 import { ROUTES } from "../../routes/paths";
 
+import { useAuth } from "../../context/AuthContext";
+
 export default function RegisterPlanSelection() {
   const router = useRouter();
+  const { refreshSession } = useAuth();
   const [plans, setPlans] = useState(staticPlans);
   const [mpPlans, setMpPlans] = useState<any>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -46,7 +49,7 @@ export default function RegisterPlanSelection() {
   }, []);
 
   const handleSelectPlan = async (planId: string) => {
-    setIsSubmitting(true);
+    setSubmittingPlanId(planId);
     if (typeof window !== "undefined") {
       localStorage.removeItem("show_plans_on_login");
     }
@@ -62,6 +65,7 @@ export default function RegisterPlanSelection() {
         }
 
         // Refresh the client session so AuthContext picks up the new professional status
+        await refreshSession();
         router.refresh();
         router.push(`${ROUTES.dashboard}?welcome=true`);
         return;
@@ -75,7 +79,7 @@ export default function RegisterPlanSelection() {
         console.error(
           `ID de Mercado Pago no encontrado para el plan: ${planId}`,
         );
-        setIsSubmitting(false);
+        setSubmittingPlanId(null);
         router.push(`${ROUTES.dashboard}?welcome=true`);
         return;
       }
@@ -90,12 +94,12 @@ export default function RegisterPlanSelection() {
         window.location.href = `${ROUTES.dashboard}?welcome=true`;
       } else {
         console.error("No se recibió link de pago", response);
-        setIsSubmitting(false);
+        setSubmittingPlanId(null);
         router.push(`${ROUTES.dashboard}?welcome=true`);
       }
     } catch (error) {
       console.error("Error al procesar suscripción:", error);
-      setIsSubmitting(false);
+      setSubmittingPlanId(null);
       router.push(ROUTES.dashboard);
     }
   };
@@ -167,11 +171,11 @@ export default function RegisterPlanSelection() {
 
             <button
               type="button"
-              className={`subscription-plans__select-btn ${plan.recommended ? "subscription-plans__select-btn--primary" : ""} ${isSubmitting ? "subscription-plans__select-btn--loading" : ""}`}
-              disabled={isSubmitting}
+              className={`subscription-plans__select-btn ${plan.recommended ? "subscription-plans__select-btn--primary" : ""} ${submittingPlanId === plan.id ? "subscription-plans__select-btn--loading" : ""}`}
+              disabled={submittingPlanId !== null}
               onClick={() => handleSelectPlan(plan.id)}
             >
-              {isSubmitting ? (
+              {submittingPlanId === plan.id ? (
                 <Loader2 className="animate-spin" size={18} />
               ) : (
                 "Elegir plan"
