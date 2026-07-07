@@ -95,6 +95,30 @@ export async function GET() {
         <h2>8. Integración y Uso de Google Calendar</h2>
         <p>La plataforma ofrece integración opcional con Google Calendar exclusivamente para facilitar la gestión de la agenda profesional del usuario. A través de este servicio, Sercio únicamente crea, consulta y gestiona los eventos relacionados con las citas agendadas dentro de la aplicación.</p>
         <p>No accedemos, modificamos ni utilizamos la información personal de otros eventos del usuario que no estén vinculados a su actividad en Sercio. La sincronización se realiza con el único propósito de optimizar la organización del tiempo del profesional y asegurar una correcta gestión de las citas y presupuestos.</p>
+        
+        <h3>8.1 Uso de Datos de las APIs de Google (Google API Disclosure)</h3>
+        <p>Nuestra aplicación accede a servicios de Google utilizando el protocolo OAuth 2.0. A continuación, detallamos el propósito de cada permiso solicitado y nuestras políticas de seguridad:</p>
+        <ul>
+            <li><strong>1. Permisos Solicitados (Scopes):</strong>
+                <ul>
+                    <li><code>openid</code>: Utilizado para autenticar tu identidad mediante el estándar OpenID Connect.</li>
+                    <li><code>auth/userinfo.email</code>: Accede a tu dirección de correo electrónico principal con fines de inicio de sesión y comunicación de la cuenta.</li>
+                    <li><code>auth/userinfo.profile</code>: Accede a la información básica de tu perfil público (nombre, foto de perfil) para personalizar tu interfaz de usuario.</li>
+                    <li><code>auth/calendar.readonly</code>: Permite leer los eventos de tu Google Calendar en tiempo real para visualizarlos dentro de nuestra plataforma.</li>
+                    <li><code>auth/calendar.events</code>: Permite crear, editar o eliminar eventos específicos en tus calendarios según las acciones que ejecutes en nuestra aplicación.</li>
+                </ul>
+            </li>
+            <li><strong>2. Mecanismos de Protección y Seguridad de Datos:</strong><br/>
+            Implementamos estrictos controles de seguridad para proteger los datos obtenidos de los usuarios de Google. Toda la información en tránsito está cifrada de extremo a extremo utilizando protocolos seguros SSL/TLS (HTTPS). Los tokens de acceso de OAuth otorgados por el usuario se gestionan en entornos de memoria segura y no son accesibles por personal no autorizado ni por terceros.</li>
+            <li><strong>3. Retención y Eliminación de Datos de Google:</strong><br/>
+            No almacenamos, guardamos ni persistimos de forma permanente ninguna información extraída de tu Google Calendar, correos o perfiles en nuestras bases de datos. Los datos se procesan estrictamente "en memoria" (in-memory processing) para cumplir con las funciones solicitadas en tiempo real. Los tokens de acceso y actualización (refresh tokens) se eliminan de forma inmediata y definitiva de nuestros sistemas en los siguientes casos:
+                <ul>
+                    <li>Cuando el usuario decide revocar manualmente el acceso o desconectar su cuenta de Google desde el panel de configuración de nuestra web.</li>
+                    <li>Cuando el usuario solicita la eliminación completa de su cuenta en nuestra plataforma.</li>
+                </ul>
+            </li>
+        </ul>
+        <p>Nuestra plataforma cumple estrictamente con la Política de datos del usuario de los servicios de API de Google (Google API Services User Data Policy), incluidos los requisitos de Uso Limitado (Limited Use).</p>
 
         <h2>9. Uso de la Información y Propiedad Intelectual</h2>
         <p>Queda prohibido el uso no autorizado de los textos, imágenes, logos y datos personales contenidos en Sercio. Todo el material cargado por los usuarios debe respetar las leyes de derechos de autor vigentes.</p>
