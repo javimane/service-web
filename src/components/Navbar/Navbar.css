@@ -637,7 +637,6 @@
   transform: translateY(-1px);
 }
 
-
 @media (max-width: 640px) {
   .navbar__logo .brand-lockup__wordmark {
     display: none;
@@ -648,7 +647,8 @@
   }
 
   .navbar__auth-btn {
-    padding: 6px 10px;
+    height: 30px;
+    padding: 0 10px;
     font-size: 0.75rem;
     border-radius: 8px;
     gap: 4px;
@@ -660,7 +660,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  height: 36px;
+  padding: 0 16px;
   font-size: 0.85rem;
   font-weight: var(--weight-semibold);
   border-radius: 10px;
@@ -687,4 +688,19 @@
   background: var(--accent-hover);
   border-color: var(--accent-hover);
   color: var(--white);
+}
+
+@media (max-width: 400px) {
+  .navbar__inner {
+    padding: 0 12px;
+    gap: 0.5rem;
+  }
+
+  .navbar__auth-btn {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 0.7rem;
+    border-radius: 6px;
+    gap: 2px;
+  }
 }

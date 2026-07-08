@@ -117,6 +117,7 @@ export default function DashboardSidebar({
     "subscription",
     "settings",
     "referrals",
+    "faq",
   ]);
 
   const isFreePlan = subscriptionPlan === "free";

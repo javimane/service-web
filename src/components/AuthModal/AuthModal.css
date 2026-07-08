@@ -34,7 +34,7 @@
 .auth-modal {
   position: relative;
   width: 100%;
-  max-width: 480px;
+  max-width: 400px;
   max-height: 90vh;
   overflow-y: auto;
   background: var(--bg-card);
@@ -98,18 +98,18 @@
 
 /* Expand modal for register form */
 .auth-modal:has(.register-card) {
-  max-width: 540px;
+  max-width: 460px;
 }
 
 @media (max-width: 600px) {
   .auth-modal-backdrop {
     padding: 1rem;
-    align-items: flex-end;
+    align-items: center;
   }
 
   .auth-modal {
     max-height: 95vh;
-    border-radius: 24px 24px 0 0;
+    border-radius: var(--radius-xl);
   }
 
   .auth-modal__content {

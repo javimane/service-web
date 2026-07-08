@@ -259,6 +259,7 @@ export default function DashboardPage() {
     "proposals-view",
     "job-requests",
     "referrals",
+    "faq",
   ]);
   const shouldLockDashboardView =
     isProfessionalUser &&
@@ -268,6 +269,29 @@ export default function DashboardPage() {
   useEffect(() => {
     setView(routeView || "overview");
   }, [routeView]);
+
+  // Redirect to profile settings if professional has no company name
+  useEffect(() => {
+    if (!myProfessional) return;
+    const companies = myProfessional?.companies;
+    const company = Array.isArray(companies) ? companies[0] : companies;
+    const companyName = company?.name;
+
+    if (
+      isProfessionalUser &&
+      hasProfessionalSubscription &&
+      !companyName &&
+      view === "overview"
+    ) {
+      router.push(`${ROUTES.dashboard}?view=profile`);
+    }
+  }, [
+    myProfessional,
+    isProfessionalUser,
+    hasProfessionalSubscription,
+    view,
+    router,
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;

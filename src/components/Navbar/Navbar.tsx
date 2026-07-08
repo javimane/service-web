@@ -41,6 +41,7 @@ import {
   Landmark,
   Users,
   CreditCard,
+  HelpCircle,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
@@ -66,7 +67,7 @@ const getNotificationIcon = (type: string) => {
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, hasProfessionalSubscription, subscriptionPlan } =
+  const { user, logout, hasProfessionalSubscription, subscriptionPlan, sessionStatus } =
     useAuth();
   const { openAuth } = useAuthModal();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -280,6 +281,22 @@ export default function Navbar() {
       icon: CreditCard,
       path: `${ROUTES.dashboard}?view=subscription`,
     },
+    { label: "Configuración", icon: Settings, path: ROUTES.settings },
+  ];
+
+  const clientLinks = [
+    { label: "Mensajes", icon: MessageSquare, path: ROUTES.messages },
+    {
+      label: "Presupuestos",
+      icon: FileText,
+      path: `${ROUTES.dashboard}?view=proposals-view`,
+    },
+    {
+      label: "Solicitudes",
+      icon: ClipboardList,
+      path: `${ROUTES.dashboard}?view=job-requests`,
+    },
+    { label: "Preguntas Frecuentes", icon: HelpCircle, path: `${ROUTES.dashboard}?view=faq` },
     { label: "Configuración", icon: Settings, path: ROUTES.settings },
   ];
 
@@ -531,9 +548,11 @@ export default function Navbar() {
                     </div>
                     <div className="dropdown__divider"></div>
 
-                    <div className="dropdown__section-label">Mi Panel</div>
+                    <div className="dropdown__section-label">
+                      {sessionStatus?.is_professional ? "Mi Panel" : "Mi Cuenta"}
+                    </div>
                     <div className="dropdown__body dropdown__body--scroll">
-                      {dashboardLinks.map((link) => {
+                      {(sessionStatus?.is_professional ? dashboardLinks : clientLinks).map((link) => {
                         const Icon = link.icon;
                         return (
                           <Link
