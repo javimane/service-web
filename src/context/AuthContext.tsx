@@ -196,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const payload = JSON.parse(event.data);
 
             // Ignorar los eventos de tipo ping que mantienen viva la conexión
-            if (payload.type === "ping") {
+            if (payload.type === "ping" || payload.message === "keep-alive" || payload.data?.message === "keep-alive" || payload.data?.type === "ping") {
               return;
             }
 
