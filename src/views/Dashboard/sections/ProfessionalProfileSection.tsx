@@ -247,6 +247,7 @@ export default function ProfessionalProfileSection() {
   const [commercialName, setCommercialName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [description, setDescription] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [isMatriculate, setIsMatriculate] = useState(false);
   const [attendsEmergency, setAttendsEmergency] = useState(false);
   const [webUrl, setWebUrl] = useState("");
@@ -274,6 +275,7 @@ export default function ProfessionalProfileSection() {
   useEffect(() => {
     if (professional) {
       setDescription(professional.bio || "");
+      setSpecialty(professional.specialty || "");
       setIsMatriculate(Boolean(professional.is_matriculate));
       setAttendsEmergency(Boolean(professional.emergency));
       setWebUrl(professional.web_url || "");
@@ -751,6 +753,7 @@ export default function ProfessionalProfileSection() {
           id: professionalId,
           data: {
             bio: description || null,
+            specialty: specialty || null,
             is_matriculate: isMatriculate,
             emergency: attendsEmergency,
             web_url: webUrl || null,
@@ -1009,6 +1012,16 @@ export default function ProfessionalProfileSection() {
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
                   placeholder="Contá qué hacés, tu experiencia y qué te diferencia."
+                />
+              </label>
+
+              <label className="professional-profile__field professional-profile__field--full">
+                <span>Especialidad principal</span>
+                <input
+                  type="text"
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  placeholder="Ej: Plomero, Electricista, Carpintero"
                 />
               </label>
 
