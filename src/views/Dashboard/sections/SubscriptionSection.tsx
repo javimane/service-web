@@ -47,10 +47,42 @@ function formatPrice(n: number | undefined | null) {
   return n.toLocaleString("es-AR");
 }
 
+function parseSubscriptionDate(dateStr: string): Date | null {
+  const normalizedDate = dateStr.trim();
+  if (!normalizedDate) return null;
+
+  // Handle local timestamps without timezone (e.g. 2026-07-12T23:53:27.74)
+  const localDateTimeMatch = normalizedDate.match(
+    /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,6}))?)?$/,
+  );
+
+  if (localDateTimeMatch) {
+    const [, year, month, day, hour, minute, second = "0", fraction = "0"] =
+      localDateTimeMatch;
+
+    const milliseconds = Number(fraction.slice(0, 3).padEnd(3, "0"));
+    const localDate = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second),
+      milliseconds,
+    );
+
+    if (!Number.isNaN(localDate.getTime())) return localDate;
+  }
+
+  const parsedDate = new Date(normalizedDate);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+  return parsedDate;
+}
+
 function formatDate(dateStr: string | undefined | null) {
   if (!dateStr) return "—";
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return "—";
+  const date = parseSubscriptionDate(dateStr);
+  if (!date) return "—";
   return date.toLocaleDateString("es-AR", {
     day: "numeric",
     month: "long",
@@ -165,6 +197,16 @@ export default function SubscriptionSection() {
     () => subscription?.expires_at || subscription?.nextPaymentDate || "",
     [subscription],
   );
+
+  const isExpired = useMemo(() => {
+    const dateStr = subscription?.expires_at || subscription?.nextPaymentDate;
+    if (!dateStr) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiresAt = new Date(dateStr);
+    expiresAt.setHours(0, 0, 0, 0);
+    return today.getTime() >= expiresAt.getTime();
+  }, [subscription]);
 
   const currentPlan = useMemo(() => {
     if (!hasSubscription) return null;
@@ -453,26 +495,6 @@ export default function SubscriptionSection() {
               <span>Cancelar suscripción</span>
             </button>
           )}
-
-          {hasSubscription && currentStatus === "cancelled" && (
-            <button
-              type="button"
-              className="subscription-btn subscription-btn--reactivate"
-              onClick={() => {
-                setLocalSubscription((prev: any) => {
-                  const current = prev || apiSubscription;
-                  return current ? { ...current, status: "active" } : current;
-                });
-                showFeedback(
-                  "success",
-                  "Suscripción reactivada correctamente.",
-                );
-              }}
-            >
-              <Check size={18} />
-              <span>Reactivar suscripción</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -584,23 +606,37 @@ export default function SubscriptionSection() {
                   ))}
                 </ul>
 
-                <button
-                  type="button"
-                  className={`subscription-plans__select-btn ${activePlanId !== null && plan.id === activePlanId ? "subscription-plans__select-btn--disabled" : plan.recommended ? "subscription-plans__select-btn--primary" : ""} ${isSubmitting ? "subscription-plans__select-btn--loading" : ""}`}
-                  disabled={
-                    (activePlanId !== null && plan.id === activePlanId) ||
-                    isSubmitting
+                {(() => {
+                  const isFreePlan = plan.id === "gratuito" || plan.id === "free";
+                  const isDisabled = 
+                    isSubmitting || 
+                    (isFreePlan && hasSubscription) || 
+                    (currentStatus === "active" && plan.id === activePlanId) || 
+                    (currentStatus === "cancelled" && !isExpired);
+                  
+                  let btnText = "Elegir plan";
+                  if (isSubmitting) btnText = "Procesando...";
+                  else if (isFreePlan && hasSubscription) btnText = "No disponible";
+                  else if (currentStatus === "active" && plan.id === activePlanId) btnText = "Plan actual";
+                  else if (currentStatus === "cancelled" && !isExpired) {
+                    btnText = plan.id === activePlanId ? "Vigente hasta venc." : "Esperar vencimiento";
                   }
-                  onClick={() => handleSelectPlan(plan.id)}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="animate-spin" size={18} />
-                  ) : activePlanId !== null && plan.id === activePlanId ? (
-                    "Plan actual"
-                  ) : (
-                    "Elegir plan"
-                  )}
-                </button>
+
+                  return (
+                    <button
+                      type="button"
+                      className={`subscription-plans__select-btn ${
+                        isDisabled ? "subscription-plans__select-btn--disabled" 
+                        : plan.recommended ? "subscription-plans__select-btn--primary" : ""
+                      } ${isSubmitting ? "subscription-plans__select-btn--loading" : ""}`}
+                      disabled={isDisabled}
+                      onClick={() => handleSelectPlan(plan.id)}
+                    >
+                      {isSubmitting && <Loader2 className="animate-spin" size={18} style={{ marginRight: 8 }} />}
+                      {btnText}
+                    </button>
+                  );
+                })()}
               </div>
             ))}
           </div>

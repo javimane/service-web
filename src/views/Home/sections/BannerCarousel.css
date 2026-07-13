@@ -273,6 +273,12 @@
   opacity: 1;
 }
 
+@media (min-width: 835px) {
+  .banner-slide {
+    min-height: 200px;
+  }
+}
+
 @media (max-width: 1024px) {
   .banner-slide {
     padding: var(--space-4) var(--space-4);
