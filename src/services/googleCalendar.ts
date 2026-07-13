@@ -16,7 +16,7 @@ const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? "";
 const DISCOVERY_DOC =
   "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
-const SCOPES = "https://www.googleapis.com/auth/calendar";
+const SCOPES = "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events";
 
 let tokenClient: google.accounts.oauth2.TokenClient | null = null;
 let gapiInited = false;
