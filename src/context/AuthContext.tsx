@@ -93,9 +93,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasActiveStatusFlag =
     sessionStatus?.status === true || sessionStatus?.status === "active";
 
+  const subscriptionStatus = sessionStatus?.subscription?.status;
+  const isSubscriptionCancelled = subscriptionStatus === "cancelled" || subscriptionStatus === "canceled";
+  
+  let isSubscriptionExpired = false;
+  if (isSubscriptionCancelled) {
+    const expiresAt = sessionStatus?.subscription?.expires_at;
+    if (expiresAt) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const expDate = new Date(expiresAt);
+      expDate.setHours(0, 0, 0, 0);
+      isSubscriptionExpired = today.getTime() >= expDate.getTime();
+    } else {
+      isSubscriptionExpired = true;
+    }
+  }
+
   const hasProfessionalSubscription = Boolean(
     sessionStatus?.is_professional &&
-    (sessionStatus?.professional_active ||
+    ((sessionStatus?.professional_active && !isSubscriptionExpired) ||
       sessionStatus?.subscription?.status === "active" ||
       hasActiveStatusFlag),
   );

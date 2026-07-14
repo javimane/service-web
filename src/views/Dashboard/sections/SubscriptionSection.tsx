@@ -124,7 +124,8 @@ export default function SubscriptionSection() {
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
+  const isSubmittingAny = submittingPlanId !== null;
   const plansRef = useRef<HTMLDivElement>(null);
 
   const showFeedback = (type: "success" | "error", text: string) => {
@@ -141,7 +142,6 @@ export default function SubscriptionSection() {
       const result = await getProfessionalSubscriptionAction({ token });
       return result?.data || result || null;
     },
-    staleTime: 1000 * 60 * 60, // 1 hour cache
   });
 
   const subscription = apiSubscription;
@@ -156,7 +156,6 @@ export default function SubscriptionSection() {
       }
       return staticPlans;
     },
-    staleTime: 1000 * 60 * 60, // 1 hour cache
   });
 
   const { data: mpPlans } = useQuery({
@@ -165,7 +164,6 @@ export default function SubscriptionSection() {
       const res = await getMercadoPagoPlansAction();
       return res?.data || {};
     },
-    staleTime: 1000 * 60 * 60,
   });
 
   const currentStatus = useMemo(
@@ -229,7 +227,7 @@ export default function SubscriptionSection() {
   );
 
   const handleCancelSubscription = async () => {
-    setIsSubmitting(true);
+    setSubmittingPlanId("cancel");
     try {
       const isFreePlan =
         subscription?.plan === "free" || subscription?.plan === "gratuito";
@@ -255,12 +253,12 @@ export default function SubscriptionSection() {
     } catch (error) {
       console.error("Error al cancelar suscripción:", error);
     } finally {
-      setIsSubmitting(false);
+      setSubmittingPlanId(null);
     }
   };
 
   const handleSelectPlan = async (planId: string) => {
-    setIsSubmitting(true);
+    setSubmittingPlanId(planId);
     try {
       if (planId === "free" || planId === "gratuito") {
         const token = await getAccessToken();
@@ -288,8 +286,8 @@ export default function SubscriptionSection() {
           planId: mpPlanId,
         });
 
-        if (response?.data?.link) {
-          window.open(response.data.link, "_blank");
+        if (response?.data?.initPoint) {
+          window.open(response.data.initPoint, "_blank");
         } else {
           console.error("No se recibió link de pago", response);
         }
@@ -297,7 +295,7 @@ export default function SubscriptionSection() {
     } catch (error) {
       console.error("Error al procesar suscripción:", error);
     } finally {
-      setIsSubmitting(false);
+      setSubmittingPlanId(null);
     }
   };
 
@@ -524,8 +522,16 @@ export default function SubscriptionSection() {
                 type="button"
                 className="subscription-btn subscription-btn--cancel-confirm"
                 onClick={handleCancelSubscription}
+                disabled={isSubmittingAny}
               >
-                Sí, cancelar
+                {submittingPlanId === "cancel" ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} style={{ marginRight: 8 }} />
+                    Cancelando...
+                  </>
+                ) : (
+                  "Sí, cancelar"
+                )}
               </button>
               <button
                 type="button"
@@ -608,14 +614,15 @@ export default function SubscriptionSection() {
 
                 {(() => {
                   const isFreePlan = plan.id === "gratuito" || plan.id === "free";
+                  const isThisSubmitting = submittingPlanId === plan.id;
                   const isDisabled = 
-                    isSubmitting || 
+                    isSubmittingAny || 
                     (isFreePlan && hasSubscription) || 
                     (currentStatus === "active" && plan.id === activePlanId) || 
                     (currentStatus === "cancelled" && !isExpired);
                   
                   let btnText = "Elegir plan";
-                  if (isSubmitting) btnText = "Procesando...";
+                  if (isThisSubmitting) btnText = "Procesando...";
                   else if (isFreePlan && hasSubscription) btnText = "No disponible";
                   else if (currentStatus === "active" && plan.id === activePlanId) btnText = "Plan actual";
                   else if (currentStatus === "cancelled" && !isExpired) {
@@ -628,11 +635,11 @@ export default function SubscriptionSection() {
                       className={`subscription-plans__select-btn ${
                         isDisabled ? "subscription-plans__select-btn--disabled" 
                         : plan.recommended ? "subscription-plans__select-btn--primary" : ""
-                      } ${isSubmitting ? "subscription-plans__select-btn--loading" : ""}`}
+                      } ${isThisSubmitting ? "subscription-plans__select-btn--loading" : ""}`}
                       disabled={isDisabled}
                       onClick={() => handleSelectPlan(plan.id)}
                     >
-                      {isSubmitting && <Loader2 className="animate-spin" size={18} style={{ marginRight: 8 }} />}
+                      {isThisSubmitting && <Loader2 className="animate-spin" size={18} style={{ marginRight: 8 }} />}
                       {btnText}
                     </button>
                   );
