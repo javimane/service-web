@@ -1,6 +1,9 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.accessor.get_app_contents"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.sercio.sercio",
