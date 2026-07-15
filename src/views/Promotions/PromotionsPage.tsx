@@ -21,6 +21,8 @@ import PromotionDetailPage from "./PromotionDetailPage";
 import { BankPromotion } from "../../services/bankPromotionService";
 import SEO from "../../components/SEO/SEO";
 import { getProfilePath } from "../../utils/utils";
+import AsyncWrapper from "../../components/AsyncWrapper/AsyncWrapper";
+import Skeleton from "../../components/Skeleton/Skeleton";
 import "./PromotionsPage.css";
 import {
   getBanksAction,
@@ -428,13 +430,16 @@ export default function PromotionsPage() {
             <span>Limpiar Filtros</span>
           </button>
         </div>
-
-        {loading ? (
-          <div className="promo-loading">
-            <Loader2 size={40} className="animate-spin" />
-            <p>Cargando promociones...</p>
-          </div>
-        ) : (
+        <AsyncWrapper
+          isLoading={loading}
+          skeleton={
+            <div className="promotions-grid">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} variant="card" height={320} />
+              ))}
+            </div>
+          }
+        >
           <div className="promotions-grid">
             {activeTab === "bancos" &&
               filteredBankDiscounts.map((discount) => (
@@ -647,7 +652,7 @@ export default function PromotionsPage() {
               )}
             </div>
           </div>
-        )}
+        </AsyncWrapper>
       </main>
       <Footer />
     </div>

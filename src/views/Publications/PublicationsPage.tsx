@@ -15,6 +15,8 @@ import Footer from "@/components/Footer/Footer";
 import { ROUTES } from "@/routes/paths";
 import { getPublicationsAction, Publication } from "@/app/actions/publications";
 import { getProvincesAction } from "@/app/actions/provinces";
+import AsyncWrapper from "@/components/AsyncWrapper/AsyncWrapper";
+import Skeleton from "@/components/Skeleton/Skeleton";
 import "./PublicationsPage.css";
 
 export default function PublicationsPage() {
@@ -143,20 +145,25 @@ export default function PublicationsPage() {
           </div>
 
           <div className="pubs-page__content">
-            {isLoading ? (
-              <div className="pubs-page__loading">
-                <Loader2 size={32} className="animate-spin" />
-                <p>Cargando publicaciones...</p>
-              </div>
-            ) : publications.length === 0 ? (
-              <div className="pubs-page__empty">
-                <ImageIcon size={48} className="pubs-page__empty-icon" />
-                <h3>No se encontraron publicaciones</h3>
-                <p>Intentá ajustando la búsqueda.</p>
-              </div>
-            ) : (
-              <div className="pubs-page__list">
-                {publications.map((pub: Publication) => {
+            <AsyncWrapper
+              isLoading={isLoading}
+              skeleton={
+                <div className="pubs-page__list">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} variant="card" height={320} />
+                  ))}
+                </div>
+              }
+            >
+              {publications.length === 0 ? (
+                <div className="pubs-page__empty">
+                  <ImageIcon size={48} className="pubs-page__empty-icon" />
+                  <h3>No se encontraron publicaciones</h3>
+                  <p>Intentá ajustando la búsqueda.</p>
+                </div>
+              ) : (
+                <div className="pubs-page__list">
+                  {publications.map((pub: Publication) => {
                   const professionalName =
                     pub.professional?.companies?.[0]?.name ||
                     pub.professional?.profile?.display_name ||
@@ -229,6 +236,7 @@ export default function PublicationsPage() {
                 })}
               </div>
             )}
+            </AsyncWrapper>
 
             {hasNextPage && (
               <div className="pubs-page__load-more">

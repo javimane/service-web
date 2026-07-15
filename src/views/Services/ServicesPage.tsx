@@ -14,6 +14,8 @@ import ServicesFilters from "./ServicesFilters";
 import SEO from "../../components/SEO/SEO";
 import { ROUTES } from "../../routes/paths";
 import { priceRangeOptions } from "./serviceUtils";
+import AsyncWrapper from "../../components/AsyncWrapper/AsyncWrapper";
+import Skeleton from "../../components/Skeleton/Skeleton";
 import "./ServicesPage.css";
 
 export default function ServicesPage() {
@@ -190,12 +192,7 @@ export default function ServicesPage() {
           </header>
 
           <div className={`services-results view-${viewMode}`}>
-            {isLoading ? (
-              <div className="services-loading-premium">
-                <div className="premium-spinner"></div>
-                <p>Cargando catálogo de excelencia...</p>
-              </div>
-            ) : isError ? (
+            {isError ? (
               <div className="services-error">
                 <AlertTriangle size={48} />
                 <h3>Error al cargar servicios</h3>
@@ -211,7 +208,7 @@ export default function ServicesPage() {
                   Reintentar
                 </button>
               </div>
-            ) : servicesData.length === 0 ? (
+            ) : !isLoading && servicesData.length === 0 ? (
               <div className="services-empty-state">
                 <div className="referral-banner">
                   <div className="referral-banner__content">
@@ -245,21 +242,32 @@ export default function ServicesPage() {
               </div>
             ) : (
               <>
-                <div className={`services-results-grid view-${viewMode}`} style={{ width: "100%", display: viewMode === "grid" ? "grid" : "flex", flexDirection: viewMode === "grid" ? "row" : "column", gap: "var(--space-6)" }}>
-                  {servicesData.map((service: any) => (
-                    <ServiceCard
-                      key={service.id}
-                      service={service}
-                      viewMode={viewMode}
-                      onClick={(svc) => {
-                        const slug = svc.name
-                          ? svc.name.trim().toLowerCase().replace(/\s+/g, "-")
-                          : `service-${svc.id}`;
-                        router.push(`/servicios/${slug}?id=${svc.id}`);
-                      }}
-                    />
-                  ))}
-                </div>
+                <AsyncWrapper
+                  isLoading={isLoading}
+                  skeleton={
+                    <div className={`services-results-grid view-${viewMode}`} style={{ width: "100%", display: viewMode === "grid" ? "grid" : "flex", flexDirection: viewMode === "grid" ? "row" : "column", gap: "var(--space-6)" }}>
+                      {[...Array(8)].map((_, i) => (
+                        <Skeleton key={i} variant="card" height={viewMode === "list" ? 180 : 360} />
+                      ))}
+                    </div>
+                  }
+                >
+                  <div className={`services-results-grid view-${viewMode}`} style={{ width: "100%", display: viewMode === "grid" ? "grid" : "flex", flexDirection: viewMode === "grid" ? "row" : "column", gap: "var(--space-6)" }}>
+                    {servicesData.map((service: any) => (
+                      <ServiceCard
+                        key={service.id}
+                        service={service}
+                        viewMode={viewMode}
+                        onClick={(svc) => {
+                          const slug = svc.name
+                            ? svc.name.trim().toLowerCase().replace(/\s+/g, "-")
+                            : `service-${svc.id}`;
+                          router.push(`/servicios/${slug}?id=${svc.id}`);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </AsyncWrapper>
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (

@@ -26,6 +26,8 @@ import type { ProfessionalReelRow } from "../../../types/database.types";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import { getProfilePath } from "../../../utils/utils";
 import ReelsTheaterModal from "../../../components/ReelsTheater/ReelsTheaterModal";
+import AsyncWrapper from "../../../components/AsyncWrapper/AsyncWrapper";
+import Skeleton from "../../../components/Skeleton/Skeleton";
 import "./ProfessionalReelsSection.css";
 import "../../Reels/ReelsPage.css"; // Reuse theater styles
 
@@ -242,17 +244,27 @@ export default function ProfessionalReelsSection({
 
       <div className="home-section-container">
         <div className="professional-reels__carousel-wrapper">
-          {isLoading ? (
-            <div className="reels-loading">
-              <Loader2 className="animate-spin" size={32} />
-              <p>Cargando historias...</p>
-            </div>
-          ) : processedReels.length === 0 ? (
-            <div className="reels-empty">
-              <Sparkles size={40} />
-              <p>Aún no hay historias en {userProvince}</p>
-            </div>
-          ) : (
+          <AsyncWrapper
+            isLoading={isLoading}
+            skeleton={
+              <div
+                className="professional-reels__scroll"
+                style={{ overflow: "hidden", display: "flex", gap: "var(--space-4)" }}
+              >
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} style={{ flex: "0 0 auto", width: "160px" }}>
+                    <Skeleton variant="card" height={280} />
+                  </div>
+                ))}
+              </div>
+            }
+          >
+            {processedReels.length === 0 ? (
+              <div className="reels-empty">
+                <Sparkles size={40} />
+                <p>No hay historias de profesionales en esta zona.</p>
+              </div>
+            ) : (
             <>
               <button
                 className={`carousel-control carousel-control--left ${showLeftArrow ? "" : "carousel-control--hidden"}`}
@@ -304,7 +316,8 @@ export default function ProfessionalReelsSection({
                 <ChevronRight size={18} />
               </button>
             </>
-          )}
+            )}
+          </AsyncWrapper>
         </div>
       </div>
 

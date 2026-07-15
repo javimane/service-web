@@ -21,6 +21,8 @@ import PromotionCard from "../../../components/Cards/PromotionCard";
 import PromotionDetailModal from "../../../components/Modals/PromotionDetailModal";
 import Modal from "../../../components/Modal/Modal";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
+import AsyncWrapper from "../../../components/AsyncWrapper/AsyncWrapper";
+import Skeleton from "../../../components/Skeleton/Skeleton";
 import "./PromotionsSection.css";
 import { getProfessionalPromotionsAction } from "@/app/actions/professionalPromotions";
 import { getProvincesAction } from "@/app/actions/provinces";
@@ -153,65 +155,76 @@ export default function PromotionsSection({
 
       <div className="home-section-container">
         <div className="promotions-section__carousel">
-          {isLoading ? (
-            <div className="promotions-section__loading">
-              <Loader2 className="animate-spin" size={32} />
-              <p>Buscando las mejores ofertas para ti...</p>
-            </div>
-          ) : promosList.length === 0 ? (
-            <div className="promotions-section__empty">
-              <Sparkles size={48} className="empty-icon" />
-              <h3>¡Vaya! No hay promos en {userProvince}</h3>
-              <p>
-                Intenta cambiar de provincia para descubrir más oportunidades.
-              </p>
-              <button
-                className="change-loc-btn"
-                onClick={() => setIsProvinceModalOpen(true)}
-              >
-                Cambiar Ubicación
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                className={`carousel-control carousel-control--left ${showLeftArrow ? "" : "carousel-control--hidden"}`}
-                type="button"
-                onClick={() => scrollCarousel(-1)}
-                aria-label="Anterior"
-              >
-                <ChevronLeft size={18} />
-              </button>
-
+          <AsyncWrapper
+            isLoading={isLoading}
+            skeleton={
               <div
-                ref={sliderRef}
                 className="promotions-section__scroll"
-                onScroll={updateArrowVisibility}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                onPointerLeave={handlePointerUp}
+                style={{ overflow: "hidden", display: "flex", gap: "var(--space-4)" }}
               >
-                {promosList.map((promo) => (
-                  <PromotionCard
-                    key={promo.id}
-                    promotion={promo}
-                    onClick={handlePromoClick}
-                  />
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} style={{ flex: "0 0 auto", width: "300px" }}>
+                    <Skeleton variant="card" height={220} />
+                  </div>
                 ))}
               </div>
+            }
+          >
+            {promosList.length === 0 ? (
+              <div className="promotions-section__empty">
+                <Sparkles size={48} className="empty-icon" />
+                <h3>¡Vaya! No hay promos en {userProvince}</h3>
+                <p>
+                  Intenta cambiar de provincia para descubrir más oportunidades.
+                </p>
+                <button
+                  className="change-loc-btn"
+                  onClick={() => setIsProvinceModalOpen(true)}
+                >
+                  Cambiar Ubicación
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  className={`carousel-control carousel-control--left ${showLeftArrow ? "" : "carousel-control--hidden"}`}
+                  type="button"
+                  onClick={() => scrollCarousel(-1)}
+                  aria-label="Anterior"
+                >
+                  <ChevronLeft size={18} />
+                </button>
 
-              <button
-                className={`carousel-control carousel-control--right ${showRightArrow ? "" : "carousel-control--hidden"}`}
-                type="button"
-                onClick={() => scrollCarousel(1)}
-                aria-label="Siguiente"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </>
-          )}
+                <div
+                  ref={sliderRef}
+                  className="promotions-section__scroll"
+                  onScroll={updateArrowVisibility}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
+                  onPointerLeave={handlePointerUp}
+                >
+                  {promosList.map((promo) => (
+                    <PromotionCard
+                      key={promo.id}
+                      promotion={promo}
+                      onClick={handlePromoClick}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  className={`carousel-control carousel-control--right ${showRightArrow ? "" : "carousel-control--hidden"}`}
+                  type="button"
+                  onClick={() => scrollCarousel(1)}
+                  aria-label="Siguiente"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </>
+            )}
+          </AsyncWrapper>
         </div>
       </div>
 

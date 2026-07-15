@@ -17,6 +17,8 @@ import {
   getDepartmentsAction,
 } from "../../app/actions/locations";
 import SEO from "../../components/SEO/SEO";
+import AsyncWrapper from "../../components/AsyncWrapper/AsyncWrapper";
+import Skeleton from "../../components/Skeleton/Skeleton";
 import "./CategoriesPage.css";
 
 type AccountType = "Todos" | "Comercio" | "Autónomo";
@@ -395,12 +397,16 @@ export default function CategoriesPage() {
               </div>
             </div>
 
-            {isLoading ? (
-              <div className="loading-state">
-                <div className="spinner" />
-                <p>Cargando perfiles...</p>
-              </div>
-            ) : (
+            <AsyncWrapper
+              isLoading={isLoading}
+              skeleton={
+                <div className="profiles-grid">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton key={i} variant="card" height={320} />
+                  ))}
+                </div>
+              }
+            >
               <div className="profiles-grid">
                 {filteredProfiles.map((profile) => (
                   <article
@@ -486,17 +492,7 @@ export default function CategoriesPage() {
                   </article>
                 ))}
               </div>
-            )}
-
-            {!isLoading && filteredProfiles.length === 0 && (
-              <div className="empty-state">
-                <h3>No hay resultados con esos filtros</h3>
-                <p>
-                  Probá con otra categoría, otra provincia o desactivá
-                  urgencias.
-                </p>
-              </div>
-            )}
+            </AsyncWrapper>
           </div>
         </section>
       </main>

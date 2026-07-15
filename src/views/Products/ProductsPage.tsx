@@ -23,6 +23,8 @@ import {
   getProductSubcategoriesAction,
 } from "@/app/actions/categories";
 import { getProvincesAction } from "@/app/actions/provinces";
+import AsyncWrapper from "../../components/AsyncWrapper/AsyncWrapper";
+import Skeleton from "../../components/Skeleton/Skeleton";
 
 function formatPrice(n) {
   return Number(n || 0).toLocaleString("es-AR");
@@ -565,13 +567,17 @@ export default function ProductsPage() {
             <div
               className={`products-page__grid ${viewMode === "list" ? "products-page__grid--list" : ""}`}
             >
-              {isLoading ? (
-                <div className="products-page__loading">
-                  <Loader2 className="animate-spin" size={32} />
-                  <p>Cargando productos...</p>
-                </div>
-              ) : (
-                productsList.map((product) => (
+              <AsyncWrapper
+                isLoading={isLoading}
+                skeleton={
+                  <>
+                    {[...Array(8)].map((_, i) => (
+                      <Skeleton key={i} variant="card" height={viewMode === "list" ? 180 : 360} />
+                    ))}
+                  </>
+                }
+              >
+                {productsList.map((product) => (
                   <button
                     key={product.id}
                     type="button"
@@ -639,8 +645,8 @@ export default function ProductsPage() {
                       )}
                     </div>
                   </button>
-                ))
-              )}
+                ))}
+              </AsyncWrapper>
             </div>
 
             {!isLoading && productsList.length === 0 && (

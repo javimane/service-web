@@ -12,6 +12,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import NearbyServiceCard from "../../../components/Cards/NearbyServiceCard";
+import AsyncWrapper from "../../../components/AsyncWrapper/AsyncWrapper";
+import Skeleton from "../../../components/Skeleton/Skeleton";
 import Modal from "../../../components/Modal/Modal";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./NearbyServicesSection.css";
@@ -161,57 +163,72 @@ export default function NearbyServicesSection({
             onPointerCancel={handlePointerUp}
             onPointerLeave={handlePointerUp}
           >
-            {isLoading ? (
-              <div className="nearby-loading">
-                <Loader2 className="animate-spin" size={32} />
-                <p>Buscando servicios cercanos...</p>
-              </div>
-            ) : services.length > 0 ? (
-              services.map((service) => {
-                const prof = service.professional || service.Professional;
-                let calculatedDist: number | null = null;
-                if (userLocation && prof?.address?.[0]) {
-                  const addr = prof.address[0];
-                  if (addr.latitude != null && addr.longitude != null) {
-                    calculatedDist = calculateDistance(
-                      userLocation.lat,
-                      userLocation.lng,
-                      Number(addr.latitude),
-                      Number(addr.longitude),
-                    );
+            <AsyncWrapper
+              isLoading={isLoading}
+              skeleton={
+                <>
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        flex: "0 0 auto",
+                        width: "300px",
+                        marginRight: "var(--space-4)",
+                      }}
+                    >
+                      <Skeleton variant="card" height={150} />
+                    </div>
+                  ))}
+                </>
+              }
+            >
+              {services.length > 0 ? (
+                services.map((service) => {
+                  const prof = service.professional || service.Professional;
+                  let calculatedDist: number | null = null;
+                  if (userLocation && prof?.address?.[0]) {
+                    const addr = prof.address[0];
+                    if (addr.latitude != null && addr.longitude != null) {
+                      calculatedDist = calculateDistance(
+                        userLocation.lat,
+                        userLocation.lng,
+                        Number(addr.latitude),
+                        Number(addr.longitude),
+                      );
+                    }
                   }
-                }
 
-                const distanceStr =
-                  calculatedDist !== null
-                    ? `${calculatedDist.toFixed(2)} km`
-                    : "Cerca";
+                  const distanceStr =
+                    calculatedDist !== null
+                      ? `${calculatedDist.toFixed(2)} km`
+                      : "Cerca";
 
-                return (
-                  <NearbyServiceCard
-                    key={service.id}
-                    service={{
-                      ...service,
-                      professional: prof,
-                      Professional: prof,
-                      name: service.name,
-                      avatar:
-                        prof?.profile?.avatar_url ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(prof?.profile?.display_name || "P")}`,
-                      price: `$${service.base_price?.toLocaleString() || "0"}`,
-                      distance: distanceStr,
-                      rating: prof?.rating_avg || 1.0,
-                    }}
-                    onClick={handleServiceClick}
-                  />
-                );
-              })
-            ) : (
-              <div className="nearby-empty">
-                <MapPin size={40} />
-                <p>No se encontraron servicios premium en tu zona.</p>
-              </div>
-            )}
+                  return (
+                    <NearbyServiceCard
+                      key={service.id}
+                      service={{
+                        ...service,
+                        professional: prof,
+                        Professional: prof,
+                        name: service.name,
+                        avatar:
+                          prof?.profile?.avatar_url ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(prof?.profile?.display_name || "P")}`,
+                        price: `$${service.base_price?.toLocaleString() || "0"}`,
+                        distance: distanceStr,
+                        rating: prof?.rating_avg || 1.0,
+                      }}
+                      onClick={handleServiceClick}
+                    />
+                  );
+                })
+              ) : (
+                <div className="nearby-empty">
+                  <MapPin size={40} />
+                  <p>No se encontraron servicios premium en tu zona.</p>
+                </div>
+              )}
+            </AsyncWrapper>
           </div>
 
           <button
