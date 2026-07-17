@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   description:
     "Encontrá a los mejores profesionales y productos en un solo lugar.",
   keywords:
-    "servicios, profesionales, productos, hogar, construcción, reparaciones, comercio, local, confianza, calidad, presupuesto, opiniones",
+    "servicios, profesionales, productos, hogar, construcción, reparaciones, comercio, local, confianza, calidad, presupuesto, opiniones, historias, videos, reels, productores, servicio industriales",
   openGraph: {
     type: "website",
     siteName: "Sercio",
@@ -36,6 +36,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+  },
+  icons: {
+    icon: "/tu-logo.png",
   },
 };
 
