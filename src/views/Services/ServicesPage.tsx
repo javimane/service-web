@@ -259,9 +259,9 @@ export default function ServicesPage() {
                         service={service}
                         viewMode={viewMode}
                         onClick={(svc) => {
-                          const slug = svc.name
+                          const slug = svc.seo_path || svc.seoPath || (svc.name
                             ? svc.name.trim().toLowerCase().replace(/\s+/g, "-")
-                            : `service-${svc.id}`;
+                            : `service-${svc.id}`);
                           router.push(`/servicios/${slug}?id=${svc.id}`);
                         }}
                       />

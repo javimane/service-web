@@ -890,17 +890,13 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {profile?.website && (
-            <div className="profile-sidebar__social">
-              <a
-                href={profile.website}
-                target="_blank"
-                rel="noreferrer"
-                className="website-link"
-              >
-                Página Web <ArrowUpRight size={14} />
-              </a>
-            </div>
+          {professional.web_url && professional?.web_url && (
+            <button
+              className="cta-button store-btn"
+              onClick={() => window.open(professional.web_url, "_blank")}
+            >
+              VISITAR PÁGINA WEB <ArrowUpRight size={18} />
+            </button>
           )}
 
           <PaymentMethodsCard methods={paymentMethods} />

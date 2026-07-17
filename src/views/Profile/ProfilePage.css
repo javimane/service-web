@@ -733,10 +733,12 @@
   display: flex;
   gap: 24px;
   width: max-content;
+  align-items: flex-start;
 }
 
 .testimonial-card {
   width: 400px;
+  height: fit-content;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   padding: 32px;

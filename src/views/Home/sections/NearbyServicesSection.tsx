@@ -47,7 +47,7 @@ function calculateDistance(
 
 export default function NearbyServicesSection({
   userProvince = "Buenos Aires",
-  userProvinceId
+  userProvinceId,
 }: {
   userProvince?: string;
   userProvinceId?: number;
@@ -110,14 +110,17 @@ export default function NearbyServicesSection({
   });
 
   const handleServiceClick = (service) => {
-    const prof = service.Professional || service.professional;
-    if (prof?.id) {
-      handleViewProfile(prof.id, prof.seo_path);
-    }
+    const slug =
+      service.seo_path ||
+      service.seoPath ||
+      (service.name
+        ? service.name.trim().toLowerCase().replace(/\s+/g, "-")
+        : `service-${service.id}`);
+    router.push(`/servicios/${slug}`);
   };
 
   const handleMessageProfessional = (professionalId) => {
-    router.push(`/messages?to=${professionalId}`);
+    router.push(`/mensajes?to=${professionalId}`);
   };
 
   const handleViewProfile = (professionalId, seoPath?: string) => {
@@ -241,7 +244,6 @@ export default function NearbyServicesSection({
           </button>
         </div>
       </div>
-
     </section>
   );
 }

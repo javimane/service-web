@@ -286,13 +286,31 @@ export default function DashboardReferrals() {
               </div>
             ) : (
               <div className="dash-referrals__referrals-list">
-                {referrals.map((ref) => (
+                {referrals.map((ref: any) => (
                   <div key={ref.id} className="dash-referrals__referral-item">
                     <div className="dash-referrals__referral-email">
                       {ref.referred_email}
                     </div>
-                    <div className="dash-referrals__referral-date">
-                      {new Date(ref.created_at).toLocaleDateString()}
+                    <div className="dash-referrals__referral-info">
+                      <div className="dash-referrals__referral-date">
+                        Agregado: {new Date(ref.created_at).toLocaleDateString()}
+                      </div>
+                      <div
+                        className={`dash-referrals__referral-status ${
+                          ref.is_paid ? "dash-referrals__referral-status--paid" : "dash-referrals__referral-status--unpaid"
+                        }`}
+                        style={{
+                          color: ref.is_paid ? "var(--success-color)" : "var(--text-secondary)",
+                          fontWeight: "var(--weight-medium)",
+                          fontSize: "var(--text-sm)",
+                          marginTop: "var(--space-1)"
+                        }}
+                      >
+                        Estado: {ref.is_paid ? "Pagado" : "No pagado"}
+                        {ref.is_paid && ref.payment_date && (
+                          <span> | Fecha de pago: {new Date(ref.payment_date).toLocaleDateString()}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
