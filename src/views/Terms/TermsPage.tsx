@@ -80,6 +80,15 @@ export default function TermsPage() {
               la aplicación, el usuario consiente expresamente este tratamiento
               para los fines mencionados.
             </li>
+            <li>
+              <strong>Eliminación de Cuenta y Datos:</strong> Todo usuario tiene
+              a su disposición la opción de borrar su cuenta de forma definitiva
+              desde la configuración de la aplicación. Esta acción eliminará
+              permanentemente todos sus datos personales e historial de nuestros
+              sistemas. Cabe destacar que, si el usuario posee una suscripción
+              activa, deberá cancelarla previamente antes de proceder con la
+              eliminación de la cuenta.
+            </li>
           </ul>
         </>
       ),
@@ -108,6 +117,34 @@ export default function TermsPage() {
             anticipación, garantizando el derecho a la información conforme al
             Art. 4 de la Ley 24.240, permitiendo al usuario decidir sobre la
             continuidad del servicio.
+          </p>
+          <h4
+            style={{
+              marginTop: "var(--space-4)",
+              marginBottom: "var(--space-2)",
+              fontWeight: "var(--weight-bold)",
+            }}
+          >
+            3.1 Suscripciones a través de la App Store (iOS)
+          </h4>
+          <p>
+            Si el usuario adquiere una suscripción profesional (Plan Básico o
+            Plan Premium) a través de la aplicación para iOS, el pago se cargará
+            a su cuenta de Apple ID al confirmar la compra. La suscripción se
+            renovará automáticamente, a menos que se cancele con al menos 24
+            horas de antelación al final del período de facturación actual.
+          </p>
+          <p>
+            El cobro por la renovación se efectuará en su cuenta dentro de las 24
+            horas previas a la finalización del período vigente, de acuerdo al
+            costo del plan seleccionado. El usuario puede gestionar y cancelar
+            sus suscripciones en cualquier momento directamente desde la
+            configuración de su cuenta en la App Store.
+          </p>
+          <p>
+            En caso de cancelación, si aún quedan días restantes antes de la
+            fecha de expiración, el usuario mantendrá activa su cuenta
+            profesional y todos sus beneficios hasta que finalice dicho período.
           </p>
         </>
       ),
