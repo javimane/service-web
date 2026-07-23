@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PlusCircle, Building2 } from "lucide-react";
+import { PlusCircle, Building2, AlertTriangle, Lock, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
@@ -21,6 +21,7 @@ import { useAuth } from "../../context/AuthContext";
 import {
   getProfessionalMeAction,
   updateProfessionalAction,
+  getProfessionalSubscriptionAction,
 } from "../../app/actions/professionals";
 import {
   createCompanyAction,
@@ -42,7 +43,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
-  const { user, sessionStatus, logout } = useAuth();
+  const { user, sessionStatus, logout, hasProfessionalSubscription } = useAuth();
   const { showAlert, showSuccess, showError } = useAlert();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -51,6 +52,24 @@ export default function SettingsPage() {
     sessionStatus?.subscription?.professional_id ??
     sessionStatus?.professional_id;
   const isProfessional = Boolean(professionalId);
+
+  const { data: apiSubscription } = useQuery({
+    queryKey: ["professional-subscription"],
+    queryFn: async () => {
+      const token = await getAccessToken();
+      const result = await getProfessionalSubscriptionAction({ token });
+      return result?.data || result || null;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const subscriptionData = apiSubscription ?? sessionStatus?.subscription;
+  const subStatus = subscriptionData?.status;
+  const isSubscriptionActive = useMemo(() => {
+    if (!subscriptionData && !hasProfessionalSubscription) return false;
+    if (subStatus === "cancelled" || subStatus === "canceled") return false;
+    return subStatus === "active" || subStatus === "past_due" || Boolean(hasProfessionalSubscription);
+  }, [subscriptionData, subStatus, hasProfessionalSubscription]);
 
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [hasStorefront, setHasStorefront] = useState("no");
@@ -210,6 +229,7 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = () => {
+    if (isSubscriptionActive) return;
     showAlert({
       title: "Eliminar cuenta",
       message:
@@ -593,50 +613,51 @@ export default function SettingsPage() {
               )}
 
               {/* Danger Zone */}
-              <div
-                className="settings-danger-zone"
-                style={{
-                  marginTop: "var(--space-8)",
-                  padding: "var(--space-6)",
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--error-color)",
-                  borderRadius: "var(--radius-lg)",
-                }}
-              >
-                <h3
-                  style={{
-                    color: "var(--error-color)",
-                    fontSize: "var(--text-lg)",
-                    marginBottom: "var(--space-2)",
-                  }}
-                >
+              <div className="settings-danger-zone">
+                <h3 className="settings-danger-zone__title">
                   Zona de peligro
                 </h3>
-                <p
-                  style={{
-                    color: "var(--text-secondary)",
-                    marginBottom: "var(--space-4)",
-                  }}
-                >
+                <p className="settings-danger-zone__desc">
                   Una vez que elimines tu cuenta, no hay vuelta atrás. Por
                   favor, tené cuidado.
                 </p>
+
+                {isSubscriptionActive && (
+                  <div className="settings-danger-zone__warning">
+                    <div className="settings-danger-zone__warning-header">
+                      <AlertTriangle size={20} className="settings-danger-zone__warning-icon" />
+                      <h4>No podés eliminar tu cuenta con una suscripción activa</h4>
+                    </div>
+                    <p>
+                      Para poder eliminar tu cuenta, primero debés cancelar tu suscripción desde el panel de suscripciones.
+                    </p>
+                    <button
+                      type="button"
+                      className="settings-danger-zone__sub-btn"
+                      onClick={() => router.push(`${ROUTES.dashboard}?view=subscription`)}
+                    >
+                      <span>Ir a Mi Suscripción</span>
+                      <ExternalLink size={14} />
+                    </button>
+                  </div>
+                )}
+
                 <button
                   type="button"
+                  className="settings-danger-zone__delete-btn"
                   onClick={handleDeleteAccount}
-                  disabled={isDeleting}
-                  style={{
-                    background: "var(--error-color)",
-                    color: "white",
-                    border: "none",
-                    padding: "var(--space-3) var(--space-6)",
-                    borderRadius: "var(--radius-md)",
-                    fontWeight: "var(--weight-semibold)",
-                    cursor: isDeleting ? "not-allowed" : "pointer",
-                    opacity: isDeleting ? 0.7 : 1,
-                  }}
+                  disabled={isDeleting || isSubscriptionActive}
                 >
-                  {isDeleting ? "Eliminando..." : "Eliminar cuenta"}
+                  {isSubscriptionActive ? (
+                    <>
+                      <Lock size={16} />
+                      <span>Eliminar cuenta (Suscripción activa)</span>
+                    </>
+                  ) : isDeleting ? (
+                    "Eliminando..."
+                  ) : (
+                    "Eliminar cuenta"
+                  )}
                 </button>
               </div>
             </section>

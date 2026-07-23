@@ -647,6 +647,17 @@ export default function SubscriptionSection() {
               </div>
             ))}
           </div>
+
+          <div className="subscription-terms-note">
+            <p>
+              <strong>Las suscripciones son autorrenovables.</strong> El pago se cargará al método de pago asociado a Mercado Pago al confirmar la suscripción.
+            </p>
+            <ul>
+              <li>La suscripción se renueva automáticamente cada mes, salvo que la canceles antes del próximo ciclo de facturación.</li>
+              <li>El cobro de renovación se realiza dentro de las 24 horas previas al inicio del nuevo período.</li>
+              <li>Puedes gestionar o cancelar tu suscripción desde la sección de suscripciones de la app o desde tu cuenta de Mercado Pago.</li>
+            </ul>
+          </div>
         </div>
       )}
     </div>

@@ -102,6 +102,20 @@ export default function TermsPage() {
             </li>
           </ul>
           <p>
+            El pago se cargará al método de pago asociado a Mercado Pago al confirmar la suscripción.
+          </p>
+          <ul>
+            <li>
+              La suscripción se renueva automáticamente cada mes, salvo que la canceles antes del próximo ciclo de facturación.
+            </li>
+            <li>
+              El cobro de renovación se realiza dentro de las 24 horas previas al inicio del nuevo período.
+            </li>
+            <li>
+              Puedes gestionar o cancelar tu suscripción desde la sección de suscripciones de la app o desde tu cuenta de Mercado Pago.
+            </li>
+          </ul>
+          <p>
             Sercio se reserva el derecho de modificar los valores de las
             suscripciones. Ante cualquier modificación o ajuste de precios, los
             usuarios serán notificados formalmente por correo electrónico con

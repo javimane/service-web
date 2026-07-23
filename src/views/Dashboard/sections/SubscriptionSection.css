@@ -722,3 +722,37 @@
 .subscription-feedback__close:hover {
   opacity: 1;
 }
+
+/* ===== TERMS NOTE ===== */
+.subscription-terms-note {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.subscription-terms-note p {
+  margin: 0 0 0.5rem 0;
+}
+
+.subscription-terms-note strong {
+  color: var(--text-primary);
+  font-weight: var(--weight-bold);
+}
+
+.subscription-terms-note ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.subscription-terms-note li {
+  margin-bottom: 0.25rem;
+}
+
+.subscription-terms-note li:last-child {
+  margin-bottom: 0;
+}

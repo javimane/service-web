@@ -1040,3 +1040,116 @@
     justify-content: center;
   }
 }
+
+/* ===== DANGER ZONE & SUBSCRIPTION WARNING ===== */
+.settings-danger-zone {
+  margin-top: var(--space-8);
+  padding: var(--space-6);
+  background: var(--bg-card);
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  grid-column: 1 / -1;
+}
+
+.settings-danger-zone__title {
+  color: var(--error-color);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  margin: 0;
+}
+
+.settings-danger-zone__desc {
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.settings-danger-zone__warning {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.settings-danger-zone__warning-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.settings-danger-zone__warning-header h4 {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.settings-danger-zone__warning-icon {
+  color: var(--amber-dark, #d97706);
+  flex-shrink: 0;
+}
+
+.settings-danger-zone__warning p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.settings-danger-zone__sub-btn {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-primary);
+}
+
+.settings-danger-zone__sub-btn:hover {
+  background: var(--accent-color);
+  color: var(--white, #ffffff);
+}
+
+.settings-danger-zone__delete-btn {
+  align-self: flex-start;
+  background: var(--error-color);
+  color: #ffffff;
+  border: none;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-primary);
+}
+
+.settings-danger-zone__delete-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.settings-danger-zone__delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--border-color);
+  color: var(--text-secondary);
+}
