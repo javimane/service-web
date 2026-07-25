@@ -1327,140 +1327,142 @@ export default function DashboardProducts({
             className="dash-products__modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="dash-products__modal-header">
-              <h2>Modificar Precios</h2>
+            <div className="dash-products__modal-content">
+              <div className="dash-products__modal-header">
+                <h2>Modificar Precios</h2>
+                <button
+                  className="dash-products__modal-close"
+                  onClick={() => setBulkOpen(false)}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <p className="dash-products__modal-desc">
+                Aplica un ajuste de precio a <strong>todos los productos</strong>{" "}
+                de tu catálogo.
+              </p>
+
+              {/* Action select */}
+              <div className="dash-products__modal-field">
+                <label>Tipo de ajuste</label>
+                <div className="dash-products__modal-toggle">
+                  <button
+                    className={bulkAction === "increase" ? "active" : ""}
+                    onClick={() => setBulkAction("increase")}
+                  >
+                    Aumentar
+                  </button>
+                  <button
+                    className={bulkAction === "decrease" ? "active" : ""}
+                    onClick={() => setBulkAction("decrease")}
+                  >
+                    Disminuir
+                  </button>
+                </div>
+              </div>
+
+              {/* Mode select */}
+              <div className="dash-products__modal-field">
+                <label>Aplicar por</label>
+                <div className="dash-products__modal-toggle">
+                  <button
+                    className={bulkMode === "percent" ? "active" : ""}
+                    onClick={() => setBulkMode("percent")}
+                  >
+                    <Percent size={14} />
+                    Porcentaje
+                  </button>
+                  <button
+                    className={bulkMode === "fixed" ? "active" : ""}
+                    onClick={() => setBulkMode("fixed")}
+                  >
+                    <DollarSign size={14} />
+                    Monto Fijo
+                  </button>
+                </div>
+              </div>
+
+              {/* Value input */}
+              <div className="dash-products__modal-field">
+                <label>
+                  {bulkMode === "percent" ? "Porcentaje (%)" : "Monto (ARS)"}
+                </label>
+                <div className="dash-products__modal-input-wrap">
+                  {bulkMode === "percent" ? (
+                    <Percent size={16} />
+                  ) : (
+                    <DollarSign size={16} />
+                  )}
+                  <input
+                    type="number"
+                    min="0"
+                    step={bulkMode === "percent" ? "1" : "100"}
+                    placeholder={bulkMode === "percent" ? "Ej: 10" : "Ej: 5000"}
+                    value={bulkValue}
+                    onChange={(e) => setBulkValue(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Delete offers option */}
+              <div className="dash-products__modal-field dash-products__modal-field--mt">
+                <label className="dash-products__checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={bulkDeleteOffers}
+                    onChange={(e) => setBulkDeleteOffers(e.target.checked)}
+                  />
+                  <span>Eliminar todos los precios de oferta</span>
+                </label>
+              </div>
+
+              {/* Preview */}
+              {(bulkDeleteOffers || (bulkValue && parseFloat(bulkValue) > 0)) && (
+                <div className="dash-products__modal-preview">
+                  <AlertTriangle size={14} />
+                  <span>
+                    {bulkDeleteOffers &&
+                    (!bulkValue || parseFloat(bulkValue) <= 0) ? (
+                      <>
+                        Se eliminará el <strong>precio de oferta</strong> de todos
+                        los productos.
+                      </>
+                    ) : (
+                      <>
+                        Esto{" "}
+                        {bulkAction === "increase" ? "aumentará" : "disminuirá"}{" "}
+                        el precio de{" "}
+                        <strong>{productsList.length} productos</strong>{" "}
+                        {bulkMode === "percent"
+                          ? `en un ${bulkValue}%`
+                          : `en ${formatPrice(parseFloat(bulkValue))}`}
+                        {bulkDeleteOffers &&
+                          " y se eliminarán sus precios de oferta."}
+                      </>
+                    )}
+                  </span>
+                </div>
+              )}
+
               <button
-                className="dash-products__modal-close"
-                onClick={() => setBulkOpen(false)}
+                className={`dash-products__modal-apply ${bulkApplied ? "dash-products__modal-apply--done" : ""}`}
+                onClick={handleBulkApply}
+                disabled={
+                  (!bulkDeleteOffers &&
+                    (!bulkValue || parseFloat(bulkValue) <= 0)) ||
+                  bulkApplied
+                }
               >
-                <X size={20} />
+                {bulkApplied ? (
+                  <>
+                    <Check size={18} /> Aplicado
+                  </>
+                ) : (
+                  "Aplicar Cambios"
+                )}
               </button>
             </div>
-
-            <p className="dash-products__modal-desc">
-              Aplica un ajuste de precio a <strong>todos los productos</strong>{" "}
-              de tu catálogo.
-            </p>
-
-            {/* Action select */}
-            <div className="dash-products__modal-field">
-              <label>Tipo de ajuste</label>
-              <div className="dash-products__modal-toggle">
-                <button
-                  className={bulkAction === "increase" ? "active" : ""}
-                  onClick={() => setBulkAction("increase")}
-                >
-                  Aumentar
-                </button>
-                <button
-                  className={bulkAction === "decrease" ? "active" : ""}
-                  onClick={() => setBulkAction("decrease")}
-                >
-                  Disminuir
-                </button>
-              </div>
-            </div>
-
-            {/* Mode select */}
-            <div className="dash-products__modal-field">
-              <label>Aplicar por</label>
-              <div className="dash-products__modal-toggle">
-                <button
-                  className={bulkMode === "percent" ? "active" : ""}
-                  onClick={() => setBulkMode("percent")}
-                >
-                  <Percent size={14} />
-                  Porcentaje
-                </button>
-                <button
-                  className={bulkMode === "fixed" ? "active" : ""}
-                  onClick={() => setBulkMode("fixed")}
-                >
-                  <DollarSign size={14} />
-                  Monto Fijo
-                </button>
-              </div>
-            </div>
-
-            {/* Value input */}
-            <div className="dash-products__modal-field">
-              <label>
-                {bulkMode === "percent" ? "Porcentaje (%)" : "Monto (ARS)"}
-              </label>
-              <div className="dash-products__modal-input-wrap">
-                {bulkMode === "percent" ? (
-                  <Percent size={16} />
-                ) : (
-                  <DollarSign size={16} />
-                )}
-                <input
-                  type="number"
-                  min="0"
-                  step={bulkMode === "percent" ? "1" : "100"}
-                  placeholder={bulkMode === "percent" ? "Ej: 10" : "Ej: 5000"}
-                  value={bulkValue}
-                  onChange={(e) => setBulkValue(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Delete offers option */}
-            <div className="dash-products__modal-field dash-products__modal-field--mt">
-              <label className="dash-products__checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={bulkDeleteOffers}
-                  onChange={(e) => setBulkDeleteOffers(e.target.checked)}
-                />
-                <span>Eliminar todos los precios de oferta</span>
-              </label>
-            </div>
-
-            {/* Preview */}
-            {(bulkDeleteOffers || (bulkValue && parseFloat(bulkValue) > 0)) && (
-              <div className="dash-products__modal-preview">
-                <AlertTriangle size={14} />
-                <span>
-                  {bulkDeleteOffers &&
-                  (!bulkValue || parseFloat(bulkValue) <= 0) ? (
-                    <>
-                      Se eliminará el <strong>precio de oferta</strong> de todos
-                      los productos.
-                    </>
-                  ) : (
-                    <>
-                      Esto{" "}
-                      {bulkAction === "increase" ? "aumentará" : "disminuirá"}{" "}
-                      el precio de{" "}
-                      <strong>{productsList.length} productos</strong>{" "}
-                      {bulkMode === "percent"
-                        ? `en un ${bulkValue}%`
-                        : `en ${formatPrice(parseFloat(bulkValue))}`}
-                      {bulkDeleteOffers &&
-                        " y se eliminarán sus precios de oferta."}
-                    </>
-                  )}
-                </span>
-              </div>
-            )}
-
-            <button
-              className={`dash-products__modal-apply ${bulkApplied ? "dash-products__modal-apply--done" : ""}`}
-              onClick={handleBulkApply}
-              disabled={
-                (!bulkDeleteOffers &&
-                  (!bulkValue || parseFloat(bulkValue) <= 0)) ||
-                bulkApplied
-              }
-            >
-              {bulkApplied ? (
-                <>
-                  <Check size={18} /> Aplicado
-                </>
-              ) : (
-                "Aplicar Cambios"
-              )}
-            </button>
           </div>
         </div>
       )}
