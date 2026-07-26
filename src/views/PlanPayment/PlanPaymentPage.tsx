@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   ShieldCheck,
   CreditCard,
+  AlertTriangle,
 } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
@@ -89,6 +90,13 @@ export default function PlanPaymentPage() {
             </div>
 
             <p className="plan-payment__plan-desc">{plan.description}</p>
+
+            {plan.notice && (
+              <div className="plan-payment__notice">
+                <AlertTriangle size={18} />
+                <span>{plan.notice}</span>
+              </div>
+            )}
 
             <div className="plan-payment__pricing-block">
               <span className="plan-payment__price">

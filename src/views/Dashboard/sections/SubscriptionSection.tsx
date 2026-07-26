@@ -1,6 +1,8 @@
 "use client";
 import { useRef, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { ROUTES } from "@/routes/paths";
 import {
   Crown,
   Zap,
@@ -526,7 +528,11 @@ export default function SubscriptionSection() {
               >
                 {submittingPlanId === "cancel" ? (
                   <>
-                    <Loader2 className="animate-spin" size={18} style={{ marginRight: 8 }} />
+                    <Loader2
+                      className="animate-spin"
+                      size={18}
+                      style={{ marginRight: 8 }}
+                    />
                     Cancelando...
                   </>
                 ) : (
@@ -575,13 +581,10 @@ export default function SubscriptionSection() {
                   </div>
                   <h3 className="subscription-plans__name">{plan.name}</h3>
                   <p className="subscription-plans__desc">{plan.description}</p>
-                  {(plan.id === "gratuito" || plan.id === "free") && (
+                  {plan.notice && (
                     <div className="subscription-plans__free-alert">
                       <AlertTriangle size={18} />
-                      <span>
-                        Este plan solo dura 4 meses cuando se activa, luego la
-                        cuenta se cancelará y deberás pasar a un plan de pago.
-                      </span>
+                      <span>{plan.notice}</span>
                     </div>
                   )}
                 </div>
@@ -595,6 +598,11 @@ export default function SubscriptionSection() {
                     /{plan.period}
                   </span>
                 </div>
+                {plan.legend && (
+                  <div className="subscription-plans__legend">
+                    {plan.legend}
+                  </div>
+                )}
 
                 <ul className="subscription-plans__features">
                   {plan.features.map((feat, i) => (
@@ -613,33 +621,51 @@ export default function SubscriptionSection() {
                 </ul>
 
                 {(() => {
-                  const isFreePlan = plan.id === "gratuito" || plan.id === "free";
+                  const isFreePlan =
+                    plan.id === "gratuito" || plan.id === "free";
                   const isThisSubmitting = submittingPlanId === plan.id;
-                  const isDisabled = 
-                    isSubmittingAny || 
-                    (isFreePlan && hasSubscription) || 
-                    (currentStatus === "active" && plan.id === activePlanId) || 
+                  const isDisabled =
+                    isSubmittingAny ||
+                    (isFreePlan && hasSubscription) ||
+                    (currentStatus === "active" && plan.id === activePlanId) ||
                     (currentStatus === "cancelled" && !isExpired);
-                  
+
                   let btnText = "Elegir plan";
                   if (isThisSubmitting) btnText = "Procesando...";
-                  else if (isFreePlan && hasSubscription) btnText = "No disponible";
-                  else if (currentStatus === "active" && plan.id === activePlanId) btnText = "Plan actual";
+                  else if (isFreePlan && hasSubscription)
+                    btnText = "No disponible";
+                  else if (
+                    currentStatus === "active" &&
+                    plan.id === activePlanId
+                  )
+                    btnText = "Plan actual";
                   else if (currentStatus === "cancelled" && !isExpired) {
-                    btnText = plan.id === activePlanId ? "Vigente hasta venc." : "Esperar vencimiento";
+                    btnText =
+                      plan.id === activePlanId
+                        ? "Vigente hasta venc."
+                        : "Esperar vencimiento";
                   }
 
                   return (
                     <button
                       type="button"
                       className={`subscription-plans__select-btn ${
-                        isDisabled ? "subscription-plans__select-btn--disabled" 
-                        : plan.recommended ? "subscription-plans__select-btn--primary" : ""
+                        isDisabled
+                          ? "subscription-plans__select-btn--disabled"
+                          : plan.recommended
+                            ? "subscription-plans__select-btn--primary"
+                            : ""
                       } ${isThisSubmitting ? "subscription-plans__select-btn--loading" : ""}`}
                       disabled={isDisabled}
                       onClick={() => handleSelectPlan(plan.id)}
                     >
-                      {isThisSubmitting && <Loader2 className="animate-spin" size={18} style={{ marginRight: 8 }} />}
+                      {isThisSubmitting && (
+                        <Loader2
+                          className="animate-spin"
+                          size={18}
+                          style={{ marginRight: 8 }}
+                        />
+                      )}
                       {btnText}
                     </button>
                   );
@@ -650,13 +676,34 @@ export default function SubscriptionSection() {
 
           <div className="subscription-terms-note">
             <p>
-              <strong>Las suscripciones son autorrenovables.</strong> El pago se cargará al método de pago asociado a Mercado Pago al confirmar la suscripción.
+              <strong>Las suscripciones son autorrenovables.</strong> El pago se
+              cargará al método de pago asociado a Mercado Pago al confirmar la
+              suscripción.
             </p>
             <ul>
-              <li>La suscripción se renueva automáticamente cada mes, salvo que la canceles antes del próximo ciclo de facturación.</li>
-              <li>El cobro de renovación se realiza dentro de las 24 horas previas al inicio del nuevo período.</li>
-              <li>Puedes gestionar o cancelar tu suscripción desde la sección de suscripciones de la app o desde tu cuenta de Mercado Pago.</li>
+              <li>
+                La suscripción se renueva automáticamente cada mes, salvo que la
+                canceles antes del próximo ciclo de facturación.
+              </li>
+              <li>
+                El cobro de renovación se realiza dentro de las 24 horas previas
+                al inicio del nuevo período.
+              </li>
+              <li>
+                Puedes gestionar o cancelar tu suscripción desde la sección de
+                suscripciones de la app o desde tu cuenta de Mercado Pago.
+              </li>
             </ul>
+            <p className="subscription-plans__footer-links">
+              Para más información, consulta nuestros{" "}
+              <Link href={ROUTES.terms} target="_blank" rel="noopener noreferrer">
+                Términos y Condiciones
+              </Link>{" "}
+              y{" "}
+              <Link href={ROUTES.privacy} target="_blank" rel="noopener noreferrer">
+                Políticas de Privacidad
+              </Link>.
+            </p>
           </div>
         </div>
       )}

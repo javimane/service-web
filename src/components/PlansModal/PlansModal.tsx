@@ -1,5 +1,13 @@
-"use client";
-import { X, Check, Crown, Star, Zap, Loader2 } from "lucide-react";
+import Link from "next/link";
+import {
+  X,
+  Check,
+  Crown,
+  Star,
+  Zap,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import { useEffect, useState } from "react";
@@ -180,6 +188,12 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
                 </div>
                 <h3 className="plans-modal__plan-name">{plan.name}</h3>
                 <p className="plans-modal__plan-desc">{plan.description}</p>
+                {plan.notice && (
+                  <div className="plans-modal__notice">
+                    <AlertTriangle size={18} />
+                    <span>{plan.notice}</span>
+                  </div>
+                )}
               </div>
 
               <div className="plans-modal__pricing">
@@ -189,6 +203,9 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
                 </span>
                 <span className="plans-modal__period">/{plan.period}</span>
               </div>
+              {plan.legend && (
+                <div className="plans-modal__legend">{plan.legend}</div>
+              )}
 
               <ul className="plans-modal__features">
                 {plan.features.map((feat, i) => (
@@ -218,6 +235,17 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
               </button>
             </div>
           ))}
+        </div>
+
+        <div className="plans-modal__footer-links">
+          Al continuar aceptás nuestros{" "}
+          <Link href={ROUTES.terms} target="_blank" rel="noopener noreferrer">
+            Términos y Condiciones
+          </Link>{" "}
+          y{" "}
+          <Link href={ROUTES.privacy} target="_blank" rel="noopener noreferrer">
+            Políticas de Privacidad
+          </Link>.
         </div>
       </div>
     </div>

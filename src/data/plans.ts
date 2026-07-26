@@ -12,6 +12,8 @@ export type Plan = {
   period: string;
   description: string;
   features: PlanFeature[];
+  notice?: string;
+  legend?: string;
   recommended?: boolean;
 };
 
@@ -26,6 +28,8 @@ export const plans: Plan[] = [
     period: "mes",
     description:
       "Crea tu perfil profesional y comienza a ofrecer tus servicios en la plataforma sin costo alguno. Ideal para probar la plataforma.",
+    notice:
+      "Este plan tiene una duración de 4 meses desde su activación. Al finalizar ese período, la cuenta se cancelará y deberás elegir un plan pago para continuar.",
     features: [
       { text: "Perfil profesional básico" },
       { text: "Posicionamiento en la web" },
@@ -44,6 +48,7 @@ export const plans: Plan[] = [
     price: FALLBACK_BASIC_PRICE,
     period: "mes",
     description: "Aumentá tu visibilidad con herramientas profesionales.",
+    legend: "Suscripción autorrenovable",
     features: [
       { text: "Todo lo del plan Gratuito" },
       { text: "Videos de tu trabajo sin límite", highlighted: true },
@@ -67,6 +72,7 @@ export const plans: Plan[] = [
     period: "mes",
     description:
       "Maximizá tu visibilidad y destacá entre los profesionales de tu zona. Incluye todo lo del plan Básico más beneficios exclusivos.",
+    legend: "Suscripción autorrenovable",
     features: [
       { text: "Todo lo del plan Básico" },
       {

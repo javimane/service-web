@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Crown, Zap, Check, Star, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Crown, Zap, Check, Star, Loader2, AlertTriangle } from "lucide-react";
 import {
   plans as staticPlans,
   mergePlansWithSubscriptionPrices,
@@ -17,6 +18,7 @@ import { getAccessToken } from "@/utils/auth";
 import { ROUTES } from "../../routes/paths";
 
 import { useAuth } from "../../context/AuthContext";
+import "./RegisterPlanSelection.css";
 
 export default function RegisterPlanSelection() {
   const router = useRouter();
@@ -143,6 +145,12 @@ export default function RegisterPlanSelection() {
               </div>
               <h3 className="subscription-plans__name">{plan.name}</h3>
               <p className="subscription-plans__desc">{plan.description}</p>
+              {plan.notice && (
+                <div className="register-plan-selection__notice">
+                  <AlertTriangle size={18} />
+                  <span>{plan.notice}</span>
+                </div>
+              )}
             </div>
 
             <div className="subscription-plans__pricing">
@@ -152,6 +160,11 @@ export default function RegisterPlanSelection() {
               </span>
               <span className="subscription-plans__period">/{plan.period}</span>
             </div>
+            {plan.legend && (
+              <div className="subscription-plans__legend">
+                {plan.legend}
+              </div>
+            )}
 
             <ul className="subscription-plans__features">
               {plan.features.map((feat, i) => (
@@ -183,6 +196,17 @@ export default function RegisterPlanSelection() {
             </button>
           </div>
         ))}
+      </div>
+
+      <div className="subscription-plans__footer-links" style={{ textAlign: "center", marginTop: "24px", paddingTop: "16px", borderTop: "1px solid var(--border-color)", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+        Al registrarte aceptás nuestros{" "}
+        <Link href={ROUTES.terms} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-color)", fontWeight: "var(--weight-semibold)" }}>
+          Términos y Condiciones
+        </Link>{" "}
+        y{" "}
+        <Link href={ROUTES.privacy} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-color)", fontWeight: "var(--weight-semibold)" }}>
+          Políticas de Privacidad
+        </Link>.
       </div>
     </div>
   );

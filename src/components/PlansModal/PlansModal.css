@@ -201,6 +201,26 @@
   margin: 0;
 }
 
+.plans-modal__notice {
+  background: var(--accent-transparent);
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-md);
+  color: var(--error-color);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  line-height: 1.4;
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.plans-modal__notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 /* Pricing */
 .plans-modal__pricing {
   display: flex;
@@ -377,6 +397,11 @@
     font-size: 0.72rem;
   }
 
+  .plans-modal__notice {
+    font-size: var(--text-xs);
+    padding: var(--space-3);
+  }
+
   .plans-modal__amount {
     font-size: 1.4rem;
   }
@@ -410,4 +435,36 @@
     top: -10px;
     right: 14px;
   }
+}
+
+/* Legend & Footer Links */
+.plans-modal__legend {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--accent-color);
+  background: var(--accent-transparent);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: -4px;
+}
+
+.plans-modal__footer-links {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.plans-modal__footer-links a {
+  color: var(--accent-color);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.plans-modal__footer-links a:hover {
+  text-decoration: underline;
 }

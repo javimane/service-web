@@ -54,6 +54,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
     queryFn: async () => {
       const result = await getPromotionsByProfessionalAction({
         professionalId,
+        isActive: false,
       });
       const raw = (result?.data as any) ?? result;
       if (raw && Array.isArray(raw.items)) return raw.items;

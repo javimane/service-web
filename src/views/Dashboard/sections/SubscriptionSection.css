@@ -433,16 +433,17 @@
 }
 
 .subscription-plans__free-alert {
-  background: var(--error-color);
-  color: #ffffff;
-  padding: 10px 14px;
+  background: var(--accent-transparent);
+  border: 1px solid var(--error-color);
+  color: var(--error-color);
+  padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  margin-top: 16px;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
   line-height: 1.4;
   box-shadow: var(--shadow-sm);
 }
@@ -755,4 +756,32 @@
 
 .subscription-terms-note li:last-child {
   margin-bottom: 0;
+}
+
+.subscription-plans__legend {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--accent-color);
+  background: var(--accent-transparent);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: -4px;
+}
+
+.subscription-plans__footer-links {
+  margin-top: 0.75rem !important;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.subscription-plans__footer-links a {
+  color: var(--accent-color);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.subscription-plans__footer-links a:hover {
+  text-decoration: underline;
 }

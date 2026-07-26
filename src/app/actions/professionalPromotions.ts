@@ -51,9 +51,19 @@ export const getProfessionalPromotionDetailAction = publicAction
   });
 
 export const getPromotionsByProfessionalAction = publicAction
-  .schema(z.object({ professionalId: z.string().or(z.number()) }))
+  .schema(
+    z.object({
+      professionalId: z.string().or(z.number()),
+      isActive: z.boolean().optional(),
+    }),
+  )
   .action(async ({ parsedInput, ctx }) => {
-    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-promotions/professional/${parsedInput.professionalId}`;
+    const params = new URLSearchParams();
+    if (parsedInput.isActive !== undefined) {
+      params.set("isActive", String(parsedInput.isActive));
+    }
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/professional-promotions/professional/${parsedInput.professionalId}${queryString}`;
 
     try {
       const response = await axios.get(url, {
