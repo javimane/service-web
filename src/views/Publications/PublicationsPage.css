@@ -200,12 +200,16 @@
   height: 200px;
   background-color: var(--surface-soft);
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .pub-card__image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .pub-card__image-placeholder {

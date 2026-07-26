@@ -398,12 +398,16 @@
   border-radius: 25px 8px 25px 8px;
   overflow: hidden;
   border: 1px solid var(--border-color);
+  background-color: var(--surface-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .portfolio-item img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.3s ease;
 }
 
@@ -794,7 +798,8 @@
 .modal-image {
   width: 100%;
   aspect-ratio: 1;
-  object-fit: cover;
+  object-fit: contain;
+  background-color: var(--surface-soft);
   border-radius: var(--radius-md);
 }
 
