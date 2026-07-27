@@ -411,6 +411,20 @@ export default function SettingsPage() {
       showError("Debes indicar tu cobertura geográfica seleccionando al menos una provincia.");
       return;
     }
+    if (
+      hasStorefront === "si" &&
+      (storeLat === null ||
+        storeLng === null ||
+        storeLat === undefined ||
+        storeLng === undefined ||
+        isNaN(Number(storeLat)) ||
+        isNaN(Number(storeLng)))
+    ) {
+      showError(
+        "Es obligatorio seleccionar en el mapa la ubicación de tu comercio al público.",
+      );
+      return;
+    }
 
     saveMutation.mutate();
   };

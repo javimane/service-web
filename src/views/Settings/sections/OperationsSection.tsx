@@ -178,21 +178,29 @@ export default function OperationsSection({
               <div className="coordinates-header">
                 <div className="coordinates-title-wrap">
                   <span className="coordinates-title">
-                    Coordenadas Geográficas
+                    Coordenadas Geográficas <span className="required-star">*</span>
                   </span>
                   <p className="coordinates-note">
-                    Ubicación precisa de tu comercio en el mapa.
+                    Ubicación precisa de tu comercio en el mapa. <strong>(Obligatorio para atención al público)</strong>
                   </p>
                 </div>
                 <button
                   type="button"
-                  className="map-open-btn"
+                  className={`map-open-btn ${!storeLat || !storeLng ? "map-open-btn--required" : ""}`}
                   onClick={() => setMapModalOpen(true)}
                 >
                   <Map size={16} />
-                  Seleccionar en mapa
+                  {storeLat && storeLng
+                    ? "Ubicación seleccionada ✓"
+                    : "Seleccionar en mapa (Obligatorio)"}
                 </button>
               </div>
+
+              {(!storeLat || !storeLng) && (
+                <div className="coordinates-required-alert">
+                  ⚠️ Es obligatorio seleccionar la ubicación en el mapa al tener comercio al público.
+                </div>
+              )}
 
               <div className="coordinates-inputs">
                 <label className="settings-field">

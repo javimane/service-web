@@ -156,6 +156,15 @@ export default function CompanyDisplaySection({
                   <span className="address-label">Código Postal</span>
                   <span className="address-value">{zipCode}</span>
                 </div>
+                {company.public_trade &&
+                  (!company.latitude || !company.longitude) && (
+                    <div className="address-item address-item--warning">
+                      <span className="address-label">Ubicación en Mapa</span>
+                      <span className="address-value address-value--warning">
+                        ⚠️ No seleccionada (Requerida)
+                      </span>
+                    </div>
+                  )}
               </div>
             ) : (
               <p className="display-empty-text">Sin atención al público</p>

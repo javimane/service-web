@@ -57,7 +57,7 @@ import "./ProfilePage.css";
 import ProductCard from "../../components/Cards/ProductCard";
 import PromotionDetailModal from "../../components/Modals/PromotionDetailModal";
 import ProfileServiceDetailModal from "./sections/ProfileServiceDetailModal";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import ReelCard from "../../components/Cards/ReelCard";
 import ReelsTheaterModal from "../../components/ReelsTheater/ReelsTheaterModal";
@@ -273,6 +273,28 @@ export default function ProfilePage() {
   const router = useRouter();
   const { showSuccess: showSuccessAlert } = useAlert();
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (selectedImageIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedImageIndex(null);
+      } else if (e.key === "ArrowLeft") {
+        setSelectedImageIndex((prev) =>
+          prev !== null && prev > 0 ? prev - 1 : prev,
+        );
+      } else if (e.key === "ArrowRight") {
+        setSelectedImageIndex((prev) =>
+          prev !== null && prev < 1000 ? prev + 1 : prev,
+        );
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImageIndex]);
   const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isBankPromosModalOpen, setIsBankPromosModalOpen] = useState(false);
@@ -1031,7 +1053,11 @@ export default function ProfilePage() {
             </div>
             <div className="portfolio-grid">
               {images.slice(0, 8).map((img, idx) => (
-                <div key={img.id} className="portfolio-item">
+                <div
+                  key={img.id}
+                  className="portfolio-item"
+                  onClick={() => setSelectedImageIndex(idx)}
+                >
                   <img src={img.image_url} alt={img.caption || `Work ${idx}`} />
                 </div>
               ))}
@@ -1237,16 +1263,89 @@ export default function ProfilePage() {
         title="Galería Completa"
       >
         <div className="modal-portfolio-grid">
-          {images.map((img) => (
+          {images.map((img, idx) => (
             <img
               key={img.id}
               src={img.image_url}
               alt={img.caption || "Portafolio"}
               className="modal-image"
+              onClick={() => setSelectedImageIndex(idx)}
             />
           ))}
         </div>
       </Modal>
+
+      {/* Lightbox / Vista en Pantalla Grande */}
+      {selectedImageIndex !== null && images[selectedImageIndex] && (
+        <div
+          className="lightbox-overlay"
+          onClick={() => setSelectedImageIndex(null)}
+        >
+          <button
+            className="lightbox-close"
+            onClick={() => setSelectedImageIndex(null)}
+            aria-label="Cerrar"
+          >
+            <X size={24} />
+          </button>
+
+          <div
+            className="lightbox-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {images.length > 1 && (
+              <button
+                className="lightbox-nav lightbox-nav--prev"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedImageIndex((prev) =>
+                    prev !== null && prev > 0 ? prev - 1 : images.length - 1,
+                  );
+                }}
+                aria-label="Anterior"
+              >
+                <ChevronLeft size={32} />
+              </button>
+            )}
+
+            <div className="lightbox-image-wrapper">
+              <img
+                src={images[selectedImageIndex].image_url}
+                alt={
+                  images[selectedImageIndex].caption ||
+                  `Imagen ${selectedImageIndex + 1}`
+                }
+                className="lightbox-image"
+              />
+              {images[selectedImageIndex].caption && (
+                <p className="lightbox-caption">
+                  {images[selectedImageIndex].caption}
+                </p>
+              )}
+              <div className="lightbox-counter">
+                {selectedImageIndex + 1} / {images.length}
+              </div>
+            </div>
+
+            {images.length > 1 && (
+              <button
+                className="lightbox-nav lightbox-nav--next"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedImageIndex((prev) =>
+                    prev !== null && prev < images.length - 1
+                      ? prev + 1
+                      : 0,
+                  );
+                }}
+                aria-label="Siguiente"
+              >
+                <ChevronRight size={32} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <Modal
         isOpen={isServicesModalOpen}
