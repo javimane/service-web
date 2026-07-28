@@ -258,7 +258,7 @@ function ProfileVideoCard({
   );
 }
 
-export default function ProfilePage() {
+export default function ProfilePage({ initialData }: { initialData?: any } = {}) {
   const params = useParams<{ seoPath: string | string[] }>();
   // [...seoPath] catch-all returns an array, e.g. ["bodega-sa", "9"]
   const seoPathRaw = params?.seoPath;
@@ -340,6 +340,7 @@ export default function ProfilePage() {
       const result = await getProfessionalDetailAction({ id: id! });
       return result?.data ?? null;
     },
+    initialData: initialData ?? undefined,
     enabled: !!id,
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,

@@ -47,6 +47,7 @@ export default async function Page({ params }: Props) {
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
   const fullPath = `/productos/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   let jsonLd: any = null;
+  let productData: any = null;
 
   try {
     const res = await fetch(
@@ -55,11 +56,11 @@ export default async function Page({ params }: Props) {
     );
     if (res.ok) {
       const data = await res.json();
-      const product = data?.data ?? data;
-      const name = product?.Product?.name ?? product?.name;
-      const description = product?.Product?.description ?? product?.description;
-      const image = product?.Product?.image_url ?? product?.image_url;
-      const price = product?.Product?.price ?? product?.price;
+      productData = data?.data ?? data;
+      const name = productData?.Product?.name ?? productData?.name;
+      const description = productData?.Product?.description ?? productData?.description;
+      const image = productData?.Product?.image_url ?? productData?.image_url;
+      const price = productData?.Product?.price ?? productData?.price;
 
       if (name) {
         jsonLd = {
@@ -88,7 +89,7 @@ export default async function Page({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <ProductDetailPage />
+      <ProductDetailPage initialData={productData} />
     </>
   );
 }

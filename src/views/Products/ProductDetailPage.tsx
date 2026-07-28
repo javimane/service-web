@@ -53,10 +53,13 @@ const formatDescription = (text: string) => {
   return result;
 };
 
-export default function ProductDetailPage() {
+export default function ProductDetailPage({ initialData }: { initialData?: any } = {}) {
   const params = useParams<{ seoPath: string | string[] }>();
   const searchParams = useSearchParams();
-  const seoPath = params?.seoPath;
+  const seoPathRaw = params?.seoPath;
+  const seoPath = Array.isArray(seoPathRaw)
+    ? seoPathRaw.join("/")
+    : ((seoPathRaw as string) ?? "");
 
   // Try to get ID from query param first, then from slug
   const queryId = searchParams?.get("id");
@@ -75,6 +78,7 @@ export default function ProductDetailPage() {
       const result = await getProductDetailAction({ id: id! });
       return result?.data ?? null;
     },
+    initialData: initialData ?? undefined,
     enabled: !!id,
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,

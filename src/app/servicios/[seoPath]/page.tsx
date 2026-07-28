@@ -1,23 +1,60 @@
 import type { Metadata } from "next";
+import { API_ENDPOINTS } from "@/services/api.config";
 import ServiceDetailPage from "@/views/Services/ServiceDetailPage";
 
 type Props = { params: Promise<{ seoPath: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { seoPath } = await params;
-  // Use a generic title for now since we get the actual service details from the API in the component
-  // using the ID from query parameters
-  const title = seoPath
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  const id = seoPath.split("-")[0];
+  const fullPath = `/servicios/${seoPath}`;
+  try {
+    const res = await fetch(
+      API_ENDPOINTS.services.detail(id),
+      { next: { revalidate: 3600 } },
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const service = data?.data ?? data;
+      const name = service?.title ?? service?.name ?? "Servicio";
+      const description =
+        service?.description ?? `Contratá ${name} en Sercio.`;
+      const image = service?.image_url;
 
-  return {
-    title: title || "Servicio",
-    description: "Ver detalles del servicio",
-  };
+      return {
+        title: `${name} - Servicios en Sercio`,
+        description,
+        alternates: {
+          canonical: `https://sercio.com.ar${fullPath}`,
+        },
+        openGraph: {
+          title: `${name} - Sercio`,
+          description,
+          url: `https://sercio.com.ar${fullPath}`,
+          siteName: "Sercio",
+          images: image ? [{ url: image }] : [],
+        },
+      };
+    }
+  } catch {}
+  return { title: "Servicio - Sercio" };
 }
 
-export default function Page() {
-  return <ServiceDetailPage />;
+export default async function Page({ params }: Props) {
+  const { seoPath } = await params;
+  const id = seoPath.split("-")[0];
+  let serviceData: any = null;
+
+  try {
+    const res = await fetch(
+      API_ENDPOINTS.services.detail(id),
+      { next: { revalidate: 3600 } },
+    );
+    if (res.ok) {
+      const data = await res.json();
+      serviceData = data?.data ?? data;
+    }
+  } catch {}
+
+  return <ServiceDetailPage initialData={serviceData} />;
 }

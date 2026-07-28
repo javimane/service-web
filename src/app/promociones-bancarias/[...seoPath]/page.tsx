@@ -48,6 +48,7 @@ export default async function Page({ params }: Props) {
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
   const fullPath = `/promociones-bancarias/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   let jsonLd: any = null;
+  let bankPromoData: any = null;
 
   try {
     const res = await fetch(
@@ -56,13 +57,13 @@ export default async function Page({ params }: Props) {
     );
     if (res.ok) {
       const data = await res.json();
-      const promo = data?.data ?? data;
-      const companyName = promo?.Professional?.Company?.[0]?.name ?? "Comercio";
-      const discount = promo?.percentaje_discount
-        ? `${promo.percentaje_discount}% de descuento`
+      bankPromoData = data?.data ?? data;
+      const companyName = bankPromoData?.Professional?.Company?.[0]?.name ?? "Comercio";
+      const discount = bankPromoData?.percentaje_discount
+        ? `${bankPromoData.percentaje_discount}% de descuento`
         : "Promoción bancaria";
       const title = `${discount} en ${companyName}`;
-      const description = promo?.description;
+      const description = bankPromoData?.description;
 
       if (title) {
         jsonLd = {
@@ -87,7 +88,7 @@ export default async function Page({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <BankPromotionDetailPage />
+      <BankPromotionDetailPage initialData={bankPromoData} />
     </>
   );
 }

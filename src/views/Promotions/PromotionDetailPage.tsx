@@ -22,9 +22,11 @@ import "./PromotionDetailPage.css";
 
 export default function PromotionDetailPage({
   promotionId,
+  initialData,
 }: {
   promotionId?: string;
-}) {
+  initialData?: any;
+} = {}) {
   const params = useParams<{ seoPath: string | string[] }>();
   const seoPathRaw = params?.seoPath;
   const searchParams = useSearchParams();
@@ -48,6 +50,7 @@ export default function PromotionDetailPage({
       const result = await getProfessionalPromotionDetailAction({ id: id! });
       return result?.data ?? null;
     },
+    initialData: initialData ?? undefined,
     enabled: !!id,
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,

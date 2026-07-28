@@ -45,6 +45,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: "Perfil Profesional - Sercio" };
 }
 
-export default function Page() {
-  return <ProfilePage />;
+export default async function Page({ params }: Props) {
+  const { seoPath } = await params;
+  const id = seoPath.split("-")[0];
+  let profData: any = null;
+
+  try {
+    const res = await fetch(API_ENDPOINTS.professionals.detail(id), {
+      next: { revalidate: 3600 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      profData = data?.data ?? data;
+    }
+  } catch {}
+
+  return <ProfilePage initialData={profData} />;
 }

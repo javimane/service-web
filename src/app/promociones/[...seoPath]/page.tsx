@@ -45,6 +45,7 @@ export default async function Page({ params }: Props) {
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
   const fullPath = `/promociones/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   let jsonLd: any = null;
+  let promoData: any = null;
 
   try {
     const res = await fetch(
@@ -53,10 +54,10 @@ export default async function Page({ params }: Props) {
     );
     if (res.ok) {
       const data = await res.json();
-      const promo = data?.data ?? data;
-      const title = promo?.title ?? promo?.name;
-      const description = promo?.description;
-      const image = promo?.image_url;
+      promoData = data?.data ?? data;
+      const title = promoData?.title ?? promoData?.name;
+      const description = promoData?.description;
+      const image = promoData?.image_url;
 
       if (title) {
         jsonLd = {
@@ -81,7 +82,7 @@ export default async function Page({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <PromotionDetailPage />
+      <PromotionDetailPage initialData={promoData} />
     </>
   );
 }

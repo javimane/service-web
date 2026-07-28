@@ -46,6 +46,7 @@ export default async function Page({ params }: Props) {
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
   const fullPath = `/servicios/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   let jsonLd: any = null;
+  let serviceData: any = null;
 
   try {
     const res = await fetch(
@@ -54,11 +55,11 @@ export default async function Page({ params }: Props) {
     );
     if (res.ok) {
       const data = await res.json();
-      const service = data?.data ?? data;
-      const name = service?.title ?? service?.name;
-      const description = service?.description;
-      const image = service?.image_url;
-      const price = service?.base_price ?? service?.price;
+      serviceData = data?.data ?? data;
+      const name = serviceData?.title ?? serviceData?.name;
+      const description = serviceData?.description;
+      const image = serviceData?.image_url;
+      const price = serviceData?.base_price ?? serviceData?.price;
 
       if (name) {
         jsonLd = {
@@ -89,7 +90,7 @@ export default async function Page({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <ServiceDetailPage />
+      <ServiceDetailPage initialData={serviceData} />
     </>
   );
 }

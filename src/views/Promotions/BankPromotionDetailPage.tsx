@@ -75,7 +75,7 @@ function getPaymentMethods(value: unknown): string[] {
   return [];
 }
 
-export default function BankPromotionDetailPage() {
+export default function BankPromotionDetailPage({ initialData }: { initialData?: any } = {}) {
   const params = useParams<{ seoPath: string | string[] }>();
   const searchParams = useSearchParams();
   const seoPathRaw = params?.seoPath;
@@ -99,6 +99,7 @@ export default function BankPromotionDetailPage() {
       const result = await getBankPromotionDetailAction({ id: id! });
       return result?.data ?? null;
     },
+    initialData: initialData ?? undefined,
     enabled: !!id,
     staleTime: 1000 * 60 * 30, // 30 minutos
     gcTime: 1000 * 60 * 60,

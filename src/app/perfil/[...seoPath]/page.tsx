@@ -64,6 +64,7 @@ export default async function Page({ params }: Props) {
 
   const id = seoPath[seoPath.length - 1];
   let jsonLd: any = null;
+  let profData: any = null;
 
   try {
     const res = await fetch(API_ENDPOINTS.professionals.detail(id), {
@@ -71,11 +72,11 @@ export default async function Page({ params }: Props) {
     });
     if (res.ok) {
       const data = await res.json();
-      const prof = data?.data ?? data;
-      const company = prof?.Company?.[0];
-      const name = company?.name ?? prof?.Profile?.display_name;
-      const avatar = prof?.Profile?.avatar_url;
-      const mainAddress = company?.address || company?.Address || prof?.address;
+      profData = data?.data ?? data;
+      const company = profData?.Company?.[0];
+      const name = company?.name ?? profData?.Profile?.display_name;
+      const avatar = profData?.Profile?.avatar_url;
+      const mainAddress = company?.address || company?.Address || profData?.address;
       const addressObj = Array.isArray(mainAddress) ? mainAddress[0] : mainAddress;
 
       if (name) {
@@ -111,7 +112,7 @@ export default async function Page({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <ProfilePage />
+      <ProfilePage initialData={profData} />
     </>
   );
 }

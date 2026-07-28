@@ -18,7 +18,7 @@ import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import "./ServiceDetailPage.css";
 
-export default function ServiceDetailPage() {
+export default function ServiceDetailPage({ initialData }: { initialData?: any } = {}) {
   const params = useParams<{ seoPath: string | string[] }>();
   const searchParams = useSearchParams();
   const seoPath = params?.seoPath;
@@ -38,6 +38,7 @@ export default function ServiceDetailPage() {
       const result = await getServiceDetailAction({ id: id! });
       return result?.data ?? null;
     },
+    initialData: initialData ?? undefined,
     enabled: !!id,
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
