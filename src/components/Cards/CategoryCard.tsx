@@ -77,6 +77,7 @@ const ICON_MAPPING: Record<number, keyof typeof LucideIcons> = {
   29: "Truck", // Transporte
   30: "Compass", // Viajes y Turismo
   48: "Car", // Compra y Venta de Vehículos
+  52: "SportShoe", // Alquiler de canchas y espacios deportivos
 };
 
 function IconById({ id, size = 32 }: { id: number; size?: number }) {
