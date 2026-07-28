@@ -7,6 +7,7 @@ type Props = { params: Promise<{ seoPath: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { seoPath } = await params;
   const id = seoPath.split("-")[0];
+  const fullPath = `/perfil/${seoPath}`;
   try {
     const res = await fetch(API_ENDPOINTS.professionals.detail(id), {
       next: { revalidate: 3600 },
@@ -14,22 +15,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (res.ok) {
       const data = await res.json();
       const professional = data?.data ?? data;
+      const company = professional?.Company?.[0];
       const name =
-        professional?.Company?.[0]?.name ??
+        company?.name ??
         professional?.Profile?.display_name ??
         "Profesional";
       const avatar = professional?.Profile?.avatar_url;
+      const description =
+        company?.description ||
+        `Perfil profesional de ${name} en Sercio. Conocé sus servicios, productos y promociones.`;
+
       return {
-        title: name,
-        description: `Perfil de ${name} en Sercio. Conocé sus servicios, productos y promociones.`,
+        title: `${name} - Perfil Profesional en Sercio`,
+        description,
+        alternates: {
+          canonical: `https://sercio.com.ar${fullPath}`,
+        },
         openGraph: {
-          title: name,
+          title: `${name} - Sercio`,
+          description,
+          url: `https://sercio.com.ar${fullPath}`,
+          siteName: "Sercio",
           images: avatar ? [{ url: avatar }] : [],
+          type: "profile",
         },
       };
     }
   } catch {}
-  return { title: "Perfil Profesional" };
+  return { title: "Perfil Profesional - Sercio" };
 }
 
 export default function Page() {

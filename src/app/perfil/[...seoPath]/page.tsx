@@ -13,8 +13,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Tienda" };
   }
 
-  // seoPath is ["bodega-sa", "9"] — the last segment is the professional ID
+  // seoPath is ["estudio-manesero-asoc", "37"] — the last segment is the professional ID
   const id = seoPath[seoPath.length - 1];
+  const fullPath = `/perfil/${seoPath.join("/")}`;
   try {
     const res = await fetch(API_ENDPOINTS.professionals.detail(id), {
       next: { revalidate: 3600 },
@@ -22,22 +23,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (res.ok) {
       const data = await res.json();
       const professional = data?.data ?? data;
+      const company = professional?.Company?.[0];
       const name =
-        professional?.Company?.[0]?.name ??
+        company?.name ??
         professional?.Profile?.display_name ??
         "Profesional";
       const avatar = professional?.Profile?.avatar_url;
+      const description =
+        company?.description ||
+        `Perfil profesional de ${name} en Sercio. Consultá sus servicios, productos, ofertas y datos de contacto.`;
+
       return {
-        title: name,
-        description: `Perfil de ${name} en Sercio. Conocé sus servicios, productos y promociones.`,
+        title: `${name} - Perfil Profesional en Sercio`,
+        description,
+        alternates: {
+          canonical: `https://sercio.com.ar${fullPath}`,
+        },
         openGraph: {
-          title: name,
+          title: `${name} - Sercio`,
+          description,
+          url: `https://sercio.com.ar${fullPath}`,
+          siteName: "Sercio",
           images: avatar ? [{ url: avatar }] : [],
+          type: "profile",
         },
       };
     }
   } catch {}
-  return { title: "Perfil Profesional" };
+  return { title: "Perfil Profesional - Sercio" };
 }
 
 export default async function Page({ params }: Props) {
@@ -49,5 +62,56 @@ export default async function Page({ params }: Props) {
     return <ProfessionalStorePage />;
   }
 
-  return <ProfilePage />;
+  const id = seoPath[seoPath.length - 1];
+  let jsonLd: any = null;
+
+  try {
+    const res = await fetch(API_ENDPOINTS.professionals.detail(id), {
+      next: { revalidate: 3600 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const prof = data?.data ?? data;
+      const company = prof?.Company?.[0];
+      const name = company?.name ?? prof?.Profile?.display_name;
+      const avatar = prof?.Profile?.avatar_url;
+      const mainAddress = company?.address || company?.Address || prof?.address;
+      const addressObj = Array.isArray(mainAddress) ? mainAddress[0] : mainAddress;
+
+      if (name) {
+        jsonLd = {
+          "@context": "https://schema.org",
+          "@type": "ProfessionalService",
+          "name": name,
+          "description":
+            company?.description ||
+            `Perfil profesional de ${name} en Sercio.`,
+          "url": `https://sercio.com.ar/perfil/${seoPath.join("/")}`,
+          "image": avatar || undefined,
+          "address": addressObj
+            ? {
+                "@type": "PostalAddress",
+                "streetAddress": `${addressObj.street_name || ""} ${addressObj.street_number || ""}`.trim() || undefined,
+                "addressLocality": addressObj.Department?.name || undefined,
+                "addressRegion": addressObj.Province?.name || undefined,
+                "postalCode": addressObj.zip_code || undefined,
+                "addressCountry": "AR",
+              }
+            : undefined,
+        };
+      }
+    }
+  } catch {}
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <ProfilePage />
+    </>
+  );
 }

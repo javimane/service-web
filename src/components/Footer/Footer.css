@@ -41,6 +41,115 @@
   color: var(--text-secondary);
 }
 
+/* App Download Section */
+.footer__apps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footer__apps-title {
+  font-size: 0.75rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.footer__apps-buttons {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.footer__app-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.footer__app-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.footer__app-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.footer__app-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  text-align: left;
+}
+
+.footer__app-subtitle {
+  font-size: 0.55rem;
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.footer__app-title {
+  font-size: 0.78rem;
+  font-weight: var(--weight-bold);
+}
+
+/* Social Media Section */
+.footer__socials {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footer__socials-title {
+  font-size: 0.75rem;
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.footer__socials-list {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.footer__social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer__social-link:hover {
+  color: var(--accent-color);
+}
+
+.footer__social-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .footer__links {
   display: flex;
   gap: 1.5rem;
@@ -69,6 +178,8 @@
     text-align: center;
   }
 
+  .footer__apps-buttons,
+  .footer__socials-list,
   .footer__links {
     justify-content: center;
   }

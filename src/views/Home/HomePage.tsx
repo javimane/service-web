@@ -20,6 +20,7 @@ import PublicationSlider from "@/components/PublicationSlider/PublicationSlider"
 import JobSlider from "@/components/JobSlider/JobSlider";
 import JoinCTASection from "./sections/JoinCTASection";
 import Footer from "../../components/Footer/Footer";
+import MobileAppBanner from "@/components/MobileAppBanner/MobileAppBanner";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
 import "./HomePage.css";
@@ -256,6 +257,7 @@ export default function HomePage() {
       </main>
 
       <Footer />
+      <MobileAppBanner />
 
       <Modal
         isOpen={showWelcomeModal}
