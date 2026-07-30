@@ -19,9 +19,12 @@ export default function BusinessInfoSection({
 
       <div className="settings-fields two-columns">
         <label className="settings-field">
-          <span>Nombre comercial</span>
+          <span>
+            Nombre comercial <span style={{ color: "var(--error-color, #fa5252)", fontWeight: "bold" }}>* (Obligatorio)</span>
+          </span>
           <input
             type="text"
+            required
             placeholder="Ingresá el nombre comercial"
             value={tradeName}
             onChange={(e) => setTradeName(e.target.value)}
@@ -31,10 +34,13 @@ export default function BusinessInfoSection({
 
       <div className="settings-fields two-columns">
         <label className="settings-field">
-          <span>Cuit</span>
+          <span>
+            CUIT / CUIL <span style={{ color: "var(--error-color, #fa5252)", fontWeight: "bold" }}>* (Obligatorio)</span>
+          </span>
           <input
             type="text"
-            placeholder="Ingresá el CUIT"
+            required
+            placeholder="Ingresá el CUIT / CUIL"
             value={cuit}
             onChange={(e) => setCuit(e.target.value)}
           />

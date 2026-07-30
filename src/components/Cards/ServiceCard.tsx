@@ -1,4 +1,4 @@
-import { MapPin, Star, ArrowRight, CheckCircle } from "lucide-react";
+import { MapPin, Star, ArrowRight, CheckCircle, Share2 } from "lucide-react";
 import "./ServiceCard.css";
 
 export default function ServiceCard({ service, viewMode = "grid", onClick }) {
@@ -24,17 +24,50 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
   const address = professional?.address?.[0] || professional?.Address?.[0];
   const locationName = address?.province?.name || address?.city || "Mendoza";
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const slug =
+      service.seo_path ||
+      service.seoPath ||
+      (service.name
+        ? service.name.trim().toLowerCase().replace(/\s+/g, "-")
+        : `service-${service.id}`);
+    const url = `${window.location.origin}/servicios/${slug}?id=${service.id}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: serviceName,
+          text: `Mirá este servicio en Sercio: ${serviceName}`,
+          url: url,
+        });
+      } catch (err) {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch (err) {}
+    }
+  };
+
   return (
     <article
       className={`service-card-modern view-${viewMode}`}
       onClick={() => onClick(service)}
     >
-      {/* Location */}
+      {/* Location & Share */}
       <div className="card-top">
         <div className="card-location">
           <MapPin size={12} className="loc-icon" />
           <span>{locationName.toUpperCase()}</span>
         </div>
+        <button
+          className="card-share-btn"
+          title="Compartir servicio"
+          type="button"
+          onClick={handleShare}
+        >
+          <Share2 size={14} />
+        </button>
       </div>
 
       {/* Title */}

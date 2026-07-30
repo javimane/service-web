@@ -50,12 +50,17 @@ export default function LoginPage({
       }
 
       const isProf = !!sessionStatus.is_professional;
+      const hasCompany = Boolean(
+        sessionStatus.company_name && sessionStatus.company_name.trim() !== "",
+      );
 
       if (isModal) {
         onClose?.();
-        if (isNewUser && isProf) router.push(ROUTES.dashboard);
+        if (isProf && !hasCompany) router.push(ROUTES.settings);
+        else if (isNewUser && isProf) router.push(ROUTES.dashboard);
       } else {
-        if (isNewUser && isProf) router.push(ROUTES.dashboard);
+        if (isProf && !hasCompany) router.push(ROUTES.settings);
+        else if (isNewUser && isProf) router.push(ROUTES.dashboard);
         else router.push(ROUTES.home);
       }
     }
@@ -158,6 +163,7 @@ export default function LoginPage({
 
       let isNewUser = false;
       let isProf = false;
+      let hasCompany = false;
       if (response?.sessionStatus) {
         setSessionStatus(response.sessionStatus);
         const st = response.sessionStatus;
@@ -169,6 +175,7 @@ export default function LoginPage({
           }
         }
         isProf = !!st.is_professional;
+        hasCompany = Boolean(st.company_name && st.company_name.trim() !== "");
       }
 
       await refreshSession();
@@ -185,8 +192,13 @@ export default function LoginPage({
 
       if (isModal) {
         onClose?.();
+        if (isProf && !hasCompany) {
+          router.push(ROUTES.settings);
+        }
       } else {
-        if (isNewUser && isProf) {
+        if (isProf && !hasCompany) {
+          router.push(ROUTES.settings);
+        } else if (isNewUser && isProf) {
           router.push(ROUTES.dashboard);
         } else {
           router.push(ROUTES.home);

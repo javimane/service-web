@@ -1,6 +1,13 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useQuery } from "@tanstack/react-query";
@@ -21,18 +28,20 @@ const defaultCenter = {
   lng: -58.3816,
 };
 
-// Componente para actualizar el centro del mapa y ajustar tamaño en colapso
+// Componente para actualizar el centro del mapa programáticamente y ajustar tamaño en colapso
 function MapUpdater({
-  center,
+  flyToCenter,
   isCollapsed,
 }: {
-  center: { lat: number; lng: number };
+  flyToCenter: { lat: number; lng: number } | null;
   isCollapsed: boolean;
 }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([center.lat, center.lng], 13, { animate: true });
-  }, [center.lat, center.lng, map]);
+    if (flyToCenter) {
+      map.flyTo([flyToCenter.lat, flyToCenter.lng], 13, { animate: true });
+    }
+  }, [flyToCenter, map]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -41,6 +50,22 @@ function MapUpdater({
     return () => clearTimeout(timer);
   }, [isCollapsed, map]);
 
+  return null;
+}
+
+// Componente para escuchar el desplazamiento manual del usuario en el mapa
+function MapEventsListener({
+  onCenterChange,
+}: {
+  onCenterChange: (center: { lat: number; lng: number }) => void;
+}) {
+  useMapEvents({
+    moveend: (e) => {
+      const map = e.target;
+      const newCenter = map.getCenter();
+      onCenterChange({ lat: newCenter.lat, lng: newCenter.lng });
+    },
+  });
   return null;
 }
 
@@ -79,6 +104,10 @@ export default function MapPage() {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [center, setCenter] = useState(getInitialCenter);
+  const [flyToCenter, setFlyToCenter] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [filters, setFilters] = useState<{
     name: string;
     categoryId?: string;
@@ -91,18 +120,39 @@ export default function MapPage() {
     departmentId: undefined,
   });
 
-  const [selectedProfessionalForPromos, setSelectedProfessionalForPromos] = useState<number | string | null>(null);
+  const [selectedProfessionalForPromos, setSelectedProfessionalForPromos] =
+    useState<number | string | null>(null);
 
-  const handleProvinceCoordinatesChange = useCallback((coords: { lat: number; lng: number } | null) => {
-    if (coords) {
-      setCenter(coords);
-      localStorage.setItem("lastMapCenter", JSON.stringify(coords));
-    }
-  }, []);
+  const handleProvinceCoordinatesChange = useCallback(
+    (coords: { lat: number; lng: number } | null) => {
+      if (coords) {
+        setCenter(coords);
+        setFlyToCenter(coords);
+        localStorage.setItem("lastMapCenter", JSON.stringify(coords));
+      }
+    },
+    [],
+  );
 
   const handleFilterChange = useCallback((newFilters: any) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   }, []);
+
+  const handleMapCenterChange = useCallback(
+    (newCenter: { lat: number; lng: number }) => {
+      setCenter((prev) => {
+        // Actualizar solo si el usuario se desplazó una distancia apreciable (> 0.01 grados (~1km)) para evitar llamadas redundantes
+        const latDiff = Math.abs(prev.lat - newCenter.lat);
+        const lngDiff = Math.abs(prev.lng - newCenter.lng);
+        if (latDiff > 0.01 || lngDiff > 0.01) {
+          localStorage.setItem("lastMapCenter", JSON.stringify(newCenter));
+          return newCenter;
+        }
+        return prev;
+      });
+    },
+    [],
+  );
 
   const handleToggleCollapse = useCallback(() => {
     setIsSidebarCollapsed((prev) => !prev);
@@ -117,6 +167,7 @@ export default function MapPage() {
         lng: Number(lngParam),
       };
       setCenter(newCenter);
+      setFlyToCenter(newCenter);
       localStorage.setItem("lastMapCenter", JSON.stringify(newCenter));
     }
   }, [searchParams]);
@@ -135,6 +186,7 @@ export default function MapPage() {
             lng: position.coords.longitude,
           };
           setCenter(newCenter);
+          setFlyToCenter(newCenter);
           localStorage.setItem("lastMapCenter", JSON.stringify(newCenter));
         },
         () => {
@@ -236,21 +288,6 @@ export default function MapPage() {
       .filter((p: any) => p.coordinates.lat !== 0 && p.coordinates.lng !== 0);
   }, [professionals]);
 
-  useEffect(() => {
-    // If a province filter is active, do not auto-center on the first professional
-    if (filters.provinceId) return;
-
-    const firstProfessional = mappedProfessionals[0];
-    if (!firstProfessional) return;
-
-    const nextCenter = firstProfessional.coordinates;
-    if (nextCenter.lat === center.lat && nextCenter.lng === center.lng) {
-      return;
-    }
-
-    setCenter(nextCenter);
-  }, [mappedProfessionals, center.lat, center.lng, filters.provinceId]);
-
   return (
     <div className="map-page">
       <Navbar />
@@ -272,7 +309,11 @@ export default function MapPage() {
             className="map-page__map"
             zoomControl={false}
           >
-            <MapUpdater center={center} isCollapsed={isSidebarCollapsed} />
+            <MapUpdater
+              flyToCenter={flyToCenter}
+              isCollapsed={isSidebarCollapsed}
+            />
+            <MapEventsListener onCenterChange={handleMapCenterChange} />
 
             {/* TileLayer Claro y Premium (CartoDB Positron) */}
             <TileLayer
@@ -348,7 +389,7 @@ export default function MapPage() {
         </div>
       </main>
 
-      <MapPromotionsModal 
+      <MapPromotionsModal
         isOpen={!!selectedProfessionalForPromos}
         onClose={() => setSelectedProfessionalForPromos(null)}
         professionalId={selectedProfessionalForPromos}

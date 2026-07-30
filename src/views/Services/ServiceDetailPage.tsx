@@ -10,12 +10,14 @@ import {
   User,
   ArrowLeft,
   Loader2,
+  Share2,
 } from "lucide-react";
 import { getServiceDetailAction } from "../../app/actions/services";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
+import { useAlert } from "../../context/AlertContext";
 import "./ServiceDetailPage.css";
 
 export default function ServiceDetailPage({ initialData }: { initialData?: any } = {}) {
@@ -27,6 +29,7 @@ export default function ServiceDetailPage({ initialData }: { initialData?: any }
   const queryId = searchParams?.get("id");
   const id = queryId || extractIdFromSlug(seoPath);
   const router = useRouter();
+  const { showSuccess: showSuccessAlert } = useAlert();
 
   const {
     data: service,
@@ -43,6 +46,25 @@ export default function ServiceDetailPage({ initialData }: { initialData?: any }
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
   });
+
+  const handleShare = async () => {
+    if (!service) return;
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: service.name,
+          text: `Mirá este servicio en Sercio: ${service.name}`,
+          url: url,
+        });
+      } catch (e) {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        showSuccessAlert("¡Enlace copiado al portapapeles!");
+      } catch (e) {}
+    }
+  };
 
   // URL Normalization disabled - using query params approach instead
   // The URL pattern /servicios/{slug}?id={id} is maintained by ServicesPage
@@ -209,6 +231,13 @@ export default function ServiceDetailPage({ initialData }: { initialData?: any }
               >
                 <User size={18} />
                 Ver Perfil
+              </button>
+              <button
+                className="service-detail__button service-detail__button--share"
+                onClick={handleShare}
+              >
+                <Share2 size={18} />
+                Compartir
               </button>
             </div>
           </div>

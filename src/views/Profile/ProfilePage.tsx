@@ -20,6 +20,7 @@ import {
   ShoppingBag,
   MapPin,
   Clock,
+  Share2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ROUTES } from "../../routes/paths";
@@ -61,7 +62,6 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import ReelCard from "../../components/Cards/ReelCard";
 import ReelsTheaterModal from "../../components/ReelsTheater/ReelsTheaterModal";
-import { Share2 } from "lucide-react";
 
 // Custom hook for drag-to-scroll
 function useDraggableScroll() {
@@ -258,7 +258,9 @@ function ProfileVideoCard({
   );
 }
 
-export default function ProfilePage({ initialData }: { initialData?: any } = {}) {
+export default function ProfilePage({
+  initialData,
+}: { initialData?: any } = {}) {
   const params = useParams<{ seoPath: string | string[] }>();
   // [...seoPath] catch-all returns an array, e.g. ["bodega-sa", "9"]
   const seoPathRaw = params?.seoPath;
@@ -748,11 +750,35 @@ export default function ProfilePage({ initialData }: { initialData?: any } = {})
       },
       aggregateRating: {
         "@type": "AggregateRating",
-        ratingValue: professional.rating_avg || "5.0",
-        reviewCount: reviews.length || "1",
+        ratingValue: professional.rating_avg ? Number(professional.rating_avg).toFixed(1) : "0.0",
+        reviewCount: reviews.length || "0",
       },
     };
   }, [professional, name, avatar, company, reviews]);
+
+  const handleShareProfile = async () => {
+    const seo = professional?.seo_path
+      ? professional.seo_path.startsWith("/")
+        ? professional.seo_path
+        : `/${professional.seo_path}`
+      : `/${rawId}`;
+    const shareUrl = `${window.location.origin}/perfil${seo}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: name,
+          text: `Mirá el perfil profesional de ${name} en Sercio`,
+          url: shareUrl,
+        });
+      } catch (e) {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        showSuccessAlert("¡Enlace del perfil copiado al portapapeles!");
+      } catch (e) {}
+    }
+  };
 
   if (isLoadingProfile) {
     return (
@@ -800,10 +826,12 @@ export default function ProfilePage({ initialData }: { initialData?: any } = {})
               className={`avatar-frame ${hasReels ? "pulse-reel" : ""} ${isVerified ? "verified-ring" : ""}`}
               onClick={() => hasReels && setSelectedReelIndex(0)}
             >
-              <img src={avatar} alt={name} className="avatar-image" />
+              <div className="avatar-image-wrap">
+                <img src={avatar} alt={name} className="avatar-image" />
+              </div>
               {isVerified && (
                 <div className="verified-badge-premium">
-                  <CheckCircle size={16} />
+                  <CheckCircle size={18} />
                 </div>
               )}
               {hasReels && (
@@ -889,7 +917,7 @@ export default function ProfilePage({ initialData }: { initialData?: any } = {})
               <div className="stat-content">
                 <Star size={14} className="stat-icon" />
                 <span className="stat-value">
-                  {professional.rating_avg || "5.0"}
+                  {professional.rating_avg ? Number(professional.rating_avg).toFixed(1) : "0.0"}
                 </span>
               </div>
               <span className="stat-label">CALIFICACIÓN</span>
@@ -947,6 +975,13 @@ export default function ProfilePage({ initialData }: { initialData?: any } = {})
             }}
           >
             ENVIAR MENSAJE <MessageCircle size={18} />
+          </button>
+
+          <button
+            className="cta-button share-profile-btn"
+            onClick={handleShareProfile}
+          >
+            COMPARTIR PERFIL <Share2 size={18} />
           </button>
 
           {/* Review Button — only for authenticated users who've chatted with this professional */}
@@ -1334,9 +1369,7 @@ export default function ProfilePage({ initialData }: { initialData?: any } = {})
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedImageIndex((prev) =>
-                    prev !== null && prev < images.length - 1
-                      ? prev + 1
-                      : 0,
+                    prev !== null && prev < images.length - 1 ? prev + 1 : 0,
                   );
                 }}
                 aria-label="Siguiente"

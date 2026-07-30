@@ -400,11 +400,15 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     if (!tradeName || tradeName.trim() === "") {
-      showError("Por favor, ingresa el nombre de la empresa o comercio.");
+      showError("Por favor, ingresa el nombre de la empresa o comercio (Campo obligatorio).");
+      return;
+    }
+    if (!cuit || cuit.trim() === "") {
+      showError("Por favor, ingresa el CUIT / CUIL (Campo obligatorio).");
       return;
     }
     if (selectedCategories.length === 0) {
-      showError("Debes seleccionar al menos una categoría de servicio.");
+      showError("Debes seleccionar al menos una categoría de servicio (Campo obligatorio).");
       return;
     }
     if (selectedProvinces.length === 0) {

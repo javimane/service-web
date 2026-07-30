@@ -8,6 +8,8 @@ import {
   ChevronRight,
   Clapperboard,
   Eye,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -270,26 +272,25 @@ export default function DashboardPage() {
     setView(routeView || "overview");
   }, [routeView]);
 
-  // Redirect to profile settings if professional has no company name
+  const [isUnverifiedBannerClosed, setIsUnverifiedBannerClosed] = useState(false);
+
+  // Redirect to Settings if professional has no company name
   useEffect(() => {
-    if (!myProfessional) return;
+    if (!myProfessional && !sessionStatus) return;
     const companies = myProfessional?.companies;
     const company = Array.isArray(companies) ? companies[0] : companies;
-    const companyName = company?.name;
+    const companyName = sessionStatus?.company_name || company?.name;
 
     if (
       isProfessionalUser &&
-      hasProfessionalSubscription &&
-      !companyName &&
-      view === "overview"
+      (!companyName || companyName.trim() === "")
     ) {
-      router.push(`${ROUTES.dashboard}?view=profile`);
+      router.push(ROUTES.settings);
     }
   }, [
     myProfessional,
+    sessionStatus,
     isProfessionalUser,
-    hasProfessionalSubscription,
-    view,
     router,
   ]);
 
@@ -372,6 +373,37 @@ export default function DashboardPage() {
         <main
           className={`dashboard-main ${isSidebarCollapsed ? "dashboard-main--collapsed" : ""} ${isMobileSidebarMode ? "dashboard-main--mobile" : ""}`}
         >
+          {isProfessionalUser && myProfessional && !(
+            myProfessional?.companies_arca?.[0]?.is_verified ||
+            myProfessional?.companies?.companies_arca?.[0]?.is_verified ||
+            myProfessional?.company_arca?.is_verified
+          ) && !isUnverifiedBannerClosed && (
+            <div className="dashboard-unverified-banner">
+              <div className="dashboard-unverified-banner__content">
+                <AlertTriangle size={20} className="unverified-icon" />
+                <span>No te olvides de verificar tu cuenta en Configuración</span>
+              </div>
+              <div className="dashboard-unverified-banner__actions">
+                <button
+                  type="button"
+                  className="dashboard-unverified-banner__btn"
+                  onClick={() => router.push(ROUTES.settings)}
+                >
+                  Ir a Configuración
+                </button>
+                <button
+                  type="button"
+                  className="dashboard-unverified-banner__close"
+                  onClick={() => setIsUnverifiedBannerClosed(true)}
+                  title="Cerrar aviso"
+                  aria-label="Cerrar aviso"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {isUnsubscribedProfessional && view !== "subscription" && (
             <div
               style={{

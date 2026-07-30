@@ -36,6 +36,28 @@
   letter-spacing: 0.05em;
 }
 
+.card-share-btn {
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.card-share-btn:hover {
+  background: var(--white);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  transform: scale(1.1);
+}
+
 .card-badge {
   padding: 4px 10px;
   border-radius: var(--radius-full);

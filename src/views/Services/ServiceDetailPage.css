@@ -198,6 +198,18 @@
   color: white;
 }
 
+.service-detail__button--share {
+  background-color: var(--white);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.service-detail__button--share:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background-color: var(--surface-soft);
+}
+
 .service-detail-loading,
 .service-detail-error {
   display: flex;
