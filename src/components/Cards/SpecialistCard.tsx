@@ -96,15 +96,19 @@ export default function SpecialistCard({ specialist }: SpecialistCardProps) {
         <Link href={linkHref}>
           <div
             className={`specialist-card__avatar-frame ${
-              isVerified ? "specialist-card__avatar-frame--verified" : ""
+              isVerified
+                ? "specialist-card__avatar-frame--verified"
+                : "specialist-card__avatar-frame--unverified"
             }`}
           >
-            <img
-              className="specialist-card__avatar"
-              src={avatar}
-              alt={company_name || "Profesional"}
-              loading="lazy"
-            />
+            <div className="specialist-card__avatar-crop">
+              <img
+                className="specialist-card__avatar"
+                src={avatar}
+                alt={company_name || "Profesional"}
+                loading="lazy"
+              />
+            </div>
             {/* Green check icon badge */}
             {isVerified && (
               <span className="specialist-card__verified-badge">✓</span>
