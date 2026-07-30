@@ -50,8 +50,9 @@ export default function LoginPage({
       }
 
       const isProf = !!sessionStatus.is_professional;
+      const compName = (sessionStatus as any)?.company_name;
       const hasCompany = Boolean(
-        sessionStatus.company_name && sessionStatus.company_name.trim() !== "",
+        compName && typeof compName === "string" && compName.trim() !== "",
       );
 
       if (isModal) {
@@ -175,7 +176,10 @@ export default function LoginPage({
           }
         }
         isProf = !!st.is_professional;
-        hasCompany = Boolean(st.company_name && st.company_name.trim() !== "");
+        const compName = (st as any)?.company_name;
+        hasCompany = Boolean(
+          compName && typeof compName === "string" && compName.trim() !== "",
+        );
       }
 
       await refreshSession();
