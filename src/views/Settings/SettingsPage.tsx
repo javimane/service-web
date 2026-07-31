@@ -2,7 +2,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusCircle, Building2, AlertTriangle, Lock, ExternalLink } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Modal from "../../components/Modal/Modal";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import BusinessInfoSection from "./sections/BusinessInfoSection";
@@ -41,6 +42,21 @@ import "./SettingsPage.css";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showMissingCompanyModal, setShowMissingCompanyModal] = useState(false);
+
+  useEffect(() => {
+    if (!searchParams) return;
+    const isWelcomeParam = searchParams.get("welcome") === "true";
+    const isMissingCompanyParam = searchParams.get("missing_company") === "true";
+    if (isWelcomeParam) {
+      setShowWelcomeModal(true);
+    }
+    if (isMissingCompanyParam) {
+      setShowMissingCompanyModal(true);
+    }
+  }, [searchParams]);
   const queryClient = useQueryClient();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
   const { user, sessionStatus, logout, hasProfessionalSubscription } = useAuth();
@@ -682,6 +698,184 @@ export default function SettingsPage() {
           </div>
         </main>
       </div>
+
+      <Modal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        title="¡Bienvenido a Sercio Profesional! 🎉"
+        maxWidth="600px"
+      >
+        <div style={{ padding: "var(--space-4)", textAlign: "center" }}>
+          <p
+            style={{
+              marginBottom: "var(--space-4)",
+              color: "var(--text-primary)",
+              fontSize: "var(--text-lg)",
+              fontWeight: "var(--weight-bold)",
+            }}
+          >
+            ¡Tu plan ha sido activado con éxito!
+          </p>
+          <p
+            style={{
+              marginBottom: "var(--space-6)",
+              color: "var(--text-secondary)",
+              fontSize: "var(--text-md)",
+            }}
+          >
+            Para comenzar a recibir clientes y publicar tus servicios en la plataforma, por favor completá los datos comerciales obligatorios a continuación:
+          </p>
+          <ul
+            style={{
+              textAlign: "left",
+              marginBottom: "var(--space-8)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-4)",
+              padding: "0 var(--space-4)",
+            }}
+          >
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--success-color)", marginTop: "2px" }}>
+                ✅
+              </span>
+              <span>
+                <strong>Nombre Comercial y CUIT:</strong> Identificá tu empresa o servicio profesional.
+              </span>
+            </li>
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--success-color)", marginTop: "2px" }}>
+                ✅
+              </span>
+              <span>
+                <strong>Categorías y Cobertura:</strong> Seleccioná qué servicios ofrecés y en qué provincias operás.
+              </span>
+            </li>
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--success-color)", marginTop: "2px" }}>
+                ✅
+              </span>
+              <span>
+                <strong>Atención al público:</strong> Si atendés en local, marcá tu ubicación en el mapa.
+              </span>
+            </li>
+          </ul>
+          <button
+            className="btn-primary"
+            style={{ width: "100%", padding: "var(--space-4)", fontSize: "var(--text-md)" }}
+            onClick={() => setShowWelcomeModal(false)}
+          >
+            Completar mi perfil
+          </button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showMissingCompanyModal}
+        onClose={() => setShowMissingCompanyModal(false)}
+        title="¡Completá tus datos comerciales! 💼"
+        maxWidth="600px"
+      >
+        <div style={{ padding: "var(--space-4)", textAlign: "center" }}>
+          <p
+            style={{
+              marginBottom: "var(--space-4)",
+              color: "var(--text-primary)",
+              fontSize: "var(--text-lg)",
+              fontWeight: "var(--weight-bold)",
+            }}
+          >
+            Falta ingresar la información de tu empresa
+          </p>
+          <p
+            style={{
+              marginBottom: "var(--space-6)",
+              color: "var(--text-secondary)",
+              fontSize: "var(--text-md)",
+            }}
+          >
+            Para que tu perfil sea visible en las búsquedas y puedas recibir clientes en la plataforma, es necesario que completes los siguientes datos comerciales obligatorios:
+          </p>
+          <ul
+            style={{
+              textAlign: "left",
+              marginBottom: "var(--space-8)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-4)",
+              padding: "0 var(--space-4)",
+            }}
+          >
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>
+                📌
+              </span>
+              <span>
+                <strong>Nombre Comercial:</strong> El nombre de tu marca, negocio o servicio profesional.
+              </span>
+            </li>
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>
+                📌
+              </span>
+              <span>
+                <strong>CUIT / CUIL:</strong> Tu número de identificación tributaria.
+              </span>
+            </li>
+            <li
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "var(--space-3)",
+              }}
+            >
+              <span style={{ color: "var(--accent-color)", marginTop: "2px" }}>
+                📌
+              </span>
+              <span>
+                <strong>Categorías y Cobertura:</strong> Rubro de servicio y provincias donde trabajás.
+              </span>
+            </li>
+          </ul>
+          <button
+            className="btn-primary"
+            style={{ width: "100%", padding: "var(--space-4)", fontSize: "var(--text-md)" }}
+            onClick={() => setShowMissingCompanyModal(false)}
+          >
+            Completar datos comerciales
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

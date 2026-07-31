@@ -95,7 +95,7 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
         // Refresh the client session so AuthContext picks up the new professional status
         await refreshSession();
         onClose();
-        router.push(ROUTES.dashboard + "?welcome=true");
+        router.push(`${ROUTES.settings}?welcome=true`);
         return;
       }
 

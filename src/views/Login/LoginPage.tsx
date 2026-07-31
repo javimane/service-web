@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
@@ -9,6 +9,8 @@ import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import { supabase } from "../../services/supabaseClient";
 import "./LoginPage.css";
 import Footer from "@/components/Footer/Footer";
+import Modal from "../../components/Modal/Modal";
+import { API_BASE_URL } from "../../services/api.config";
 import RegisterPlanSelection from "../Register/RegisterPlanSelection";
 
 type LoginPageProps = {
@@ -31,11 +33,21 @@ export default function LoginPage({
   const [resetError, setResetError] = useState("");
   const [isResetting, setIsResetting] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const { refreshSession, setSessionStatus, sessionStatus, user } = useAuth();
+  // Guard ref: cuando handleSubmit maneja la navegación, el useEffect de OAuth no interfiere
+  const isHandlingSubmitRef = useRef(false);
+  const {
+    refreshSession,
+    setSessionStatus,
+    sessionStatus,
+    user,
+  } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
+  // Este useEffect solo maneja el caso OAuth (Google login).
+  // Para form login (handleSubmit), la lógica es directa y marca isHandlingSubmitRef.
   useEffect(() => {
-    // Handling Supabase OAuth redirects (e.g. from Google login)
+    // Solo correr si NO estamos en medio de un handleSubmit (evita race conditions)
+    if (isHandlingSubmitRef.current) return;
     if (user && sessionStatus) {
       let isNewUser = false;
       const createdAt = sessionStatus.user_created_at
@@ -50,19 +62,42 @@ export default function LoginPage({
       }
 
       const isProf = !!sessionStatus.is_professional;
+      const sub = sessionStatus.subscription;
+      // Verificar suscripción real: debe existir el objeto subscription con un plan asignado y status activo
+      const hasSubscription = Boolean(
+        sub &&
+        sub.plan &&
+        sub.status &&
+        sub.status !== "inactive" &&
+        sub.status !== "expired" &&
+        sub.status !== "canceled" &&
+        sub.status !== "cancelled",
+      );
       const compName = (sessionStatus as any)?.company_name;
       const hasCompany = Boolean(
         compName && typeof compName === "string" && compName.trim() !== "",
       );
 
-      if (isModal) {
-        onClose?.();
-        if (isProf && !hasCompany) router.push(ROUTES.settings);
-        else if (isNewUser && isProf) router.push(ROUTES.dashboard);
-      } else {
-        if (isProf && !hasCompany) router.push(ROUTES.settings);
-        else if (isNewUser && isProf) router.push(ROUTES.dashboard);
-        else router.push(ROUTES.home);
+      if (isProf) {
+        if (!hasSubscription) {
+          if (isModal) onClose?.();
+          setShowPlanModal(true);
+          return;
+        }
+
+        if (!hasCompany) {
+          if (isModal) onClose?.();
+          router.push(`${ROUTES.settings}?missing_company=true`);
+          return;
+        }
+
+        if (isModal) {
+          onClose?.();
+        } else if (isNewUser) {
+          router.push(ROUTES.dashboard);
+        } else {
+          router.push(ROUTES.home);
+        }
       }
     }
   }, [user, sessionStatus, isModal, onClose, router]);
@@ -162,9 +197,14 @@ export default function LoginPage({
         // Opcional: Decidir si el login general falla si el chat falla.
       }
 
+      // Marcar que estamos procesando el submit para que useEffect no interfiera
+      isHandlingSubmitRef.current = true;
+
       let isNewUser = false;
       let isProf = false;
+      let hasSubscription = false;
       let hasCompany = false;
+
       if (response?.sessionStatus) {
         setSessionStatus(response.sessionStatus);
         const st = response.sessionStatus;
@@ -176,37 +216,65 @@ export default function LoginPage({
           }
         }
         isProf = !!st.is_professional;
+        const sub = st.subscription;
+        // Verificar suscripción real: el objeto subscription debe tener plan y status activo
+        hasSubscription = Boolean(
+          sub &&
+          sub.plan &&
+          sub.status &&
+          sub.status !== "inactive" &&
+          sub.status !== "expired" &&
+          sub.status !== "canceled" &&
+          sub.status !== "cancelled",
+        );
         const compName = (st as any)?.company_name;
         hasCompany = Boolean(
           compName && typeof compName === "string" && compName.trim() !== "",
         );
       }
 
-      await refreshSession();
-
-      const needsPlan = typeof window !== "undefined" && localStorage.getItem("show_plans_on_login") === "true";
-      
-      if (isProf && needsPlan) {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("show_plans_on_login");
-        }
-        setShowPlanModal(true);
-        return; // Muestra el modal de planes y detiene la redirección estándar
+      const needsPlan =
+        typeof window !== "undefined" &&
+        localStorage.getItem("show_plans_on_login") === "true";
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("show_plans_on_login");
       }
+
+      if (isProf) {
+        // 1. Es profesional sin suscripción → mostrar planes
+        // (NO llamamos refreshSession aquí porque el modal de planes maneja la navegación)
+        if (!hasSubscription || needsPlan) {
+          setShowPlanModal(true);
+          return;
+        }
+
+        // Para los casos 2 y 3, siempre refrescar la sesión primero
+        // para que el contexto de auth quede completamente actualizado
+        await refreshSession();
+
+        // 2. Tiene suscripción pero no completó los datos de empresa → settings
+        if (!hasCompany) {
+          if (isModal) onClose?.();
+          router.push(`${ROUTES.settings}?missing_company=true`);
+          return;
+        }
+
+        // 3. Tiene suscripción y empresa completa → normal
+        if (isModal) {
+          onClose?.();
+        } else {
+          router.push(isNewUser ? ROUTES.dashboard : ROUTES.home);
+        }
+        return;
+      }
+
+      // Usuario normal: refrescar sesión y navegar
+      await refreshSession();
 
       if (isModal) {
         onClose?.();
-        if (isProf && !hasCompany) {
-          router.push(ROUTES.settings);
-        }
       } else {
-        if (isProf && !hasCompany) {
-          router.push(ROUTES.settings);
-        } else if (isNewUser && isProf) {
-          router.push(ROUTES.dashboard);
-        } else {
-          router.push(ROUTES.home);
-        }
+        router.push(ROUTES.home);
       }
     } catch (err: any) {
       setAuthError(
@@ -315,10 +383,14 @@ export default function LoginPage({
             type="button"
             className="btn-google"
             onClick={() => {
+              const apiBase =
+                process.env.NEXT_PUBLIC_API_BASE_URL ||
+                API_BASE_URL ||
+                "http://localhost:3000";
               const redirectTo = encodeURIComponent(
                 window.location.origin + "/dashboard?auth=success",
               );
-              window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/api/auth/login/google?redirectTo=${redirectTo}`;
+              window.location.href = `${apiBase}/api/auth/login/google?redirectTo=${redirectTo}`;
             }}
           >
             <svg
@@ -365,12 +437,41 @@ export default function LoginPage({
       </form>
     </div>
   );
+  // If showPlanModal is active, always render the plan selection (regardless of isModal mode)
+  if (showPlanModal) {
+    return (
+      <div
+        style={{
+          zIndex: 1000,
+          overflowY: "auto",
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "var(--bg-color)",
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "center",
+          padding: "var(--space-8) var(--space-4)",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "1040px",
+          }}
+        >
+          <RegisterPlanSelection />
+        </div>
+      </div>
+    );
+  }
 
   if (isModal) return formCard;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <div className="login-container" style={{ flex: 1, minHeight: 'auto' }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+    >
+      <div className="login-container" style={{ flex: 1, minHeight: "auto" }}>
         <div className="login-left">
           <div className="brand-content">
             <div className="brand-title">
@@ -387,30 +488,6 @@ export default function LoginPage({
       </div>
 
       <Footer />
-
-      {showPlanModal && (
-        <div
-          className="subscription-confirm-overlay"
-          style={{
-            zIndex: 1000,
-            padding: "20px",
-            overflowY: "auto",
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-        >
-          <div
-            style={{
-              position: "relative",
-              maxWidth: "1000px",
-              margin: "0 auto",
-            }}
-          >
-            <RegisterPlanSelection />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

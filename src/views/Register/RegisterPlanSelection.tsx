@@ -19,6 +19,7 @@ import { ROUTES } from "../../routes/paths";
 
 import { useAuth } from "../../context/AuthContext";
 import "./RegisterPlanSelection.css";
+import "../Dashboard/sections/SubscriptionSection.css";
 
 export default function RegisterPlanSelection() {
   const router = useRouter();
@@ -69,7 +70,7 @@ export default function RegisterPlanSelection() {
         // Refresh the client session so AuthContext picks up the new professional status
         await refreshSession();
         router.refresh();
-        router.push(`${ROUTES.dashboard}?welcome=true`);
+        router.push(`${ROUTES.settings}?welcome=true`);
         return;
       }
 
@@ -82,7 +83,7 @@ export default function RegisterPlanSelection() {
           `ID de Mercado Pago no encontrado para el plan: ${planId}`,
         );
         setSubmittingPlanId(null);
-        router.push(`${ROUTES.dashboard}?welcome=true`);
+        router.push(`${ROUTES.settings}?welcome=true`);
         return;
       }
 
@@ -93,11 +94,11 @@ export default function RegisterPlanSelection() {
 
       if (response?.data?.link) {
         window.open(response.data.link, "_blank");
-        window.location.href = `${ROUTES.dashboard}?welcome=true`;
+        window.location.href = `${ROUTES.settings}?welcome=true`;
       } else {
         console.error("No se recibió link de pago", response);
         setSubmittingPlanId(null);
-        router.push(`${ROUTES.dashboard}?welcome=true`);
+        router.push(`${ROUTES.settings}?welcome=true`);
       }
     } catch (error) {
       console.error("Error al procesar suscripción:", error);

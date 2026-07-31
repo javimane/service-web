@@ -274,23 +274,37 @@ export default function DashboardPage() {
 
   const [isUnverifiedBannerClosed, setIsUnverifiedBannerClosed] = useState(false);
 
-  // Redirect to Settings if professional has no company name
+  // Redirect to Settings if professional has active subscription but no company name
   useEffect(() => {
     if (!myProfessional && !sessionStatus) return;
     const companies = myProfessional?.companies;
     const company = Array.isArray(companies) ? companies[0] : companies;
     const companyName = sessionStatus?.company_name || company?.name;
 
+    const sub = sessionStatus?.subscription;
+    const hasRealSubscription = Boolean(
+      sub &&
+      sub.plan &&
+      sub.status &&
+      sub.status !== "inactive" &&
+      sub.status !== "expired" &&
+      sub.status !== "canceled" &&
+      sub.status !== "cancelled",
+    );
+
     if (
       isProfessionalUser &&
-      (!companyName || companyName.trim() === "")
+      hasRealSubscription &&
+      (!companyName || companyName.trim() === "") &&
+      view !== "subscription"
     ) {
-      router.push(ROUTES.settings);
+      router.push(`${ROUTES.settings}?missing_company=true`);
     }
   }, [
     myProfessional,
     sessionStatus,
     isProfessionalUser,
+    view,
     router,
   ]);
 

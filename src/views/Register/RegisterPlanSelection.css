@@ -18,9 +18,40 @@
   margin-top: 2px;
 }
 
-@media (max-width: 640px) {
-  .register-plan-selection__notice {
-    padding: var(--space-3);
-    font-size: var(--text-xs);
+/* Forzar siempre 3 columnas en el selector de planes del registro/login */
+.subscription-plans .subscription-plans__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Cards más compactas en contexto de registro/login */
+.subscription-plans .subscription-plans__card {
+  padding: var(--space-4) var(--space-5);
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.subscription-plans .subscription-plans__name {
+  font-size: var(--text-md);
+}
+
+.subscription-plans .subscription-plans__desc {
+  font-size: var(--text-sm);
+}
+
+.subscription-plans .subscription-plans__amount {
+  font-size: 2rem;
+}
+
+.subscription-plans .subscription-plans__features li {
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 768px) {
+  .subscription-plans .subscription-plans__grid {
+    grid-template-columns: 1fr;
   }
 }
