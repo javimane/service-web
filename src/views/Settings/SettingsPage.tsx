@@ -59,7 +59,7 @@ export default function SettingsPage() {
   }, [searchParams]);
   const queryClient = useQueryClient();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
-  const { user, sessionStatus, logout, hasProfessionalSubscription } = useAuth();
+  const { user, sessionStatus, logout, hasProfessionalSubscription, refreshSession } = useAuth();
   const { showAlert, showSuccess, showError } = useAlert();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -392,10 +392,12 @@ export default function SettingsPage() {
         return result?.data;
       }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({
         queryKey: ["professional-me"],
       });
+
+      await refreshSession();
 
       setSaveStatus("success");
       setSaveMessage("Registro guardado correctamente ✨");
@@ -419,8 +421,9 @@ export default function SettingsPage() {
       showError("Por favor, ingresa el nombre de la empresa o comercio (Campo obligatorio).");
       return;
     }
-    if (!cuit || cuit.trim() === "") {
-      showError("Por favor, ingresa el CUIT / CUIL (Campo obligatorio).");
+    const cleanCuit = cuit.replace(/\D/g, "");
+    if (!cleanCuit || cleanCuit.length !== 11) {
+      showError("Por favor, ingresa un CUIT / CUIL válido de 11 dígitos.");
       return;
     }
     if (selectedCategories.length === 0) {

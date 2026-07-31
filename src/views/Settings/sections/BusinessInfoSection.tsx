@@ -39,10 +39,15 @@ export default function BusinessInfoSection({
           </span>
           <input
             type="text"
+            inputMode="numeric"
+            maxLength={11}
             required
-            placeholder="Ingresá el CUIT / CUIL"
+            placeholder="Ingresá el CUIT / CUIL (11 dígitos sin guiones)"
             value={cuit}
-            onChange={(e) => setCuit(e.target.value)}
+            onChange={(e) => {
+              const onlyNums = e.target.value.replace(/\D/g, "").slice(0, 11);
+              setCuit(onlyNums);
+            }}
           />
         </label>
       </div>

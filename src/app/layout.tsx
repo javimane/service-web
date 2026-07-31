@@ -59,14 +59,15 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/tu-logo.png", sizes: "32x32", type: "image/png" },
+      { url: "/tu-logo.png", sizes: "192x192", type: "image/png" },
+      { url: "/tu-logo.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [{ url: "/tu-logo.png", sizes: "180x180", type: "image/png" }],
     shortcut: "/tu-logo.png",
   },
   manifest: "/site.webmanifest",
-  themeColor: "#863bff",
+  themeColor: "#f18f38",
   other: {
     "og:locale": "es_AR",
   },
