@@ -1,0 +1,22 @@
+{
+  "name": "Sercio - Red de Servicios y Comercio",
+  "short_name": "Sercio",
+  "description": "Encontrá profesionales, servicios, productos y promociones cerca tuyo desde una sola plataforma.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#863bff",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/tu-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/tu-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

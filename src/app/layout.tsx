@@ -20,25 +20,55 @@ const jetbrainsMono = JetBrains_Mono({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("http://localhost:3003"),
+  metadataBase: new URL("https://sercio.com.ar"),
   title: {
     default: "Sercio - Red de Servicios y Comercio",
     template: "%s | Sercio",
   },
   description:
-    "Encontrá a los mejores profesionales y productos en un solo lugar.",
+    "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Comparé precios, leé opiniones y contactá directamente con comercios locales de confianza.",
   keywords:
     "servicios, profesionales, productos, hogar, construcción, reparaciones, comercio, local, confianza, calidad, presupuesto, opiniones, historias, videos, reels, productores, servicio industriales",
+  alternates: {
+    canonical: "https://sercio.com.ar",
+  },
   openGraph: {
     type: "website",
     siteName: "Sercio",
-    images: [{ url: "/og-image.png" }],
+    url: "https://sercio.com.ar",
+    locale: "es_AR",
+    title: "Sercio - Red de Servicios y Comercio",
+    description:
+      "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Comparé precios, leé opiniones y contactá directamente con comercios locales de confianza.",
+    images: [
+      {
+        url: "/Logo Completo.png",
+        width: 630,
+        height: 630,
+        alt: "Sercio - Red de Servicios y Comercio",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
+    site: "@sercioar",
+    title: "Sercio - Red de Servicios y Comercio",
+    description:
+      "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Comparé precios, leé opiniones y contactá directamente con comercios locales de confianza.",
+    images: ["/og-image.jpg"],
   },
   icons: {
-    icon: "/tu-logo.png",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/tu-logo.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [{ url: "/tu-logo.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/tu-logo.png",
+  },
+  manifest: "/site.webmanifest",
+  themeColor: "#863bff",
+  other: {
+    "og:locale": "es_AR",
   },
 };
 
@@ -47,9 +77,50 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://sercio.com.ar/#organization",
+        name: "Sercio",
+        url: "https://sercio.com.ar",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://sercio.com.ar/tu-logo.png",
+        },
+        sameAs: [],
+        description:
+          "Plataforma argentina de servicios y comercio local. Encontrá profesionales, productos y promociones cerca tuyo.",
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://sercio.com.ar/#website",
+        url: "https://sercio.com.ar",
+        name: "Sercio",
+        description:
+          "Encontrá profesionales, servicios, productos y promociones cerca tuyo.",
+        publisher: { "@id": "https://sercio.com.ar/#organization" },
+        inLanguage: "es-AR",
+        potentialAction: {
+          "@type": "SearchAction",
+          target: {
+            "@type": "EntryPoint",
+            urlTemplate: "https://sercio.com.ar/buscar?q={search_term_string}",
+          },
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  };
+
   return (
     <html lang="es" className={`${outfit.variable} ${jetbrainsMono.variable}`}>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>
