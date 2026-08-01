@@ -12,7 +12,16 @@ import {
 } from "@/app/actions/jobs";
 import { getProvincesAction } from "@/app/actions/provinces";
 import { useAuth } from "@/context/AuthContext";
-import { Loader2, Plus, Edit2, Trash2, MapPin, Briefcase, Lock } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Edit2,
+  Trash2,
+  MapPin,
+  Briefcase,
+  Lock,
+  Share2,
+} from "lucide-react";
 import { getAccessToken } from "@/utils/auth";
 import "./DashboardJobs.css";
 
@@ -23,7 +32,9 @@ interface DashboardJobsProps {
 export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [isFetchingDetails, setIsFetchingDetails] = useState<string | null>(null);
+  const [isFetchingDetails, setIsFetchingDetails] = useState<string | null>(
+    null,
+  );
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -46,9 +57,12 @@ export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
   });
 
   const { subscriptionPlan } = useAuth();
-  const canCreate = ["basico", "premium", "profesional-basico", "profesional-premium"].includes(
-    subscriptionPlan?.toLowerCase() || ""
-  );
+  const canCreate = [
+    "basico",
+    "premium",
+    "profesional-basico",
+    "profesional-premium",
+  ].includes(subscriptionPlan?.toLowerCase() || "");
 
   const queryClient = useQueryClient();
 
@@ -213,8 +227,8 @@ export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
     <div className="dashboard-jobs">
       <div className="dashboard-jobs__header">
         <h2 className="dashboard-jobs__title">Mis Empleos</h2>
-        <button 
-          className="btn-primary" 
+        <button
+          className="btn-primary"
           onClick={() => {
             if (!canCreate) {
               alert("Debes tener un plan Básico o Premium para crear empleos.");
@@ -228,17 +242,32 @@ export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
       </div>
 
       {!canCreate && !isFormOpen && jobs.length === 0 && (
-        <div className="dashboard-jobs__upgrade-notice" style={{
-          background: "var(--surface-soft)",
-          padding: "var(--space-4)",
-          borderRadius: "var(--radius-md)",
-          border: "1px solid var(--border-color)",
-          textAlign: "center",
-          marginBottom: "var(--space-4)"
-        }}>
-          <Lock size={32} style={{ color: "var(--text-secondary)", margin: "0 auto var(--space-2)" }} />
-          <p style={{ color: "var(--text-secondary)", fontWeight: "var(--weight-medium)" }}>
-            La creación de empleos es una funcionalidad exclusiva para planes Básico y Premium.
+        <div
+          className="dashboard-jobs__upgrade-notice"
+          style={{
+            background: "var(--surface-soft)",
+            padding: "var(--space-4)",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--border-color)",
+            textAlign: "center",
+            marginBottom: "var(--space-4)",
+          }}
+        >
+          <Lock
+            size={32}
+            style={{
+              color: "var(--text-secondary)",
+              margin: "0 auto var(--space-2)",
+            }}
+          />
+          <p
+            style={{
+              color: "var(--text-secondary)",
+              fontWeight: "var(--weight-medium)",
+            }}
+          >
+            La creación de empleos es una funcionalidad exclusiva para planes
+            Básico y Premium.
           </p>
         </div>
       )}
@@ -394,12 +423,40 @@ export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
                 </div>
                 <div className="dashboard-job-card__actions">
                   <button
+                    className="btn-icon"
+                    onClick={() => {
+                      const slug = job.seo_path || "";
+                      const cleanSeo = slug
+                        ? `/empleo${slug}`
+                        : `/empleo/${job.id}`;
+                      const shareUrl = `${window.location.origin}${cleanSeo}`;
+                      const shareData = {
+                        title: job.title,
+                        text: job.description || job.title,
+                        url: shareUrl,
+                      };
+                      if (navigator.share) {
+                        navigator.share(shareData).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        alert("Enlace copiado al portapapeles");
+                      }
+                    }}
+                    title="Compartir"
+                  >
+                    <Share2 size={18} />
+                  </button>
+                  <button
                     className="btn-icon btn-icon--edit"
                     onClick={() => handleEditClick(job)}
                     title="Editar"
                     disabled={isFetchingDetails === job.id}
                   >
-                    {isFetchingDetails === job.id ? <Loader2 size={18} className="animate-spin" /> : <Edit2 size={18} />}
+                    {isFetchingDetails === job.id ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Edit2 size={18} />
+                    )}
                   </button>
                   <button
                     className="btn-icon btn-icon--delete"

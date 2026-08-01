@@ -16,6 +16,7 @@ import {
   FileText,
   AlertTriangle,
   WalletCards,
+  Share2,
 } from "lucide-react";
 import type { BankPromotion } from "../../../services/bankPromotionService";
 import {
@@ -432,6 +433,33 @@ export default function BankPromotionsPage() {
                         </div>
                       </div>
                       <div className="bank-promo-card__actions">
+                        <button
+                          type="button"
+                          className="bank-promo-card__action"
+                          onClick={() => {
+                            const slug = promo.seo_path || "";
+                            const cleanSeo = slug
+                              ? slug.startsWith("/")
+                                ? slug.replace("/promotions/", "/promociones-bancarias/")
+                                : `/promociones-bancarias/${slug}`
+                              : `/promociones-bancarias/${promo.id}`;
+                            const shareUrl = `${window.location.origin}${cleanSeo}`;
+                            const shareData = {
+                              title: `Promoción Bancaria: ${primaryName}`,
+                              text: promo.description || `Promoción con ${primaryName}`,
+                              url: shareUrl,
+                            };
+                            if (navigator.share) {
+                              navigator.share(shareData).catch(() => {});
+                            } else {
+                              navigator.clipboard.writeText(shareUrl);
+                              alert("Enlace copiado al portapapeles");
+                            }
+                          }}
+                          title="Compartir"
+                        >
+                          <Share2 size={16} />
+                        </button>
                         <button
                           type="button"
                           className="bank-promo-card__action"

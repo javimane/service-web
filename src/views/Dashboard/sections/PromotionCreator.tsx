@@ -579,18 +579,6 @@ export default function PromotionCreator({
           </button>
           <button
             type="button"
-            className="promo-btn promo-btn--preview"
-            onClick={() => setIsPreviewOpen(true)}
-          >
-            <Eye size={16} />
-            VISTA PREVIA
-          </button>
-          <button type="button" className="promo-btn promo-btn--outline">
-            <Download size={16} />
-            DESCARGAR CUPÓN
-          </button>
-          <button
-            type="button"
             className="promo-btn promo-btn--primary"
             onClick={handleSave}
             disabled={saveMutation.isPending}
@@ -604,109 +592,6 @@ export default function PromotionCreator({
           </button>
         </div>
       </footer>
-
-      {/* Coupon Preview Modal */}
-      {isPreviewOpen && (
-        <div
-          className="coupon-modal-overlay"
-          onClick={() => setIsPreviewOpen(false)}
-        >
-          <div
-            className="coupon-modal-content"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="coupon-modal__close"
-              onClick={() => setIsPreviewOpen(false)}
-            >
-              <X size={24} />
-            </button>
-            <div className="public-promo-preview" ref={couponRef}>
-              <div className="public-promo-preview__hero">
-                {form.imagePreview ? (
-                  <img
-                    src={form.imagePreview}
-                    alt="Promo"
-                    className="public-promo-preview__image"
-                  />
-                ) : (
-                  <div className="public-promo-preview__placeholder">
-                    <ImageIcon size={64} />
-                  </div>
-                )}
-                <div className="public-promo-preview__badge">{offerLabel}</div>
-              </div>
-
-              <div className="public-promo-preview__content">
-                <div className="public-promo-preview__header">
-                  <div className="public-promo-preview__professional">
-                    <div className="professional-avatar-mini">
-                      <Sparkles size={16} />
-                    </div>
-                    <div className="professional-info">
-                      <span className="professional-name">
-                        {user?.display_name || "Tu Studio"}
-                      </span>
-                      <span className="professional-label">
-                        PROFESIONAL VERIFICADO
-                      </span>
-                    </div>
-                  </div>
-                  <h2 className="public-promo-preview__title">
-                    {form.title || "Título de la Promoción"}
-                  </h2>
-                  {promotionToEdit?.id && (
-                    <code className="public-promo-preview__code">
-                      PROMO-
-                      {String(promotionToEdit.id).slice(0, 8).toUpperCase()}
-                    </code>
-                  )}
-                </div>
-
-                <p className="public-promo-preview__description">
-                  {form.description ||
-                    "Aquí aparecerá la descripción de tu promoción para los clientes."}
-                </p>
-
-                <div className="public-promo-preview__details-grid">
-                  <div className="detail-item">
-                    <Calendar size={18} />
-                    <div className="detail-text">
-                      <label>VALIDEZ</label>
-                      <span>
-                        {form.validFrom || "Fecha Inicio"} -{" "}
-                        {form.validTo || "Fecha Fin"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="detail-item">
-                    <Sparkles size={18} />
-                    <div className="detail-text">
-                      <label>APLICA A</label>
-                      <span>{form.applicableTo || "Todo el catálogo"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="public-promo-preview__footer">
-                  <button
-                    className={`public-promo-preview__cta ${!success ? "public-promo-preview__cta--disabled" : ""}`}
-                    onClick={success ? handleDownloadCoupon : undefined}
-                  >
-                    <Ticket size={20} />
-                    {success
-                      ? "OBTENER ESTE CUPÓN"
-                      : "CREA LA PROMO PARA DESCARGAR"}
-                  </button>
-                  <p className="public-promo-preview__hint">
-                    Vista previa de cómo verán los clientes tu promoción.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

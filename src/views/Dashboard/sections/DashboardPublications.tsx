@@ -15,6 +15,7 @@ import {
   Camera,
   X,
   Lock,
+  Share2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getAccessToken } from "@/utils/auth";
@@ -28,6 +29,7 @@ import {
 } from "@/app/actions/publications";
 import "./DashboardPublications.css";
 import { uploadPublicationsImage } from "@/services/storageUploads";
+import { ROUTES } from "@/routes/paths";
 
 // Same image handling utils as in ProductCreator
 function moveArrayItem<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
@@ -45,9 +47,12 @@ export default function DashboardPublications() {
     sessionStatus?.professional_id;
 
   const subscriptionPlan = sessionStatus?.subscription?.plan ?? null;
-  const canCreate = ["basico", "premium", "profesional-basico", "profesional-premium"].includes(
-    subscriptionPlan?.toLowerCase() || ""
-  );
+  const canCreate = [
+    "basico",
+    "premium",
+    "profesional-basico",
+    "profesional-premium",
+  ].includes(subscriptionPlan?.toLowerCase() || "");
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -428,32 +433,50 @@ export default function DashboardPublications() {
     <div className="dash-pubs" onScroll={handleScroll}>
       <div className="dash-pubs__header">
         <h1 className="dash-pubs__title">Mis Publicaciones</h1>
-        <button 
-          className="dash-pubs__btn-add" 
+        <button
+          className="dash-pubs__btn-add"
           onClick={() => {
             if (!canCreate) {
-              alert("Debes tener un plan Básico o Premium para crear publicaciones.");
+              alert(
+                "Debes tener un plan Básico o Premium para crear publicaciones.",
+              );
               return;
             }
             handleOpenCreate();
           }}
         >
-          {canCreate ? <Plus size={16} /> : <Lock size={16} />} Crear Publicación
+          {canCreate ? <Plus size={16} /> : <Lock size={16} />} Crear
+          Publicación
         </button>
       </div>
 
       {!canCreate && !isCreatorOpen && publications.length === 0 && (
-        <div className="dash-pubs__upgrade-notice" style={{
-          background: "var(--surface-soft)",
-          padding: "var(--space-4)",
-          borderRadius: "var(--radius-md)",
-          border: "1px solid var(--border-color)",
-          textAlign: "center",
-          margin: "var(--space-4) 0"
-        }}>
-          <Lock size={32} style={{ color: "var(--text-secondary)", margin: "0 auto var(--space-2)" }} />
-          <p style={{ color: "var(--text-secondary)", fontWeight: "var(--weight-medium)" }}>
-            La creación de publicaciones es una funcionalidad exclusiva para planes Básico y Premium.
+        <div
+          className="dash-pubs__upgrade-notice"
+          style={{
+            background: "var(--surface-soft)",
+            padding: "var(--space-4)",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--border-color)",
+            textAlign: "center",
+            margin: "var(--space-4) 0",
+          }}
+        >
+          <Lock
+            size={32}
+            style={{
+              color: "var(--text-secondary)",
+              margin: "0 auto var(--space-2)",
+            }}
+          />
+          <p
+            style={{
+              color: "var(--text-secondary)",
+              fontWeight: "var(--weight-medium)",
+            }}
+          >
+            La creación de publicaciones es una funcionalidad exclusiva para
+            planes Básico y Premium.
           </p>
         </div>
       )}
@@ -502,6 +525,27 @@ export default function DashboardPublications() {
                   <p>{pub.description}</p>
                 </div>
                 <div className="dash-pubs__item-actions">
+                  <button
+                    onClick={() => {
+                      const slug = pub.seo_path || "";
+                      const cleanSeo = `${ROUTES.publication}${slug}`;
+                      const shareUrl = `${window.location.origin}${cleanSeo}`;
+                      const shareData = {
+                        title: pub.title,
+                        text: pub.description || pub.title,
+                        url: shareUrl,
+                      };
+                      if (navigator.share) {
+                        navigator.share(shareData).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        alert("Enlace copiado al portapapeles");
+                      }
+                    }}
+                    title="Compartir"
+                  >
+                    <Share2 size={16} />
+                  </button>
                   <button onClick={() => handleEdit(pub)} title="Editar">
                     <Edit3 size={16} />
                   </button>

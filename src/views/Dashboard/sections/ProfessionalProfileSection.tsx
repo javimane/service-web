@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Pencil,
   Play,
+  Share2,
 } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
 import { useRouter } from "next/navigation";
@@ -50,6 +51,7 @@ import {
 } from "../../../app/actions/availability";
 import { useAuth } from "../../../context/AuthContext";
 import { getAccessToken } from "../../../utils/auth";
+import { getProfilePath } from "../../../utils/utils";
 import "./ProfessionalProfileSection.css";
 
 type AvailabilityUpsertItem = {
@@ -906,6 +908,35 @@ export default function ProfessionalProfileSection() {
             <strong>{videos.length}</strong>
             <span>Videos</span>
           </div>
+        </div>
+
+        <div style={{ marginTop: "1rem", textAlign: "center" }}>
+          <button
+            type="button"
+            className="professional-profile__save-btn"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+            onClick={() => {
+              const profilePath = getProfilePath(
+                professionalId,
+                professional?.seo_path,
+              );
+              const shareUrl = `${window.location.origin}${profilePath}`;
+              const shareData = {
+                title: displayName || "Perfil Profesional",
+                text: description || "Perfil profesional en Sercio",
+                url: shareUrl,
+              };
+              if (navigator.share) {
+                navigator.share(shareData).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(shareUrl);
+                alert("Enlace del perfil copiado al portapapeles");
+              }
+            }}
+          >
+            <Share2 size={16} />
+            Compartir Perfil
+          </button>
         </div>
       </div>
 

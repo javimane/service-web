@@ -25,6 +25,7 @@ import {
   Edit2,
   AlertCircle,
   CheckCircle2,
+  Share2,
 } from "lucide-react";
 import { toJpeg } from "html-to-image";
 import { formatDateDisplay } from "../../../utils/utils";
@@ -304,20 +305,37 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
                   <button
                     type="button"
                     className="promo-list-card__action"
-                    title="Modificar"
-                    onClick={() => onEdit(promo._original)}
+                    title="Compartir"
+                    onClick={() => {
+                      const slug = promo._original?.seo_path || "";
+                      const cleanSeo = slug
+                        ? slug.startsWith("/")
+                          ? slug.replace("/promotions/", "/promociones/")
+                          : `/promociones/${slug}`
+                        : `/promociones/promo?id=${promo.id}`;
+                      const shareUrl = `${window.location.origin}${cleanSeo}`;
+                      const shareData = {
+                        title: promo.title,
+                        text: promo.description || promo.title,
+                        url: shareUrl,
+                      };
+                      if (navigator.share) {
+                        navigator.share(shareData).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        alert("Enlace copiado al portapapeles");
+                      }
+                    }}
                   >
-                    <Edit2 size={16} />
+                    <Share2 size={16} />
                   </button>
                   <button
                     type="button"
                     className="promo-list-card__action"
-                    title="Descargar Imagen"
-                    onClick={() =>
-                      handleDownloadImage(promo.image, promo.title)
-                    }
+                    title="Modificar"
+                    onClick={() => onEdit(promo._original)}
                   >
-                    <Download size={16} />
+                    <Edit2 size={16} />
                   </button>
                   <button
                     type="button"

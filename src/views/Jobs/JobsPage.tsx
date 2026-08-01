@@ -56,7 +56,8 @@ export default function JobsPage() {
       if (filters.is_hybrid) activeFilters.is_hybrid = true;
       if (filters.is_full_time) activeFilters.is_full_time = true;
       if (filters.is_half_day) activeFilters.is_half_day = true;
-      if (selectedProvince) activeFilters.province_id = Number(selectedProvince);
+      if (selectedProvince)
+        activeFilters.province_id = Number(selectedProvince);
 
       const res = await getJobsAction({
         limit,
@@ -73,7 +74,9 @@ export default function JobsPage() {
 
   const handleShare = (e: React.MouseEvent, seoPath: string) => {
     e.stopPropagation();
-    const finalPath = seoPath.startsWith('empleo/') ? `/${seoPath}` : `${ROUTES.job}/${seoPath}`;
+    const finalPath = seoPath.startsWith("empleo/")
+      ? `${seoPath}`
+      : `${ROUTES.job}${seoPath}`;
     const url = `${window.location.origin}${finalPath}`;
     if (navigator.share) {
       navigator
@@ -89,7 +92,9 @@ export default function JobsPage() {
   };
 
   const handleJobClick = (seoPath: string) => {
-    const finalPath = seoPath.startsWith('empleo/') ? `/${seoPath}` : `${ROUTES.job}/${seoPath}`;
+    const finalPath = seoPath.startsWith("empleo/")
+      ? `/${seoPath}`
+      : `${ROUTES.job}/${seoPath}`;
     router.push(finalPath);
   };
 
