@@ -19,6 +19,7 @@ import ProfessionalReelsSection from "./sections/ProfessionalReelsSection";
 import PublicationSlider from "@/components/PublicationSlider/PublicationSlider";
 import JobSlider from "@/components/JobSlider/JobSlider";
 import JoinCTASection from "./sections/JoinCTASection";
+import OpportunitiesModalSection from "./sections/OpportunitiesModalSection";
 import Footer from "../../components/Footer/Footer";
 import MobileAppBanner from "@/components/MobileAppBanner/MobileAppBanner";
 import { ROUTES } from "../../routes/paths";
@@ -257,6 +258,7 @@ export default function HomePage() {
       </main>
 
       <Footer />
+      <OpportunitiesModalSection />
       <MobileAppBanner />
 
       <Modal
