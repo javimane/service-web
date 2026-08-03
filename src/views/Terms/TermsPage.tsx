@@ -178,6 +178,11 @@ export default function TermsPage() {
               un profesional nuevo en la plataforma.
             </li>
             <li>
+              El beneficio se reconocerá únicamente por correo electrónico único del referido.
+              Si un mismo correo electrónico es ingresado por más de un usuario, el beneficio corresponderá
+              exclusivamente al usuario que lo haya registrado primero en la plataforma.
+            </li>
+            <li>
               Es válido exclusivamente para referidos que contraten los nuevos
               planes "Standard" o "Premium".
             </li>

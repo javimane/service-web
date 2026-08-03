@@ -49,15 +49,35 @@ export default function ServicesPage() {
         page,
         limit: 20,
         name: filters.name || undefined,
-        categoryId: filters.categoryId !== "All" ? Number(filters.categoryId) : undefined,
-        provinceId: filters.provinceId !== "All" ? Number(filters.provinceId) : undefined,
-        departmentId: filters.cityId !== "All" ? Number(filters.cityId) : undefined,
+        categoryId:
+          filters.categoryId !== "All" ? Number(filters.categoryId) : undefined,
+        provinceId:
+          filters.provinceId !== "All" ? Number(filters.provinceId) : undefined,
+        departmentId:
+          filters.cityId !== "All" ? Number(filters.cityId) : undefined,
         minPrice: range && range.min > 0 ? range.min : undefined,
         maxPrice: range && range.max < Infinity ? range.max : undefined,
-        isActive: filters.isActive === "All" ? undefined : filters.isActive === "true" ? true : false,
+        isActive:
+          filters.isActive === "All"
+            ? undefined
+            : filters.isActive === "true"
+              ? true
+              : false,
       });
 
-      return result?.data || { items: [], page: 1, limit: 20, total: 0, totalPages: 1, hasPrev: false, hasNext: false, prevPage: null, nextPage: null };
+      return (
+        result?.data || {
+          items: [],
+          page: 1,
+          limit: 20,
+          total: 0,
+          totalPages: 1,
+          hasPrev: false,
+          hasNext: false,
+          prevPage: null,
+          nextPage: null,
+        }
+      );
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 15,
@@ -215,7 +235,7 @@ export default function ServicesPage() {
                     <h3>¡Hacé crecer la comunidad!</h3>
                     <p>
                       Unite a la red de referidos para agrandar la comunidad y
-                      ganá <strong>$5.000</strong> por cada usuario que se
+                      ganá <strong>$10.000</strong> por cada usuario que se
                       registre.
                     </p>
                   </div>
@@ -245,23 +265,49 @@ export default function ServicesPage() {
                 <AsyncWrapper
                   isLoading={isLoading}
                   skeleton={
-                    <div className={`services-results-grid view-${viewMode}`} style={{ width: "100%", display: viewMode === "grid" ? "grid" : "flex", flexDirection: viewMode === "grid" ? "row" : "column", gap: "var(--space-6)" }}>
+                    <div
+                      className={`services-results-grid view-${viewMode}`}
+                      style={{
+                        width: "100%",
+                        display: viewMode === "grid" ? "grid" : "flex",
+                        flexDirection: viewMode === "grid" ? "row" : "column",
+                        gap: "var(--space-6)",
+                      }}
+                    >
                       {[...Array(8)].map((_, i) => (
-                        <Skeleton key={i} variant="card" height={viewMode === "list" ? 180 : 360} />
+                        <Skeleton
+                          key={i}
+                          variant="card"
+                          height={viewMode === "list" ? 180 : 360}
+                        />
                       ))}
                     </div>
                   }
                 >
-                  <div className={`services-results-grid view-${viewMode}`} style={{ width: "100%", display: viewMode === "grid" ? "grid" : "flex", flexDirection: viewMode === "grid" ? "row" : "column", gap: "var(--space-6)" }}>
+                  <div
+                    className={`services-results-grid view-${viewMode}`}
+                    style={{
+                      width: "100%",
+                      display: viewMode === "grid" ? "grid" : "flex",
+                      flexDirection: viewMode === "grid" ? "row" : "column",
+                      gap: "var(--space-6)",
+                    }}
+                  >
                     {servicesData.map((service: any) => (
                       <ServiceCard
                         key={service.id}
                         service={service}
                         viewMode={viewMode}
                         onClick={(svc) => {
-                          const slug = svc.seo_path || svc.seoPath || (svc.name
-                            ? svc.name.trim().toLowerCase().replace(/\s+/g, "-")
-                            : `service-${svc.id}`);
+                          const slug =
+                            svc.seo_path ||
+                            svc.seoPath ||
+                            (svc.name
+                              ? svc.name
+                                  .trim()
+                                  .toLowerCase()
+                                  .replace(/\s+/g, "-")
+                              : `service-${svc.id}`);
                           router.push(`/servicios/${slug}?id=${svc.id}`);
                         }}
                       />
@@ -271,7 +317,17 @@ export default function ServicesPage() {
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                  <div className="store-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "16px", marginTop: "32px", width: "100%" }}>
+                  <div
+                    className="store-pagination"
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: "16px",
+                      marginTop: "32px",
+                      width: "100%",
+                    }}
+                  >
                     <button
                       className="btn-secondary"
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -280,12 +336,20 @@ export default function ServicesPage() {
                     >
                       Anterior
                     </button>
-                    <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--text-secondary)" }}>
+                    <span
+                      style={{
+                        fontSize: "0.875rem",
+                        fontWeight: 500,
+                        color: "var(--text-secondary)",
+                      }}
+                    >
                       Página {page} de {totalPages}
                     </span>
                     <button
                       className="btn-secondary"
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
                       disabled={page === totalPages}
                       style={{ padding: "8px 16px" }}
                     >
