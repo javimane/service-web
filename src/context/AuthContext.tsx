@@ -228,6 +228,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               },
             );
 
+            // Si es notificación de reporte de error o actualización, invalidar la query de reportes
+            queryClient.invalidateQueries({
+              queryKey: ["error-reports", user.id],
+            });
+
             // Mostrar la notificación flotante con sileo
             sileo.info({
               title: payload.title || "Nueva Notificación",

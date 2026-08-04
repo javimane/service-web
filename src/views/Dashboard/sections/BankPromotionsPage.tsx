@@ -381,13 +381,7 @@ export default function BankPromotionsPage() {
         </button>
       </div>
 
-      {error && (
-        <div
-          className="bank-promo-error-message"
-        >
-          {error}
-        </div>
-      )}
+      {error && <div className="bank-promo-error-message">{error}</div>}
 
       <div className="bank-promos__grid">
         {promos.map((promo) => {
@@ -437,16 +431,17 @@ export default function BankPromotionsPage() {
                           type="button"
                           className="bank-promo-card__action"
                           onClick={() => {
+                            if (isExpired) return;
                             const slug = promo.seo_path || "";
                             const cleanSeo = slug
-                              ? slug.startsWith("/")
-                                ? slug.replace("/promotions/", "/promociones-bancarias/")
-                                : `/promociones-bancarias/${slug}`
+                              ? `/promociones-bancarias${slug}`
                               : `/promociones-bancarias/${promo.id}`;
                             const shareUrl = `${window.location.origin}${cleanSeo}`;
                             const shareData = {
                               title: `Promoción Bancaria: ${primaryName}`,
-                              text: promo.description || `Promoción con ${primaryName}`,
+                              text:
+                                promo.description ||
+                                `Promoción con ${primaryName}`,
                               url: shareUrl,
                             };
                             if (navigator.share) {
@@ -456,7 +451,12 @@ export default function BankPromotionsPage() {
                               alert("Enlace copiado al portapapeles");
                             }
                           }}
-                          title="Compartir"
+                          title={
+                            isExpired
+                              ? "Las promociones expiradas no se pueden compartir"
+                              : "Compartir"
+                          }
+                          disabled={isExpired}
                         >
                           <Share2 size={16} />
                         </button>
@@ -480,9 +480,7 @@ export default function BankPromotionsPage() {
                     </div>
 
                     {bankNames.length > 1 && (
-                      <div
-                        className="bank-promo-card__detail-row bank-promo-card__detail-row--column-mb"
-                      >
+                      <div className="bank-promo-card__detail-row bank-promo-card__detail-row--column-mb">
                         <span className="bank-promo-card__detail-label">
                           Bancos
                         </span>
@@ -555,9 +553,7 @@ export default function BankPromotionsPage() {
 
                       {promo.payment_method &&
                         JSON.parse(promo.payment_method).length > 0 && (
-                          <div
-                            className="bank-promo-card__detail-row bank-promo-card__detail-row--column"
-                          >
+                          <div className="bank-promo-card__detail-row bank-promo-card__detail-row--column">
                             <span className="bank-promo-card__detail-label">
                               Métodos de pago
                             </span>
@@ -576,9 +572,7 @@ export default function BankPromotionsPage() {
                           </div>
                         )}
 
-                      <div
-                        className="bank-promo-card__detail-row bank-promo-card__detail-row--column"
-                      >
+                      <div className="bank-promo-card__detail-row bank-promo-card__detail-row--column">
                         <span className="bank-promo-card__detail-label">
                           Días de aplicación
                         </span>

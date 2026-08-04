@@ -228,6 +228,9 @@ export default function HomePage() {
 
         <BannerCarousel />
         <CategoriesSection />
+
+        <PublicationSlider provinceId={userProvinceId} />
+
         <PromotionsSection
           userProvince={userProvince}
           userProvinceId={userProvinceId}
@@ -252,7 +255,7 @@ export default function HomePage() {
           userProvince={userProvince}
           userProvinceId={userProvinceId}
         />
-        <PublicationSlider provinceId={userProvinceId} />
+
         <JobSlider provinceId={userProvinceId} />
         <JoinCTASection />
       </main>

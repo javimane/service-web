@@ -2,8 +2,16 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding-left: var(--space-4);
   animation: fade-in 0.3s ease-out;
 }
+
+@media (max-width: 768px) {
+  .bank-promos {
+    padding-left: 0;
+  }
+}
+
 .bank-promos__loading {
   display: flex;
   flex-direction: column;
@@ -179,6 +187,16 @@
 .bank-promo-card__action:hover {
   color: var(--text-primary);
   background: rgba(139, 92, 246, 0.1);
+}
+
+.bank-promo-card__action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.bank-promo-card__action:disabled:hover {
+  color: var(--text-secondary);
+  background: transparent;
 }
 
 .bank-promo-card__action--danger:hover {

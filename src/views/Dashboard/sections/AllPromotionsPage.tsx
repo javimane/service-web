@@ -309,10 +309,8 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
                     onClick={() => {
                       const slug = promo._original?.seo_path || "";
                       const cleanSeo = slug
-                        ? slug.startsWith("/")
-                          ? slug.replace("/promotions/", "/promociones/")
-                          : `/promociones/${slug}`
-                        : `/promociones/promo?id=${promo.id}`;
+                        ? `/promociones${slug}`
+                        : `/promociones/${promo.id}`;
                       const shareUrl = `${window.location.origin}${cleanSeo}`;
                       const shareData = {
                         title: promo.title,

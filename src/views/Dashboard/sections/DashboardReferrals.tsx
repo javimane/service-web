@@ -20,6 +20,7 @@ import {
   upsertUserDataBankAction,
 } from "../../../app/actions/userDataBank";
 import { getAccessToken } from "../../../utils/auth";
+import { ROUTES } from "../../../routes/paths";
 import "./DashboardReferrals.css";
 
 export default function DashboardReferrals() {
@@ -274,6 +275,24 @@ export default function DashboardReferrals() {
             </button>
           </form>
 
+          <div className="dash-referrals__terms">
+            <a href={ROUTES.terms} className="dash-referrals__terms-link">
+              Ver Términos y Condiciones
+            </a>
+
+            <div className="dash-referrals__terms-content">
+              <h3 className="dash-referrals__terms-title">
+                Términos y condiciones de pago de referidos
+              </h3>
+              <p className="dash-referrals__terms-text">
+                El pago del beneficio por referido se acredita una vez
+                verificado el alta y cumplimiento de las condiciones comerciales
+                vigentes. Los tiempos de acreditación pueden variar según el
+                ciclo de validación y liquidación de la plataforma.
+              </p>
+            </div>
+          </div>
+
           <div className="dash-referrals__list-container">
             <h3 className="dash-referrals__history-title">Historial</h3>
             {loadingReferrals ? (
@@ -293,22 +312,31 @@ export default function DashboardReferrals() {
                     </div>
                     <div className="dash-referrals__referral-info">
                       <div className="dash-referrals__referral-date">
-                        Agregado: {new Date(ref.created_at).toLocaleDateString()}
+                        Agregado:{" "}
+                        {new Date(ref.created_at).toLocaleDateString()}
                       </div>
                       <div
                         className={`dash-referrals__referral-status ${
-                          ref.is_paid ? "dash-referrals__referral-status--paid" : "dash-referrals__referral-status--unpaid"
+                          ref.is_paid
+                            ? "dash-referrals__referral-status--paid"
+                            : "dash-referrals__referral-status--unpaid"
                         }`}
                         style={{
-                          color: ref.is_paid ? "var(--success-color)" : "var(--text-secondary)",
+                          color: ref.is_paid
+                            ? "var(--success-color)"
+                            : "var(--text-secondary)",
                           fontWeight: "var(--weight-medium)",
                           fontSize: "var(--text-sm)",
-                          marginTop: "var(--space-1)"
+                          marginTop: "var(--space-1)",
                         }}
                       >
                         Estado: {ref.is_paid ? "Pagado" : "No pagado"}
                         {ref.is_paid && ref.payment_date && (
-                          <span> | Fecha de pago: {new Date(ref.payment_date).toLocaleDateString()}</span>
+                          <span>
+                            {" "}
+                            | Fecha de pago:{" "}
+                            {new Date(ref.payment_date).toLocaleDateString()}
+                          </span>
                         )}
                       </div>
                     </div>

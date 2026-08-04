@@ -12,6 +12,7 @@ import {
   Check,
   Loader2,
   AlertTriangle,
+  Share2,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { getServicesByProfessionalAction } from "../../../app/actions/services";
@@ -351,6 +352,31 @@ export default function DashboardServices() {
                   {service.description || "Sin descripción"}
                 </p>
                 <div className="dash-services__card-footer">
+                  <button
+                    className="dash-services__card-action dash-services__card-action--edit"
+                    onClick={() => {
+                      const cleanSeo = service.seo_path
+                        ? service.seo_path.startsWith("/")
+                          ? service.seo_path
+                          : `/servicios/${service.seo_path}`
+                        : `/servicios?id=${service.id}`;
+                      const shareUrl = `${window.location.origin}${cleanSeo}`;
+                      const shareData = {
+                        title: service.name,
+                        text: service.description || service.name,
+                        url: shareUrl,
+                      };
+                      if (navigator.share) {
+                        navigator.share(shareData).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        alert("Enlace copiado al portapapeles");
+                      }
+                    }}
+                    title="Compartir servicio"
+                  >
+                    <Share2 size={16} />
+                  </button>
                   <button
                     className="dash-services__card-action dash-services__card-action--edit"
                     onClick={() => openEditModal(service)}

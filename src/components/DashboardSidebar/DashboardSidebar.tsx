@@ -28,6 +28,7 @@ import {
   Loader2,
   Users,
   Image as ImageIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
@@ -60,6 +61,7 @@ type DashboardSidebarProps = {
   onProposalsCreate?: () => void;
   onProposalsView?: () => void;
   onJobRequestsClick?: () => void;
+  onReportErrorsClick?: () => void;
 };
 
 export default function DashboardSidebar({
@@ -85,6 +87,7 @@ export default function DashboardSidebar({
   onProposalsCreate,
   onProposalsView,
   onJobRequestsClick,
+  onReportErrorsClick,
 }: DashboardSidebarProps) {
   const router = useRouter();
   const {
@@ -341,6 +344,13 @@ export default function DashboardSidebar({
       label: "CONFIGURACIÓN",
       icon: Settings,
       onClick: () => router.push(ROUTES.settings),
+    },
+    {
+      key: "report-errors",
+      label: "REPORTAR ERROR",
+      icon: AlertTriangle,
+      onClick:
+        onReportErrorsClick ?? (() => goToDashboardView("report-errors")),
     },
     {
       key: "faq",

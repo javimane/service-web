@@ -25,6 +25,7 @@ import {
   Loader2,
   Filter,
   Camera,
+  Share2,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import {
@@ -1247,6 +1248,31 @@ export default function DashboardProducts({
                     <div className="dash-products__actions">
                       <button
                         className="dash-products__action-btn"
+                        aria-label="Compartir"
+                        title="Compartir"
+                        onClick={() => {
+                          const slug = product.seo_path || "";
+                          const cleanSeo = slug
+                            ? `/productos${slug}`
+                            : `/productos/${product.id}`;
+                          const shareUrl = `${window.location.origin}${cleanSeo}`;
+                          const shareData = {
+                            title: product.name,
+                            text: product.description || product.name,
+                            url: shareUrl,
+                          };
+                          if (navigator.share) {
+                            navigator.share(shareData).catch(() => {});
+                          } else {
+                            navigator.clipboard.writeText(shareUrl);
+                            alert("Enlace copiado al portapapeles");
+                          }
+                        }}
+                      >
+                        <Share2 size={15} />
+                      </button>
+                      <button
+                        className="dash-products__action-btn"
                         aria-label="Editar"
                         title="Editar"
                         onClick={() => openEditModal(product)}
@@ -1339,8 +1365,8 @@ export default function DashboardProducts({
               </div>
 
               <p className="dash-products__modal-desc">
-                Aplica un ajuste de precio a <strong>todos los productos</strong>{" "}
-                de tu catálogo.
+                Aplica un ajuste de precio a{" "}
+                <strong>todos los productos</strong> de tu catálogo.
               </p>
 
               {/* Action select */}
@@ -1418,15 +1444,16 @@ export default function DashboardProducts({
               </div>
 
               {/* Preview */}
-              {(bulkDeleteOffers || (bulkValue && parseFloat(bulkValue) > 0)) && (
+              {(bulkDeleteOffers ||
+                (bulkValue && parseFloat(bulkValue) > 0)) && (
                 <div className="dash-products__modal-preview">
                   <AlertTriangle size={14} />
                   <span>
                     {bulkDeleteOffers &&
                     (!bulkValue || parseFloat(bulkValue) <= 0) ? (
                       <>
-                        Se eliminará el <strong>precio de oferta</strong> de todos
-                        los productos.
+                        Se eliminará el <strong>precio de oferta</strong> de
+                        todos los productos.
                       </>
                     ) : (
                       <>

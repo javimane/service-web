@@ -1,5 +1,5 @@
 "use client";
-import { type ChangeEvent, useRef, useState, useEffect } from "react";
+import { type ChangeEvent, useRef, useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Camera,
@@ -16,7 +16,12 @@ import {
   Pencil,
   Play,
   Share2,
+  QrCode,
+  Download,
 } from "lucide-react";
+import { toJpeg } from "html-to-image";
+import QRCode from "qrcode";
+import logoWordmark from "../../../images/Logo solo nombre sin fondo.png";
 import Modal from "../../../components/Modal/Modal";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../../routes/paths";
@@ -261,8 +266,72 @@ export default function ProfessionalProfileSection() {
   const [videoModalError, setVideoModalError] = useState("");
   const [videoModalInfo, setVideoModalInfo] = useState("");
 
-  // Availability state
   const [localSlots, setLocalSlots] = useState<AvailabilitySlot[]>([]);
+
+  // QR Modal state & Ref
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const qrCardRef = useRef<HTMLDivElement>(null);
+
+  const fullProfileUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const profilePath = getProfilePath(professionalId, professional?.seo_path);
+    return `${window.location.origin}${profilePath}`;
+  }, [professionalId, professional?.seo_path]);
+
+  const qrDisplayName = useMemo(() => {
+    const candidates = [
+      sessionStatus?.company_name,
+      (sessionStatus as any)?.companyName,
+      professional?.company_name,
+      (professional as any)?.companyName,
+      professional?.companies?.[0]?.name,
+      professional?.Company?.[0]?.name,
+      displayName,
+      "Profesional",
+    ];
+
+    const firstValid = candidates.find(
+      (value) => typeof value === "string" && value.trim().length > 0,
+    );
+
+    return firstValid || "Profesional";
+  }, [displayName, professional, sessionStatus]);
+
+  const handleOpenQrModal = async () => {
+    try {
+      if (!fullProfileUrl) return;
+      const url = await QRCode.toDataURL(fullProfileUrl, {
+        width: 320,
+        margin: 2,
+        color: {
+          dark: "#1e1b4b",
+          light: "#ffffff",
+        },
+      });
+      setQrDataUrl(url);
+      setIsQrModalOpen(true);
+    } catch (err) {
+      console.error("Error al generar QR:", err);
+    }
+  };
+
+  const handleDownloadQrCard = async () => {
+    if (!qrCardRef.current) return;
+    try {
+      const dataUrl = await toJpeg(qrCardRef.current, {
+        quality: 0.95,
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+      });
+      const link = document.createElement("a");
+      link.download = `QR-Perfil-${qrDisplayName}.jpg`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Error al descargar tarjeta QR:", err);
+    }
+  };
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
   useEffect(() => {
@@ -891,7 +960,7 @@ export default function ProfessionalProfileSection() {
         </div>
 
         <h2 className="professional-profile__header-name">
-          {displayName || "Tu nombre profesional"}
+          {qrDisplayName || "Tu nombre profesional"}
         </h2>
         <p className="professional-profile__header-bio">
           {description ||
@@ -910,11 +979,10 @@ export default function ProfessionalProfileSection() {
           </div>
         </div>
 
-        <div style={{ marginTop: "1rem", textAlign: "center" }}>
+        <div className="professional-profile__header-actions-row">
           <button
             type="button"
-            className="professional-profile__save-btn"
-            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+            className="professional-profile__btn-action"
             onClick={() => {
               const profilePath = getProfilePath(
                 professionalId,
@@ -935,7 +1003,16 @@ export default function ProfessionalProfileSection() {
             }}
           >
             <Share2 size={16} />
-            Compartir Perfil
+            <span>Compartir Perfil</span>
+          </button>
+
+          <button
+            type="button"
+            className="professional-profile__btn-action professional-profile__btn-action--qr"
+            onClick={handleOpenQrModal}
+          >
+            <QrCode size={16} />
+            <span>Generar Tarjeta QR</span>
           </button>
         </div>
       </div>
@@ -1679,6 +1756,82 @@ export default function ProfessionalProfileSection() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* ── Modal de Tarjeta QR Descargable ──────────────── */}
+      <Modal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        title="Código QR del Perfil 📱"
+        maxWidth="480px"
+      >
+        <div className="professional-qr-modal">
+          <p className="professional-qr-modal__subtitle">
+            Descargá o compartí la tarjeta con tu código QR para promocionar tu
+            perfil profesional.
+          </p>
+
+          {/* Tarjeta imprimible/exportable */}
+          <div className="professional-qr-card" ref={qrCardRef}>
+            <div className="professional-qr-card__top">
+              <span className="professional-qr-card__header-label">
+                ENCONTRÁME EN:
+              </span>
+              <img
+                src={
+                  typeof logoWordmark === "string"
+                    ? logoWordmark
+                    : logoWordmark.src
+                }
+                alt="Sercio Logo"
+                className="professional-qr-card__brand-logo"
+              />
+            </div>
+
+            <div className="professional-qr-card__profile-info">
+              <img
+                src={profilePhoto || DEFAULT_AVATAR}
+                alt={displayName}
+                className="professional-qr-card__avatar"
+              />
+              <h3 className="professional-qr-card__name">{qrDisplayName}</h3>
+              {specialty && (
+                <span className="professional-qr-card__specialty">
+                  {specialty}
+                </span>
+              )}
+            </div>
+
+            <div className="professional-qr-card__qr-box">
+              {qrDataUrl ? (
+                <img
+                  src={qrDataUrl}
+                  alt="Código QR del perfil"
+                  className="professional-qr-card__qr-img"
+                />
+              ) : (
+                <Loader2 size={32} className="animate-spin" />
+              )}
+            </div>
+
+            <div className="professional-qr-card__footer">
+              <span className="professional-qr-card__link">
+                {fullProfileUrl}
+              </span>
+            </div>
+          </div>
+
+          <div className="professional-qr-modal__actions">
+            <button
+              type="button"
+              className="professional-qr-modal__btn-download"
+              onClick={handleDownloadQrCard}
+            >
+              <Download size={18} />
+              <span>Descargar Imagen QR</span>
+            </button>
+          </div>
+        </div>
       </Modal>
     </section>
   );

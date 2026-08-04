@@ -46,6 +46,7 @@ import DashboardPublications from "./sections/DashboardPublications";
 import DashboardJobs from "./sections/DashboardJobs";
 import DashboardOnboarding from "./sections/DashboardOnboarding";
 import FAQSection from "../FAQ/FAQSection";
+import ErrorReportSection from "./sections/ErrorReportSection";
 import Navbar from "../../components/Navbar/Navbar";
 
 export default function DashboardPage() {
@@ -161,6 +162,8 @@ export default function DashboardPage() {
   const handleShowReels = () => router.push(`${ROUTES.dashboard}?view=reels`);
   const handleShowJobRequests = () =>
     router.push(`${ROUTES.dashboard}?view=job-requests`);
+  const handleShowReportErrors = () =>
+    router.push(`${ROUTES.dashboard}?view=report-errors`);
 
   const isFreePlan = subscriptionPlan === "free";
   const isProfessionalUser = !!sessionStatus?.is_professional;
@@ -262,6 +265,7 @@ export default function DashboardPage() {
     "job-requests",
     "referrals",
     "faq",
+    "report-errors",
   ]);
   const shouldLockDashboardView =
     isProfessionalUser &&
@@ -381,6 +385,7 @@ export default function DashboardPage() {
             onProfileClick={handleShowProfile}
             onReelsClick={handleShowReelsBlocked}
             onJobRequestsClick={handleShowJobRequests}
+            onReportErrorsClick={handleShowReportErrors}
           />
         )}
 
@@ -511,6 +516,8 @@ export default function DashboardPage() {
               <DashboardPublications />
             ) : view === "jobs" ? (
               <DashboardJobs professionalId={professionalId!} />
+            ) : view === "report-errors" ? (
+              <ErrorReportSection />
             ) : view === "faq" ? (
               <FAQSection />
             ) : (
