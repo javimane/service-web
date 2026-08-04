@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | Sercio",
   },
   description:
-    "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Comparé precios, leé opiniones y contactá directamente con comercios locales de confianza.",
+    "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Compará precios, leé opiniones y contactá comercios locales de confianza.",
   keywords:
     "servicios, profesionales, productos, hogar, construcción, reparaciones, comercio, local, confianza, calidad, presupuesto, opiniones, historias, videos, reels, productores, servicio industriales",
   alternates: {
@@ -39,11 +39,11 @@ export const metadata: Metadata = {
     locale: "es_AR",
     title: "Sercio - Red de Servicios y Comercio",
     description:
-      "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Comparé precios, leé opiniones y contactá directamente con comercios locales de confianza.",
+      "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Compará precios, leé opiniones y contactá comercios locales de confianza.",
     images: [
       {
-        url: "/Logo Completo.png",
-        width: 630,
+        url: "/tu-logo.png",
+        width: 1200,
         height: 630,
         alt: "Sercio - Red de Servicios y Comercio",
       },
@@ -54,11 +54,12 @@ export const metadata: Metadata = {
     site: "@sercioar",
     title: "Sercio - Red de Servicios y Comercio",
     description:
-      "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Comparé precios, leé opiniones y contactá directamente con comercios locales de confianza.",
-    images: ["/og-image.jpg"],
+      "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Compará precios, leé opiniones y contactá comercios locales de confianza.",
+    images: ["/tu-logo.png"],
   },
   icons: {
     icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/tu-logo.png", sizes: "32x32", type: "image/png" },
       { url: "/tu-logo.png", sizes: "192x192", type: "image/png" },
       { url: "/tu-logo.png", sizes: "512x512", type: "image/png" },
