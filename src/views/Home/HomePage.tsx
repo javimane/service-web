@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,22 +10,50 @@ import { getProvincesAction } from "@/app/actions/provinces";
 import Navbar from "../../components/Navbar/Navbar";
 import CategoriesSection from "./sections/CategoriesSection";
 import BannerCarousel from "./sections/BannerCarousel";
-import NearbyServicesSection from "./sections/NearbyServicesSection";
-import NearbyProductsSection from "./sections/NearbyProductsSection";
-import ProductsCarousel from "./sections/ProductsCarousel";
-import PromotionsSection from "./sections/PromotionsSection";
-import FeaturedSpecialists from "./sections/FeaturedSpecialists";
-import StoresSection from "./sections/StoresSection";
-import ProfessionalReelsSection from "./sections/ProfessionalReelsSection";
-import PublicationSlider from "@/components/PublicationSlider/PublicationSlider";
-import JobSlider from "@/components/JobSlider/JobSlider";
-import JoinCTASection from "./sections/JoinCTASection";
-import OpportunitiesModalSection from "./sections/OpportunitiesModalSection";
 import Footer from "../../components/Footer/Footer";
 import MobileAppBanner from "@/components/MobileAppBanner/MobileAppBanner";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
 import "./HomePage.css";
+
+// Dynamic imports para diferir componentes pesados que no están en el primer pliegue visual (Below-the-fold)
+const PublicationSlider = dynamic(
+  () => import("@/components/PublicationSlider/PublicationSlider"),
+  { ssr: false },
+);
+const PromotionsSection = dynamic(
+  () => import("./sections/PromotionsSection"),
+  { ssr: false },
+);
+const NearbyServicesSection = dynamic(
+  () => import("./sections/NearbyServicesSection"),
+  { ssr: false },
+);
+const FeaturedSpecialists = dynamic(
+  () => import("./sections/FeaturedSpecialists"),
+  { ssr: false },
+);
+const StoresSection = dynamic(() => import("./sections/StoresSection"), {
+  ssr: false,
+});
+const NearbyProductsSection = dynamic(
+  () => import("./sections/NearbyProductsSection"),
+  { ssr: false },
+);
+const ProfessionalReelsSection = dynamic(
+  () => import("./sections/ProfessionalReelsSection"),
+  { ssr: false },
+);
+const JobSlider = dynamic(() => import("@/components/JobSlider/JobSlider"), {
+  ssr: false,
+});
+const JoinCTASection = dynamic(() => import("./sections/JoinCTASection"), {
+  ssr: false,
+});
+const OpportunitiesModalSection = dynamic(
+  () => import("./sections/OpportunitiesModalSection"),
+  { ssr: false },
+);
 
 const quickLinks = [
   {
@@ -210,6 +239,9 @@ export default function HomePage() {
                       src={item.icon}
                       alt={item.label}
                       className="quick-link-card__icon"
+                      width={48}
+                      height={48}
+                      decoding="async"
                     />
                     {item.badge && (
                       <span
