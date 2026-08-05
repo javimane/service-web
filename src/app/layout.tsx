@@ -17,8 +17,6 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   metadataBase: new URL("https://sercio.com.ar"),
   title: {
@@ -42,7 +40,7 @@ export const metadata: Metadata = {
       "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Compará precios, leé opiniones y contactá comercios locales de confianza.",
     images: [
       {
-        url: "/tu-logo.png",
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Sercio - Red de Servicios y Comercio",
@@ -55,7 +53,7 @@ export const metadata: Metadata = {
     title: "Sercio - Red de Servicios y Comercio",
     description:
       "Encontrá profesionales, servicios, productos y promociones cerca tuyo. Compará precios, leé opiniones y contactá comercios locales de confianza.",
-    images: ["/tu-logo.png"],
+    images: ["/og-image.jpg"],
   },
   icons: {
     icon: [
