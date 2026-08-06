@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit, JetBrains_Mono } from "next/font/google";
 import Providers from "./providers";
 import "@/index.css";
@@ -16,6 +16,10 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#f18f38",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sercio.com.ar"),
@@ -66,7 +70,6 @@ export const metadata: Metadata = {
     shortcut: "/tu-logo.png",
   },
   manifest: "/site.webmanifest",
-  themeColor: "#f18f38",
   other: {
     "og:locale": "es_AR",
   },
