@@ -20,7 +20,9 @@ import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAlert } from "../../context/AlertContext";
 import "./ServiceDetailPage.css";
 
-export default function ServiceDetailPage({ initialData }: { initialData?: any } = {}) {
+export default function ServiceDetailPage({
+  initialData,
+}: { initialData?: any } = {}) {
   const params = useParams<{ seoPath: string | string[] }>();
   const searchParams = useSearchParams();
   const seoPath = params?.seoPath;
@@ -130,9 +132,11 @@ export default function ServiceDetailPage({ initialData }: { initialData?: any }
     company?.companies_arca?.[0]?.is_verified ||
     company?.CompanyArca?.[0]?.is_verified ||
     false;
-  const price = service.base_price
-    ? `$${service.base_price.toLocaleString("es-AR")}`
-    : "Consultar";
+  const basePrice = Number(service.base_price);
+  const price =
+    Number.isFinite(basePrice) && basePrice > 1
+      ? `$${basePrice.toLocaleString("es-AR")}`
+      : "Consultar";
 
   const professionalId = service.professional_id || professional?.id || "";
 
@@ -140,7 +144,9 @@ export default function ServiceDetailPage({ initialData }: { initialData?: any }
     const serviceUrl = window.location.href;
     const msg = `Hola, qué tal, pregunto por el servicio: ${service.name} - ${serviceUrl}`;
     const encodedMsg = encodeURIComponent(msg);
-    router.push(`/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`);
+    router.push(
+      `/mensajes?professionalId=${professionalId}&initialMessage=${encodedMsg}`,
+    );
   };
 
   return (

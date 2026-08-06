@@ -32,7 +32,7 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
       (service.name
         ? service.name.trim().toLowerCase().replace(/\s+/g, "-")
         : `service-${service.id}`);
-    const url = `${window.location.origin}/servicios/${slug}?id=${service.id}`;
+    const url = `${window.location.origin}/servicios${slug}?id=${service.id}`;
 
     if (navigator.share) {
       try {
@@ -101,8 +101,16 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
       {/* Footer */}
       <div className="card-footer">
         <div className="card-price">
-          <span className="price-currency">$</span>
-          <span className="price-value">{price.toLocaleString("es-AR")}</span>
+          {!price || Number(price) <= 1 ? (
+            <span className="price-value">Consultar</span>
+          ) : (
+            <>
+              <span className="price-currency">$</span>
+              <span className="price-value">
+                {Number(price).toLocaleString("es-AR")}
+              </span>
+            </>
+          )}
         </div>
 
         <button

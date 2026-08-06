@@ -227,7 +227,7 @@ export const getMultimediaUploadUrlAction = publicAction
       professionalId: z.number(),
       fileName: z.string(),
       fileType: z.string(),
-      type: z.enum(["REEL", "PROFILE"]),
+      type: z.enum(["REEL", "PROFILE", "PRODUCT"]),
       token: authTokenSchema,
     }),
   )

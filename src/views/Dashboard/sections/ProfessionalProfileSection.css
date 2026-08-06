@@ -408,6 +408,14 @@
   margin-bottom: var(--space-4);
 }
 
+.professional-profile__avatar-tip {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-weight: var(--weight-medium);
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
 .professional-profile__schedule-row {
   display: flex;
   align-items: center;
@@ -421,7 +429,8 @@
 
 .professional-profile__schedule-day {
   flex: 0 0 140px;
-  padding: 8px 10px;
+  height: 38px;
+  padding: 0 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   background: var(--input-bg);
@@ -432,6 +441,7 @@
 
 .professional-profile__schedule-times {
   display: flex;
+  align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
   flex: 1;
@@ -439,15 +449,16 @@
 
 .professional-profile__schedule-time-label {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
   font-size: var(--text-sm);
   color: var(--text-secondary);
   font-weight: var(--weight-semibold);
 }
 
 .professional-profile__schedule-time-label input[type="time"] {
-  padding: 8px 10px;
+  height: 38px;
+  padding: 0 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   background: var(--input-bg);
@@ -459,8 +470,11 @@
 .professional-profile__schedule-remove {
   margin-left: auto;
   flex-shrink: 0;
-  min-height: 36px;
-  padding: 6px 10px;
+  height: 38px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ── Images grid ───────────────────────────────────── */

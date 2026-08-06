@@ -33,6 +33,7 @@ const professionalListSchema = z.object({
   sort_by: z.string().optional(),
   has_promotions: z.string().or(z.boolean()).optional(),
   hasPromotions: z.string().or(z.boolean()).optional(),
+  onlyProfessionals: z.string().optional(), // 'true' | 'false'
 });
 
 export const getProfessionalsAction = publicAction

@@ -356,6 +356,13 @@ export default function DashboardProducts({
             item.Product?.display_order ?? item.display_order,
             item.Product?.image_url,
           ),
+      videos: Array.isArray(item.Product?.Videos)
+        ? item.Product.Videos.map((v: any) => v?.video_url || v?.url || "").filter(Boolean)
+        : Array.isArray(item.Product?.videos)
+          ? item.Product.videos.map((v: any) => (typeof v === "string" ? v : v?.video_url || v?.url || "")).filter(Boolean)
+          : typeof item.Product?.video_url === "string" && item.Product.video_url
+            ? [item.Product.video_url]
+            : [],
       id: item.product_id,
       name: item.Product?.name || "Sin nombre",
       price: item.price,

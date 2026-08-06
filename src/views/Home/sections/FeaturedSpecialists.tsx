@@ -13,10 +13,10 @@ import useCarouselDrag from "../../../hooks/useCarouselDrag";
 import "./FeaturedSpecialists.css";
 import { getProfessionalsAction } from "@/app/actions/professionals";
 
-export default function FeaturedSpecialists({ 
+export default function FeaturedSpecialists({
   userProvince = "Buenos Aires",
-  userProvinceId
-}: { 
+  userProvinceId,
+}: {
   userProvince?: string;
   userProvinceId?: number;
 }) {
@@ -40,6 +40,7 @@ export default function FeaturedSpecialists({
         provinceId: userProvinceId,
         limit: 20,
         sortBy: "rating",
+        onlyProfessionals: 'true',
       });
 
       const raw = (result?.data as any) ?? result;

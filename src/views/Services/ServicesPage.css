@@ -85,19 +85,20 @@
 }
 
 .services-results {
-  display: grid;
-  transition: all 0.3s ease;
+  display: block;
   min-width: 0;
 }
 
-.view-grid {
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+.services-results-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
 }
 
-.view-list {
-  grid-template-columns: 1fr;
-  gap: 1rem;
+@media (max-width: 768px) {
+  .services-results-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .service-card-modern {

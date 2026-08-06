@@ -70,18 +70,20 @@
 }
 
 .custom-map-marker__pin {
-  width: 40px;
-  height: 40px;
-  background: var(--purple-accent);
+  width: 44px;
+  height: 44px;
+  background: var(--white);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.5);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   position: relative;
   z-index: 2;
-  border: 3px solid var(--white);
+  border: 3px solid var(--purple-accent);
   transition: transform 0.2s ease;
+  overflow: hidden;
+  padding: 2px;
 }
 
 .custom-map-marker:hover .custom-map-marker__pin {
@@ -92,33 +94,15 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #ffffff;
   aspect-ratio: 1 / 1;
   display: block;
 }
 
 /* Pulse Animation */
 .custom-map-marker__pulse {
-  position: absolute;
-  width: 46px;
-  height: 46px;
-  background: rgba(139, 92, 246, 0.6);
-  border-radius: 50%;
-  z-index: 1;
-  top: 0;
-  left: 0;
-  animation: mapPulse 2s infinite;
-}
-
-@keyframes mapPulse {
-  0% {
-    transform: scale(0.9);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
+  display: none;
 }
 
 .map-info-window {
@@ -132,8 +116,10 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #ffffff;
   border: 2px solid var(--purple-accent);
+  padding: 2px;
 }
 
 .map-info-window__content h3 {
@@ -146,6 +132,14 @@
   margin: 0.25rem 0;
   font-size: 0.8rem;
   color: var(--gray-400);
+}
+
+.map-info-window__address {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-weight: var(--weight-medium);
 }
 
 .map-info-window__meta {
@@ -203,8 +197,7 @@
 }
 
 .custom-map-marker--has-promotions .custom-map-marker__pulse {
-  background: rgba(255, 215, 0, 0.7);
-  animation: promoPulse 1.8s infinite;
+  display: none;
 }
 
 @keyframes promoPulse {

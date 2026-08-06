@@ -27,7 +27,7 @@ type UserLocation = {
 
 export default function NearbyProductsSection({
   userProvince = "Buenos Aires",
-  userProvinceId
+  userProvinceId,
 }: {
   userProvince?: string;
   userProvinceId?: number;
@@ -203,24 +203,14 @@ export default function NearbyProductsSection({
                     </div>
 
                     <div className="nearby-product-card__body">
-                      <div className="nearby-product-card__seller-row">
-                        <img
-                          src={avatarUrl}
-                          alt={companyName}
-                          className="nearby-product-card__seller-avatar"
-                          draggable="false"
-                        />
-                        <span className="nearby-product-card__seller-name">
-                          {companyName}
-                        </span>
-                      </div>
+                      <div className="nearby-product-card__seller-row"></div>
 
                       <h3 className="nearby-product-card__title">
                         {item.name}
                       </h3>
 
                       <div className="nearby-product-card__pricing">
-                        {hasOffer && (
+                        {hasOffer && price > 1 && (
                           <span className="nearby-product-card__original">
                             {currencyCode === "USD" ? "USD $" : "$"}
                             {formatPrice(price)}
@@ -228,12 +218,16 @@ export default function NearbyProductsSection({
                         )}
                         <div className="nearby-product-card__price-row">
                           <span className="nearby-product-card__price">
-                            {currencyCode === "USD" ? "USD $" : "$"}
-                            {formatPrice(
-                              hasOffer && offerPrice ? offerPrice : price,
-                            )}
+                            {(() => {
+                              const finalPrice =
+                                hasOffer && offerPrice ? offerPrice : price;
+                              if (!finalPrice || Number(finalPrice) <= 1) {
+                                return "Consultar";
+                              }
+                              return `${currencyCode === "USD" ? "USD $" : "$"}${formatPrice(finalPrice)}`;
+                            })()}
                           </span>
-                          {discountVal > 0 && (
+                          {discountVal > 0 && price > 1 && (
                             <span className="nearby-product-card__discount">
                               {discountVal}% OFF
                             </span>

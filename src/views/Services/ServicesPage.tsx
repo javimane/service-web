@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { LayoutGrid, List, Search, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { getServicesAction } from "../../app/actions/services";
@@ -32,7 +32,6 @@ export default function ServicesPage() {
     onlyVerified: false,
   });
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState("grid");
   const router = useRouter();
 
   const {
@@ -190,28 +189,9 @@ export default function ServicesPage() {
                 Catálogo curado de excelencia técnica y arquitectónica.
               </p>
             </div>
-
-            <div className="view-toggle">
-              <button
-                className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
-                onClick={() => setViewMode("grid")}
-                aria-label="Vista Cuadrícula"
-              >
-                <LayoutGrid size={18} />
-                <span>Grid</span>
-              </button>
-              <button
-                className={`view-btn ${viewMode === "list" ? "active" : ""}`}
-                onClick={() => setViewMode("list")}
-                aria-label="Vista Lista"
-              >
-                <List size={18} />
-                <span>List</span>
-              </button>
-            </div>
           </header>
 
-          <div className={`services-results view-${viewMode}`}>
+          <div className="services-results view-grid">
             {isError ? (
               <div className="services-error">
                 <AlertTriangle size={48} />
@@ -265,39 +245,19 @@ export default function ServicesPage() {
                 <AsyncWrapper
                   isLoading={isLoading}
                   skeleton={
-                    <div
-                      className={`services-results-grid view-${viewMode}`}
-                      style={{
-                        width: "100%",
-                        display: viewMode === "grid" ? "grid" : "flex",
-                        flexDirection: viewMode === "grid" ? "row" : "column",
-                        gap: "var(--space-6)",
-                      }}
-                    >
+                    <div className="services-results-grid view-grid">
                       {[...Array(8)].map((_, i) => (
-                        <Skeleton
-                          key={i}
-                          variant="card"
-                          height={viewMode === "list" ? 180 : 360}
-                        />
+                        <Skeleton key={i} variant="card" height={360} />
                       ))}
                     </div>
                   }
                 >
-                  <div
-                    className={`services-results-grid view-${viewMode}`}
-                    style={{
-                      width: "100%",
-                      display: viewMode === "grid" ? "grid" : "flex",
-                      flexDirection: viewMode === "grid" ? "row" : "column",
-                      gap: "var(--space-6)",
-                    }}
-                  >
+                  <div className="services-results-grid view-grid">
                     {servicesData.map((service: any) => (
                       <ServiceCard
                         key={service.id}
                         service={service}
-                        viewMode={viewMode}
+                        viewMode="grid"
                         onClick={(svc) => {
                           const slug =
                             svc.seo_path ||

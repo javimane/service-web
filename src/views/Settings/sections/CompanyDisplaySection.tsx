@@ -83,7 +83,9 @@ export default function CompanyDisplaySection({
   // Normalize Tax Code / CUIT
   const displayTaxCode = company.tax_code || company.taxCode || company.cuit;
 
-  const selectedCategoryIds = prof?.professional_categories?.map((pc: any) => pc.category_services_id) || [];
+  const selectedCategoryIds =
+    prof?.professional_categories?.map((pc: any) => pc.category_services_id) ||
+    [];
   const selectedCategoryNames = selectedCategoryIds
     .map((id: number) => categoryList?.find((c) => c.id === id)?.name)
     .filter(Boolean);
@@ -157,7 +159,7 @@ export default function CompanyDisplaySection({
                   <span className="address-value">{zipCode}</span>
                 </div>
                 {company.public_trade &&
-                  (!company.latitude || !company.longitude) && (
+                  (!address?.latitude || !address?.longitude) && (
                     <div className="address-item address-item--warning">
                       <span className="address-label">Ubicación en Mapa</span>
                       <span className="address-value address-value--warning">
@@ -246,4 +248,3 @@ export default function CompanyDisplaySection({
     </div>
   );
 }
-

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Play,
+  Maximize,
 } from "lucide-react";
 import { getProductDetailAction } from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
@@ -53,7 +55,9 @@ const formatDescription = (text: string) => {
   return result;
 };
 
-export default function ProductDetailPage({ initialData }: { initialData?: any } = {}) {
+export default function ProductDetailPage({
+  initialData,
+}: { initialData?: any } = {}) {
   const params = useParams<{ seoPath: string | string[] }>();
   const searchParams = useSearchParams();
   const seoPathRaw = params?.seoPath;
@@ -67,6 +71,7 @@ export default function ProductDetailPage({ initialData }: { initialData?: any }
 
   const router = useRouter();
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const videoFrameRef = useRef<HTMLDivElement | null>(null);
 
   const {
     data: item,
@@ -142,15 +147,32 @@ export default function ProductDetailPage({ initialData }: { initialData?: any }
     itemAny.subCategory?.name ||
     itemAny.sub_category?.name;
   const productOrigin = item.is_foreign ? "Externo" : "Local";
-  const productImages = item.Images || [];
+  const rawImages: any[] = item.Images || itemAny.images || [];
+  const rawVideos: any[] = item.Videos || itemAny.videos || [];
 
-  // Get seller info from the first ProfessionalProducts entry
+  const mediaItems: Array<{ type: "image" | "video"; url: string; id?: any }> =
+    [];
+
+  for (let i = 0; i < rawImages.length; i++) {
+    const img = rawImages[i];
+    const url = typeof img === "string" ? img : img?.image_url || img?.url;
+    if (url) mediaItems.push({ type: "image", url, id: img?.id || `img-${i}` });
+  }
+
+  for (let i = 0; i < rawVideos.length; i++) {
+    const vid = rawVideos[i];
+    const url = typeof vid === "string" ? vid : vid?.video_url || vid?.url;
+    if (url) mediaItems.push({ type: "video", url, id: vid?.id || `vid-${i}` });
+  }
+
+  // Get seller info from the first ProfessionalProducts entry (Direct access without .map())
   const professionalProduct = item.ProfessionalProducts?.[0];
-  const productLink = professionalProduct?.link_url; // Added link_url extraction
+  const productLink = professionalProduct?.link_url;
   const professional = professionalProduct?.Professional;
   const professionalAny = professional as any;
 
   const profile = professionalAny?.Profile || professionalAny?.profile;
+  const avatarUrl = profile?.avatar_url || null;
   const companyData =
     professionalAny?.Company ||
     professionalAny?.Companies ||
@@ -212,13 +234,43 @@ export default function ProductDetailPage({ initialData }: { initialData?: any }
   };
 
   const nextImage = () => {
-    setActiveImageIdx((prev) => (prev + 1) % productImages.length);
+    if (!mediaItems.length) return;
+    setActiveImageIdx((prev) => (prev + 1) % mediaItems.length);
   };
 
   const prevImage = () => {
+    if (!mediaItems.length) return;
     setActiveImageIdx(
-      (prev) => (prev - 1 + productImages.length) % productImages.length,
+      (prev) => (prev - 1 + mediaItems.length) % mediaItems.length,
     );
+  };
+
+  const currentMedia = mediaItems[activeImageIdx];
+
+  const handleFullscreenVideo = async () => {
+    const container = videoFrameRef.current;
+    if (!container) return;
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      if (container.requestFullscreen) {
+        await container.requestFullscreen();
+        return;
+      }
+
+      const webkitContainer = container as HTMLDivElement & {
+        webkitRequestFullscreen?: () => Promise<void> | void;
+      };
+      if (webkitContainer.webkitRequestFullscreen) {
+        await webkitContainer.webkitRequestFullscreen();
+      }
+    } catch {
+      // noop
+    }
   };
 
   return (
@@ -245,19 +297,50 @@ export default function ProductDetailPage({ initialData }: { initialData?: any }
           {/* Left Column: Image + Details */}
           <div className="product-detail__left-column">
             <div className="product-detail__gallery">
-              <div className="product-detail__main-image-container">
-                {productImages.length > 0 ? (
-                  <img
-                    src={productImages[activeImageIdx]?.image_url}
-                    alt={productName}
-                  />
+              <div
+                ref={videoFrameRef}
+                className={`product-detail__main-image-container ${currentMedia?.type === "video" ? "product-detail__main-image-container--video" : "product-detail__main-image-container--image"}`}
+              >
+                {currentMedia ? (
+                  currentMedia.type === "video" ? (
+                    <>
+                      <video
+                        key={currentMedia.url}
+                        src={currentMedia.url}
+                        controls
+                        controlsList="nofullscreen nodownload noplaybackrate noremoteplayback"
+                        disablePictureInPicture
+                        disableRemotePlayback
+                        playsInline
+                        autoPlay
+                        muted
+                        loop
+                        className="product-detail__main-video"
+                        onDoubleClick={(event) => {
+                          event.preventDefault();
+                          handleFullscreenVideo();
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="product-detail__fullscreen-btn"
+                        onClick={handleFullscreenVideo}
+                        aria-label="Ver video en pantalla completa"
+                      >
+                        <Maximize size={16} />
+                        Pantalla completa
+                      </button>
+                    </>
+                  ) : (
+                    <img src={currentMedia.url} alt={productName} />
+                  )
                 ) : (
                   <div className="no-image-placeholder">
-                    No hay imágenes disponibles
+                    No hay contenido multimedia disponible
                   </div>
                 )}
 
-                {productImages.length > 1 && (
+                {mediaItems.length > 1 && (
                   <div className="gallery-nav">
                     <button onClick={prevImage} className="gallery-nav-btn">
                       <ChevronLeft size={24} />
@@ -269,18 +352,27 @@ export default function ProductDetailPage({ initialData }: { initialData?: any }
                 )}
               </div>
 
-              {productImages.length > 1 && (
+              {mediaItems.length > 1 && (
                 <div className="product-detail__thumbnails">
-                  {productImages.map((img: any, idx: number) => (
+                  {mediaItems.map((item, idx: number) => (
                     <button
-                      key={img.id || idx}
-                      className={`thumbnail-btn ${idx === activeImageIdx ? "active" : ""}`}
+                      key={item.id || idx}
+                      className={`thumbnail-btn ${idx === activeImageIdx ? "active" : ""} ${item.type === "video" ? "thumbnail-btn--video" : ""}`}
                       onClick={() => setActiveImageIdx(idx)}
                     >
-                      <img
-                        src={img.image_url}
-                        alt={`${productName} thumbnail ${idx}`}
-                      />
+                      {item.type === "video" ? (
+                        <div className="thumbnail-video-wrapper">
+                          <video src={item.url} preload="metadata" />
+                          <div className="thumbnail-video-overlay">
+                            <Play size={16} fill="currentColor" />
+                          </div>
+                        </div>
+                      ) : (
+                        <img
+                          src={item.url}
+                          alt={`${productName} thumbnail ${idx}`}
+                        />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -292,7 +384,6 @@ export default function ProductDetailPage({ initialData }: { initialData?: any }
                 <span className="product-meta-pill product-meta-pill--soft">
                   Producto
                 </span>
-                <span className="product-meta-pill">{productOrigin}</span>
               </div>
               <h1 className="product-detail__title">{productName}</h1>
 
@@ -356,7 +447,15 @@ export default function ProductDetailPage({ initialData }: { initialData?: any }
               <div className="sellers-list">
                 <div className="seller-card">
                   <div className="seller-card__header">
-                    <ShieldCheck size={18} className="seller-icon" />
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={sellerName}
+                        className="seller-avatar"
+                      />
+                    ) : (
+                      <ShieldCheck size={18} className="seller-icon" />
+                    )}
                     <div className="seller-card__info">
                       <button
                         onClick={() =>
@@ -378,23 +477,43 @@ export default function ProductDetailPage({ initialData }: { initialData?: any }
 
                   <div className="seller-card__price-row">
                     <div className="prices">
-                      {hasDiscount && (
-                        <span className="seller-original-price">
-                          {currencySymbol}
-                          {formatPrice(originalPrice)}
-                        </span>
-                      )}
-                      <div className="seller-current-price-row">
-                        <span className="seller-price">
-                          {currencySymbol}
-                          {formatPrice(offerPrice ? offerPrice : originalPrice)}
-                        </span>
-                        {discountVal > 0 && (
-                          <span className="seller-discount">
-                            {discountVal}% OFF
-                          </span>
-                        )}
-                      </div>
+                      {(() => {
+                        const finalPrice = offerPrice
+                          ? offerPrice
+                          : originalPrice;
+                        const isConsult =
+                          !finalPrice || Number(finalPrice) <= 1;
+
+                        if (isConsult) {
+                          return (
+                            <div className="seller-current-price-row">
+                              <span className="seller-price">Consultar</span>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <>
+                            {hasDiscount && originalPrice > 1 && (
+                              <span className="seller-original-price">
+                                {currencySymbol}
+                                {formatPrice(originalPrice)}
+                              </span>
+                            )}
+                            <div className="seller-current-price-row">
+                              <span className="seller-price">
+                                {currencySymbol}
+                                {formatPrice(finalPrice)}
+                              </span>
+                              {discountVal > 0 && originalPrice > 1 && (
+                                <span className="seller-discount">
+                                  {discountVal}% OFF
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
 
                       {isWholesale && (
                         <div

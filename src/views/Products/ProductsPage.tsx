@@ -5,8 +5,6 @@ import { useSearchParams } from "next/navigation";
 import {
   Search,
   SlidersHorizontal,
-  Grid3X3,
-  List,
   Globe,
   Filter,
   Loader2,
@@ -64,7 +62,7 @@ export default function ProductsPage() {
     ean: defaultFilters.ean,
   });
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState("grid");
+
   const [showFilters, setShowFilters] = useState(false);
 
   const [searchInput, setSearchInput] = useState("");
@@ -412,25 +410,6 @@ export default function ProductsPage() {
                     : `${normalizedProductsResponse.count} productos encontrados`}
               </p>
             </div>
-
-            <div className="products-page__view-toggle">
-              <button
-                type="button"
-                className={viewMode === "grid" ? "active" : ""}
-                onClick={() => setViewMode("grid")}
-                aria-label="Vista cuadrícula"
-              >
-                <Grid3X3 size={16} />
-              </button>
-              <button
-                type="button"
-                className={viewMode === "list" ? "active" : ""}
-                onClick={() => setViewMode("list")}
-                aria-label="Vista lista"
-              >
-                <List size={16} />
-              </button>
-            </div>
           </div>
 
           {/* Search bar */}
@@ -546,33 +525,15 @@ export default function ProductsPage() {
                     ))}
                   </select>
                 </div>
-                <div className="products-page__view-toggle">
-                  <button
-                    type="button"
-                    className={viewMode === "grid" ? "active" : ""}
-                    onClick={() => setViewMode("grid")}
-                  >
-                    <Grid3X3 size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className={viewMode === "list" ? "active" : ""}
-                    onClick={() => setViewMode("list")}
-                  >
-                    <List size={16} />
-                  </button>
-                </div>
               </div>
             </div>
-            <div
-              className={`products-page__grid ${viewMode === "list" ? "products-page__grid--list" : ""}`}
-            >
+            <div className="products-page__grid">
               <AsyncWrapper
                 isLoading={isLoading}
                 skeleton={
                   <>
                     {[...Array(8)].map((_, i) => (
-                      <Skeleton key={i} variant="card" height={viewMode === "list" ? 180 : 360} />
+                      <Skeleton key={i} variant="card" height={360} />
                     ))}
                   </>
                 }
@@ -581,7 +542,7 @@ export default function ProductsPage() {
                   <button
                     key={product.id}
                     type="button"
-                    className={`product-card ${viewMode === "list" ? "product-card--list" : ""}`}
+                    className="product-card"
                     onClick={() => {
                       router.push(`/productos${product._original.seo_path}`);
                     }}
@@ -607,7 +568,7 @@ export default function ProductsPage() {
                       <h3 className="product-card__title">{product.title}</h3>
 
                       <div className="product-card__pricing">
-                        {product.originalPrice && (
+                        {product.originalPrice > 1 && (
                           <span className="product-card__original">
                             {product.currencyCode === "USD" ? "USD $" : "$"}
                             {formatPrice(product.originalPrice)}
@@ -615,14 +576,16 @@ export default function ProductsPage() {
                         )}
                         <div className="product-card__price-row">
                           <span className="product-card__price">
-                            {product.currencyCode === "USD" ? "USD $" : "$"}
-                            {formatPrice(product.price)}
+                            {!product.price || Number(product.price) <= 1
+                              ? "Consultar"
+                              : `${product.currencyCode === "USD" ? "USD $" : "$"}${formatPrice(product.price)}`}
                           </span>
-                          {product.discount > 0 && (
-                            <span className="product-card__discount">
-                              {product.discount}% OFF
-                            </span>
-                          )}
+                          {product.discount > 0 &&
+                            Number(product.price) > 1 && (
+                              <span className="product-card__discount">
+                                {product.discount}% OFF
+                              </span>
+                            )}
                         </div>
                         {product.wholesale && (
                           <div className="product-card__wholesale">
@@ -637,12 +600,6 @@ export default function ProductsPage() {
                           </div>
                         )}
                       </div>
-
-                      {viewMode === "list" && (
-                        <p className="product-card__description">
-                          {product.description}
-                        </p>
-                      )}
                     </div>
                   </button>
                 ))}

@@ -217,9 +217,12 @@ export default function NearbyServicesSection({
                         avatar:
                           prof?.profile?.avatar_url ||
                           `https://ui-avatars.com/api/?name=${encodeURIComponent(prof?.profile?.display_name || "P")}`,
-                        price: `$${service.base_price?.toLocaleString() || "0"}`,
+                        price:
+                          !service.base_price || Number(service.base_price) <= 1
+                            ? "Consultar"
+                            : `$${Number(service.base_price).toLocaleString("es-AR")}`,
                         distance: distanceStr,
-                        rating: prof?.rating_avg || 1.0,
+                        rating: prof?.rating_avg || 0,
                       }}
                       onClick={handleServiceClick}
                     />

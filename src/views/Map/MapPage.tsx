@@ -19,7 +19,7 @@ import {
 } from "../../app/actions/professionals";
 import Navbar from "../../components/Navbar/Navbar";
 import MapSidebar from "./MapSidebar";
-import { AlertCircle, CheckCircle2, Star, User } from "lucide-react";
+import { AlertCircle, CheckCircle2, MapPin, Star, User } from "lucide-react";
 import MapPromotionsModal from "./MapPromotionsModal";
 import "./MapPage.css";
 
@@ -71,16 +71,13 @@ function MapEventsListener({
 
 // Crear un icono personalizado con foto de perfil y efecto de pulso
 const createCustomIcon = (avatarUrl: string, hasPromotions: boolean) => {
-  const storeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: white;"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h2V14h8v8h2a2 2 0 0 0 2-2v-8"/><path d="M2 7h20v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
-
   return L.divIcon({
     className: `custom-map-marker ${hasPromotions ? "custom-map-marker--has-promotions" : ""}`,
     html: `
         <div class="custom-map-marker__pin">
-          ${storeSvg}
+          <img src="${avatarUrl}" alt="Local" />
           ${hasPromotions ? '<span class="custom-map-marker__promo-badge">PROMO</span>' : ""}
         </div>
-        <div class="custom-map-marker__pulse"></div>
       `,
     iconSize: [46, 46],
     iconAnchor: [23, 46], // punto de anclaje en la base
@@ -267,6 +264,31 @@ export default function MapPage() {
 
         const hasPromotions = Boolean(p.has_promotions || p.hasPromotions);
 
+        const streetName =
+          address?.street_name ||
+          address?.streetName ||
+          address?.street ||
+          address?.address ||
+          address?.name ||
+          "";
+        const streetNumber =
+          address?.street_number ||
+          address?.streetNumber ||
+          address?.number ||
+          "";
+        const streetLine = [streetName, streetNumber].filter(Boolean).join(" ");
+        const locationLine =
+          address?.Department?.name ||
+          address?.department?.name ||
+          address?.Province?.name ||
+          address?.province?.name ||
+          address?.city ||
+          "";
+
+        const fullAddress =
+          [streetLine, locationLine].filter(Boolean).join(", ") ||
+          "Dirección no especificada";
+
         return {
           id: p.user_id || p.id,
           name,
@@ -278,6 +300,7 @@ export default function MapPage() {
           seoPath,
           profileUrl,
           hasPromotions,
+          addressText: fullAddress,
           coordinates: {
             lat: Number(address?.latitude || 0),
             lng: Number(address?.longitude || 0),
@@ -334,6 +357,9 @@ export default function MapPage() {
                       <h3>{prof.name}</h3>
                       <p>{prof.companyName}</p>
                       <p>{prof.specialty}</p>
+                      <p className="map-info-window__address">
+                        <MapPin size={12} /> {prof.addressText}
+                      </p>
                       <div className="map-info-window__meta">
                         <span>
                           <Star size={12} fill="currentColor" /> {prof.rating}

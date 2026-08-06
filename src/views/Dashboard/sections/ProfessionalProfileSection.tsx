@@ -958,6 +958,9 @@ export default function ProfessionalProfileSection() {
             />
           </label>
         </div>
+        <p className="professional-profile__avatar-tip">
+          Suba un logo con formato 1:1 (cuadrado) para mejor visualización.
+        </p>
 
         <h2 className="professional-profile__header-name">
           {qrDisplayName || "Tu nombre profesional"}

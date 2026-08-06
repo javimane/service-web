@@ -14,6 +14,9 @@ import {
   Package,
   Tag,
   Image as ImageIcon,
+  Video,
+  Film,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import {
@@ -22,6 +25,8 @@ import {
 } from "../../../app/actions/categories";
 import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
+import { getMultimediaUploadUrlAction } from "../../../app/actions/multimedia";
+import { multimediaService } from "../../../services/multimediaService";
 import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
 import { cropImageToSquare } from "../../../utils/imageUtils";
 import "./DashboardProducts.css";
@@ -30,11 +35,12 @@ import {
   assignProductToProfessionalAction,
   createProductAction,
   getProductByEanAction,
+  getProductDetailAction,
   updateProfessionalProductAction,
   updateProductAction,
 } from "@/app/actions/products";
 
-const MAX_PRODUCT_IMAGES = 10;
+const MAX_PRODUCT_VIDEOS = 2;
 
 const moveArrayItem = <T,>(arr: T[], from: number, to: number) => {
   if (to < 0 || to >= arr.length || from === to) return arr;
@@ -89,6 +95,10 @@ export default function ProductCreator({
   const [draggingNewImageIndex, setDraggingNewImageIndex] = useState<
     number | null
   >(null);
+
+  // Video state (up to 2 videos per product)
+  const [videoFiles, setVideoFiles] = useState<(File | null)[]>([]);
+  const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -198,78 +208,117 @@ export default function ProductCreator({
     updateBaseMutation.isPending;
 
   useEffect(() => {
-    if (productToEdit) {
+    if (!productToEdit) return;
+
+    let isMounted = true;
+
+    const loadFullProductData = async () => {
+      let fullProduct = productToEdit;
+      const productId = productToEdit.id || productToEdit.product_id;
+
+      if (productId) {
+        try {
+          const detailRes = await getProductDetailAction({ id: productId });
+          if (detailRes?.data) {
+            fullProduct = { ...productToEdit, ...detailRes.data };
+          }
+        } catch (err) {
+          console.error("Error fetching product detail for edit:", err);
+        }
+      }
+
+      if (!isMounted) return;
+
       setNewProduct((prev) => ({
         ...prev,
-        name: productToEdit.name || "",
-        brand: productToEdit.brand || "",
+        name: fullProduct.name || "",
+        brand: fullProduct.brand || "",
         categoryId:
           categories
-            .find((c: any) => c.name === productToEdit.category)
-            ?.id?.toString() || "",
-        subcategoryId:
-          productToEdit.sub_categories_products_id?.toString() ||
-          productToEdit.subcategoryId?.toString() ||
-          productToEdit.SubCategory?.id?.toString() ||
-          productToEdit.subCategory?.id?.toString() ||
+            .find((c: any) => c.name === fullProduct.category)
+            ?.id?.toString() ||
+          fullProduct.categories_products_id?.toString() ||
+          fullProduct.Category?.id?.toString() ||
           "",
-        description: productToEdit.description || "",
-        ean: productToEdit.ean || "",
-        has_ean: !productToEdit.ean,
-        weight: productToEdit.weight ? String(productToEdit.weight) : "",
-        width: productToEdit.width ? String(productToEdit.width) : "",
-        height: productToEdit.height ? String(productToEdit.height) : "",
-        depth: productToEdit.depth ? String(productToEdit.depth) : "",
-        offerPrice: productToEdit.offer_price
-          ? String(productToEdit.offer_price)
+        subcategoryId:
+          fullProduct.sub_categories_products_id?.toString() ||
+          fullProduct.subcategoryId?.toString() ||
+          fullProduct.SubCategory?.id?.toString() ||
+          fullProduct.subCategory?.id?.toString() ||
+          "",
+        description: fullProduct.description || "",
+        ean: fullProduct.ean || "",
+        has_ean: !fullProduct.ean,
+        weight: fullProduct.weight ? String(fullProduct.weight) : "",
+        width: fullProduct.width ? String(fullProduct.width) : "",
+        height: fullProduct.height ? String(fullProduct.height) : "",
+        depth: fullProduct.depth ? String(fullProduct.depth) : "",
+        offerPrice: fullProduct.offer_price
+          ? String(fullProduct.offer_price)
           : "",
-        currency_code: productToEdit.currency_code || "ARG",
-        percent_discount: productToEdit.percent_discount
-          ? String(productToEdit.percent_discount)
+        currency_code: fullProduct.currency_code || "ARG",
+        percent_discount: fullProduct.percent_discount
+          ? String(fullProduct.percent_discount)
           : "",
-        link_url: productToEdit.link_url || "",
-        wholesale: productToEdit.wholesale || false,
-        wholesale_price: productToEdit.wholesale_price
-          ? String(productToEdit.wholesale_price)
+        link_url: fullProduct.link_url || "",
+        wholesale: fullProduct.wholesale || false,
+        wholesale_price: fullProduct.wholesale_price
+          ? String(fullProduct.wholesale_price)
           : "",
-        wholesale_unit: productToEdit.wholesale_unit
-          ? String(productToEdit.wholesale_unit)
+        wholesale_unit: fullProduct.wholesale_unit
+          ? String(fullProduct.wholesale_unit)
           : "",
-        image: productToEdit.image || "",
+        image: fullProduct.image || "",
       }));
+
       setFormPrice(
-        productToEdit.price !== undefined ? String(productToEdit.price) : "",
+        fullProduct.price !== undefined ? String(fullProduct.price) : "",
       );
       setFormStock(
-        productToEdit.stock !== undefined ? String(productToEdit.stock) : "",
+        fullProduct.stock !== undefined ? String(fullProduct.stock) : "",
       );
 
+      // Extract images
       let imgs: string[] = [];
-      if (
-        Array.isArray(productToEdit.images) &&
-        productToEdit.images.length > 0
-      ) {
-        imgs = productToEdit.images;
-      } else if (productToEdit.image) {
-        imgs = [productToEdit.image];
-      } else if (typeof productToEdit.image_url === "string") {
-        imgs = [productToEdit.image_url];
+      if (Array.isArray(fullProduct.Images) && fullProduct.Images.length > 0) {
+        imgs = fullProduct.Images.map((img: any) => img.image_url || img.url || "").filter(Boolean);
+      } else if (Array.isArray(fullProduct.images) && fullProduct.images.length > 0) {
+        imgs = fullProduct.images;
+      } else if (fullProduct.image) {
+        imgs = [fullProduct.image];
+      } else if (typeof fullProduct.image_url === "string") {
+        imgs = [fullProduct.image_url];
       }
       setImagePreviews(imgs);
       setImageFiles(imgs.map(() => null));
-    }
+
+      // Extract videos
+      let vids: string[] = [];
+      if (Array.isArray(fullProduct.Videos) && fullProduct.Videos.length > 0) {
+        vids = fullProduct.Videos.map((v: any) => v.video_url || v.url || "").filter(Boolean);
+      } else if (Array.isArray(fullProduct.videos) && fullProduct.videos.length > 0) {
+        vids = fullProduct.videos.map((v: any) => typeof v === "string" ? v : v.video_url || v.url || "").filter(Boolean);
+      } else if (typeof fullProduct.video_url === "string" && fullProduct.video_url) {
+        vids = [fullProduct.video_url];
+      }
+      setVideoPreviews(vids);
+      setVideoFiles(vids.map(() => null));
+    };
+
+    loadFullProductData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [productToEdit, categories]);
 
   /* ── Image handlers ── */
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(e.target.files || []);
     if (!incoming.length) return;
-    const slots = MAX_PRODUCT_IMAGES - imagePreviews.length;
-    if (slots <= 0) return;
-    const toAdd = incoming.slice(0, slots);
 
     const croppedFiles = await Promise.all(
-      toAdd.map((file) => cropImageToSquare(file).catch(() => file)),
+      incoming.map((file) => cropImageToSquare(file).catch(() => file)),
     );
 
     setImageFiles((p) => [...p, ...croppedFiles]);
@@ -291,6 +340,35 @@ export default function ProductCreator({
   const removeImage = (i: number) => {
     setImageFiles((p) => p.filter((_, idx) => idx !== i));
     setImagePreviews((p) => p.filter((_, idx) => idx !== i));
+  };
+
+  /* ── Video handlers ── */
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(e.target.files || []);
+    if (!incoming.length) return;
+    const slots = MAX_PRODUCT_VIDEOS - videoPreviews.length;
+    if (slots <= 0) return;
+    const toAdd = incoming.slice(0, slots);
+
+    setVideoFiles((p) => [...p, ...toAdd]);
+    Promise.all(
+      toAdd.map(
+        (f) =>
+          new Promise<string>((res) => {
+            const r = new FileReader();
+            r.onloadend = () => res((r.result as string) || "");
+            r.readAsDataURL(f);
+          }),
+      ),
+    ).then((results) =>
+      setVideoPreviews((p) => [...p, ...results.filter(Boolean)]),
+    );
+    e.target.value = "";
+  };
+
+  const removeVideo = (i: number) => {
+    setVideoFiles((p) => p.filter((_, idx) => idx !== i));
+    setVideoPreviews((p) => p.filter((_, idx) => idx !== i));
   };
 
   const handleNewImageDrop = (target: number) => {
@@ -401,6 +479,35 @@ export default function ProductCreator({
         }
       }
 
+      // Video uploads
+      const token = getAccessToken();
+      const videos_url: string[] = [];
+      const videos_to_save: string[] = [];
+
+      for (let i = 0; i < videoPreviews.length; i++) {
+        const file = videoFiles[i];
+        if (file) {
+          const urlRes = await getMultimediaUploadUrlAction({
+            professionalId,
+            fileName: file.name,
+            fileType: file.type || "video/mp4",
+            type: "PRODUCT",
+            token: token || undefined,
+          });
+          const uploadInfo = urlRes?.data ?? urlRes;
+          if (uploadInfo?.uploadUrl && uploadInfo?.key) {
+            await multimediaService.uploadToPresignedUrl(
+              uploadInfo.uploadUrl,
+              file,
+            );
+            const publicVideoUrl = uploadInfo?.key;
+            videos_to_save.push(publicVideoUrl);
+          }
+        } else {
+          videos_url.push(videoPreviews[i]);
+        }
+      }
+
       const payload = {
         ean: newProduct.has_ean ? undefined : newProduct.ean,
         has_ean: newProduct.has_ean,
@@ -412,6 +519,8 @@ export default function ProductCreator({
         description: newProduct.description,
         brand: newProduct.brand,
         image_url: images,
+        videos_url: videos_url,
+        videos_to_save: videos_to_save,
         display_order: images.map((_, i) => i + 1),
         categories_products_id: newProduct.categoryId
           ? Number(newProduct.categoryId)
@@ -439,6 +548,22 @@ export default function ProductCreator({
           (url: string) => !payload.image_url.includes(url),
         );
 
+        let originalVideoUrls: string[] = [];
+        if (Array.isArray(productToEdit.videos)) {
+          originalVideoUrls = productToEdit.videos
+            .map((v: any) =>
+              typeof v === "string" ? v : v.video_url || v.url || "",
+            )
+            .filter(Boolean);
+        } else if (Array.isArray(productToEdit.Videos)) {
+          originalVideoUrls = productToEdit.Videos.map(
+            (v: any) => v.video_url || v.url || "",
+          ).filter(Boolean);
+        }
+        const videos_to_delete = originalVideoUrls.filter(
+          (url: string) => !videos_url.includes(url),
+        );
+
         // 1. Update the base product
         await updateBaseMutation.mutateAsync({
           id: productId,
@@ -456,6 +581,9 @@ export default function ProductCreator({
           images_url: images_url,
           images_to_save: images_to_save,
           images_to_delete: images_to_delete,
+          videos_url: videos_url,
+          videos_to_save: videos_to_save,
+          videos_to_delete: videos_to_delete,
           display_order: payload.display_order,
         });
 
@@ -1169,7 +1297,7 @@ export default function ProductCreator({
                     verticalAlign: "middle",
                   }}
                 />
-                Imágenes ({imageFiles.length}/{MAX_PRODUCT_IMAGES})
+                Imágenes ({imagePreviews.length})
               </p>
 
               <div
@@ -1227,25 +1355,82 @@ export default function ProductCreator({
                 ))}
               </div>
 
-              {imagePreviews.length < MAX_PRODUCT_IMAGES && (
+              <label
+                className="dash-products__image-upload"
+                style={{ marginTop: "32px" }}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  disabled={isSaving}
+                />
+                <Upload size={24} className="icon-blue" />
+                <span>Subir fotos</span>
+              </label>
+
+              <p className="product-creator__images-hint">
+                Sin límite de imágenes. Arrastrá para reordenar. La primera es
+                la imagen principal.
+              </p>
+            </div>
+
+            {/* ── Sección 5: Videos ── */}
+            <div className="product-creator__section">
+              <p className="product-creator__section-title">
+                <Video
+                  size={13}
+                  style={{
+                    display: "inline",
+                    marginRight: 6,
+                    verticalAlign: "middle",
+                  }}
+                />
+                Videos ({videoPreviews.length}/{MAX_PRODUCT_VIDEOS})
+              </p>
+
+              <div className="product-creator__videos-grid">
+                {videoPreviews.map((preview, idx) => (
+                  <div
+                    key={`video-${idx}`}
+                    className="product-creator__video-card"
+                  >
+                    <video src={preview} controls preload="metadata" />
+                    <button
+                      type="button"
+                      className="product-creator__video-remove"
+                      onClick={() => removeVideo(idx)}
+                      title="Eliminar video"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                    <span className="product-creator__video-badge">
+                      Video {idx + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {videoPreviews.length < MAX_PRODUCT_VIDEOS && (
                 <label
                   className="dash-products__image-upload"
-                  style={{ marginTop: "32px" }}
+                  style={{ marginTop: "24px" }}
                 >
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="video/mp4,video/webm,video/quicktime,video/*"
                     multiple
-                    onChange={handleImageChange}
+                    onChange={handleVideoChange}
                     disabled={isSaving}
                   />
-                  <Upload size={24} className="icon-blue" />
-                  <span>Subir foto</span>
+                  <Film size={24} className="icon-blue" />
+                  <span>Subir video (máx. 2)</span>
                 </label>
               )}
               <p className="product-creator__images-hint">
-                Hasta {MAX_PRODUCT_IMAGES} imágenes. Arrastrá para reordenar. La
-                primera es la imagen principal.
+                Podés subir hasta 2 videos por producto (formatos mp4, webm,
+                mov).
               </p>
             </div>
 
