@@ -371,15 +371,6 @@ export default function DashboardSidebar({
         <HelpCircle size={18} />
         <span className="nav-label">SOPORTE</span>
       </button>
-      <button
-        type="button"
-        className="nav-item footer-link footer-link--logout"
-        onClick={() => handleNavigation(handleLogout)}
-        title="CERRAR SESIÓN"
-      >
-        <LogOut size={18} />
-        <span className="nav-label">CERRAR SESIÓN</span>
-      </button>
     </>
   );
 
@@ -785,19 +776,6 @@ export default function DashboardSidebar({
             alignItems: "center",
           }}
         >
-          {!isCollapsed && (
-            <img
-              src={logoWordmark.src}
-              alt="Sercio"
-              style={{
-                width: "100%",
-                maxWidth: "120px",
-                objectFit: "contain",
-                marginBottom: "16px",
-                marginTop: "8px",
-              }}
-            />
-          )}
           <button
             type="button"
             className="brand-home-btn"

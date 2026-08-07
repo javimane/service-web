@@ -358,7 +358,7 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-page-wrapper">
-      {isMobileSidebarMode && <Navbar />}
+      <Navbar />
       <div
         className={`dashboard-page ${isMobileSidebarMode ? "dashboard-page--mobile" : ""}`}
       >
