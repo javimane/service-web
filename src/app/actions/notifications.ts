@@ -161,3 +161,56 @@ export const deleteNotificationAction = publicAction
       );
     }
   });
+
+export const registerDeviceTokenAction = publicAction
+  .schema(
+    z.object({
+      token: z.string(),
+      platform: z.string().optional().default("web"),
+      authToken: authTokenSchema,
+    })
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/notifications/device-tokens`;
+
+    try {
+      const response = await axios.post(
+        url,
+        {
+          token: parsedInput.token,
+          platform: parsedInput.platform,
+        },
+        {
+          headers: await buildActionHeaders(ctx, parsedInput.authToken),
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Error registering device token"
+      );
+    }
+  });
+
+export const removeDeviceTokenAction = publicAction
+  .schema(
+    z.object({
+      token: z.string(),
+      authToken: authTokenSchema,
+    })
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/notifications/device-tokens`;
+
+    try {
+      const response = await axios.delete(url, {
+        data: { token: parsedInput.token },
+        headers: await buildActionHeaders(ctx, parsedInput.authToken),
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Error removing device token"
+      );
+    }
+  });

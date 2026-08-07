@@ -82,6 +82,36 @@ export async function getFirebaseMessagingToken(requestPermission = true) {
   return token || null;
 }
 
+export async function deleteFirebaseMessagingToken() {
+  if (
+    !isClient() ||
+    !("Notification" in window) ||
+    !("serviceWorker" in navigator)
+  ) {
+    return false;
+  }
+
+  const firebaseConfig = getFirebaseConfig();
+  if (!firebaseConfig) return false;
+
+  try {
+    const [{ initializeApp, getApps }, { getMessaging, deleteToken, isSupported }] =
+      await Promise.all([import("firebase/app"), import("firebase/messaging")]);
+
+    const supported = await isSupported();
+    if (!supported) return false;
+
+    const app = getApps()[0] ?? initializeApp(firebaseConfig);
+    const messaging = getMessaging(app);
+    await deleteToken(messaging);
+    localStorage.removeItem("firebaseMessagingToken");
+    return true;
+  } catch (error) {
+    console.warn("Error deleting FCM token on client:", error);
+    return false;
+  }
+}
+
 export async function subscribeToForegroundMessages(
   onPayload: (payload: any) => void,
 ) {

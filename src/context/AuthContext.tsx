@@ -11,6 +11,7 @@ import { authService } from "../services/authService";
 import { userService } from "../services/userService";
 import {
   getFirebaseMessagingToken,
+  deleteFirebaseMessagingToken,
   subscribeToForegroundMessages,
 } from "../services/firebaseMessaging";
 import { supabase, clearSupabaseSession } from "../services/supabaseClient";
@@ -350,31 +351,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const registerDeviceTokenIfPresent = async () => {
       if (!user || typeof window === "undefined") return;
 
-      // Ask browser permission and fetch token from Firebase when possible.
-      const firebaseToken = await getFirebaseMessagingToken(true);
-      if (firebaseToken) {
-        localStorage.setItem("firebase_token", firebaseToken);
-      }
+      // Obtener silenciosamente el token FCM actual de Firebase con la VAPID key
+      const currentToken = await getFirebaseMessagingToken(false);
+      const savedToken = localStorage.getItem("registered_device_token");
 
-      const tokenKeys = [
-        "firebase_token",
-        "fcm_token",
-        "firebaseMessagingToken",
-      ];
-      const token = tokenKeys
-        .map((key) => localStorage.getItem(key))
-        .find((value): value is string => Boolean(value));
+      if (!currentToken) return;
 
-      if (!token) return;
-
-      const lastRegistered = localStorage.getItem("registered_device_token");
-      if (lastRegistered === token) return;
-
-      try {
-        await userService.registerDeviceToken(token, "web");
-        localStorage.setItem("registered_device_token", token);
-      } catch (error) {
-        // Silent fail: app auth flow should not break if notifications fail.
+      // Si el token cambió (debido a rotación de Google, refresco o primera sesión), o si aún no se registró en la BD
+      if (currentToken !== savedToken) {
+        try {
+          await userService.registerDeviceToken(currentToken, "web");
+          localStorage.setItem("registered_device_token", currentToken);
+          localStorage.setItem("firebase_token", currentToken);
+          localStorage.setItem("firebaseMessagingToken", currentToken);
+        } catch (error) {
+          // Silent fail: app auth flow should not break if notifications fail.
+        }
       }
     };
 
@@ -421,6 +413,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     if (typeof window !== "undefined") {
       const tokenKeys = [
+        "registered_device_token",
         "firebase_token",
         "fcm_token",
         "firebaseMessagingToken",
@@ -433,9 +426,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           await userService.removeDeviceToken(deviceToken);
         } catch (error) {
-          // Silent fail on logout.
+          // Silent fail on logout API call.
         }
       }
+
+      // Eliminar el token del cliente SDK de Firebase para desvincular el ServiceWorker
+      await deleteFirebaseMessagingToken();
     }
 
     try {
@@ -445,6 +441,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     localStorage.removeItem("registered_device_token");
+    localStorage.removeItem("firebase_token");
+    localStorage.removeItem("firebaseMessagingToken");
     localStorage.removeItem("was_logged_in");
 
     // Clear Supabase Session for chat functionality
