@@ -15,6 +15,14 @@ axiosInstance.interceptors.request.use(
     config.headers["Pragma"] = "no-cache";
     config.headers["Expires"] = "0";
 
+    const apiKey =
+      process.env.WEB_API_KEY ||
+      process.env.NEXT_PUBLIC_WEB_API_KEY ||
+      process.env.NEXT_PUBLIC_API_KEY;
+    if (apiKey) {
+      config.headers["x-api-key"] = apiKey;
+    }
+
     if (!isBrowser) {
       try {
         const { cookies } = await import("next/headers");

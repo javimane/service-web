@@ -7,9 +7,14 @@ const envSchema = z.object({
   WEB_API_KEY: z.string().default("MISSING_API_KEY"),
 });
 
+const rawApiKey =
+  process.env.WEB_API_KEY ||
+  process.env.NEXT_PUBLIC_WEB_API_KEY ||
+  process.env.NEXT_PUBLIC_API_KEY;
+
 const parsed = envSchema.safeParse({
   NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  WEB_API_KEY: process.env.WEB_API_KEY,
+  WEB_API_KEY: rawApiKey,
 });
 
 if (!parsed.success) {
