@@ -39,20 +39,36 @@ export const multimediaService = {
     file: File,
     expectedFileType?: string,
   ) => {
-    // Es CRÍTICO que el Content-Type coincida EXACTAMENTE con el enviado al backend
-    // al solicitar la presigned URL (fileType). Si difiere o no se envía, S3 responde 403 Forbidden.
     const contentType =
       expectedFileType || file.type || "application/octet-stream";
 
+    // Analizamos si la URL de S3 exige el header Content-Type en las firmas
+    const urlObj = new URL(uploadUrl);
+    const signedHeaders = (
+      urlObj.searchParams.get("X-Amz-SignedHeaders") || ""
+    ).toLowerCase();
+    const requiresContentType = signedHeaders.includes("content-type");
+
     let response: Response;
-    try {
-      response = await fetch(uploadUrl, {
+
+    const executePut = async (headersObj: Record<string, string>) => {
+      return await fetch(uploadUrl, {
         method: "PUT",
-        headers: {
-          "Content-Type": contentType,
-        },
+        headers: headersObj,
         body: file,
       });
+    };
+
+    try {
+      if (requiresContentType) {
+        response = await executePut({ "Content-Type": contentType });
+      } else {
+        // Si Content-Type no fue firmado en la URL, enviamos con Content-Type y si falla 403 intentamos sin header
+        response = await executePut({ "Content-Type": contentType });
+        if (response.status === 403) {
+          response = await executePut({});
+        }
+      }
     } catch {
       throw new Error(
         "No se pudo iniciar la subida del archivo. Verifica la configuración de CORS del bucket de S3 o la vigencia de la URL prefirmada.",
@@ -61,7 +77,7 @@ export const multimediaService = {
 
     if (!response.ok) {
       throw new Error(
-        `Error al subir el archivo a S3 (Status ${response.status}: ${response.statusText}). Asegúrate de que el Content-Type coincida exactamente.`,
+        `Error al subir el archivo a S3 (Status ${response.status}: ${response.statusText}).`,
       );
     }
   },

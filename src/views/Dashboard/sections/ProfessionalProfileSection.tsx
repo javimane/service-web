@@ -18,6 +18,7 @@ import {
   Share2,
   QrCode,
   Download,
+  Check,
 } from "lucide-react";
 import { toJpeg } from "html-to-image";
 import QRCode from "qrcode";
@@ -616,6 +617,12 @@ export default function ProfessionalProfileSection() {
     setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const [deleteResultModal, setDeleteResultModal] = useState<{
+    show: boolean;
+    type: "success" | "error";
+    message: string;
+  }>({ show: false, type: "success", message: "" });
+
   const removeVideo = async (id: string) => {
     try {
       const result = await deleteVideoAction({
@@ -628,8 +635,17 @@ export default function ProfessionalProfileSection() {
         (current: VideoItem[] = []) =>
           current.filter((video) => video.id !== id),
       );
+      setDeleteResultModal({
+        show: true,
+        type: "success",
+        message: "El video se eliminó correctamente.",
+      });
     } catch {
-      setSavedMessage("No se pudo eliminar el video.");
+      setDeleteResultModal({
+        show: true,
+        type: "error",
+        message: "No se pudo eliminar el video. Por favor, intentalo de nuevo.",
+      });
     }
   };
 
@@ -1841,6 +1857,50 @@ export default function ProfessionalProfileSection() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal resultado de eliminación de video */}
+      {deleteResultModal.show && (
+        <div className="dash-products__overlay">
+          <div className="dash-products__modal dash-products__modal--small">
+            <div
+              className={`modal-success-icon ${
+                deleteResultModal.type === "error" ? "modal-error-icon" : ""
+              }`}
+              style={{
+                color:
+                  deleteResultModal.type === "error"
+                    ? "var(--error-color, #ef4444)"
+                    : "var(--success-color, #22c55e)",
+              }}
+            >
+              {deleteResultModal.type === "success" ? (
+                <Check size={32} />
+              ) : (
+                <X size={32} />
+              )}
+            </div>
+            <h3>
+              {deleteResultModal.type === "success"
+                ? "¡Video eliminado!"
+                : "Error al eliminar"}
+            </h3>
+            <p>{deleteResultModal.message}</p>
+            <button
+              type="button"
+              className="dash-products__modal-apply"
+              onClick={() =>
+                setDeleteResultModal({
+                  show: false,
+                  type: "success",
+                  message: "",
+                })
+              }
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
