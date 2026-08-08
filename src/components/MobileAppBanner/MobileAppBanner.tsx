@@ -64,7 +64,7 @@ export default function MobileAppBanner() {
           </a>
 
           <a
-            href="https://apps.apple.com/us/app/sercio/id6787519258"
+            href="https://apps.apple.com/ar/app/sercio/id6787519258"
             target="_blank"
             rel="noopener noreferrer"
             className="mobile-app-banner__btn mobile-app-banner__btn--apple"

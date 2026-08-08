@@ -60,7 +60,7 @@ export default function Footer() {
             </a>
 
             <a
-              href="https://apps.apple.com/us/app/sercio/id6787519258"
+              href="https://apps.apple.com/ar/app/sercio/id6787519258"
               target="_blank"
               rel="noopener noreferrer"
               className="footer__app-btn"
