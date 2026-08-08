@@ -40,6 +40,8 @@
   aspect-ratio: 16 / 9;
   background: var(--input-bg, #f1f3f7);
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 .promotion-detail__image {

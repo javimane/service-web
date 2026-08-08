@@ -131,18 +131,22 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
           p.discount_type === "percentage"
             ? `${p.discount_value}% OFF`
             : p.discount_type === "fixed"
-              ? `$${p.discount_value}`
-              : p.discount_type === "bogo"
+              ? `$${p.discount_value} OFF`
+              : p.discount_type === "bogo" || p.discount_type === "2x1"
                 ? "2x1"
-                : "GRATIS",
+                : p.discount_type === "bogo-3x2" || p.discount_type === "3x2"
+                  ? "3x2"
+                  : p.discount_type === "free_shipping" || p.discount_type === "free"
+                    ? "Envío Gratis"
+                    : p.discount_value
+                      ? `${p.discount_value}`
+                      : "Promoción",
         unlimitedStock: p.unlimited_stock || false,
         applicableTo: p.applicable_to || "",
         status: status,
         validFrom: formatDateDisplay(p.from_date || ""),
         validTo: formatDateDisplay(p.expires_at || ""),
-        image:
-          p.image_url ||
-          "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
+        image: p.image_url || "/oferta.jpg",
         _original: p,
       };
     });

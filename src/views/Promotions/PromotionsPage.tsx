@@ -9,9 +9,9 @@ import {
   TicketPercent,
   WalletCards,
   Loader2,
-  ChevronDown,
   X,
   User,
+  Grid,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
@@ -30,6 +30,7 @@ import {
 } from "@/app/actions/bankPromotions";
 import { getProfessionalPromotionsAction } from "@/app/actions/professionalPromotions";
 import { getProvincesAction } from "@/app/actions/provinces";
+import { getProductCategoriesAction } from "@/app/actions/categories";
 
 export default function PromotionsPage() {
   const router = useRouter();
@@ -42,6 +43,7 @@ export default function PromotionsPage() {
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedBank, setSelectedBank] = useState("");
   const [selectedDiscountType, setSelectedDiscountType] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
 
   if (promoId) {
@@ -65,6 +67,15 @@ export default function PromotionsPage() {
       return result?.data ?? [];
     },
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
+  });
+
+  const { data: categories = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ["product-categories"],
+    queryFn: async () => {
+      const result = await getProductCategoriesAction();
+      return result?.data ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24,
   });
 
   // Infinite Queries
@@ -112,10 +123,17 @@ export default function PromotionsPage() {
     isFetchingNextPage: isFetchingNextProfPromos,
     isLoading: loadingProfPromos,
   } = useInfiniteQuery({
-    queryKey: ["profPromotions", selectedProvince, selectedDiscountType],
+    queryKey: [
+      "profPromotions",
+      selectedProvince,
+      selectedDiscountType,
+      selectedCategory,
+    ],
     queryFn: async ({ pageParam = 0 }) => {
       const result = await getProfessionalPromotionsAction({
         ...(selectedProvince ? { provinceId: selectedProvince } : {}),
+        ...(selectedDiscountType ? { discountType: selectedDiscountType } : {}),
+        ...(selectedCategory ? { categoryId: selectedCategory } : {}),
         limit: 20,
         offset: pageParam,
       });
@@ -247,6 +265,7 @@ export default function PromotionsPage() {
     setSelectedProvince("");
     setSelectedBank("");
     setSelectedDiscountType("");
+    setSelectedCategory("");
     setSelectedDay("");
   };
 
@@ -288,7 +307,17 @@ export default function PromotionsPage() {
 
       if (!matchesDirect && !matchesCompany && !matchesAddress) return false;
     }
-    if (selectedDiscountType && p.discount_type !== selectedDiscountType)
+    if (
+      selectedDiscountType &&
+      p.discount_type !== selectedDiscountType &&
+      p.discount_type?.toLowerCase() !== selectedDiscountType.toLowerCase()
+    )
+      return false;
+    if (
+      selectedCategory &&
+      String((p as any).category_id) !== selectedCategory &&
+      String((p as any).categories_products_id) !== selectedCategory
+    )
       return false;
     return true;
   });
@@ -302,11 +331,13 @@ export default function PromotionsPage() {
     "Sábado",
     "Domingo",
   ];
-  const MOCK_DISCOUNT_TYPES = [
-    "Percentage",
-    "Fixed Amount",
-    "2x1",
-    "Free Shipping",
+
+  const DISCOUNT_TYPES = [
+    { value: "percentage", label: "Porcentaje de descuento (% OFF)" },
+    { value: "fixed", label: "Monto fijo ($ OFF)" },
+    { value: "2x1", label: "2x1" },
+    { value: "3x2", label: "3x2" },
+    { value: "free_shipping", label: "Envío gratis" },
   ];
 
   const handleProfileClick = (
@@ -407,22 +438,41 @@ export default function PromotionsPage() {
               </div>
             </div>
           ) : (
-            <div className="filter-group">
-              <Tag size={18} />
-              <div className="select-wrapper">
-                <select
-                  value={selectedDiscountType}
-                  onChange={(e) => setSelectedDiscountType(e.target.value)}
-                >
-                  <option value="">Tipos de Descuento</option>
-                  {MOCK_DISCOUNT_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
+            <>
+              <div className="filter-group">
+                <Grid size={18} />
+                <div className="select-wrapper">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                  >
+                    <option value="">Todas las Categorías</option>
+                    {categories.map((c: any) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+
+              <div className="filter-group">
+                <Tag size={18} />
+                <div className="select-wrapper">
+                  <select
+                    value={selectedDiscountType}
+                    onChange={(e) => setSelectedDiscountType(e.target.value)}
+                  >
+                    <option value="">Todos los Tipos de Descuento</option>
+                    {DISCOUNT_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
           )}
 
           <button className="clear-filters-btn" onClick={clearFilters}>
@@ -465,8 +515,7 @@ export default function PromotionsPage() {
                             {
                               "--promo-bg": `url(${
                                 discount.Professional?.Profile
-                                  ?.portfolio_image_url ||
-                                "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600"
+                                  ?.portfolio_image_url || "/oferta.jpg"
                               })`,
                             } as React.CSSProperties
                           }
@@ -579,7 +628,7 @@ export default function PromotionsPage() {
                     className="promo-card-image"
                     style={
                       {
-                        "--promo-bg": `url(${promo.image_url || "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600"})`,
+                        "--promo-bg": `url(${promo.image_url || "/oferta.jpg"})`,
                       } as React.CSSProperties
                     }
                   >
@@ -587,7 +636,11 @@ export default function PromotionsPage() {
                       <span className="offer-num">
                         {promo.discount_type === "2x1"
                           ? "2x1"
-                          : promo.discount_value}
+                          : promo.discount_type === "3x2"
+                            ? "3x2"
+                            : promo.discount_type === "free_shipping"
+                              ? "Envío"
+                              : promo.discount_value}
                       </span>
                       <span className="offer-unit">
                         {promo.discount_type === "percentage" ||
@@ -596,7 +649,9 @@ export default function PromotionsPage() {
                           : promo.discount_type === "fixed" ||
                               promo.discount_type === "Fixed Amount"
                             ? "$ OFF"
-                            : ""}
+                            : promo.discount_type === "free_shipping"
+                              ? "Gratis"
+                              : ""}
                       </span>
                     </div>
                   </div>

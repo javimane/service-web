@@ -3,7 +3,6 @@
   flex-direction: column;
   min-height: 100vh;
   background-color: var(--bg-color);
-  overflow-x: hidden;
 }
 
 .dashboard-page {
@@ -15,7 +14,6 @@
   color: var(--text-primary);
   align-items: stretch;
   width: 100%;
-  overflow-x: hidden;
 }
 
 .reels-stats-row {
@@ -623,40 +621,80 @@
 }
 
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-bottom: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: stretch;
+}
+
+.stats-summary-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 240px;
+  flex-shrink: 0;
+}
+
+.compact-stat-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  flex: 1;
+}
+
+.stat-card__icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.reels-card-wide {
+  flex: 1;
+  min-width: 320px;
+  max-width: 400px;
+}
+
+.reels-card-title {
+  font-size: 1.1rem;
+  font-weight: var(--weight-extrabold);
+  margin-left: 8px;
 }
 
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  padding: 32px;
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
   transition: all 0.3s ease;
 }
 
 .stat-card:hover {
   border-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
 .card-label {
   display: block;
-  font-size: 0.65rem;
+  font-size: 0.625rem;
   font-weight: var(--weight-extrabold);
   color: var(--text-secondary);
-  letter-spacing: 0.1em;
-  margin-bottom: 8px;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24px;
+  align-items: center;
+  margin-bottom: 6px;
 }
 
 /* Bar Chart */
@@ -705,9 +743,9 @@
 
 /* Summary Cards */
 .big-value {
-  font-size: 4rem;
+  font-size: 1.5rem;
   font-weight: var(--weight-extrabold);
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .icon-purple {

@@ -93,9 +93,11 @@ export default function PromotionsSection({
           ? `${p.discount_value}% OFF`
           : p.discount_type === "fixed"
             ? `$${p.discount_value} OFF`
-            : p.discount_type === "bogo"
+            : p.discount_type === "2x1"
               ? "2x1"
-              : "GRATIS",
+              : p.discount_type === "3x2"
+                ? "3x2"
+                : p.discount_type,
       professionalName: p.Professional?.Company?.name || "Profesional",
       validFrom: p.from_date
         ? new Date(p.from_date).toLocaleDateString()
@@ -103,9 +105,7 @@ export default function PromotionsSection({
       validTo: p.expires_at
         ? new Date(p.expires_at).toLocaleDateString()
         : "Indefinido",
-      image:
-        p.image_url ||
-        "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
+      image: p.image_url || "/oferta.jpg",
       verificationCode: `PROMO-${p.id.toString().slice(0, 4).toUpperCase()}`,
       professionalId: p.professional_id || p.Professional?.id,
       _original: p,
@@ -160,7 +160,11 @@ export default function PromotionsSection({
             skeleton={
               <div
                 className="promotions-section__scroll"
-                style={{ overflow: "hidden", display: "flex", gap: "var(--space-4)" }}
+                style={{
+                  overflow: "hidden",
+                  display: "flex",
+                  gap: "var(--space-4)",
+                }}
               >
                 {[...Array(5)].map((_, i) => (
                   <div key={i} style={{ flex: "0 0 auto", width: "300px" }}>

@@ -92,9 +92,8 @@ export default function PromotionDetailModal({
   const image =
     promo.image ||
     (isBank
-      ? "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800"
-      : promo.image_url ||
-        "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=800");
+      ? "/oferta.jpg"
+      : promo.image_url || "/oferta.jpg");
 
   const handleDownload = async () => {
     if (!couponRef.current) return;

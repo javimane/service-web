@@ -140,13 +140,15 @@ export default function PromotionDetailPage({
   const offerLabel =
     promotion.discount_type === "2x1"
       ? "2x1"
-      : promotion.discount_type === "percentage" ||
-          promotion.discount_type === "Percentage"
-        ? `${promotion.discount_value}% OFF`
-        : promotion.discount_type === "fixed" ||
-            promotion.discount_type === "Fixed Amount"
-          ? `$${promotion.discount_value} OFF`
-          : String(promotion.discount_value);
+      : promotion.discount_type === "3x2"
+        ? "3x2"
+        : promotion.discount_type === "percentage" ||
+            promotion.discount_type === "Percentage"
+          ? `${promotion.discount_value}% OFF`
+          : promotion.discount_type === "fixed" ||
+              promotion.discount_type === "Fixed Amount"
+            ? `$${promotion.discount_value} OFF`
+            : String(promotion.discount_value);
 
   const fromDate = promotion.from_date
     ? new Date(promotion.from_date).toLocaleDateString("es-AR")
@@ -178,10 +180,7 @@ export default function PromotionDetailPage({
         <div className="promotion-detail__card">
           <div className="promotion-detail__image-container">
             <img
-              src={
-                promotion.image_url ||
-                "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=800"
-              }
+              src={promotion.image_url || "/oferta.jpg"}
               alt={promotion.title}
               className="promotion-detail__image"
             />
@@ -255,7 +254,9 @@ export default function PromotionDetailPage({
                         ? "Monto Fijo"
                         : promotion.discount_type === "2x1"
                           ? "2x1"
-                          : "Env&#237;o Gratis"}
+                          : promotion.discount_type === "3x2"
+                            ? "3x2"
+                            : promotion.discount_type}
                   </span>
                 </div>
               )}

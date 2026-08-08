@@ -30,7 +30,8 @@ import "./PromotionCreator.css";
 const DISCOUNT_TYPES = [
   { value: "percentage", label: "Porcentaje" },
   { value: "fixed", label: "Monto fijo" },
-  { value: "bogo", label: "2x1" },
+  { value: "2x1", label: "2x1" },
+  { value: "3x2", label: "3x2" },
   { value: "free", label: "Gratis" },
 ];
 
@@ -128,6 +129,7 @@ export default function PromotionCreator({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [errors, setErrors] = useState<any>({});
   const [success, setSuccess] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -196,20 +198,32 @@ export default function PromotionCreator({
     if (!form.title.trim()) newErrors.title = "El título es obligatorio";
     if (!form.description.trim())
       newErrors.description = "La descripción es obligatoria";
+    if (!form.discountType)
+      newErrors.discountType = "El tipo de descuento es obligatorio";
+    if (!form.applicableTo.trim())
+      newErrors.applicableTo = "Debes indicar a qué es aplicable la promoción";
     if (!form.validFrom)
       newErrors.validFrom = "La fecha de inicio es obligatoria";
     if (!form.validTo) newErrors.validTo = "La fecha de fin es obligatoria";
     if (form.validFrom && form.validTo && form.validFrom > form.validTo) {
       newErrors.validTo = "La fecha de fin debe ser posterior a la de inicio";
     }
-    if (!form.discountValue || form.discountValue <= 0) {
+    if (
+      (form.discountType === "percentage" || form.discountType === "fixed") &&
+      (!form.discountValue || Number(form.discountValue) <= 0)
+    ) {
       newErrors.discountValue = "El valor debe ser mayor a 0";
     }
     if (!form.imagePreview)
       newErrors.image = "Debes subir una imagen para la promoción";
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    if (Object.keys(newErrors).length > 0) {
+      showWarning("Por favor completa todos los campos requeridos.");
+      return false;
+    }
+    return true;
   };
 
   const handleDownloadCoupon = async () => {
@@ -245,10 +259,12 @@ export default function PromotionCreator({
     try {
       let imageUrl = form.imagePreview;
       if (form.image) {
+        setIsUploading(true);
         const uploaded = await uploadPromotionImage({
           file: form.image,
         });
         imageUrl = uploaded.publicUrl;
+        setIsUploading(false);
       }
 
       saveMutation.mutate({
@@ -267,6 +283,7 @@ export default function PromotionCreator({
         ...(promotionToEdit ? {} : { created_at: new Date().toISOString() }),
       });
     } catch (err: any) {
+      setIsUploading(false);
       showError("Error: " + err.message);
     }
   };
@@ -283,12 +300,19 @@ export default function PromotionCreator({
       ? `-${form.discountValue}%`
       : form.discountType === "fixed"
         ? `-$${form.discountValue}`
-        : form.discountType === "bogo"
+        : form.discountType === "2x1"
           ? "2x1"
-          : "GRATIS";
+          : form.discountType === "3x2"
+            ? "3x2"
+            : form.discountType === "free"
+              ? "GRATIS"
+              : "";
+
+  const isLoading = saveMutation.isPending || isUploading;
 
   return (
     <div className="promo-creator">
+
       {/* Header */}
       <div className="promo-creator__header">
         <div>
@@ -404,7 +428,9 @@ export default function PromotionCreator({
                 <Percent size={18} /> Lógica de Descuento
               </h2>
 
-              <div className="promo-field">
+              <div
+                className={`promo-field ${errors.discountType ? "promo-field--error" : ""}`}
+              >
                 <label className="promo-field__label">TIPO DE DESCUENTO</label>
                 <select
                   className="promo-field__select"
@@ -417,6 +443,11 @@ export default function PromotionCreator({
                     </option>
                   ))}
                 </select>
+                {errors.discountType && (
+                  <span className="promo-field__error">
+                    {errors.discountType}
+                  </span>
+                )}
               </div>
 
               {(form.discountType === "percentage" ||
@@ -453,7 +484,9 @@ export default function PromotionCreator({
                 <Sparkles size={18} /> Aplicación
               </h2>
 
-              <div className="promo-field">
+              <div
+                className={`promo-field ${errors.applicableTo ? "promo-field--error" : ""}`}
+              >
                 <label className="promo-field__label">APLICABLE A</label>
                 <textarea
                   className="promo-field__textarea"
@@ -462,10 +495,16 @@ export default function PromotionCreator({
                   value={form.applicableTo}
                   onChange={(e) => updateField("applicableTo", e.target.value)}
                 />
-                <span className="promo-field__hint">
-                  Ingresa los términos separados por comas o describe el alcance
-                  de manera libre.
-                </span>
+                {errors.applicableTo ? (
+                  <span className="promo-field__error">
+                    {errors.applicableTo}
+                  </span>
+                ) : (
+                  <span className="promo-field__hint">
+                    Ingresa los términos separados por comas o describe el
+                    alcance de manera libre.
+                  </span>
+                )}
               </div>
             </section>
           </div>
@@ -573,6 +612,7 @@ export default function PromotionCreator({
             type="button"
             className="promo-btn promo-btn--outline"
             onClick={onViewAll}
+            disabled={isLoading}
           >
             <X size={16} />
             CANCELAR
@@ -581,14 +621,21 @@ export default function PromotionCreator({
             type="button"
             className="promo-btn promo-btn--primary"
             onClick={handleSave}
-            disabled={saveMutation.isPending}
+            disabled={isLoading}
           >
-            {saveMutation.isPending
-              ? "GUARDANDO..."
-              : promotionToEdit
-                ? "GUARDAR CAMBIOS"
-                : "CREAR PROMOCIÓN"}
-            {success ? <CheckCircle2 size={16} /> : <Send size={16} />}
+            {isLoading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>GUARDANDO...</span>
+              </>
+            ) : (
+              <>
+                <span>
+                  {promotionToEdit ? "GUARDAR CAMBIOS" : "CREAR PROMOCIÓN"}
+                </span>
+                {success ? <CheckCircle2 size={16} /> : <Send size={16} />}
+              </>
+            )}
           </button>
         </div>
       </footer>

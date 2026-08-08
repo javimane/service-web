@@ -276,7 +276,8 @@ export default function DashboardPage() {
     setView(routeView || "overview");
   }, [routeView]);
 
-  const [isUnverifiedBannerClosed, setIsUnverifiedBannerClosed] = useState(false);
+  const [isUnverifiedBannerClosed, setIsUnverifiedBannerClosed] =
+    useState(false);
 
   // Redirect to Settings if professional has active subscription but no company name
   useEffect(() => {
@@ -304,13 +305,7 @@ export default function DashboardPage() {
     ) {
       router.push(`${ROUTES.settings}?missing_company=true`);
     }
-  }, [
-    myProfessional,
-    sessionStatus,
-    isProfessionalUser,
-    view,
-    router,
-  ]);
+  }, [myProfessional, sessionStatus, isProfessionalUser, view, router]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -392,36 +387,41 @@ export default function DashboardPage() {
         <main
           className={`dashboard-main ${isSidebarCollapsed ? "dashboard-main--collapsed" : ""} ${isMobileSidebarMode ? "dashboard-main--mobile" : ""}`}
         >
-          {isProfessionalUser && myProfessional && !(
-            myProfessional?.companies_arca?.[0]?.is_verified ||
-            myProfessional?.companies?.companies_arca?.[0]?.is_verified ||
-            myProfessional?.company_arca?.is_verified
-          ) && !isUnverifiedBannerClosed && (
-            <div className="dashboard-unverified-banner">
-              <div className="dashboard-unverified-banner__content">
-                <AlertTriangle size={20} className="unverified-icon" />
-                <span>No te olvides de verificar tu cuenta en Configuración</span>
+          {isProfessionalUser &&
+            myProfessional &&
+            !(
+              myProfessional?.companies_arca?.[0]?.is_verified ||
+              myProfessional?.companies?.companies_arca?.[0]?.is_verified ||
+              myProfessional?.company_arca?.is_verified
+            ) &&
+            !isUnverifiedBannerClosed && (
+              <div className="dashboard-unverified-banner">
+                <div className="dashboard-unverified-banner__content">
+                  <AlertTriangle size={20} className="unverified-icon" />
+                  <span>
+                    No te olvides de verificar tu cuenta en Configuración
+                  </span>
+                </div>
+                <div className="dashboard-unverified-banner__actions">
+                  <button
+                    type="button"
+                    className="dashboard-unverified-banner__btn"
+                    onClick={() => router.push(ROUTES.settings)}
+                  >
+                    Ir a Configuración
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-unverified-banner__close"
+                    onClick={() => setIsUnverifiedBannerClosed(true)}
+                    title="Cerrar aviso"
+                    aria-label="Cerrar aviso"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
-              <div className="dashboard-unverified-banner__actions">
-                <button
-                  type="button"
-                  className="dashboard-unverified-banner__btn"
-                  onClick={() => router.push(ROUTES.settings)}
-                >
-                  Ir a Configuración
-                </button>
-                <button
-                  type="button"
-                  className="dashboard-unverified-banner__close"
-                  onClick={() => setIsUnverifiedBannerClosed(true)}
-                  title="Cerrar aviso"
-                  aria-label="Cerrar aviso"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-          )}
+            )}
 
           {isUnsubscribedProfessional && view !== "subscription" && (
             <div
@@ -541,40 +541,42 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="stats-grid">
-                  <div className="stat-card compact-card">
-                    <div className="card-header">
-                      <Eye size={24} className="icon-orange" />
+                  <div className="stats-summary-column">
+                    <div className="stat-card compact-stat-box">
+                      <div className="stat-card__icon-wrap">
+                        <Eye size={20} className="icon-orange" />
+                      </div>
+                      <div className="stat-value-group">
+                        <span className="card-label">VISITAS A TU PERFIL</span>
+                        <h2 className="big-value">
+                          {profileViews !== null
+                            ? profileViews.toLocaleString("es-AR")
+                            : "--"}
+                        </h2>
+                      </div>
                     </div>
-                    <div className="stat-value-group">
-                      <span className="card-label">VISITAS A TU PERFIL</span>
-                      <h2 className="big-value">
-                        {profileViews !== null
-                          ? profileViews.toLocaleString("es-AR")
-                          : "--"}
-                      </h2>
+
+                    <div className="stat-card compact-stat-box">
+                      <div className="stat-card__icon-wrap">
+                        <LayoutDashboard size={20} className="icon-purple" />
+                      </div>
+                      <div className="stat-value-group">
+                        <span className="card-label">PRESUPUESTOS ACEPTADOS</span>
+                        <h2 className="big-value">
+                          {acceptedProposalsCount !== null
+                            ? acceptedProposalsCount.toLocaleString("es-AR")
+                            : "--"}
+                        </h2>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="stat-card compact-card">
-                    <div className="card-header">
-                      <LayoutDashboard size={24} className="icon-purple" />
-                    </div>
-                    <div className="stat-value-group">
-                      <span className="card-label">PRESUPUESTOS ACEPTADOS</span>
-                      <h2 className="big-value">
-                        {acceptedProposalsCount !== null
-                          ? acceptedProposalsCount.toLocaleString("es-AR")
-                          : "--"}
-                      </h2>
-                    </div>
-                  </div>
-
-                  <div className="stat-card compact-card">
+                  <div className="stat-card compact-card reels-card-wide">
                     <div className="card-header">
                       <div className="play-icon-bg">
-                        <Play size={20} fill="currentColor" />
+                        <Play size={18} fill="currentColor" />
                       </div>
-                      <h3 className="mid-value">Historias y videos</h3>
+                      <h3 className="reels-card-title">Historias y videos</h3>
                     </div>
                     <div className="reels-stats-row">
                       <div className="stat-value-group">
