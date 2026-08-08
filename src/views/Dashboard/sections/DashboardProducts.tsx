@@ -26,6 +26,7 @@ import {
   Filter,
   Camera,
   Share2,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import {
@@ -272,7 +273,12 @@ export default function DashboardProducts({
   >({});
 
   // Queries & Mutations
-  const { data: queryData = {}, isLoading: loadingProducts } = useQuery({
+  const {
+    data: queryData = {},
+    isLoading: loadingProducts,
+    isFetching: isFetchingProducts,
+    refetch: refetchProducts,
+  } = useQuery({
     queryKey: [
       "professional-products",
       professionalId,
@@ -1007,23 +1013,55 @@ export default function DashboardProducts({
           <span className="dash-products__label">GESTIÓN</span>
           <h1 className="dash-products__title">Productos</h1>
         </div>
-        {hasAddress ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button
-            className="dash-products__add-btn"
-            onClick={() => router.push("?view=products-create")}
+            type="button"
+            className="dash-products__btn-secondary"
+            onClick={() => {
+              queryClient.invalidateQueries({
+                queryKey: ["professional-products"],
+              });
+              refetchProducts();
+            }}
+            title="Refrescar catálogo"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "10px 16px",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--border-color)",
+              background: "var(--bg-card)",
+              color: "var(--text-primary)",
+              fontWeight: "var(--weight-bold)",
+              cursor: "pointer",
+              fontSize: "0.88rem",
+            }}
           >
-            <Plus size={18} />
-            <span>Agregar Producto</span>
+            <RefreshCw
+              size={16}
+              className={isFetchingProducts ? "animate-spin" : ""}
+            />
+            <span>Refrescar</span>
           </button>
-        ) : (
-          <div className="dash-products__no-address-banner">
-            <Info size={16} />
-            <span>
-              Por el momento solo pueden agregar productos los que tiene local
-              fisico al Público.
-            </span>
-          </div>
-        )}
+          {hasAddress ? (
+            <button
+              className="dash-products__add-btn"
+              onClick={() => router.push("?view=products-create")}
+            >
+              <Plus size={18} />
+              <span>Agregar Producto</span>
+            </button>
+          ) : (
+            <div className="dash-products__no-address-banner">
+              <Info size={16} />
+              <span>
+                Por el momento solo pueden agregar productos los que tiene local
+                fisico al Público.
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats row */}

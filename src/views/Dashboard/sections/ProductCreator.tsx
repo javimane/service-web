@@ -452,6 +452,8 @@ export default function ProductCreator({
       if (!newProduct.width.trim()) e.width = "El ancho es obligatorio.";
       if (!newProduct.height.trim()) e.height = "El alto es obligatorio.";
       if (!newProduct.depth.trim()) e.depth = "La profundidad es obligatoria.";
+      if (imagePreviews.length === 0)
+        e.image = "Debes subir al menos una imagen para el producto.";
 
       if (Object.keys(e).length > 0) {
         setErrors(e);
@@ -1369,6 +1371,14 @@ export default function ProductCreator({
                 <Upload size={24} className="icon-blue" />
                 <span>Subir fotos</span>
               </label>
+              {errors.image && (
+                <span
+                  className="product-creator__error"
+                  style={{ display: "block", marginTop: "8px" }}
+                >
+                  {errors.image}
+                </span>
+              )}
 
               <p className="product-creator__images-hint">
                 Sin límite de imágenes. Arrastrá para reordenar. La primera es
@@ -1473,16 +1483,17 @@ export default function ProductCreator({
             <div className="modal-success-icon">
               <Check size={32} />
             </div>
-            <h3>¡Producto guardado!</h3>
-            <p>El producto se agregó correctamente a tu catálogo.</p>
+            <h3>¡Producto guardado exitosamente!</h3>
+            <p>El producto se ha registrado correctamente en tu catálogo.</p>
             <button
+              type="button"
               className="dash-products__modal-apply"
               onClick={() => {
                 setShowSuccessModal(false);
                 onBack();
               }}
             >
-              Aceptar
+              Volver al catálogo
             </button>
           </div>
         </div>
