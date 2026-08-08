@@ -489,10 +489,11 @@ export default function ProductCreator({
       for (let i = 0; i < videoPreviews.length; i++) {
         const file = videoFiles[i];
         if (file) {
+          const fileType = file.type || "video/mp4";
           const urlRes = await getMultimediaUploadUrlAction({
             professionalId,
             fileName: file.name,
-            fileType: file.type || "video/mp4",
+            fileType,
             type: "PRODUCT",
             token: token || undefined,
           });
@@ -501,6 +502,7 @@ export default function ProductCreator({
             await multimediaService.uploadToPresignedUrl(
               uploadInfo.uploadUrl,
               file,
+              fileType,
             );
             const publicVideoUrl = uploadInfo?.key;
             videos_to_save.push(publicVideoUrl);

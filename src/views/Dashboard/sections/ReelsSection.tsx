@@ -200,10 +200,11 @@ export default function ReelsSection() {
       setIsModalOpen(false); // Close modal immediately
       setSavedMessage("Procesando, le notificaremos cuando esté subido."); // Show processing message
 
+      const fileType = selectedFile.type || "video/mp4";
       const uploadUrlResult = await getMultimediaUploadUrlAction({
         professionalId,
         fileName: selectedFile.name,
-        fileType: selectedFile.type,
+        fileType,
         type: "REEL",
         token: getAccessToken(),
       });
@@ -215,7 +216,11 @@ export default function ReelsSection() {
       }
       const { uploadUrl, key } = uploadData;
 
-      await multimediaService.uploadToPresignedUrl(uploadUrl, selectedFile);
+      await multimediaService.uploadToPresignedUrl(
+        uploadUrl,
+        selectedFile,
+        fileType,
+      );
 
       const createResult = await createReelAction({
         professional_id: professionalId,

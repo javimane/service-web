@@ -713,10 +713,11 @@ export default function ProfessionalProfileSection() {
       setIsPublishingVideo(true);
       setVideoModalInfo("Subiendo video... esto puede tardar unos minutos.");
 
+      const fileType = newVideoFile.type || "video/mp4";
       const uploadUrlResult = await getMultimediaUploadUrlAction({
         professionalId,
         fileName: newVideoFile.name,
-        fileType: newVideoFile.type,
+        fileType,
         type: "PROFILE",
         token: getAccessToken(),
       });
@@ -728,7 +729,11 @@ export default function ProfessionalProfileSection() {
       }
       const { uploadUrl, key } = uploadData;
 
-      await multimediaService.uploadToPresignedUrl(uploadUrl, newVideoFile);
+      await multimediaService.uploadToPresignedUrl(
+        uploadUrl,
+        newVideoFile,
+        fileType,
+      );
 
       setVideoModalInfo("Video subido. Procesando en servidores...");
 
