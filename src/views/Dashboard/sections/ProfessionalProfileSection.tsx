@@ -1860,34 +1860,32 @@ export default function ProfessionalProfileSection() {
 
       {/* Modal resultado de eliminación de video */}
       {deleteResultModal.show && (
-        <div className="dash-products__overlay">
-          <div className="dash-products__modal dash-products__modal--small">
+        <div className="delete-modal-overlay">
+          <div className="delete-modal-card">
             <div
-              className={`modal-success-icon ${
-                deleteResultModal.type === "error" ? "modal-error-icon" : ""
+              className={`delete-modal-card__icon-bg ${
+                deleteResultModal.type === "error"
+                  ? "delete-modal-card__icon-bg--error"
+                  : "delete-modal-card__icon-bg--success"
               }`}
-              style={{
-                color:
-                  deleteResultModal.type === "error"
-                    ? "var(--error-color, #ef4444)"
-                    : "var(--success-color, #22c55e)",
-              }}
             >
               {deleteResultModal.type === "success" ? (
-                <Check size={32} />
+                <Check size={36} strokeWidth={2.5} />
               ) : (
-                <X size={32} />
+                <X size={36} strokeWidth={2.5} />
               )}
             </div>
-            <h3>
+            <h3 className="delete-modal-card__title">
               {deleteResultModal.type === "success"
                 ? "¡Video eliminado!"
-                : "Error al eliminar"}
+                : "No se pudo eliminar"}
             </h3>
-            <p>{deleteResultModal.message}</p>
+            <p className="delete-modal-card__message">
+              {deleteResultModal.message}
+            </p>
             <button
               type="button"
-              className="dash-products__modal-apply"
+              className="delete-modal-card__btn"
               onClick={() =>
                 setDeleteResultModal({
                   show: false,
@@ -1896,7 +1894,7 @@ export default function ProfessionalProfileSection() {
                 })
               }
             >
-              Aceptar
+              Entendido
             </button>
           </div>
         </div>
