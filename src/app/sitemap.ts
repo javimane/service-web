@@ -2,7 +2,15 @@ import { MetadataRoute } from "next";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://sercio.com.ar";
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.sercio.com.ar";
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://api.sercio.com.ar";
+  const apiKey =
+    process.env.WEB_API_KEY ||
+    process.env.NEXT_PUBLIC_WEB_API_KEY ||
+    process.env.NEXT_PUBLIC_API_KEY ||
+    "";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     "",
@@ -28,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const response = await fetch(`${apiUrl}/api/seo/paths`, {
       headers: {
-        "x-api-key": process.env.NEXT_PUBLIC_API_KEY || "",
+        "x-api-key": apiKey,
       },
       next: { revalidate: 3600 }, // Cache by 1 hour
     });
