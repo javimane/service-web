@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Categorías y Especialistas - Sercio",
   description:
     "Explorá categorías, filtrá especialistas por ubicación y encontrá profesionales verificados.",
+  alternates: {
+    canonical: "https://sercio.com.ar/categorias",
+  },
 };
 
 export default function Page() {
