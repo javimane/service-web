@@ -440,13 +440,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ignore errors on logout
     }
 
-    localStorage.removeItem("registered_device_token");
-    localStorage.removeItem("firebase_token");
-    localStorage.removeItem("firebaseMessagingToken");
-    localStorage.removeItem("was_logged_in");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("registered_device_token");
+      localStorage.removeItem("firebase_token");
+      localStorage.removeItem("firebaseMessagingToken");
+      localStorage.removeItem("was_logged_in");
+      sessionStorage.clear();
+    }
 
     // Clear Supabase Session for chat functionality
     await clearSupabaseSession();
+
+    // Reset React Query Cache to avoid stale auth data in UI
+    queryClient.clear();
 
     setUser(null);
     setSessionStatus(null);
