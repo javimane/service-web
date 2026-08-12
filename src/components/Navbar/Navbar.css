@@ -156,17 +156,17 @@
   top: calc(100% + 12px);
   right: 0;
   width: 240px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-xl);
   padding: 8px;
   display: flex;
   flex-direction: column;
   animation: dropdownFade 0.2s ease-out;
   max-height: min(82vh, 560px);
   overflow: hidden;
+  z-index: 1000;
 }
 
 .navbar__dropdown--wide {

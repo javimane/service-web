@@ -120,6 +120,30 @@
   accent-color: var(--accent-color);
 }
 
+.dashboard-jobs .btn-primary,
+.dashboard-jobs__form-actions .btn-primary {
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 12px var(--space-5);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px var(--accent-transparent);
+}
+
+.dashboard-jobs .btn-primary:hover:not(:disabled),
+.dashboard-jobs__form-actions .btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--accent-transparent);
+}
+
 .dashboard-jobs__form-actions {
   display: flex;
   justify-content: flex-end;

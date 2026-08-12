@@ -285,8 +285,8 @@ export default function DashboardServices() {
 
       {/* Toolbar */}
       <div className="dash-services__toolbar">
-        <div className="dash-services__search" style={{ display: "flex", gap: "8px", background: "transparent", border: "none", padding: 0, height: "44px" }}>
-          <div style={{ display: "flex", alignItems: "center", background: "var(--input-bg)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-sm)", padding: "0 12px", flex: 1, height: "100%" }}>
+        <div className="dash-services__search">
+          <div className="dash-services__search-input-wrapper">
             <Search size={18} color="var(--text-secondary)" />
             <input
               type="text"
@@ -294,10 +294,9 @@ export default function DashboardServices() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              style={{ border: "none", background: "transparent", outline: "none", paddingLeft: "8px", width: "100%", height: "100%", color: "var(--text-primary)" }}
             />
           </div>
-          <button className="btn-primary" onClick={handleSearch} style={{ height: "100%", padding: "0 24px", display: "flex", alignItems: "center" }}>
+          <button className="dash-services__search-btn" onClick={handleSearch}>
             Buscar
           </button>
         </div>

@@ -466,25 +466,27 @@ export default function SettingsPage() {
 
   return (
     <div className="dashboard-page-wrapper">
-      {isMobileSidebarMode && <Navbar />}
-      <div className="dashboard-page settings-page-layout">
-        <DashboardSidebar
-          activeItem="settings"
-          isCollapsed={isMobileSidebarMode ? false : isSidebarCollapsed}
-          isMobile={isMobileSidebarMode}
-          isMobileOpen={isMobileSidebarOpen}
-          onCloseMobile={() => setIsMobileSidebarOpen(false)}
-          onToggle={handleSidebarToggle}
-          onDashboardClick={() => router.push(ROUTES.dashboard)}
-          onMessagesClick={() => router.push(ROUTES.messages)}
-          onNotificationsClick={() =>
-            router.push(`${ROUTES.dashboard}?view=notifications`)
-          }
-          onProfileClick={() => router.push(`${ROUTES.dashboard}?view=profile`)}
-        />
+      <Navbar />
+      <div className={`dashboard-page settings-page-layout ${isMobileSidebarMode ? "dashboard-page--mobile" : ""}`}>
+        {!isMobileSidebarMode && (
+          <DashboardSidebar
+            activeItem="settings"
+            isCollapsed={isSidebarCollapsed}
+            isMobile={false}
+            isMobileOpen={false}
+            onCloseMobile={() => {}}
+            onToggle={handleSidebarToggle}
+            onDashboardClick={() => router.push(ROUTES.dashboard)}
+            onMessagesClick={() => router.push(ROUTES.messages)}
+            onNotificationsClick={() =>
+              router.push(`${ROUTES.dashboard}?view=notifications`)
+            }
+            onProfileClick={() => router.push(`${ROUTES.dashboard}?view=profile`)}
+          />
+        )}
 
         <main
-          className={`dashboard-main ${isMobileSidebarMode ? "dashboard-main--mobile" : ""}`}
+          className={`dashboard-main ${isSidebarCollapsed ? "dashboard-main--collapsed" : ""} ${isMobileSidebarMode ? "dashboard-main--mobile" : ""}`}
         >
           <div className="dashboard-content settings-content">
             <section className="settings-hero">

@@ -67,8 +67,13 @@ const getNotificationIcon = (type: string) => {
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, hasProfessionalSubscription, subscriptionPlan, sessionStatus } =
-    useAuth();
+  const {
+    user,
+    logout,
+    hasProfessionalSubscription,
+    subscriptionPlan,
+    sessionStatus,
+  } = useAuth();
   const { openAuth } = useAuthModal();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -296,7 +301,11 @@ export default function Navbar() {
       icon: ClipboardList,
       path: `${ROUTES.dashboard}?view=job-requests`,
     },
-    { label: "Preguntas Frecuentes", icon: HelpCircle, path: `${ROUTES.dashboard}?view=faq` },
+    {
+      label: "Preguntas Frecuentes",
+      icon: HelpCircle,
+      path: `${ROUTES.dashboard}?view=faq`,
+    },
     { label: "Configuración", icon: Settings, path: ROUTES.settings },
   ];
 
@@ -549,10 +558,15 @@ export default function Navbar() {
                     <div className="dropdown__divider"></div>
 
                     <div className="dropdown__section-label">
-                      {sessionStatus?.is_professional ? "Mi Panel" : "Mi Cuenta"}
+                      {sessionStatus?.is_professional
+                        ? "Mi Panel"
+                        : "Mi Cuenta"}
                     </div>
                     <div className="dropdown__body dropdown__body--scroll">
-                      {(sessionStatus?.is_professional ? dashboardLinks : clientLinks).map((link) => {
+                      {(sessionStatus?.is_professional
+                        ? dashboardLinks
+                        : clientLinks
+                      ).map((link) => {
                         const Icon = link.icon;
                         return (
                           <Link

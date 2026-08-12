@@ -544,7 +544,7 @@
 }
 
 .video-description.is-expanded {
-  max-height: 300px;
+  max-height: 2000px;
   opacity: 1;
   padding-top: 10px;
   transform: translateY(0);
@@ -555,6 +555,8 @@
   color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;
+  white-space: pre-line;
+  word-break: break-word;
 }
 
 .play-hint-overlay {
@@ -600,6 +602,8 @@
   font-size: 0.95rem;
   color: var(--text-secondary);
   line-height: 1.6;
+  white-space: pre-line;
+  word-break: break-word;
 }
 
 /* Services Section */

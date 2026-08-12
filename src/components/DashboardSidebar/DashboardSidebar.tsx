@@ -219,6 +219,12 @@ export default function DashboardSidebar({
       onClick: onDashboardClick ?? (() => router.push(ROUTES.dashboard)),
     },
     {
+      key: "profile",
+      label: "PERFIL",
+      icon: UserRound,
+      onClick: onProfileClick ?? (() => goToDashboardView("profile")),
+    },
+    {
       key: "proposals",
       label: "PRESUPUESTOS",
       icon: FileText,
@@ -302,12 +308,7 @@ export default function DashboardSidebar({
       icon: CalendarDays,
       onClick: onCalendarClick ?? (() => goToDashboardView("calendar")),
     },
-    {
-      key: "profile",
-      label: "PERFIL",
-      icon: UserRound,
-      onClick: onProfileClick ?? (() => goToDashboardView("profile")),
-    },
+
     {
       key: "reels",
       label: "HISTORIAS",
