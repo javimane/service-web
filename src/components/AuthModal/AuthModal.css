@@ -79,7 +79,7 @@
 }
 
 .auth-modal__content {
-  padding: 2.5rem;
+  padding: 2rem;
 }
 
 /* Override login/register styles when inside modal */
@@ -90,6 +90,15 @@
   border: none;
   border-radius: 0;
   box-shadow: none;
+}
+
+.auth-modal__content .login-title {
+  margin-bottom: 0.25rem;
+  font-size: 1.75rem;
+}
+
+.auth-modal__content .login-subtitle {
+  margin-bottom: 1.5rem;
 }
 
 .auth-modal__content .register-card {
@@ -113,6 +122,10 @@
   }
 
   .auth-modal__content {
-    padding: 1.5rem;
+    padding: 1.5rem 1.25rem;
+  }
+  
+  .auth-modal__content .login-form {
+    gap: 1rem;
   }
 }

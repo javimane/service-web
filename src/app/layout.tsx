@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Outfit, JetBrains_Mono } from "next/font/google";
 import Providers from "./providers";
 import "@/index.css";
+import DeepLinkRedirect from "@/components/DeepLinkRedirect/DeepLinkRedirect";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -73,6 +74,9 @@ export const metadata: Metadata = {
   other: {
     "og:locale": "es_AR",
   },
+  itunes: {
+    appId: "6787519258", // TODO: Reemplazar con el ID real de la App Store
+  },
 };
 
 export default function RootLayout({
@@ -120,6 +124,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${outfit.variable} ${jetbrainsMono.variable}`}>
       <body>
+        <DeepLinkRedirect />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
