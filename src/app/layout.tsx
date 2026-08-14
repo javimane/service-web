@@ -3,6 +3,7 @@ import { Outfit, JetBrains_Mono } from "next/font/google";
 import Providers from "./providers";
 import "@/index.css";
 import DeepLinkRedirect from "@/components/DeepLinkRedirect/DeepLinkRedirect";
+import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton/WhatsAppFloatingButton";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -125,6 +126,7 @@ export default function RootLayout({
     <html lang="es" className={`${outfit.variable} ${jetbrainsMono.variable}`}>
       <body>
         <DeepLinkRedirect />
+        <WhatsAppFloatingButton />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
