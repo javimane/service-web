@@ -165,7 +165,9 @@ export default function ProposalsView() {
           <h1 className="proposals-view__title">Presupuestos</h1>
           <p className="proposals-view__expiry-note">
             <Clock size={14} />
-            <span>Los archivos se almacenan por 6 meses, después serán eliminados.</span>
+            <span>
+              Los archivos se almacenan por 1 meses, después serán eliminados.
+            </span>
           </p>
         </div>
         {hasProfessionalSubscription && !isFreePlan && (

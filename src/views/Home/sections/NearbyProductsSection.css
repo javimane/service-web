@@ -57,9 +57,9 @@
 
 /* ===== PRODUCT CARD ===== */
 .nearby-product-card {
-  min-width: 260px;
-  width: 280px;
-  min-height: 360px;
+  min-width: 220px;
+  width: 220px;
+  min-height: 340px;
   background: var(--bg-card);
   border-radius: var(--radius-xl);
   overflow: hidden;
@@ -276,7 +276,7 @@
   }
 
   .nearby-product-card {
-    min-width: 230px;
-    width: 250px;
+    min-width: 200px;
+    width: 200px;
   }
 }

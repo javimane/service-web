@@ -27,7 +27,7 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
   width: 100%;
-  max-width: 880px;
+  max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
