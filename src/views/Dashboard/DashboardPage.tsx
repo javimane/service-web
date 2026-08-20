@@ -48,6 +48,7 @@ import DashboardOnboarding from "./sections/DashboardOnboarding";
 import FAQSection from "../FAQ/FAQSection";
 import ErrorReportSection from "./sections/ErrorReportSection";
 import Navbar from "../../components/Navbar/Navbar";
+import UnverifiedAccountModal from "./sections/UnverifiedAccountModal";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -278,6 +279,7 @@ export default function DashboardPage() {
 
   const [isUnverifiedBannerClosed, setIsUnverifiedBannerClosed] =
     useState(false);
+  const [isUnverifiedModalOpen, setIsUnverifiedModalOpen] = useState(false);
 
   // Redirect to Settings if professional has active subscription but no company name
   useEffect(() => {
@@ -306,6 +308,29 @@ export default function DashboardPage() {
       router.push(`${ROUTES.settings}?missing_company=true`);
     }
   }, [myProfessional, sessionStatus, isProfessionalUser, view, router]);
+
+  // Mostrar el modal de cuenta no verificada una vez por sesión de browser
+  useEffect(() => {
+    if (!myProfessional || !isProfessionalUser) return;
+
+    const isVerified =
+      myProfessional?.companies_arca?.[0]?.is_verified ||
+      myProfessional?.companies?.companies_arca?.[0]?.is_verified ||
+      myProfessional?.company_arca?.is_verified;
+
+    if (isVerified) return;
+
+    // Usar sessionStorage para mostrarlo solo una vez por sesión de browser
+    const alreadyShown = sessionStorage.getItem("unverified_modal_shown");
+    if (!alreadyShown) {
+      // Delay pequeño para que no interfiera con la carga inicial
+      const timer = setTimeout(() => {
+        setIsUnverifiedModalOpen(true);
+        sessionStorage.setItem("unverified_modal_shown", "true");
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [myProfessional, isProfessionalUser]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -354,6 +379,13 @@ export default function DashboardPage() {
   return (
     <div className="dashboard-page-wrapper">
       <Navbar />
+
+      {/* Modal flotante de verificación de cuenta */}
+      <UnverifiedAccountModal
+        isOpen={isUnverifiedModalOpen}
+        onClose={() => setIsUnverifiedModalOpen(false)}
+      />
+
       <div
         className={`dashboard-page ${isMobileSidebarMode ? "dashboard-page--mobile" : ""}`}
       >

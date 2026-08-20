@@ -1,0 +1,176 @@
+/* ===== OVERLAY ===== */
+.uav-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  /* Sin oscurecer el fondo — el modal flota limpiamente */
+  pointer-events: none;
+}
+
+/* ===== MODAL ===== */
+.uav-modal {
+  position: fixed;
+  bottom: 100px; /* por encima del botón flotante de WhatsApp */
+  right: 24px;
+  width: 320px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  padding: var(--space-6);
+  pointer-events: all;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  animation: uavSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes uavSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ===== CLOSE BUTTON ===== */
+.uav-modal__close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.uav-modal__close:hover {
+  background: var(--accent-transparent);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+/* ===== ICON ===== */
+.uav-modal__icon-wrap {
+  width: 56px;
+  height: 56px;
+  background: var(--accent-transparent);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uav-modal__icon {
+  color: var(--accent-color);
+}
+
+/* ===== TITLE ===== */
+.uav-modal__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* ===== BODY ===== */
+.uav-modal__body {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.uav-modal__body strong {
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+
+/* ===== BENEFITS LIST ===== */
+.uav-modal__benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.uav-modal__benefits li {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+/* ===== ACTIONS ===== */
+.uav-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.uav-modal__btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.uav-modal__btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.uav-modal__btn-secondary {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  padding: var(--space-2);
+  text-align: center;
+  transition: color 0.2s ease;
+  width: 100%;
+}
+
+.uav-modal__btn-secondary:hover {
+  color: var(--text-primary);
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 640px) {
+  .uav-modal {
+    right: 12px;
+    bottom: 90px;
+    width: calc(100vw - 24px);
+    max-width: 340px;
+  }
+}

@@ -14,17 +14,25 @@ export async function buildActionHeaders(
     Object.entries(rawHeaders).map(([key, value]) => [key, String(value)]),
   ) as RawAxiosRequestHeaders;
 
-  let finalToken = token;
-
-  // Si no se proveyó un token explícitamente, o viene serializado como "$undefined" por Next.js
-  if (!finalToken || finalToken === "$undefined" || finalToken === "undefined") {
+  // SIEMPRE leer la cookie del servidor primero: es la única fuente que se
+  // actualiza cuando el backend rota el JWT. El token que viene del cliente
+  // puede estar desactualizado y causar el error "unrecognized JWT kid".
+  let finalToken: string | undefined;
+  try {
     const cookieStore = await cookies();
     const accessCookie = cookieStore.get("access_token");
-    if (accessCookie) {
+    if (accessCookie?.value) {
       finalToken = accessCookie.value;
-    } else {
-      finalToken = undefined;
     }
+  } catch {
+    // Si no estamos en un contexto que permite leer cookies (edge case),
+    // usar el token del cliente como fallback.
+    finalToken = undefined;
+  }
+
+  // Fallback: si la cookie no existe, usar el token del cliente
+  if (!finalToken && token && token !== "$undefined" && token !== "undefined") {
+    finalToken = token;
   }
 
   if (!finalToken) {
