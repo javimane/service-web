@@ -303,8 +303,13 @@ export default function ProposalCreator({ onBack }) {
     doc.text(`Correo:    ${client.email || ""}`, 300, startY + 30);
     doc.line(340, startY + 32, pageWidth - 40, startY + 32);
 
+    if (estimatedDate || dueDate) {
+      doc.text(`F. Estimada: ${estimatedDate || "-"}`, 40, startY + 60);
+      doc.text(`Vencimiento: ${dueDate || "-"}`, 300, startY + 60);
+    }
+
     // 4. Table
-    const tableStartY = startY + 60;
+    const tableStartY = estimatedDate || dueDate ? startY + 90 : startY + 60;
     const tableBody =
       items.length > 0
         ? items.map((item: any) => [
@@ -735,7 +740,7 @@ export default function ProposalCreator({ onBack }) {
                   >
                     <option value="added">Sumar al total (Precio + IVA)</option>
                     <option value="included">
-                      Incluido en el total (Discriminar)
+                      Incluido en el total (No Discriminar)
                     </option>
                   </select>
                   <div className="dropdown-arrow">▼</div>
@@ -942,6 +947,8 @@ export default function ProposalCreator({ onBack }) {
         items={items}
         totals={{ subtotal, tax, total }}
         currencySymbol={currencySymbol}
+        estimatedDate={estimatedDate}
+        dueDate={dueDate}
         client={{
           name: isCustomClientMode
             ? customClientName

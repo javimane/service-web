@@ -46,6 +46,8 @@ type PdfPreviewModalProps = {
   client?: PdfClient;
   proposalNumber?: string;
   currencySymbol?: string;
+  estimatedDate?: string;
+  dueDate?: string;
 };
 
 export default function PdfPreviewModal({
@@ -63,6 +65,8 @@ export default function PdfPreviewModal({
   client = { name: "", phone: "", address: "", email: "" },
   proposalNumber = "",
   currencySymbol = "$",
+  estimatedDate = "",
+  dueDate = "",
 }: PdfPreviewModalProps) {
   const router = useRouter();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -168,8 +172,13 @@ export default function PdfPreviewModal({
       doc.text(`Correo:    ${client.email || ""}`, 300, startY + 30);
       doc.line(340, startY + 32, pageWidth - 40, startY + 32);
 
+      if (estimatedDate || dueDate) {
+        doc.text(`F. Estimada: ${estimatedDate || "-"}`, 40, startY + 60);
+        doc.text(`Vencimiento: ${dueDate || "-"}`, 300, startY + 60);
+      }
+
       // 4. Table
-      const tableStartY = startY + 60;
+      const tableStartY = (estimatedDate || dueDate) ? startY + 90 : startY + 60;
 
       const tableBody =
         items.length > 0
