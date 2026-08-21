@@ -34,15 +34,7 @@ import { useAlert } from "../../../context/AlertContext";
 
 export default function ProposalCreator({ onBack }) {
   const { user } = useAuth();
-  const [items, setItems] = useState([
-    {
-      id: 1,
-      name: "Structural Design Consultation",
-      qty: 12,
-      rate: 150,
-      total: 1800,
-    },
-  ]);
+  const [items, setItems] = useState<any[]>([]);
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [modalInitialTab, setModalInitialTab] = useState<
     "services" | "products"
