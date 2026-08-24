@@ -55,17 +55,33 @@ export default function ProductsPage() {
   const pathname = usePathname();
   const professionalIdParam = searchParams?.get("professionalId") ?? null;
 
-  const [filters, setFilters] = useState(defaultFilters);
-  const [debouncedTextFilters, setDebouncedTextFilters] = useState({
-    search: defaultFilters.search,
-    brand: defaultFilters.brand,
+  const urlCategory = searchParams?.get("category") || searchParams?.get("categoryId");
+  const urlSubcategory = searchParams?.get("subcategory") || searchParams?.get("subcategoryId");
+  const urlProvince = searchParams?.get("provinceId") || searchParams?.get("province");
+  const urlSearch = searchParams?.get("search") || searchParams?.get("q") || "";
+  const urlWholesale = searchParams?.get("wholesale");
+  const urlBrand = searchParams?.get("brand");
+
+  const [filters, setFilters] = useState(() => ({
+    ...defaultFilters,
+    categoryId: urlCategory && !isNaN(Number(urlCategory)) ? String(urlCategory) : defaultFilters.categoryId,
+    subcategoryId: urlSubcategory || defaultFilters.subcategoryId,
+    provinceId: urlProvince || defaultFilters.provinceId,
+    search: urlSearch || defaultFilters.search,
+    wholesale: urlWholesale || defaultFilters.wholesale,
+    brand: urlBrand || defaultFilters.brand,
+  }));
+
+  const [debouncedTextFilters, setDebouncedTextFilters] = useState(() => ({
+    search: urlSearch || defaultFilters.search,
+    brand: urlBrand || defaultFilters.brand,
     ean: defaultFilters.ean,
-  });
+  }));
   const [page, setPage] = useState(1);
 
   const [showFilters, setShowFilters] = useState(false);
 
-  const [searchInput, setSearchInput] = useState("");
+  const [searchInput, setSearchInput] = useState(urlSearch || "");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -110,6 +126,70 @@ export default function ProductsPage() {
     staleTime: 1000 * 60 * 60 * 24, // 24 horas
     gcTime: 1000 * 60 * 60 * 24,
   });
+
+  const searchParamsStr = searchParams?.toString() ?? "";
+
+  // Sync searchParams when URL changes or categories load
+  useEffect(() => {
+    if (!searchParams) return;
+    const cat = searchParams.get("category") || searchParams.get("categoryId");
+    const subcat = searchParams.get("subcategory") || searchParams.get("subcategoryId");
+    const prov = searchParams.get("provinceId") || searchParams.get("province");
+    const q = searchParams.get("search") || searchParams.get("q");
+    const ws = searchParams.get("wholesale");
+    const br = searchParams.get("brand");
+
+    setFilters((prev) => {
+      let nextCat = prev.categoryId;
+      if (cat) {
+        if (!isNaN(Number(cat))) {
+          nextCat = String(cat);
+        } else if (categories.length > 0) {
+          const found = categories.find(
+            (c: any) =>
+              c.name?.toLowerCase() === cat.toLowerCase() ||
+              String(c.id) === cat,
+          );
+          if (found) nextCat = String(found.id);
+        }
+      }
+
+      const nextSubcat = subcat ?? prev.subcategoryId;
+      const nextProv = prov ?? prev.provinceId;
+      const nextSearch = q !== null ? q : prev.search;
+      const nextWs = ws ?? prev.wholesale;
+      const nextBr = br !== null ? br : prev.brand;
+
+      // Do not trigger state update if identical
+      if (
+        prev.categoryId === nextCat &&
+        prev.subcategoryId === nextSubcat &&
+        prev.provinceId === nextProv &&
+        prev.search === nextSearch &&
+        prev.wholesale === nextWs &&
+        prev.brand === nextBr
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        categoryId: nextCat,
+        subcategoryId: nextSubcat,
+        provinceId: nextProv,
+        search: nextSearch,
+        wholesale: nextWs,
+        brand: nextBr,
+      };
+    });
+
+    if (q !== null && q !== undefined) {
+      setSearchInput((prev) => (prev !== q ? q : prev));
+      setDebouncedTextFilters((prev) =>
+        prev.search !== q ? { ...prev, search: q } : prev,
+      );
+    }
+  }, [searchParamsStr, categories]);
 
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],
@@ -369,6 +449,12 @@ export default function ProductsPage() {
 
   const clearFilters = () => {
     setFilters({ ...defaultFilters });
+    setSearchInput("");
+    setDebouncedTextFilters({
+      search: "",
+      brand: "",
+      ean: "",
+    });
     setPage(1);
   };
 

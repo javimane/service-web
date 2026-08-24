@@ -100,6 +100,74 @@ function useDraggableScroll() {
   };
 }
 
+function ProfileServiceCard({
+  service,
+  onClick,
+  isDragging,
+  isExpanded,
+  onToggle,
+}: {
+  service: any;
+  onClick: () => void;
+  isDragging: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className="service-card-mini"
+      onClick={(e) => {
+        // Only trigger the main onClick if we aren't clicking the toggle button
+        if (!(e.target as HTMLElement).closest(".toggle-desc-btn")) {
+          onClick();
+        }
+      }}
+    >
+      <div className="service-card-mini__header">
+        <h3>{service.name}</h3>
+        <span className="price">${service.base_price?.toLocaleString()}</span>
+      </div>
+      <button
+        type="button"
+        className="toggle-desc-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!isDragging) {
+            onToggle();
+          }
+        }}
+        style={{
+          background: "none",
+          border: "none",
+          color: "var(--accent-color)",
+          fontSize: "var(--text-sm)",
+          fontWeight: "var(--weight-semibold)",
+          cursor: "pointer",
+          padding: "4px 0",
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+          marginTop: "8px",
+        }}
+      >
+        {isExpanded ? "Ocultar descripción" : "Ver descripción"}
+        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+      {isExpanded && (
+        <p
+          style={{
+            marginTop: "8px",
+            fontSize: "var(--text-sm)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          {service.description}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function ProfileVideoCard({
   video,
   onSelect,
@@ -314,7 +382,9 @@ export default function ProfilePage({
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isReelsModalOpen, setIsReelsModalOpen] = useState(false);
   const [showScope, setShowScope] = useState(false);
-
+  const [expandedServiceId, setExpandedServiceId] = useState<number | null>(
+    null,
+  );
   const { user } = useAuth();
   const { openAuth } = useAuthModal();
   const accessToken =
@@ -750,7 +820,9 @@ export default function ProfilePage({
       },
       aggregateRating: {
         "@type": "AggregateRating",
-        ratingValue: professional.rating_avg ? Number(professional.rating_avg).toFixed(1) : "0.0",
+        ratingValue: professional.rating_avg
+          ? Number(professional.rating_avg).toFixed(1)
+          : "0.0",
         reviewCount: reviews.length || "0",
       },
     };
@@ -917,7 +989,9 @@ export default function ProfilePage({
               <div className="stat-content">
                 <Star size={14} className="stat-icon" />
                 <span className="stat-value">
-                  {professional.rating_avg ? Number(professional.rating_avg).toFixed(1) : "0.0"}
+                  {professional.rating_avg
+                    ? Number(professional.rating_avg).toFixed(1)
+                    : "0.0"}
                 </span>
               </div>
               <span className="stat-label">CALIFICACIÓN</span>
@@ -941,12 +1015,19 @@ export default function ProfilePage({
             </div>
           </div>
 
-          {professional.web_url && professional?.web_url && (
+          {products.length > 0 && (
             <button
               className="cta-button store-btn"
-              onClick={() => window.open(professional.web_url, "_blank")}
+              onClick={() => {
+                const seo = professional?.seo_path
+                  ? professional.seo_path.startsWith("/")
+                    ? professional.seo_path
+                    : `/${professional.seo_path}`
+                  : `/${rawId}`;
+                router.push(`/perfil${seo}/tienda`);
+              }}
             >
-              VISITAR PÁGINA WEB <ArrowUpRight size={18} />
+              INGRESAR A LA TIENDA <ShoppingBag size={18} />
             </button>
           )}
 
@@ -995,19 +1076,12 @@ export default function ProfilePage({
             </button>
           )}
 
-          {products.length > 0 && (
+          {professional.web_url && professional?.web_url && (
             <button
               className="cta-button store-btn"
-              onClick={() => {
-                const seo = professional?.seo_path
-                  ? professional.seo_path.startsWith("/")
-                    ? professional.seo_path
-                    : `/${professional.seo_path}`
-                  : `/${rawId}`;
-                router.push(`/perfil${seo}/tienda`);
-              }}
+              onClick={() => window.open(professional.web_url, "_blank")}
             >
-              INGRESAR A LA TIENDA <ShoppingBag size={18} />
+              VISITAR PÁGINA WEB <ArrowUpRight size={18} />
             </button>
           )}
         </aside>
@@ -1138,9 +1212,16 @@ export default function ProfilePage({
             >
               <div className="services-scroll">
                 {services.map((service) => (
-                  <div
+                  <ProfileServiceCard
                     key={service.id}
-                    className="service-card-mini"
+                    service={service}
+                    isDragging={servicesScroll.isDragging}
+                    isExpanded={expandedServiceId === service.id}
+                    onToggle={() => {
+                      setExpandedServiceId((prev) =>
+                        prev === service.id ? null : service.id,
+                      );
+                    }}
                     onClick={() => {
                       if (!servicesScroll.isDragging) {
                         const slug = service.name
@@ -1152,15 +1233,7 @@ export default function ProfilePage({
                         router.push(`/servicios/${slug}?id=${service.id}`);
                       }
                     }}
-                  >
-                    <div className="service-card-mini__header">
-                      <h3>{service.name}</h3>
-                      <span className="price">
-                        ${service.base_price?.toLocaleString()}
-                      </span>
-                    </div>
-                    <p>{service.description}</p>
-                  </div>
+                  />
                 ))}
                 {services.length === 0 && (
                   <p className="empty-msg">No hay servicios disponibles.</p>

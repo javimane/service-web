@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
   ShieldCheck,
@@ -141,7 +142,14 @@ export default function ProductDetailPage({
   const productDescription = item.description;
   const productBrand = item.brand;
   const productEan = item.ean;
-  const productCategory = itemAny.Category?.name;
+  const productCategoryId =
+    item.category_id || itemAny.Category?.id || itemAny.category?.id;
+  const productCategory = itemAny.Category?.name || itemAny.category?.name;
+  const productSubcategoryId =
+    item.subcategory_id ||
+    itemAny.SubCategory?.id ||
+    itemAny.subCategory?.id ||
+    itemAny.sub_category?.id;
   const productSubcategory =
     itemAny.SubCategory?.name ||
     itemAny.subCategory?.name ||
@@ -296,6 +304,48 @@ export default function ProductDetailPage({
         <div className="product-detail__layout">
           {/* Left Column: Image + Details */}
           <div className="product-detail__left-column">
+            {(productCategory || productSubcategory) && (
+              <nav
+                className="product-detail__breadcrumbs"
+                aria-label="Ruta de categoría"
+              >
+                <Link
+                  href="/productos"
+                  className="product-detail__breadcrumb-link"
+                >
+                  Productos
+                </Link>
+                {productCategory && (
+                  <>
+                    <ChevronRight
+                      size={14}
+                      className="product-detail__breadcrumb-separator"
+                    />
+                    <Link
+                      href={`/productos?category=${productCategoryId || encodeURIComponent(productCategory)}`}
+                      className="product-detail__breadcrumb-link"
+                    >
+                      {productCategory}
+                    </Link>
+                  </>
+                )}
+                {productSubcategory && (
+                  <>
+                    <ChevronRight
+                      size={14}
+                      className="product-detail__breadcrumb-separator"
+                    />
+                    <Link
+                      href={`/productos?category=${productCategoryId || encodeURIComponent(productCategory)}&subcategory=${productSubcategoryId || encodeURIComponent(productSubcategory)}`}
+                      className="product-detail__breadcrumb-link product-detail__breadcrumb-link--active"
+                    >
+                      {productSubcategory}
+                    </Link>
+                  </>
+                )}
+              </nav>
+            )}
+
             <div className="product-detail__gallery">
               <div
                 ref={videoFrameRef}
@@ -392,18 +442,6 @@ export default function ProductDetailPage({
                   <span className="fact-label">Marca</span>
                   <span className="fact-value">
                     {productBrand || "Sin marca"}
-                  </span>
-                </div>
-                <div className="product-detail__fact-row">
-                  <span className="fact-label">Categoria</span>
-                  <span className="fact-value">
-                    {productCategory || "General"}
-                  </span>
-                </div>
-                <div className="product-detail__fact-row">
-                  <span className="fact-label">Subcategoría</span>
-                  <span className="fact-value">
-                    {productSubcategory || "No informada"}
                   </span>
                 </div>
                 <div className="product-detail__fact-row">

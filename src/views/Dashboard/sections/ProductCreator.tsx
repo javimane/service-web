@@ -281,8 +281,13 @@ export default function ProductCreator({
       // Extract images
       let imgs: string[] = [];
       if (Array.isArray(fullProduct.Images) && fullProduct.Images.length > 0) {
-        imgs = fullProduct.Images.map((img: any) => img.image_url || img.url || "").filter(Boolean);
-      } else if (Array.isArray(fullProduct.images) && fullProduct.images.length > 0) {
+        imgs = fullProduct.Images.map(
+          (img: any) => img.image_url || img.url || "",
+        ).filter(Boolean);
+      } else if (
+        Array.isArray(fullProduct.images) &&
+        fullProduct.images.length > 0
+      ) {
         imgs = fullProduct.images;
       } else if (fullProduct.image) {
         imgs = [fullProduct.image];
@@ -295,10 +300,22 @@ export default function ProductCreator({
       // Extract videos
       let vids: string[] = [];
       if (Array.isArray(fullProduct.Videos) && fullProduct.Videos.length > 0) {
-        vids = fullProduct.Videos.map((v: any) => v.video_url || v.url || "").filter(Boolean);
-      } else if (Array.isArray(fullProduct.videos) && fullProduct.videos.length > 0) {
-        vids = fullProduct.videos.map((v: any) => typeof v === "string" ? v : v.video_url || v.url || "").filter(Boolean);
-      } else if (typeof fullProduct.video_url === "string" && fullProduct.video_url) {
+        vids = fullProduct.Videos.map(
+          (v: any) => v.video_url || v.url || "",
+        ).filter(Boolean);
+      } else if (
+        Array.isArray(fullProduct.videos) &&
+        fullProduct.videos.length > 0
+      ) {
+        vids = fullProduct.videos
+          .map((v: any) =>
+            typeof v === "string" ? v : v.video_url || v.url || "",
+          )
+          .filter(Boolean);
+      } else if (
+        typeof fullProduct.video_url === "string" &&
+        fullProduct.video_url
+      ) {
         vids = [fullProduct.video_url];
       }
       setVideoPreviews(vids);
@@ -538,7 +555,6 @@ export default function ProductCreator({
         offer_price: Number(newProduct.offerPrice) || 0,
         currency_code: newProduct.currency_code || "ARG",
         percent_discount: Number(newProduct.percent_discount) || 0,
-        link_url: newProduct.link_url.trim() || undefined,
         wholesale: newProduct.wholesale,
         wholesale_price: Number(newProduct.wholesale_price) || 0,
         wholesale_unit: Number(newProduct.wholesale_unit) || 0,
@@ -603,7 +619,6 @@ export default function ProductCreator({
             offer_price: payload.offer_price,
             currency_code: payload.currency_code,
             percent_discount: payload.percent_discount,
-            link_url: payload.link_url,
             wholesale: payload.wholesale,
             wholesale_price: payload.wholesale_price,
             wholesale_unit: payload.wholesale_unit,
@@ -873,15 +888,6 @@ export default function ProductCreator({
                         <option value="ARG">Pesos ($)</option>
                         <option value="USD">Dólares (USD)</option>
                       </select>
-                    </div>
-                    <div className="product-creator__field product-creator__field--full">
-                      <label>Enlace del producto (Opcional)</label>
-                      <input
-                        type="url"
-                        placeholder="Ej: https://mi-sitio.com/producto"
-                        value={eanLinkUrl}
-                        onChange={(e) => setEanLinkUrl(e.target.value)}
-                      />
                     </div>
                   </div>
 

@@ -184,12 +184,32 @@
 /* Quick Links Navigation */
 .home-hero__quick-links {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: var(--space-8);
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: var(--space-6);
   margin-top: var(--space-6);
   width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--space-3) var(--space-2) var(--space-4) var(--space-2);
+  cursor: grab;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.home-hero__quick-links::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.home-hero__quick-links.is-dragging {
+  cursor: grabbing;
+}
+
+.home-hero__quick-links.is-dragging .quick-link-card {
+  pointer-events: none;
 }
 
 .quick-link-card {
@@ -200,6 +220,7 @@
   gap: var(--space-2);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .quick-link-card:hover {
@@ -313,6 +334,7 @@
 
   .home-hero__quick-links {
     gap: var(--space-4);
+    padding: var(--space-2) var(--space-2) var(--space-3) var(--space-2);
   }
 
   .quick-link-card__icon-wrapper {

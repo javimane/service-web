@@ -48,6 +48,7 @@ type PdfPreviewModalProps = {
   currencySymbol?: string;
   estimatedDate?: string;
   dueDate?: string;
+  notes?: string;
 };
 
 export default function PdfPreviewModal({
@@ -67,6 +68,7 @@ export default function PdfPreviewModal({
   currencySymbol = "$",
   estimatedDate = "",
   dueDate = "",
+  notes = "",
 }: PdfPreviewModalProps) {
   const router = useRouter();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -173,12 +175,16 @@ export default function PdfPreviewModal({
       doc.line(340, startY + 32, pageWidth - 40, startY + 32);
 
       if (estimatedDate || dueDate) {
-        doc.text(`F. Estimada: ${estimatedDate || "-"}`, 40, startY + 60);
+        doc.text(
+          `Finalización Estimada: ${estimatedDate || "-"}`,
+          40,
+          startY + 60,
+        );
         doc.text(`Vencimiento: ${dueDate || "-"}`, 300, startY + 60);
       }
 
       // 4. Table
-      const tableStartY = (estimatedDate || dueDate) ? startY + 90 : startY + 60;
+      const tableStartY = estimatedDate || dueDate ? startY + 90 : startY + 60;
 
       const tableBody =
         items.length > 0
@@ -278,6 +284,19 @@ export default function PdfPreviewModal({
           finalY + 17,
           { align: "right" },
         );
+      }
+
+      // 5b. Notas Adicionales
+      if (notes && typeof notes === "string" && notes.trim()) {
+        doc.setFontSize(10);
+        doc.setTextColor("#000000");
+        doc.setFont("helvetica", "bold");
+        doc.text("Notas Adicionales:", 40, finalY + 15);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor("#555555");
+        const splitNotes = doc.splitTextToSize(notes, pageWidth - 280);
+        doc.text(splitNotes, 40, finalY + 28);
       }
 
       // Disclaimer

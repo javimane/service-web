@@ -48,6 +48,7 @@ export default function ProposalCreator({ onBack }) {
   const [dueDate, setDueDate] = useState("");
   const [isCustomClientMode, setIsCustomClientMode] = useState(false);
   const [customClientName, setCustomClientName] = useState("");
+  const [notes, setNotes] = useState("");
   const router = useRouter();
   const { showSuccess, showError, showWarning } = useAlert();
 
@@ -296,7 +297,11 @@ export default function ProposalCreator({ onBack }) {
     doc.line(340, startY + 32, pageWidth - 40, startY + 32);
 
     if (estimatedDate || dueDate) {
-      doc.text(`F. Estimada: ${estimatedDate || "-"}`, 40, startY + 60);
+      doc.text(
+        `Finalización Estimada: ${estimatedDate || "-"}`,
+        40,
+        startY + 60,
+      );
       doc.text(`Vencimiento: ${dueDate || "-"}`, 300, startY + 60);
     }
 
@@ -396,6 +401,20 @@ export default function ProposalCreator({ onBack }) {
         finalY + 17,
         { align: "right" },
       );
+    }
+
+    // 5b. Notas Adicionales
+    if (notes && typeof notes === "string" && notes.trim()) {
+      doc.setFontSize(10);
+      doc.setTextColor("#000000");
+      doc.setFont("helvetica", "bold");
+      doc.text("Notas Adicionales:", 40, finalY + 15);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor("#555555");
+      // Use the left space (totals block is at pageWidth - 220)
+      const splitNotes = doc.splitTextToSize(notes, pageWidth - 280);
+      doc.text(splitNotes, 40, finalY + 28);
     }
 
     // Disclaimer
@@ -819,6 +838,40 @@ export default function ProposalCreator({ onBack }) {
                 </div>
               )}
             </div>
+
+            {/* Notes Section */}
+            <div
+              style={{
+                marginTop: "var(--space-6)",
+                borderTop: "1px solid var(--border-color)",
+                paddingTop: "var(--space-4)",
+              }}
+            >
+              <div
+                className="section-header"
+                style={{ marginBottom: "var(--space-3)" }}
+              >
+                <h3 style={{ fontSize: "1rem", fontWeight: "bold" }}>
+                  Notas Adicionales
+                </h3>
+              </div>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Añade notas, términos o condiciones adicionales..."
+                style={{
+                  width: "100%",
+                  minHeight: "80px",
+                  padding: "12px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--bg-color)",
+                  color: "var(--text-primary)",
+                  fontSize: "0.9rem",
+                  resize: "vertical",
+                }}
+              />
+            </div>
           </section>
         </div>
       </div>
@@ -941,6 +994,7 @@ export default function ProposalCreator({ onBack }) {
         currencySymbol={currencySymbol}
         estimatedDate={estimatedDate}
         dueDate={dueDate}
+        notes={notes}
         client={{
           name: isCustomClientMode
             ? customClientName

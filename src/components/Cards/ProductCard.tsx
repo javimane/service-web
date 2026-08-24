@@ -26,86 +26,78 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
   const displayPrice = hasOffer ? offerPrice! : regularPrice;
 
   const name = info.name || "Producto";
-  const brand = info.brand;
-  const category = info.category?.name;
+
+  const isConsultar = product.wholesale
+    ? Number(product.wholesale_price || 0) <= 1
+    : displayPrice <= 1;
 
   return (
     <div
-      className={`product-card-premium ${variant === "small" ? "product-card-premium--small" : ""}`}
+      className={`nearby-product-card ${variant === "small" ? "nearby-product-card--small" : ""}`}
       onClick={() => onOpenDetail && onOpenDetail(product)}
+      role="button"
+      tabIndex={0}
     >
-      <div className="product-card-premium__image">
-        <img src={primaryImage} alt={name} loading="lazy" />
-
-        {/* OFERTA badge – top left */}
-        {hasOffer && !product.wholesale && <span className="product-badge-oferta">OFERTA</span>}
+      <div className="nearby-product-card__image">
+        <img src={primaryImage} alt={name} loading="lazy" draggable="false" />
+        {hasOffer && !product.wholesale && !isConsultar && (
+          <span className="nearby-product-card__badge">OFERTA</span>
+        )}
       </div>
 
-      <div className="product-card-premium__content">
-        {brand && <span className="product-brand">{brand}</span>}
-        <h3 className="product-title">{name}</h3>
+      <div className="nearby-product-card__body">
+        <h3 className="nearby-product-card__title">{name}</h3>
 
-        <div className="product-pricing">
-          {product.wholesale ? (
-            <div className="product-card-premium__wholesale">
+        <div className="nearby-product-card__pricing" style={{ marginTop: 'auto' }}>
+          {isConsultar ? (
+            <div className="nearby-product-card__price-row">
+              <span className="nearby-product-card__price" style={{ fontSize: "1.1rem" }}>
+                Consultar
+              </span>
+            </div>
+          ) : product.wholesale ? (
+            <>
               <span
-                className="product-card-premium__wholesale-badge"
-                style={{ backgroundColor: "var(--brand-blue)" }}
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 'bold',
+                  color: 'var(--brand-blue)',
+                  textTransform: 'uppercase',
+                  marginBottom: '2px',
+                }}
               >
                 Por mayor
               </span>
-              <span className="current-price">
-                $
-                {Number(product.wholesale_price || 0).toLocaleString("es-AR", {
-                  minimumFractionDigits: 0,
-                })}{" "}
-                <span
-                  style={{
-                    fontSize: "0.85rem",
-                    fontWeight: "normal",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  c/u
+              <div className="nearby-product-card__price-row">
+                <span className="nearby-product-card__price">
+                  ${Number(product.wholesale_price || 0).toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+                  <span style={{ fontSize: "0.85rem", fontWeight: "normal", color: "var(--text-secondary)" }}> c/u</span>
                 </span>
-              </span>
-              <span
-                style={{
-                  fontSize: "0.75rem",
-                  color: "var(--text-secondary)",
-                  fontWeight: "var(--weight-medium)",
-                }}
-              >
+              </div>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: "var(--weight-medium)" }}>
                 Min. {product.wholesale_unit} un.
               </span>
-            </div>
+            </>
           ) : hasOffer ? (
             <>
-              {/* Original price – crossed out */}
-              <span className="original-price">
-                $
-                {regularPrice.toLocaleString("es-AR", {
-                  minimumFractionDigits: 0,
-                })}
+              <span className="nearby-product-card__original">
+                ${regularPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
               </span>
-              {/* Offer price + discount % inline */}
-              <div className="offer-row">
-                <span className="current-price current-price--offer">
-                  $
-                  {offerPrice!.toLocaleString("es-AR", {
-                    minimumFractionDigits: 0,
-                  })}
+              <div className="nearby-product-card__price-row">
+                <span className="nearby-product-card__price">
+                  ${offerPrice!.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
                 </span>
-                <span className="discount-pill">-{computedDiscount}% OFF</span>
+                <span className="nearby-product-card__discount">
+                  {computedDiscount}% OFF
+                </span>
               </div>
             </>
           ) : (
-            <span className="current-price">
-              $
-              {displayPrice.toLocaleString("es-AR", {
-                minimumFractionDigits: 0,
-              })}
-            </span>
+            <div className="nearby-product-card__price-row">
+              <span className="nearby-product-card__price">
+                ${displayPrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+              </span>
+            </div>
           )}
         </div>
       </div>

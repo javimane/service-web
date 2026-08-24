@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Search, ArrowRight, MapPin } from "lucide-react";
 import Modal from "../../components/Modal/Modal";
 import { getProvincesAction } from "@/app/actions/provinces";
+import useCarouselDrag from "../../hooks/useCarouselDrag";
 import Navbar from "../../components/Navbar/Navbar";
 import CategoriesSection from "./sections/CategoriesSection";
 import BannerCarousel from "./sections/BannerCarousel";
@@ -98,6 +99,20 @@ const quickLinks = [
     badge: "ENCONTRÁ",
     badgeColor: "blue",
   },
+  {
+    label: "Inmuebles",
+    path: `${ROUTES.products}?category=46`,
+    icon: "/inmuebles.jpg",
+    badge: "BUSCÁ",
+    badgeColor: "blue",
+  },
+  {
+    label: "Vehículos",
+    path: `${ROUTES.products}?category=45`,
+    icon: "/vehiculos.jpg",
+    badge: "DESCUBRÍ",
+    badgeColor: "blue",
+  },
 ];
 
 export default function HomePage() {
@@ -107,6 +122,13 @@ export default function HomePage() {
   const [isProvinceModalOpen, setIsProvinceModalOpen] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const { sessionStatus } = useAuth();
+
+  const quickLinksRef = useRef<HTMLDivElement>(null);
+  const {
+    handlePointerDown: handleQuickLinksPointerDown,
+    handlePointerMove: handleQuickLinksPointerMove,
+    handlePointerUp: handleQuickLinksPointerUp,
+  } = useCarouselDrag(quickLinksRef, ".quick-link-card");
 
   const { data: provinces = [] } = useQuery({
     queryKey: ["provinces"],
@@ -227,12 +249,20 @@ export default function HomePage() {
               </button>
             </form>
 
-            <div className="home-hero__quick-links">
+            <div
+              className="home-hero__quick-links"
+              ref={quickLinksRef}
+              onPointerDown={handleQuickLinksPointerDown}
+              onPointerMove={handleQuickLinksPointerMove}
+              onPointerUp={handleQuickLinksPointerUp}
+              onPointerCancel={handleQuickLinksPointerUp}
+            >
               {quickLinks.map((item) => (
                 <Link
                   key={item.label}
                   href={item.path}
                   className="quick-link-card"
+                  draggable={false}
                 >
                   <div className="quick-link-card__icon-wrapper">
                     <img
@@ -242,6 +272,7 @@ export default function HomePage() {
                       width={48}
                       height={48}
                       decoding="async"
+                      draggable={false}
                     />
                     {item.badge && (
                       <span
