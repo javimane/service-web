@@ -310,3 +310,47 @@ export const massUpdateProductPricesAction = publicAction
       );
     }
   });
+
+export interface ProfessionalProductCategoryItem {
+  id: number;
+  name: string;
+}
+
+export interface ProfessionalProductSubcategoryItem {
+  id: string;
+  name: string;
+}
+
+export interface ProfessionalProductCategoriesResponse {
+  categories: ProfessionalProductCategoryItem[];
+  subcategories: ProfessionalProductSubcategoryItem[];
+}
+
+export const getProfessionalProductCategoriesAction = publicAction
+  .schema(
+    z.object({
+      professionalId: z.number(),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/categories/professional?professionalId=${parsedInput.professionalId}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          ...ctx.headers,
+        },
+      });
+
+      return response.data as ProfessionalProductCategoriesResponse;
+    } catch (error: any) {
+      console.error(
+        "Error fetching professional product categories:",
+        error.message,
+      );
+      throw new Error(
+        error.response?.data?.message ||
+          "Error fetching professional product categories",
+      );
+    }
+  });

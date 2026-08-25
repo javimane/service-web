@@ -33,6 +33,7 @@ import {
   assignProductToProfessionalAction,
   createProductAction,
   getProductByEanAction,
+  getProfessionalProductCategoriesAction,
   getProductsAction,
   getProductsByProfessionalAction,
   massUpdateProductPricesAction,
@@ -200,6 +201,9 @@ export default function DashboardProducts({
   const [bulkAction, setBulkAction] = useState("increase"); // "increase" | "decrease"
   const [bulkDeleteOffers, setBulkDeleteOffers] = useState(false);
   const [bulkApplied, setBulkApplied] = useState(false);
+  const [bulkScope, setBulkScope] = useState<"all" | "category" | "subcategory">("all");
+  const [bulkSelectedCategories, setBulkSelectedCategories] = useState<number[]>([]);
+  const [bulkSelectedSubcategories, setBulkSelectedSubcategories] = useState<string[]>([]);
 
   // Add product modal
   const [addOpen, setAddOpen] = useState(false);
@@ -345,6 +349,32 @@ export default function DashboardProducts({
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 2,
   });
+
+  const { data: profCategoriesData } = useQuery({
+    queryKey: ["professional-product-categories", professionalId],
+    queryFn: async () => {
+      if (!professionalId) return { categories: [], subcategories: [] };
+      const result = await getProfessionalProductCategoriesAction({
+        professionalId,
+      });
+      return result?.data ?? { categories: [], subcategories: [] };
+    },
+    enabled: !!professionalId,
+  });
+
+  const profCategoriesList = useMemo(() => {
+    return (profCategoriesData?.categories || []).map((cat: any) => ({
+      id: cat.id,
+      name: cat.name || `Categoría ${cat.id}`,
+    }));
+  }, [profCategoriesData?.categories]);
+
+  const profSubcategoriesList = useMemo(() => {
+    return (profCategoriesData?.subcategories || []).map((subcat: any) => ({
+      id: subcat.id,
+      name: subcat.name || `Subcategoría ${subcat.id}`,
+    }));
+  }, [profCategoriesData?.subcategories]);
 
   // Map API data to component structure
   const productsList = useMemo(() => {
@@ -508,12 +538,18 @@ export default function DashboardProducts({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-products"] });
+      queryClient.invalidateQueries({
+        queryKey: ["professional-product-categories", professionalId],
+      });
       setBulkApplied(true);
       setTimeout(() => {
         setBulkApplied(false);
         setBulkOpen(false);
         setBulkValue("");
         setBulkDeleteOffers(false);
+        setBulkScope("all");
+        setBulkSelectedCategories([]);
+        setBulkSelectedSubcategories([]);
       }, 1200);
     },
   });
@@ -578,18 +614,69 @@ export default function DashboardProducts({
         ) / productsList.length
       : 0;
 
+  // Bulk category / subcategory selection helpers
+  const toggleBulkCategory = (catId: number) => {
+    setBulkSelectedCategories((prev) =>
+      prev.includes(catId)
+        ? prev.filter((id) => id !== catId)
+        : [...prev, catId],
+    );
+  };
+
+  const selectAllBulkCategories = () => {
+    if (bulkSelectedCategories.length === profCategoriesList.length) {
+      setBulkSelectedCategories([]);
+    } else {
+      setBulkSelectedCategories(profCategoriesList.map((c) => c.id));
+    }
+  };
+
+  const toggleBulkSubcategory = (subcat: string) => {
+    setBulkSelectedSubcategories((prev) =>
+      prev.includes(subcat)
+        ? prev.filter((s) => s !== subcat)
+        : [...prev, subcat],
+    );
+  };
+
+  const selectAllBulkSubcategories = () => {
+    if (bulkSelectedSubcategories.length === profSubcategoriesList.length) {
+      setBulkSelectedSubcategories([]);
+    } else {
+      setBulkSelectedSubcategories(profSubcategoriesList.map((s) => s.id));
+    }
+  };
+
   // Bulk price apply
   const handleBulkApply = () => {
     const val = parseFloat(bulkValue);
     if ((isNaN(val) || val <= 0) && !bulkDeleteOffers) return;
 
-    massUpdateMutation.mutate({
+    if (bulkScope === "category" && bulkSelectedCategories.length === 0) return;
+    if (
+      bulkScope === "subcategory" &&
+      bulkSelectedSubcategories.length === 0
+    )
+      return;
+
+    const payload: any = {
       professionalId,
       type: bulkMode as any,
       value: isNaN(val) ? 0 : val,
       operation: bulkAction === "increase" ? "add" : "subtract",
       delete_offer_price: bulkDeleteOffers,
-    });
+    };
+
+    if (bulkScope === "category" && bulkSelectedCategories.length > 0) {
+      payload.categoryIds = bulkSelectedCategories;
+    } else if (
+      bulkScope === "subcategory" &&
+      bulkSelectedSubcategories.length > 0
+    ) {
+      payload.subcategoryIds = bulkSelectedSubcategories;
+    }
+
+    massUpdateMutation.mutate(payload);
   };
 
   // Image file handler
@@ -1410,21 +1497,142 @@ export default function DashboardProducts({
               </div>
 
               <p className="dash-products__modal-desc">
-                Aplica un ajuste de precio a{" "}
-                <strong>todos los productos</strong> de tu catálogo.
+                Aplica un ajuste de precio masivo a tus productos de forma general o filtrando por categorías y subcategorías.
               </p>
+
+              {/* Scope select */}
+              <div className="dash-products__modal-field">
+                <label>Aplicar a</label>
+                <div className="dash-products__modal-toggle">
+                  <button
+                    type="button"
+                    className={bulkScope === "all" ? "active" : ""}
+                    onClick={() => setBulkScope("all")}
+                  >
+                    Todos los productos
+                  </button>
+                  <button
+                    type="button"
+                    className={bulkScope === "category" ? "active" : ""}
+                    onClick={() => setBulkScope("category")}
+                  >
+                    Por Categoría ({profCategoriesList.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={bulkScope === "subcategory" ? "active" : ""}
+                    onClick={() => setBulkScope("subcategory")}
+                  >
+                    Por Subcategoría ({profSubcategoriesList.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Category selector */}
+              {bulkScope === "category" && (
+                <div className="dash-products__modal-field">
+                  <div className="dash-products__modal-field-header">
+                    <label>
+                      Seleccionar Categorías ({bulkSelectedCategories.length})
+                    </label>
+                    {profCategoriesList.length > 0 && (
+                      <button
+                        type="button"
+                        className="dash-products__modal-link-btn"
+                        onClick={selectAllBulkCategories}
+                      >
+                        {bulkSelectedCategories.length === profCategoriesList.length
+                          ? "Desmarcar todas"
+                          : "Seleccionar todas"}
+                      </button>
+                    )}
+                  </div>
+                  {profCategoriesList.length === 0 ? (
+                    <p className="dash-products__modal-hint">
+                      No se encontraron categorías asociadas a tus productos.
+                    </p>
+                  ) : (
+                    <div className="dash-products__chips-grid">
+                      {profCategoriesList.map((cat) => {
+                        const isSelected = bulkSelectedCategories.includes(cat.id);
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            className={`dash-products__chip ${isSelected ? "dash-products__chip--active" : ""}`}
+                            onClick={() => toggleBulkCategory(cat.id)}
+                          >
+                            <span className="dash-products__chip-checkbox">
+                              {isSelected && <Check size={12} />}
+                            </span>
+                            <span>{cat.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Subcategory selector */}
+              {bulkScope === "subcategory" && (
+                <div className="dash-products__modal-field">
+                  <div className="dash-products__modal-field-header">
+                    <label>
+                      Seleccionar Subcategorías ({bulkSelectedSubcategories.length})
+                    </label>
+                    {profSubcategoriesList.length > 0 && (
+                      <button
+                        type="button"
+                        className="dash-products__modal-link-btn"
+                        onClick={selectAllBulkSubcategories}
+                      >
+                        {bulkSelectedSubcategories.length === profSubcategoriesList.length
+                          ? "Desmarcar todas"
+                          : "Seleccionar todas"}
+                      </button>
+                    )}
+                  </div>
+                  {profSubcategoriesList.length === 0 ? (
+                    <p className="dash-products__modal-hint">
+                      No se encontraron subcategorías asociadas a tus productos.
+                    </p>
+                  ) : (
+                    <div className="dash-products__chips-grid">
+                      {profSubcategoriesList.map((subcat) => {
+                        const isSelected = bulkSelectedSubcategories.includes(subcat.id);
+                        return (
+                          <button
+                            key={subcat.id}
+                            type="button"
+                            className={`dash-products__chip ${isSelected ? "dash-products__chip--active" : ""}`}
+                            onClick={() => toggleBulkSubcategory(subcat.id)}
+                          >
+                            <span className="dash-products__chip-checkbox">
+                              {isSelected && <Check size={12} />}
+                            </span>
+                            <span>{subcat.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Action select */}
               <div className="dash-products__modal-field">
                 <label>Tipo de ajuste</label>
                 <div className="dash-products__modal-toggle">
                   <button
+                    type="button"
                     className={bulkAction === "increase" ? "active" : ""}
                     onClick={() => setBulkAction("increase")}
                   >
                     Aumentar
                   </button>
                   <button
+                    type="button"
                     className={bulkAction === "decrease" ? "active" : ""}
                     onClick={() => setBulkAction("decrease")}
                   >
@@ -1438,6 +1646,7 @@ export default function DashboardProducts({
                 <label>Aplicar por</label>
                 <div className="dash-products__modal-toggle">
                   <button
+                    type="button"
                     className={bulkMode === "percent" ? "active" : ""}
                     onClick={() => setBulkMode("percent")}
                   >
@@ -1445,6 +1654,7 @@ export default function DashboardProducts({
                     Porcentaje
                   </button>
                   <button
+                    type="button"
                     className={bulkMode === "fixed" ? "active" : ""}
                     onClick={() => setBulkMode("fixed")}
                   >
@@ -1484,7 +1694,7 @@ export default function DashboardProducts({
                     checked={bulkDeleteOffers}
                     onChange={(e) => setBulkDeleteOffers(e.target.checked)}
                   />
-                  <span>Eliminar todos los precios de oferta</span>
+                  <span>Eliminar precios de oferta</span>
                 </label>
               </div>
 
@@ -1497,15 +1707,26 @@ export default function DashboardProducts({
                     {bulkDeleteOffers &&
                     (!bulkValue || parseFloat(bulkValue) <= 0) ? (
                       <>
-                        Se eliminará el <strong>precio de oferta</strong> de
-                        todos los productos.
+                        Se eliminará el <strong>precio de oferta</strong> de{" "}
+                        {bulkScope === "all"
+                          ? "todos los productos"
+                          : bulkScope === "category"
+                            ? `los productos en las ${bulkSelectedCategories.length} categorías seleccionadas`
+                            : `los productos en las ${bulkSelectedSubcategories.length} subcategorías seleccionadas`}
+                        .
                       </>
                     ) : (
                       <>
                         Esto{" "}
                         {bulkAction === "increase" ? "aumentará" : "disminuirá"}{" "}
                         el precio de{" "}
-                        <strong>{productsList.length} productos</strong>{" "}
+                        <strong>
+                          {bulkScope === "all"
+                            ? "todos los productos"
+                            : bulkScope === "category"
+                              ? `los productos en las ${bulkSelectedCategories.length} categorías seleccionadas`
+                              : `los productos en las ${bulkSelectedSubcategories.length} subcategorías seleccionadas`}
+                        </strong>{" "}
                         {bulkMode === "percent"
                           ? `en un ${bulkValue}%`
                           : `en ${formatPrice(parseFloat(bulkValue))}`}
@@ -1518,17 +1739,27 @@ export default function DashboardProducts({
               )}
 
               <button
+                type="button"
                 className={`dash-products__modal-apply ${bulkApplied ? "dash-products__modal-apply--done" : ""}`}
                 onClick={handleBulkApply}
                 disabled={
                   (!bulkDeleteOffers &&
                     (!bulkValue || parseFloat(bulkValue) <= 0)) ||
-                  bulkApplied
+                  (bulkScope === "category" &&
+                    bulkSelectedCategories.length === 0) ||
+                  (bulkScope === "subcategory" &&
+                    bulkSelectedSubcategories.length === 0) ||
+                  bulkApplied ||
+                  massUpdateMutation.isPending
                 }
               >
                 {bulkApplied ? (
                   <>
                     <Check size={18} /> Aplicado
+                  </>
+                ) : massUpdateMutation.isPending ? (
+                  <>
+                    <Loader2 className="dash-products__spinner" size={18} /> Actualizando...
                   </>
                 ) : (
                   "Aplicar Cambios"
