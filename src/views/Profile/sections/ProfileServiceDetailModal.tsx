@@ -21,9 +21,10 @@ export default function ProfileServiceDetailModal({
 
   if (!service) return null;
 
-  const price = service.base_price
-    ? `$${service.base_price.toLocaleString("es-AR")}`
-    : "Consultar";
+  const isConsult = !service.base_price || Number(service.base_price) <= 1;
+  const price = isConsult
+    ? "Consultar"
+    : `$${Number(service.base_price).toLocaleString("es-AR")}`;
 
   const handleContact = () => {
     onClose();

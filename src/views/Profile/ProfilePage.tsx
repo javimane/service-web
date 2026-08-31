@@ -125,7 +125,11 @@ function ProfileServiceCard({
     >
       <div className="service-card-mini__header">
         <h3>{service.name}</h3>
-        <span className="price">${service.base_price?.toLocaleString()}</span>
+        <span className="price">
+          {!service.base_price || Number(service.base_price) <= 1
+            ? "Consultar"
+            : `$${Number(service.base_price).toLocaleString("es-AR")}`}
+        </span>
       </div>
       <button
         type="button"
@@ -1460,17 +1464,23 @@ export default function ProfilePage({
         title="Todos los Servicios"
       >
         <div className="modal-services-list">
-          {services.map((service) => (
-            <div key={service.id} className="service-card-compact">
-              <div className="service-info">
-                <h3>{service.name}</h3>
-                <p>{service.description}</p>
+          {services.map((service) => {
+            const isConsult =
+              !service.base_price || Number(service.base_price) <= 1;
+            return (
+              <div key={service.id} className="service-card-compact">
+                <div className="service-info">
+                  <h3>{service.name}</h3>
+                  <p>{service.description}</p>
+                </div>
+                <span className="service-price">
+                  {isConsult
+                    ? "Consultar"
+                    : `$${Number(service.base_price).toLocaleString("es-AR")}`}
+                </span>
               </div>
-              <span className="service-price">
-                ${service.base_price?.toLocaleString()}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Modal>
 
