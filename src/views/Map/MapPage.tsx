@@ -338,10 +338,10 @@ export default function MapPage() {
             />
             <MapEventsListener onCenterChange={handleMapCenterChange} />
 
-            {/* TileLayer Claro y Premium (CartoDB Positron) */}
+            {/* OpenStreetMap TileLayer (100% libre sin API key) */}
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
             {mappedProfessionals.map((prof: any) => (
