@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { API_ENDPOINTS } from "@/services/api.config";
+import { fetchWithApiKey } from "@/lib/serverFetch";
+import { extractIdFromSlug } from "@/utils/utils";
 import ProfilePage from "@/views/Profile/ProfilePage";
 
 type Props = { params: Promise<{ seoPath: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { seoPath } = await params;
-  const id = seoPath.split("-")[0];
+  const id = extractIdFromSlug(seoPath) || seoPath.split("-")[0];
   const fullPath = `/perfil/${seoPath}`;
   try {
-    const res = await fetch(API_ENDPOINTS.professionals.detail(id), {
+    const res = await fetchWithApiKey(API_ENDPOINTS.professionals.detail(id), {
       next: { revalidate: 3600 },
     });
     if (res.ok) {
@@ -17,9 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const professional = data?.data ?? data;
       const company = professional?.Company?.[0];
       const name =
-        company?.name ??
-        professional?.Profile?.display_name ??
-        "Profesional";
+        company?.name ?? professional?.Profile?.display_name ?? "Profesional";
       const avatar = professional?.Profile?.avatar_url;
       const description =
         company?.description ||
@@ -47,11 +47,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params }: Props) {
   const { seoPath } = await params;
-  const id = seoPath.split("-")[0];
+  const id = extractIdFromSlug(seoPath) || seoPath.split("-")[0];
   let profData: any = null;
 
   try {
-    const res = await fetch(API_ENDPOINTS.professionals.detail(id), {
+    const res = await fetchWithApiKey(API_ENDPOINTS.professionals.detail(id), {
       next: { revalidate: 3600 },
     });
     if (res.ok) {

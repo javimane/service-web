@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { API_ENDPOINTS } from "@/services/api.config";
+import { fetchWithApiKey } from "@/lib/serverFetch";
+import { extractIdFromSlug } from "@/utils/utils";
 import PromotionDetailPage from "@/views/Promotions/PromotionDetailPage";
 
 type Props = { params: Promise<{ seoPath: string[] }> };
@@ -7,10 +9,11 @@ type Props = { params: Promise<{ seoPath: string[] }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { seoPath } = await params;
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
+  const id = extractIdFromSlug(pathString) || pathString.split("-")[0];
   const fullPath = `/promociones/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   try {
-    const res = await fetch(
-      API_ENDPOINTS.professionalPromotions.detail(pathString.split("-")[0]),
+    const res = await fetchWithApiKey(
+      API_ENDPOINTS.professionalPromotions.detail(id),
       { next: { revalidate: 3600 } },
     );
     if (res.ok) {
@@ -43,13 +46,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const { seoPath } = await params;
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
+  const id = extractIdFromSlug(pathString) || pathString.split("-")[0];
   const fullPath = `/promociones/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   let jsonLd: any = null;
   let promoData: any = null;
 
   try {
-    const res = await fetch(
-      API_ENDPOINTS.professionalPromotions.detail(pathString.split("-")[0]),
+    const res = await fetchWithApiKey(
+      API_ENDPOINTS.professionalPromotions.detail(id),
       { next: { revalidate: 3600 } },
     );
     if (res.ok) {
@@ -63,12 +67,12 @@ export default async function Page({ params }: Props) {
         jsonLd = {
           "@context": "https://schema.org",
           "@type": "Offer",
-          "name": title,
-          "description": description || `Promoción ${title} en Sercio.`,
-          "image": image || undefined,
-          "url": `https://sercio.com.ar${fullPath}`,
-          "priceCurrency": "ARS",
-          "availability": "https://schema.org/InStock",
+          name: title,
+          description: description || `Promoción ${title} en Sercio.`,
+          image: image || undefined,
+          url: `https://sercio.com.ar${fullPath}`,
+          priceCurrency: "ARS",
+          availability: "https://schema.org/InStock",
         };
       }
     }

@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 import { API_ENDPOINTS } from "@/services/api.config";
+import { fetchWithApiKey } from "@/lib/serverFetch";
+import { extractIdFromSlug } from "@/utils/utils";
 import BankPromotionDetailPage from "@/views/Promotions/BankPromotionDetailPage";
 
 type Props = { params: Promise<{ seoPath: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { seoPath } = await params;
-  const id = seoPath.split("-")[0];
+  const id = extractIdFromSlug(seoPath) || seoPath.split("-")[0];
   const fullPath = `/promociones-bancarias/${seoPath}`;
   try {
-    const res = await fetch(
-      API_ENDPOINTS.bankPromotions.detail(id),
-      { next: { revalidate: 3600 } },
-    );
+    const res = await fetchWithApiKey(API_ENDPOINTS.bankPromotions.detail(id), {
+      next: { revalidate: 3600 },
+    });
     if (res.ok) {
       const data = await res.json();
       const promo = data?.data ?? data;
@@ -45,14 +46,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params }: Props) {
   const { seoPath } = await params;
-  const id = seoPath.split("-")[0];
+  const id = extractIdFromSlug(seoPath) || seoPath.split("-")[0];
   let bankPromoData: any = null;
 
   try {
-    const res = await fetch(
-      API_ENDPOINTS.bankPromotions.detail(id),
-      { next: { revalidate: 3600 } },
-    );
+    const res = await fetchWithApiKey(API_ENDPOINTS.bankPromotions.detail(id), {
+      next: { revalidate: 3600 },
+    });
     if (res.ok) {
       const data = await res.json();
       bankPromoData = data?.data ?? data;

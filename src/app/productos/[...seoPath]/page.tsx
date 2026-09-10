@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { API_ENDPOINTS } from "@/services/api.config";
+import { fetchWithApiKey } from "@/lib/serverFetch";
+import { extractIdFromSlug } from "@/utils/utils";
 import ProductDetailPage from "@/views/Products/ProductDetailPage";
 
 type Props = { params: Promise<{ seoPath: string[] }> };
@@ -7,12 +9,12 @@ type Props = { params: Promise<{ seoPath: string[] }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { seoPath } = await params;
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
+  const id = extractIdFromSlug(pathString) || pathString.split("-")[0];
   const fullPath = `/productos/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   try {
-    const res = await fetch(
-      API_ENDPOINTS.products.detail(pathString.split("-")[0]),
-      { next: { revalidate: 3600 } },
-    );
+    const res = await fetchWithApiKey(API_ENDPOINTS.products.detail(id), {
+      next: { revalidate: 3600 },
+    });
     if (res.ok) {
       const data = await res.json();
       const product = data?.data ?? data;
@@ -45,20 +47,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const { seoPath } = await params;
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
+  const id = extractIdFromSlug(pathString) || pathString.split("-")[0];
   const fullPath = `/productos/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   let jsonLd: any = null;
   let productData: any = null;
 
   try {
-    const res = await fetch(
-      API_ENDPOINTS.products.detail(pathString.split("-")[0]),
-      { next: { revalidate: 3600 } },
-    );
+    const res = await fetchWithApiKey(API_ENDPOINTS.products.detail(id), {
+      next: { revalidate: 3600 },
+    });
     if (res.ok) {
       const data = await res.json();
       productData = data?.data ?? data;
       const name = productData?.Product?.name ?? productData?.name;
-      const description = productData?.Product?.description ?? productData?.description;
+      const description =
+        productData?.Product?.description ?? productData?.description;
       const image = productData?.Product?.image_url ?? productData?.image_url;
       const price = productData?.Product?.price ?? productData?.price;
 
@@ -66,15 +69,15 @@ export default async function Page({ params }: Props) {
         jsonLd = {
           "@context": "https://schema.org",
           "@type": "Product",
-          "name": name,
-          "description": description || `Producto ${name} disponible en Sercio.`,
-          "image": image || undefined,
-          "offers": {
+          name: name,
+          description: description || `Producto ${name} disponible en Sercio.`,
+          image: image || undefined,
+          offers: {
             "@type": "Offer",
-            "priceCurrency": "ARS",
-            "price": price || undefined,
-            "availability": "https://schema.org/InStock",
-            "url": `https://sercio.com.ar${fullPath}`,
+            priceCurrency: "ARS",
+            price: price || undefined,
+            availability: "https://schema.org/InStock",
+            url: `https://sercio.com.ar${fullPath}`,
           },
         };
       }

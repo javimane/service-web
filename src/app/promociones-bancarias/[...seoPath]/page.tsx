@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { API_ENDPOINTS } from "@/services/api.config";
+import { fetchWithApiKey } from "@/lib/serverFetch";
+import { extractIdFromSlug } from "@/utils/utils";
 import BankPromotionDetailPage from "@/views/Promotions/BankPromotionDetailPage";
 
 type Props = { params: Promise<{ seoPath: string[] }> };
@@ -7,12 +9,12 @@ type Props = { params: Promise<{ seoPath: string[] }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { seoPath } = await params;
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
+  const id = extractIdFromSlug(pathString) || pathString.split("-")[0];
   const fullPath = `/promociones-bancarias/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   try {
-    const res = await fetch(
-      API_ENDPOINTS.bankPromotions.detail(pathString.split("-")[0]),
-      { next: { revalidate: 3600 } },
-    );
+    const res = await fetchWithApiKey(API_ENDPOINTS.bankPromotions.detail(id), {
+      next: { revalidate: 3600 },
+    });
     if (res.ok) {
       const data = await res.json();
       const promo = data?.data ?? data;
@@ -46,19 +48,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const { seoPath } = await params;
   const pathString = Array.isArray(seoPath) ? seoPath[0] : seoPath;
+  const id = extractIdFromSlug(pathString) || pathString.split("-")[0];
   const fullPath = `/promociones-bancarias/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
   let jsonLd: any = null;
   let bankPromoData: any = null;
 
   try {
-    const res = await fetch(
-      API_ENDPOINTS.bankPromotions.detail(pathString.split("-")[0]),
-      { next: { revalidate: 3600 } },
-    );
+    const res = await fetchWithApiKey(API_ENDPOINTS.bankPromotions.detail(id), {
+      next: { revalidate: 3600 },
+    });
     if (res.ok) {
       const data = await res.json();
       bankPromoData = data?.data ?? data;
-      const companyName = bankPromoData?.Professional?.Company?.[0]?.name ?? "Comercio";
+      const companyName =
+        bankPromoData?.Professional?.Company?.[0]?.name ?? "Comercio";
       const discount = bankPromoData?.percentaje_discount
         ? `${bankPromoData.percentaje_discount}% de descuento`
         : "Promoción bancaria";
@@ -69,12 +72,12 @@ export default async function Page({ params }: Props) {
         jsonLd = {
           "@context": "https://schema.org",
           "@type": "Offer",
-          "name": title,
-          "description":
+          name: title,
+          description:
             description || `Descuento bancario en ${companyName} con Sercio.`,
-          "url": `https://sercio.com.ar${fullPath}`,
-          "priceCurrency": "ARS",
-          "availability": "https://schema.org/InStock",
+          url: `https://sercio.com.ar${fullPath}`,
+          priceCurrency: "ARS",
+          availability: "https://schema.org/InStock",
         };
       }
     }

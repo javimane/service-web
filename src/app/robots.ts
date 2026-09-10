@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/panel/", "/configuracion/"],
+      disallow: ["/panel/", "/configuracion/", "/api/"],
     },
     sitemap: "https://sercio.com.ar/sitemap.xml",
   };

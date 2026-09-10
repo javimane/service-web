@@ -1,16 +1,22 @@
 import { MetadataRoute } from "next";
+import { getApiKey } from "@/lib/serverFetch";
+
+// Revalidar el sitemap cada hora para que siempre tenga contenido actualizado
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://sercio.com.ar";
+  const configuredApiUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+  // En producción, si la URL no está definida o apunta a localhost, usar la API pública oficial
   const apiUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://api.sercio.com.ar";
-  const apiKey =
-    process.env.WEB_API_KEY ||
-    process.env.NEXT_PUBLIC_WEB_API_KEY ||
-    process.env.NEXT_PUBLIC_API_KEY ||
-    "";
+    configuredApiUrl && !configuredApiUrl.includes("localhost")
+      ? configuredApiUrl
+      : process.env.NODE_ENV === "production"
+        ? "https://api.sercio.com.ar"
+        : configuredApiUrl || "http://localhost:3000";
+
+  const apiKey = getApiKey();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     "",
@@ -40,16 +46,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
       next: { revalidate: 3600 }, // Cache by 1 hour
     });
-    
+
     if (response.ok) {
       const dynamicPaths = await response.json();
-      
-      const dynamicRoutes: MetadataRoute.Sitemap = dynamicPaths.map((item: any) => ({
-        url: `${baseUrl}${item.url}`,
-        lastModified: new Date(),
-        changeFrequency: item.changeFrequency || "weekly",
-        priority: item.priority || 0.8,
-      }));
+
+      const dynamicRoutes: MetadataRoute.Sitemap = dynamicPaths.map(
+        (item: any) => ({
+          url: `${baseUrl}${item.url}`,
+          lastModified:
+            item.updated_at || item.lastModified
+              ? new Date(item.updated_at || item.lastModified)
+              : new Date(),
+          changeFrequency: item.changeFrequency || "weekly",
+          priority: item.priority || 0.8,
+        }),
+      );
 
       return [...staticRoutes, ...dynamicRoutes];
     }

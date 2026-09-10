@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { API_ENDPOINTS } from "@/services/api.config";
+import { fetchWithApiKey } from "@/lib/serverFetch";
 import ProfilePage from "@/views/Profile/ProfilePage";
 import ProfessionalStorePage from "@/views/ProfessionalStore/ProfessionalStorePage";
 
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = seoPath[seoPath.length - 1];
   const fullPath = `/perfil/${seoPath.join("/")}`;
   try {
-    const res = await fetch(API_ENDPOINTS.professionals.detail(id), {
+    const res = await fetchWithApiKey(API_ENDPOINTS.professionals.detail(id), {
       next: { revalidate: 3600 },
     });
     if (res.ok) {
@@ -25,9 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const professional = data?.data ?? data;
       const company = professional?.Company?.[0];
       const name =
-        company?.name ??
-        professional?.Profile?.display_name ??
-        "Profesional";
+        company?.name ?? professional?.Profile?.display_name ?? "Profesional";
       const avatar = professional?.Profile?.avatar_url;
       const description =
         company?.description ||
@@ -67,7 +66,7 @@ export default async function Page({ params }: Props) {
   let profData: any = null;
 
   try {
-    const res = await fetch(API_ENDPOINTS.professionals.detail(id), {
+    const res = await fetchWithApiKey(API_ENDPOINTS.professionals.detail(id), {
       next: { revalidate: 3600 },
     });
     if (res.ok) {
@@ -76,27 +75,31 @@ export default async function Page({ params }: Props) {
       const company = profData?.Company?.[0];
       const name = company?.name ?? profData?.Profile?.display_name;
       const avatar = profData?.Profile?.avatar_url;
-      const mainAddress = company?.address || company?.Address || profData?.address;
-      const addressObj = Array.isArray(mainAddress) ? mainAddress[0] : mainAddress;
+      const mainAddress =
+        company?.address || company?.Address || profData?.address;
+      const addressObj = Array.isArray(mainAddress)
+        ? mainAddress[0]
+        : mainAddress;
 
       if (name) {
         jsonLd = {
           "@context": "https://schema.org",
           "@type": "ProfessionalService",
-          "name": name,
-          "description":
-            company?.description ||
-            `Perfil profesional de ${name} en Sercio.`,
-          "url": `https://sercio.com.ar/perfil/${seoPath.join("/")}`,
-          "image": avatar || undefined,
-          "address": addressObj
+          name: name,
+          description:
+            company?.description || `Perfil profesional de ${name} en Sercio.`,
+          url: `https://sercio.com.ar/perfil/${seoPath.join("/")}`,
+          image: avatar || undefined,
+          address: addressObj
             ? {
                 "@type": "PostalAddress",
-                "streetAddress": `${addressObj.street_name || ""} ${addressObj.street_number || ""}`.trim() || undefined,
-                "addressLocality": addressObj.Department?.name || undefined,
-                "addressRegion": addressObj.Province?.name || undefined,
-                "postalCode": addressObj.zip_code || undefined,
-                "addressCountry": "AR",
+                streetAddress:
+                  `${addressObj.street_name || ""} ${addressObj.street_number || ""}`.trim() ||
+                  undefined,
+                addressLocality: addressObj.Department?.name || undefined,
+                addressRegion: addressObj.Province?.name || undefined,
+                postalCode: addressObj.zip_code || undefined,
+                addressCountry: "AR",
               }
             : undefined,
         };
