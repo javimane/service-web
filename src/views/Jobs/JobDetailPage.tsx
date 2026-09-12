@@ -10,11 +10,21 @@ import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { extractIdFromSlug } from "@/utils/utils";
 import "./JobDetailPage.css";
 
-export default function JobDetailPage() {
+interface JobDetailPageProps {
+  initialData?: any;
+  jobId?: string;
+}
+
+export default function JobDetailPage({
+  initialData,
+  jobId,
+}: JobDetailPageProps = {}) {
   const params = useParams();
-  const id = params.id as string;
+  const rawSeo = params?.seoPath as string | string[] | undefined;
+  const id = jobId || (params?.id as string) || extractIdFromSlug(rawSeo);
   const router = useRouter();
 
   const {
@@ -29,6 +39,7 @@ export default function JobDetailPage() {
       if (res?.serverError) throw new Error(res.serverError);
       return res?.data;
     },
+    initialData: initialData ?? undefined,
     enabled: !!id,
   });
 

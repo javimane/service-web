@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getJobByIdAction, Job } from "@/app/actions/jobs";
+import { extractIdFromSlug } from "@/utils/utils";
 import JobDetailPage from "@/views/Jobs/JobDetailPage";
 
 type Props = {
-  params: Promise<{ seoPath: string; id: string }>;
+  params: Promise<{ seoPath: string[] }>;
 };
 
-async function getJob(id: string): Promise<Job | null> {
+async function getJob(seoPath: string[] | string): Promise<Job | null> {
+  const id =
+    extractIdFromSlug(seoPath) ||
+    (Array.isArray(seoPath) ? seoPath[seoPath.length - 1] : seoPath);
+
   if (!id) return null;
+
   try {
     const res = await getJobByIdAction({ id });
     return res?.data ?? null;
@@ -30,9 +36,9 @@ function getModalityText(job: Job): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { seoPath, id } = await params;
-  const fullPath = `/empleo/${seoPath}/${id}`;
-  const job = await getJob(id);
+  const { seoPath } = await params;
+  const fullPath = `/empleos/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
+  const job = await getJob(seoPath);
 
   if (!job) {
     return {
@@ -71,9 +77,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Page({ params }: Props) {
-  const { seoPath, id } = await params;
-  const fullPath = `/empleo/${seoPath}/${id}`;
-  const job = await getJob(id);
+  const { seoPath } = await params;
+  const fullPath = `/empleos/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
+  const job = await getJob(seoPath);
 
   if (!job) {
     notFound();
@@ -135,6 +141,10 @@ export default async function Page({ params }: Props) {
     directApply: true,
     url: `https://sercio.com.ar${fullPath}`,
   };
+
+  const id =
+    extractIdFromSlug(seoPath) ||
+    (Array.isArray(seoPath) ? seoPath[seoPath.length - 1] : seoPath);
 
   return (
     <>

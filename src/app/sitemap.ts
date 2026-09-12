@@ -1,8 +1,9 @@
 import { MetadataRoute } from "next";
 import { getApiKey } from "@/lib/serverFetch";
 
-// Revalidar el sitemap cada hora para que siempre tenga contenido actualizado
-export const revalidate = 3600;
+// Forzar a Next.js a ejecutar el sitemap de forma dinámica en cada consulta
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://sercio.com.ar";
@@ -44,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       headers: {
         "x-api-key": apiKey,
       },
-      next: { revalidate: 3600 }, // Cache by 1 hour
+      cache: "no-store",
     });
 
     if (response.ok) {

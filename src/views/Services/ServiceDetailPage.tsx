@@ -15,7 +15,6 @@ import {
 import { getServiceDetailAction } from "../../app/actions/services";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
-import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAlert } from "../../context/AlertContext";
 import "./ServiceDetailPage.css";
@@ -151,10 +150,6 @@ export default function ServiceDetailPage({
 
   return (
     <>
-      <SEO
-        title={`${service.name} - Servicios Profesionales`}
-        description={service.description || "Conocé este servicio profesional."}
-      />
       <Navbar />
 
       <main className="service-detail-page">

@@ -25,8 +25,10 @@ export interface Job {
     name: string;
   };
   professional?: {
+    seo_path?: string;
     profile?: {
       avatar_url?: string;
+      display_name?: string;
     };
     companies?: {
       name: string;
@@ -77,9 +79,7 @@ export const getJobsAction = publicAction
       return response.data as FindAllJobsResponse;
     } catch (error: any) {
       console.error("Error fetching jobs:", error.message);
-      throw new Error(
-        error.response?.data?.message || "Error fetching jobs",
-      );
+      throw new Error(error.response?.data?.message || "Error fetching jobs");
     }
   });
 
@@ -131,9 +131,7 @@ export const createJobAction = publicAction
       return response.data as Job;
     } catch (error: any) {
       console.error("Error creating job:", error.message);
-      throw new Error(
-        error.response?.data?.message || "Error creating job",
-      );
+      throw new Error(error.response?.data?.message || "Error creating job");
     }
   });
 
@@ -164,9 +162,7 @@ export const updateJobAction = publicAction
       return response.data as Job;
     } catch (error: any) {
       console.error("Error updating job:", error.message);
-      throw new Error(
-        error.response?.data?.message || "Error updating job",
-      );
+      throw new Error(error.response?.data?.message || "Error updating job");
     }
   });
 
@@ -188,8 +184,6 @@ export const deleteJobAction = publicAction
       return response.data;
     } catch (error: any) {
       console.error("Error deleting job:", error.message);
-      throw new Error(
-        error.response?.data?.message || "Error deleting job",
-      );
+      throw new Error(error.response?.data?.message || "Error deleting job");
     }
   });

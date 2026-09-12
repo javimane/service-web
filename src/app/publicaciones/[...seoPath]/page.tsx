@@ -1,25 +1,37 @@
-import { Metadata } from "next";
-import { getPublicationByIdAction } from "@/app/actions/publications";
-import PublicationPage from "@/views/Publication/PublicationPage";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import {
+  getPublicationByIdAction,
+  Publication,
+} from "@/app/actions/publications";
+import { extractIdFromSlug } from "@/utils/utils";
+import PublicationPage from "@/views/Publication/PublicationPage";
 
-export async function generateMetadata({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ seoPath: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}): Promise<Metadata> {
-  const { seoPath } = await params;
-  const { id } = await searchParams;
+type Props = {
+  params: Promise<{ seoPath: string[] }>;
+};
 
-  if (!id || typeof id !== "string") {
-    return {
-      title: "Publicación | Sercio",
-    };
+async function getPublication(
+  seoPath: string[] | string,
+): Promise<Publication | null> {
+  const id =
+    extractIdFromSlug(seoPath) ||
+    (Array.isArray(seoPath) ? seoPath[seoPath.length - 1] : seoPath);
+
+  if (!id) return null;
+
+  try {
+    const res = await getPublicationByIdAction({ id });
+    return res?.data ?? null;
+  } catch {
+    return null;
   }
+}
 
-  const { data: publication } = await getPublicationByIdAction({ id });
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { seoPath } = await params;
+  const fullPath = `/publicaciones/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
+  const publication = await getPublication(seoPath);
 
   if (!publication) {
     return {
@@ -41,7 +53,6 @@ export async function generateMetadata({
     .slice(0, 160);
 
   const title = `${publication.title} | ${authorName}${province ? ` (${province})` : ""} - Sercio`;
-  const fullPath = `/publicacion/${seoPath}?id=${id}`;
 
   return {
     title,
@@ -62,25 +73,12 @@ export async function generateMetadata({
   };
 }
 
-export default async function Page({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ seoPath: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
+export default async function Page({ params }: Props) {
   const { seoPath } = await params;
-  const { id } = await searchParams;
+  const fullPath = `/publicaciones/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
+  const publication = await getPublication(seoPath);
 
-  if (!id || typeof id !== "string") {
-    notFound();
-  }
-
-  const { data: publication, serverError } = await getPublicationByIdAction({
-    id,
-  });
-
-  if (!publication || serverError) {
+  if (!publication) {
     notFound();
   }
 
@@ -92,7 +90,6 @@ export default async function Page({
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 250);
-  const fullPath = `/publicacion/${seoPath}?id=${id}`;
 
   const professionalSeo = publication.professional?.seo_path
     ? `/perfil${publication.professional.seo_path.startsWith("/") ? publication.professional.seo_path : `/${publication.professional.seo_path}`}`

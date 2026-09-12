@@ -790,7 +790,9 @@ export default function ProfilePage({
   const mainAddress =
     addresses.find((a: any) => a?.is_main_address) || addresses[0];
   const provinceName =
-    provinces.find((p: any) => p.id === mainAddress?.province_id)?.name || "";
+    mainAddress?.Province?.name ||
+    provinces.find((p: any) => p.id === mainAddress?.province_id)?.name ||
+    "";
 
   const paymentMethods = useMemo(() => {
     if (!company) return [];
@@ -876,22 +878,6 @@ export default function ProfilePage({
 
   return (
     <div className="profile-page">
-      <SEO
-        title={`${name} - ${professional.bio?.slice(0, 50) || "Profesional"}`}
-        description={
-          professional.bio ||
-          `Conocé el perfil de ${name}, sus servicios, productos y opiniones de clientes.`
-        }
-        image={avatar}
-        url={
-          typeof window !== "undefined"
-            ? window.location.href
-            : professional.seo_path
-              ? `/perfil${professional.seo_path.startsWith("/") ? professional.seo_path : `/${professional.seo_path}`}`
-              : `/perfil/${rawId}`
-        }
-        schema={professionalSchema}
-      />
       <Navbar />
 
       <main className="profile-page__layout container">
