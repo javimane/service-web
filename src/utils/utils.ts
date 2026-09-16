@@ -30,36 +30,51 @@ export const getProfilePath = (
   return `/perfil/${id}`;
 };
 
-export const extractIdFromSlug = (slug: string | string[] | undefined): string => {
+export const isUuid = (value: unknown): boolean => {
+  if (typeof value !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+};
+
+export const extractIdFromSlug = (
+  slug: string | string[] | undefined,
+): string => {
   if (!slug) return "";
 
-  // Handle array from Next.js catch-all routes
-  let cleanSlug = Array.isArray(slug) ? (slug[slug.length - 1] || "") : slug;
-  if (!cleanSlug) return "";
+  const fullStr = Array.isArray(slug) ? slug.join("/") : String(slug);
 
-  // If it's a full path or has query params, try to get the part after the last / or =
+  // 1. Check if the string contains a UUID anywhere
+  const uuidMatch = fullStr.match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+  );
+  if (uuidMatch) {
+    return uuidMatch[0];
+  }
+
+  // 2. Handle query param ?id=
+  let cleanSlug = Array.isArray(slug) ? slug[slug.length - 1] || "" : slug;
   if (cleanSlug.includes("?id=")) {
-    cleanSlug = cleanSlug.split("?id=")[1];
-  } else if (cleanSlug.includes("/")) {
-    cleanSlug = cleanSlug.split("/").pop() || "";
+    const qId = cleanSlug.split("?id=")[1].split("&")[0];
+    if (/^\d+$/.test(qId) || isUuid(qId)) return qId;
   }
 
+  // 3. Fallback for purely numeric IDs (e.g. professional profile id: "37" or "estudio-37")
+  if (cleanSlug.includes("/")) {
+    cleanSlug = cleanSlug.split("/").filter(Boolean).pop() || "";
+  }
   const parts = cleanSlug.split("-");
-
-  // UUID check: 5 parts with specific lengths (8-4-4-4-12)
-  if (
-    parts.length >= 5 &&
-    parts[0].length === 8 &&
-    parts[1].length === 4 &&
-    parts[2].length === 4 &&
-    parts[3].length === 4 &&
-    parts[4].length === 12
-  ) {
-    return parts.slice(0, 5).join("-");
+  const lastPart = parts[parts.length - 1];
+  if (/^\d+$/.test(lastPart)) {
+    return lastPart;
+  }
+  const firstPart = parts[0];
+  if (/^\d+$/.test(firstPart)) {
+    return firstPart;
   }
 
-  // Fallback to first part for numeric IDs
-  return parts[0];
+  // If neither UUID nor number, it's a semantic slug or search query (not an ID)
+  return "";
 };
 
 /**

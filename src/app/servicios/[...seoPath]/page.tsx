@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
+import { permanentRedirect } from "next/navigation";
 import { API_ENDPOINTS } from "@/services/api.config";
 import { fetchWithApiKey } from "@/lib/serverFetch";
-import { extractIdFromSlug } from "@/utils/utils";
+import { extractIdFromSlug, isUuid } from "@/utils/utils";
 import ServiceDetailPage from "@/views/Services/ServiceDetailPage";
 
 type Props = { params: Promise<{ seoPath: string[] }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { seoPath } = await params;
-  const id =
-    extractIdFromSlug(seoPath) ||
-    (Array.isArray(seoPath) ? seoPath[seoPath.length - 1] : seoPath);
+  const id = extractIdFromSlug(seoPath);
   const fullPath = `/servicios/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
+
+  if (!id || !isUuid(id)) {
+    return { title: "Servicios - Sercio" };
+  }
 
   try {
     const res = await fetchWithApiKey(API_ENDPOINTS.services.detail(id), {
@@ -67,10 +70,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params }: Props) {
   const { seoPath } = await params;
-  const id =
-    extractIdFromSlug(seoPath) ||
-    (Array.isArray(seoPath) ? seoPath[seoPath.length - 1] : seoPath);
+  const id = extractIdFromSlug(seoPath);
   const fullPath = `/servicios/${Array.isArray(seoPath) ? seoPath.join("/") : seoPath}`;
+
+  if (!id || !isUuid(id)) {
+    permanentRedirect(
+      `/servicios?search=${encodeURIComponent(seoPath.join(" "))}`,
+    );
+  }
+
   let jsonLd: any = null;
   let serviceData: any = null;
 

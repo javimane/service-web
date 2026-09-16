@@ -96,9 +96,11 @@ export default async function Page({ params }: Props) {
     ? `/perfil${job.professional.seo_path.startsWith("/") ? job.professional.seo_path : `/${job.professional.seo_path}`}`
     : `/perfil/${job.professional_id || ""}`;
 
-  const validThroughDate = new Date(
-    new Date(job.created_at || Date.now()).getTime() + 90 * 24 * 60 * 60 * 1000,
-  ).toISOString();
+  const validThroughDate = job.created_at
+    ? new Date(
+        new Date(job.created_at).getTime() + 90 * 24 * 60 * 60 * 1000,
+      ).toISOString()
+    : undefined;
 
   const jsonLd = {
     "@context": "https://schema.org",
