@@ -10,6 +10,8 @@ import {
   Eye,
   AlertTriangle,
   X,
+  Award,
+  Star,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -49,6 +51,17 @@ import FAQSection from "../FAQ/FAQSection";
 import ErrorReportSection from "./sections/ErrorReportSection";
 import Navbar from "../../components/Navbar/Navbar";
 import UnverifiedAccountModal from "./sections/UnverifiedAccountModal";
+import SalesSection from "./sections/SalesSection";
+import LiquidationsSection from "./sections/LiquidationsSection";
+import CommercialDataSection from "./sections/CommercialDataSection";
+import BranchesSection from "./sections/BranchesSection";
+import RidersSection from "./sections/RidersSection";
+import FleetMapSection from "./sections/FleetMapSection";
+import BuyerOrdersSection from "./sections/BuyerOrdersSection";
+import FavoritesSection from "./sections/FavoritesSection";
+import CartSection from "./sections/CartSection";
+import ReputationSection from "./sections/ReputationSection";
+import { commerceService } from "../../services/commerceService";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -120,6 +133,13 @@ export default function DashboardPage() {
       return raw ?? null;
     },
     enabled: !!professionalId,
+  });
+
+  const { data: professionalScore } = useQuery({
+    queryKey: ["professional-score", professionalId],
+    queryFn: () => commerceService.getProfessionalScore(professionalId!),
+    enabled: !!professionalId,
+    staleTime: 60 * 1000,
   });
 
   const profileViews = myProfessional?.profile_views ?? 0;
@@ -267,6 +287,16 @@ export default function DashboardPage() {
     "referrals",
     "faq",
     "report-errors",
+    "sales",
+    "liquidations",
+    "commercial-data",
+    "branches",
+    "riders",
+    "fleet-map",
+    "purchases",
+    "favorites",
+    "cart",
+    "reputation",
   ]);
   const shouldLockDashboardView =
     isProfessionalUser &&
@@ -519,6 +549,26 @@ export default function DashboardPage() {
                 onCreateNew={() => handleShowProductsCreate()}
                 onEdit={handleShowProductsCreate}
               />
+            ) : view === "sales" ? (
+              <SalesSection />
+            ) : view === "liquidations" ? (
+              <LiquidationsSection />
+            ) : view === "commercial-data" ? (
+              <CommercialDataSection />
+            ) : view === "branches" ? (
+              <BranchesSection />
+            ) : view === "riders" ? (
+              <RidersSection />
+            ) : view === "fleet-map" ? (
+              <FleetMapSection />
+            ) : view === "purchases" ? (
+              <BuyerOrdersSection />
+            ) : view === "favorites" ? (
+              <FavoritesSection />
+            ) : view === "cart" ? (
+              <CartSection />
+            ) : view === "reputation" ? (
+              <ReputationSection professionalIdProp={professionalId} />
             ) : view === "services" ? (
               <DashboardServices />
             ) : view === "notifications" ? (
@@ -597,6 +647,30 @@ export default function DashboardPage() {
                         <h2 className="big-value">
                           {acceptedProposalsCount !== null
                             ? acceptedProposalsCount.toLocaleString("es-AR")
+                            : "--"}
+                        </h2>
+                      </div>
+                    </div>
+
+                    <div
+                      className="stat-card compact-stat-box stat-card--interactive"
+                      onClick={() => router.push(`${ROUTES.dashboard}?view=reputation`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          router.push(`${ROUTES.dashboard}?view=reputation`);
+                        }
+                      }}
+                    >
+                      <div className="stat-card__icon-wrap">
+                        <Award size={20} className="icon-blue" />
+                      </div>
+                      <div className="stat-value-group">
+                        <span className="card-label">REPUTACIÓN Y SCORE</span>
+                        <h2 className="big-value">
+                          {professionalScore?.score !== undefined
+                            ? `${professionalScore.score} pts`
                             : "--"}
                         </h2>
                       </div>

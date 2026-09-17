@@ -1,0 +1,368 @@
+.liquidations-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.liquidations-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.liquidations-section__subtitle {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.liquidations-section__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-black);
+  color: var(--text-primary);
+  margin-top: var(--space-1);
+}
+
+/* Metrics */
+.liquidations-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.liquidations-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquidations-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent-color);
+}
+
+.liquidations-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.liquidations-card__icon--green {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green-dark);
+}
+
+.liquidations-card__icon--amber {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--amber-dark);
+}
+
+.liquidations-card__icon--blue {
+  background: var(--brand-blue-soft);
+  color: var(--brand-blue);
+}
+
+.liquidations-card__icon--teal {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--teal-accent);
+}
+
+.liquidations-card__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.liquidations-card__label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.liquidations-card__value {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+  margin-top: var(--space-1);
+}
+
+.liquidations-card__value--date {
+  font-size: var(--text-lg);
+}
+
+/* Filters */
+.liquidations-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.liquidations-filter-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.liquidations-filter-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.liquidations-filter-btn--active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: var(--white);
+}
+
+.liquidations-filter-btn--active:hover {
+  background: var(--accent-hover);
+  color: var(--white);
+}
+
+/* Table */
+.liquidations-table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.liquidations-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.liquidations-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.liquidations-table th {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.liquidations-table td {
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.liquidations-table tr:hover td {
+  background: var(--surface-soft);
+}
+
+.liquidations-table__id {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+  color: var(--brand-blue);
+}
+
+.liquidations-table__deduction {
+  color: var(--error-color);
+  font-weight: var(--weight-medium);
+}
+
+.liquidations-table__net {
+  font-weight: var(--weight-bold);
+  color: var(--green-dark);
+}
+
+.liquidations-action-btn {
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.liquidations-action-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.receipt-download-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--brand-blue);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.receipt-unavailable {
+  color: var(--text-secondary);
+}
+
+/* Badges */
+.liq-badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+
+.liq-badge--available {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green-dark);
+}
+
+.liq-badge--process {
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--amber-dark);
+}
+
+.liq-badge--settled {
+  background: var(--brand-blue-soft);
+  color: var(--brand-blue);
+}
+
+.liq-badge--withheld {
+  background: rgba(250, 82, 82, 0.15);
+  color: var(--error-color);
+}
+
+/* States */
+.liquidations-state {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-12);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+}
+
+.liquidations-state--error {
+  color: var(--error-color);
+}
+
+.liquidations-state__spinner {
+  animation: spin 1s linear infinite;
+  color: var(--accent-color);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Modal Detail */
+.liquidation-detail-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.liq-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  padding: var(--space-1) 0;
+}
+
+.liq-detail-deduction {
+  color: var(--error-color);
+  font-weight: var(--weight-medium);
+}
+
+.liq-detail-row--total {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-color);
+}
+
+.liq-detail-orders-section {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--slate-200);
+  padding-top: var(--space-4);
+}
+
+.liq-detail-orders-section h4 {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.liq-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.liq-order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.liq-order-item strong {
+  font-family: var(--font-mono);
+  color: var(--brand-blue);
+}
+
+.liq-order-item p {
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+.liq-order-total {
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.liq-orders-empty {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}

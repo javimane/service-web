@@ -24,4 +24,6 @@ export const ROUTES = {
   publications: "/publicaciones",
   jobs: "/empleos",
   job: "/empleo",
+  cart: "/carrito",
+  purchases: "/compras",
 };

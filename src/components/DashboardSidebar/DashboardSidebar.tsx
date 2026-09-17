@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import {
   LayoutDashboard,
@@ -29,12 +30,22 @@ import {
   Users,
   Image as ImageIcon,
   AlertTriangle,
+  Building2,
+  Store,
+  Truck,
+  Map as MapIcon,
+  ShoppingBag,
+  Heart,
+  ShoppingCart,
+  Award,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
 import Modal from "../Modal/Modal";
 import { userService } from "../../services/userService";
+import { commerceService } from "../../services/commerceService";
 import { useAlert } from "@/context/AlertContext";
 import logoWordmark from "../../images/Logo solo nombre sin fondo.png";
 
@@ -107,11 +118,29 @@ export default function DashboardSidebar({
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isLoadingWhatsApp, setIsLoadingWhatsApp] = useState(false);
 
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile-me"],
+    queryFn: () => commerceService.getUserProfile(),
+    enabled: Boolean(user),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isTransport = userProfile?.logistics_role === "transport_company";
+
   const toggleMenu = (key: string) => {
     setExpandedMenus((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const alwaysEnabledItems = new Set([
+    "overview",
+    "sales",
+    "liquidations",
+    "commercial-data",
+    "branches",
+    "riders",
+    "fleet-map",
+    "products",
+    "services",
     "proposals",
     "proposals-view",
     "job-requests",
@@ -121,6 +150,10 @@ export default function DashboardSidebar({
     "settings",
     "referrals",
     "faq",
+    "purchases",
+    "favorites",
+    "cart",
+    "reputation",
   ]);
 
   const isFreePlan = subscriptionPlan === "free";
@@ -162,7 +195,6 @@ export default function DashboardSidebar({
       setIsLoadingWhatsApp(true);
       const response = await userService.getMobilePhone();
       if (response && response.mobilePhone) {
-        // Clean the number from any non-numeric characters just in case
         const cleanNumber = response.mobilePhone.replace(/\D/g, "");
         window.open(`https://wa.me/${cleanNumber}`, "_blank");
       } else {
@@ -218,6 +250,86 @@ export default function DashboardSidebar({
       icon: LayoutDashboard,
       onClick: onDashboardClick ?? (() => router.push(ROUTES.dashboard)),
     },
+    // Commercial Sections
+    {
+      key: "sales",
+      label: "VENTAS",
+      icon: BarChart3,
+      onClick: () => goToDashboardView("sales"),
+    },
+    {
+      key: "liquidations",
+      label: "LIQUIDACIONES",
+      icon: CreditCard,
+      onClick: () => goToDashboardView("liquidations"),
+    },
+    {
+      key: "commercial-data",
+      label: "DATOS COMERCIALES",
+      icon: Building2,
+      onClick: () => goToDashboardView("commercial-data"),
+    },
+    {
+      key: "branches",
+      label: "SUCURSALES",
+      icon: Store,
+      onClick: () => goToDashboardView("branches"),
+    },
+    {
+      key: "reputation",
+      label: "REPUTACIÓN Y SCORE",
+      icon: Award,
+      onClick: () => goToDashboardView("reputation"),
+    },
+    // Transport & Logistics
+    ...(isTransport
+      ? [
+          {
+            key: "riders",
+            label: "RIDERS Y FLETEROS",
+            icon: Truck,
+            onClick: () => goToDashboardView("riders"),
+          },
+          {
+            key: "fleet-map",
+            label: "MAPA DE ENVÍOS",
+            icon: MapIcon,
+            onClick: () => goToDashboardView("fleet-map"),
+          },
+        ]
+      : []),
+    {
+      key: "products",
+      label: "PRODUCTOS",
+      icon: Package,
+      onClick: onProductsClick ?? (() => goToDashboardView("products")),
+    },
+    {
+      key: "services",
+      label: "SERVICIOS",
+      icon: Briefcase,
+      onClick: onServicesClick ?? (() => goToDashboardView("services")),
+    },
+    // Buyer Sections (Available to all users)
+    {
+      key: "purchases",
+      label: "COMPRAS",
+      icon: ShoppingBag,
+      onClick: () => goToDashboardView("purchases"),
+    },
+    {
+      key: "favorites",
+      label: "FAVORITOS",
+      icon: Heart,
+      onClick: () => goToDashboardView("favorites"),
+    },
+    {
+      key: "cart",
+      label: "CARRITO",
+      icon: ShoppingCart,
+      onClick: () => goToDashboardView("cart"),
+    },
+    // Profile & Professional Services
     {
       key: "profile",
       label: "PERFIL",
@@ -279,18 +391,6 @@ export default function DashboardSidebar({
         onBankPromosClick ?? (() => goToDashboardView("bank-promotions")),
     },
     {
-      key: "products",
-      label: "PRODUCTOS",
-      icon: Package,
-      onClick: onProductsClick ?? (() => goToDashboardView("products")),
-    },
-    {
-      key: "services",
-      label: "SERVICIOS",
-      icon: Briefcase,
-      onClick: onServicesClick ?? (() => goToDashboardView("services")),
-    },
-    {
       key: "jobs",
       label: "EMPLEOS",
       icon: Briefcase,
@@ -308,7 +408,6 @@ export default function DashboardSidebar({
       icon: CalendarDays,
       onClick: onCalendarClick ?? (() => goToDashboardView("calendar")),
     },
-
     {
       key: "reels",
       label: "HISTORIAS",
@@ -347,240 +446,118 @@ export default function DashboardSidebar({
       onClick: () => router.push(ROUTES.settings),
     },
     {
+      key: "faq",
+      label: "AYUDA",
+      icon: HelpCircle,
+      onClick: () => goToDashboardView("faq"),
+    },
+    {
       key: "report-errors",
       label: "REPORTAR ERROR",
       icon: AlertTriangle,
       onClick:
         onReportErrorsClick ?? (() => goToDashboardView("report-errors")),
     },
-    {
-      key: "faq",
-      label: "PREGUNTAS FRECUENTES",
-      icon: HelpCircle,
-      onClick: () => goToDashboardView("faq"),
-    },
   ];
 
-  const renderSupportActions = () => (
-    <>
-      <button
-        type="button"
-        className="nav-item footer-link footer-link--support"
-        onClick={() => handleNavigation(handleSupport)}
-        title="SOPORTE"
-      >
-        <HelpCircle size={18} />
-        <span className="nav-label">SOPORTE</span>
-      </button>
-    </>
-  );
+  const renderNavItems = () => {
+    return navItems.map((item) => {
+      const Icon = item.icon;
+      const isLocked = isItemLocked(item.key);
+      const isExpanded = expandedMenus[item.key];
+      const isActive =
+        activeItem === item.key ||
+        (item.subItems &&
+          item.subItems.some((sub) => activeItem === sub.key));
 
-  const renderNavItems = () =>
-    navItems.map(
-      ({ key, label, icon: Icon, onClick, expandable, subItems }) => {
-        const isParentLocked = isItemLocked(key);
-        const isExpanded =
-          expandedMenus[key] || subItems?.some((sub) => sub.key === activeItem);
-
-        if (expandable) {
-          return (
-            <div key={key} className="nav-group">
-              <button
-                type="button"
-                className={`nav-item ${isExpanded ? "active" : ""} ${isParentLocked ? "is-locked" : ""}`}
-                onClick={() => {
-                  if (isParentLocked) return;
-
-                  if (!isMobile && isCollapsed && onToggle) {
-                    onToggle();
-                    if (!expandedMenus[key]) {
-                      toggleMenu(key);
-                    }
-                    return;
-                  }
-
-                  toggleMenu(key);
-                }}
-                title={getLockedTitle(label, isParentLocked)}
-                disabled={isParentLocked}
-              >
-                <Icon size={18} />
-                <span className="nav-label">{label}</span>
-                <ChevronDown
-                  size={14}
-                  className={`nav-chevron ${expandedMenus[key] ? "nav-chevron--open" : ""}`}
-                />
-              </button>
-
-              {(isMobile || !isCollapsed) && expandedMenus[key] && subItems ? (
-                <div className="nav-sub-items">
-                  {subItems.map((sub) => {
-                    const isSubItemLocked = isItemLocked(sub.key);
-
-                    return (
-                      <button
-                        key={sub.key}
-                        type="button"
-                        className={`nav-sub-item ${activeItem === sub.key ? "active" : ""} ${isSubItemLocked ? "is-locked" : ""}`}
-                        onClick={() => {
-                          if (isSubItemLocked) return;
-                          handleNavigation(sub.onClick);
-                          toggleMenu(key);
-                        }}
-                        title={getLockedTitle(sub.label, isSubItemLocked)}
-                        disabled={isSubItemLocked}
-                      >
-                        <span className="nav-sub-dot" />
-                        <span className="nav-sub-label">{sub.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-          );
-        }
-
+      if (item.expandable && item.subItems) {
         return (
-          <button
-            key={key}
-            type="button"
-            className={`nav-item ${activeItem === key ? "active" : ""} ${isItemLocked(key) ? "is-locked" : ""}`}
-            onClick={() => {
-              if (isItemLocked(key)) return;
-              handleNavigation(onClick);
-            }}
-            title={getLockedTitle(label, isItemLocked(key))}
-            disabled={isItemLocked(key)}
-          >
-            <Icon size={18} />
-            <span className="nav-label">{label}</span>
-          </button>
+          <div key={item.key} className="nav-group">
+            <button
+              type="button"
+              className={`nav-item ${isActive ? "active" : ""} ${isLocked ? "nav-item--locked" : ""}`}
+              onClick={() => {
+                if (isCollapsed && onToggle) {
+                  onToggle();
+                }
+                toggleMenu(item.key);
+              }}
+              title={getLockedTitle(item.label, isLocked)}
+            >
+              <Icon size={20} className="nav-icon" />
+              {!isCollapsed && (
+                <>
+                  <span className="nav-label">{item.label}</span>
+                  <ChevronDown
+                    size={16}
+                    className={`expand-icon ${isExpanded ? "expanded" : ""}`}
+                  />
+                </>
+              )}
+            </button>
+            {!isCollapsed && isExpanded && (
+              <div className="sub-menu">
+                {item.subItems.map((subItem) => {
+                  const isSubLocked = isItemLocked(subItem.key);
+                  const isSubActive = activeItem === subItem.key;
+                  return (
+                    <button
+                      key={subItem.key}
+                      type="button"
+                      className={`sub-nav-item ${isSubActive ? "active" : ""} ${isSubLocked ? "nav-item--locked" : ""}`}
+                      onClick={() => handleNavigation(subItem.onClick)}
+                      title={getLockedTitle(subItem.label, isSubLocked)}
+                    >
+                      <span className="sub-nav-dot" />
+                      <span className="nav-label">{subItem.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         );
-      },
+      }
+
+      return (
+        <button
+          key={item.key}
+          type="button"
+          className={`nav-item ${isActive ? "active" : ""} ${isLocked ? "nav-item--locked" : ""}`}
+          onClick={() => handleNavigation(item.onClick)}
+          title={getLockedTitle(item.label, isLocked)}
+        >
+          <Icon size={20} className="nav-icon" />
+          {!isCollapsed && <span className="nav-label">{item.label}</span>}
+        </button>
+      );
+    });
+  };
+
+  const renderSupportActions = () => {
+    return (
+      <div className="sidebar-footer">
+        <button
+          type="button"
+          className="nav-item support-btn"
+          onClick={handleSupport}
+          title="Soporte técnico"
+        >
+          <HelpCircle size={20} className="nav-icon" />
+          {!isCollapsed && <span className="nav-label">SOPORTE</span>}
+        </button>
+        <button
+          type="button"
+          className="nav-item logout-btn"
+          onClick={handleLogout}
+          title="Cerrar sesión"
+        >
+          <LogOut size={20} className="nav-icon" />
+          {!isCollapsed && <span className="nav-label">CERRAR SESIÓN</span>}
+        </button>
+      </div>
     );
-
-  const mobileQuickActions = [
-    {
-      key: "profile",
-      label: "Perfil",
-      description: "Tu vidriera",
-      icon: UserRound,
-      onClick: onProfileClick ?? (() => goToDashboardView("profile")),
-      isActive: activeItem === "profile",
-      isLocked: isItemLocked("profile"),
-    },
-    {
-      key: "calendar",
-      label: "Agenda",
-      description: "Horarios y turnos",
-      icon: CalendarDays,
-      onClick: onCalendarClick ?? (() => goToDashboardView("calendar")),
-      isActive: activeItem === "calendar",
-      isLocked: isItemLocked("calendar"),
-    },
-    {
-      key: "products",
-      label: "Productos",
-      description: "Catalogo rapido",
-      icon: Package,
-      onClick: onProductsClick ?? (() => goToDashboardView("products")),
-      isActive: activeItem === "products",
-      isLocked: isItemLocked("products"),
-    },
-    {
-      key: "services",
-      label: "Servicios",
-      description: "Tus servicios",
-      icon: Briefcase,
-      onClick: onServicesClick ?? (() => goToDashboardView("services")),
-      isActive: activeItem === "services",
-      isLocked: isItemLocked("services"),
-    },
-    {
-      key: "reels",
-      label: "Reels",
-      description: "Contenido corto",
-      icon: Clapperboard,
-      onClick: onReelsClick ?? (() => goToDashboardView("reels")),
-      isActive: activeItem === "reels",
-      isLocked: isItemLocked("reels"),
-    },
-  ];
-
-  const mobileManageActions = [
-    {
-      key: "proposals-create",
-      label: "Crear presupuesto",
-      icon: FileText,
-      onClick:
-        onProposalsCreate ?? (() => goToDashboardView("proposals-create")),
-      isActive: activeItem === "proposals-create",
-      isLocked: isItemLocked("proposals-create"),
-    },
-    {
-      key: "job-requests",
-      label: "Solicitudes de trabajo",
-      icon: ClipboardList,
-      onClick: onJobRequestsClick ?? (() => goToDashboardView("job-requests")),
-      isActive: activeItem === "job-requests",
-      isLocked: false,
-    },
-    {
-      key: "promotions-create",
-      label: "Nueva promocion",
-      icon: Ticket,
-      onClick:
-        onPromotionsCreate ?? (() => goToDashboardView("promotions-create")),
-      isActive: activeItem === "promotions-create",
-      isLocked: isItemLocked("promotions"),
-    },
-    {
-      key: "bank-promotions",
-      label: "Promos bancarias",
-      icon: Landmark,
-      onClick:
-        onBankPromosClick ?? (() => goToDashboardView("bank-promotions")),
-      isActive: activeItem === "bank-promotions",
-      isLocked: isItemLocked("bank-promotions"),
-    },
-    {
-      key: "subscription",
-      label: "Suscripcion",
-      icon: CreditCard,
-      onClick: onSubscriptionClick ?? (() => goToDashboardView("subscription")),
-      isActive: activeItem === "subscription",
-      isLocked: false,
-    },
-  ];
-
-  const mobileUtilityActions = [
-    {
-      key: "home",
-      label: "Inicio",
-      icon: LayoutDashboard,
-      onClick: () => router.push(ROUTES.home),
-      isActive: false,
-      isLocked: false,
-    },
-    {
-      key: "notifications",
-      label: "Notificaciones",
-      icon: Bell,
-      onClick:
-        onNotificationsClick ?? (() => goToDashboardView("notifications")),
-      isActive: activeItem === "notifications",
-      isLocked: false,
-    },
-    {
-      key: "settings",
-      label: "Configuracion",
-      icon: Settings,
-      onClick: () => router.push(ROUTES.settings),
-      isActive: activeItem === "settings",
-      isLocked: false,
-    },
-  ];
+  };
 
   if (isMobile) {
     return (
@@ -612,151 +589,23 @@ export default function DashboardSidebar({
                 </span>
                 <div className="dashboard-mobile-sheet__heading">
                   <span className="dashboard-mobile-sheet__eyebrow">
-                    Panel rapido
+                    Panel rápido
                   </span>
-                  <strong>{mobileUserName}</strong>
-                  <small>{mobileUserRole}</small>
+                  <p className="dashboard-mobile-sheet__user-name">
+                    {mobileUserName}
+                  </p>
+                  <p className="dashboard-mobile-sheet__user-role">
+                    {mobileUserRole}
+                  </p>
                 </div>
               </div>
             </div>
-
-            <button
-              type="button"
-              className="sidebar-toggle"
-              onClick={onCloseMobile}
-              aria-label="Cerrar menu"
-              title="Cerrar menu"
-            >
-              <PanelLeftClose size={18} />
-            </button>
           </div>
 
-          <div className="dashboard-mobile-sheet__body sidebar-nav sidebar-nav--mobile-panel">
-            <section className="dashboard-mobile-sheet__section">
-              <div className="dashboard-mobile-sheet__section-header">
-                <h3>Accesos rapidos</h3>
-                <span>Lo que mas usas</span>
-              </div>
-
-              <div className="dashboard-mobile-shortcuts-grid">
-                {mobileQuickActions.map((item) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      className={`dashboard-mobile-shortcut ${item.isActive ? "is-active" : ""} ${item.isLocked ? "is-locked" : ""}`}
-                      onClick={() => {
-                        if (item.isLocked) return;
-                        handleNavigation(item.onClick);
-                      }}
-                      disabled={item.isLocked}
-                      title={getLockedTitle(item.label, item.isLocked)}
-                    >
-                      <span className="dashboard-mobile-shortcut__icon">
-                        <Icon size={20} />
-                      </span>
-                      <strong>{item.label}</strong>
-                      <span>{item.description}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="dashboard-mobile-sheet__section">
-              <div className="dashboard-mobile-sheet__section-header">
-                <h3>Gestion</h3>
-                <span>Publica y organiza</span>
-              </div>
-
-              <div className="dashboard-mobile-list">
-                {mobileManageActions.map((item) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      className={`dashboard-mobile-list__item ${item.isActive ? "is-active" : ""} ${item.isLocked ? "is-locked" : ""}`}
-                      onClick={() => {
-                        if (item.isLocked) return;
-                        handleNavigation(item.onClick);
-                      }}
-                      disabled={item.isLocked}
-                      title={getLockedTitle(item.label, item.isLocked)}
-                    >
-                      <span className="dashboard-mobile-list__icon">
-                        <Icon size={18} />
-                      </span>
-                      <span className="dashboard-mobile-list__label">
-                        {item.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="dashboard-mobile-sheet__section">
-              <div className="dashboard-mobile-sheet__section-header">
-                <h3>Cuenta</h3>
-                <span>Configuracion y soporte</span>
-              </div>
-
-              <div className="dashboard-mobile-list">
-                {mobileUtilityActions.map((item) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      className={`dashboard-mobile-list__item ${item.isActive ? "is-active" : ""} ${item.isLocked ? "is-locked" : ""}`}
-                      onClick={() => {
-                        if (item.isLocked) return;
-                        handleNavigation(item.onClick);
-                      }}
-                      disabled={item.isLocked}
-                      title={getLockedTitle(item.label, item.isLocked)}
-                    >
-                      <span className="dashboard-mobile-list__icon">
-                        <Icon size={18} />
-                      </span>
-                      <span className="dashboard-mobile-list__label">
-                        {item.label}
-                      </span>
-                    </button>
-                  );
-                })}
-
-                <button
-                  type="button"
-                  className="dashboard-mobile-list__item dashboard-mobile-list__item--support"
-                  onClick={() => handleNavigation(handleSupport)}
-                >
-                  <span className="dashboard-mobile-list__icon">
-                    <HelpCircle size={18} />
-                  </span>
-                  <span className="dashboard-mobile-list__label">Soporte</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="dashboard-mobile-list__item dashboard-mobile-list__item--logout"
-                  onClick={() => handleNavigation(handleLogout)}
-                >
-                  <span className="dashboard-mobile-list__icon">
-                    <LogOut size={18} />
-                  </span>
-                  <span className="dashboard-mobile-list__label">
-                    Cerrar sesion
-                  </span>
-                </button>
-              </div>
-            </section>
-          </div>
+          <nav className="sidebar-nav">
+            {renderNavItems()}
+            {renderSupportActions()}
+          </nav>
         </aside>
       </>
     );
@@ -765,13 +614,28 @@ export default function DashboardSidebar({
   return (
     <>
       <aside
-        className={`dashboard-sidebar ${isCollapsed ? "dashboard-sidebar--collapsed" : ""}`}
-        onMouseEnter={() => isCollapsed && onToggle?.()}
-        onMouseLeave={() => !isCollapsed && onToggle?.()}
+        className={`dashboard-sidebar ${isCollapsed ? "collapsed" : ""}`}
       >
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <img src={logoWordmark.src} alt="Sercio" />
+          </div>
+          {onToggle && (
+            <button
+              type="button"
+              className="toggle-btn"
+              onClick={onToggle}
+              title={isCollapsed ? "Expandir" : "Colapsar"}
+            >
+              {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+          )}
+        </div>
+
         <div
-          className="sidebar-brand"
           style={{
+            padding: "0 var(--space-4)",
+            marginBottom: "var(--space-2)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -793,6 +657,7 @@ export default function DashboardSidebar({
           {renderSupportActions()}
         </nav>
       </aside>
+
       <Modal
         isOpen={isSupportModalOpen}
         onClose={() => setIsSupportModalOpen(false)}

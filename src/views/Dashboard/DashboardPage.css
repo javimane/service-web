@@ -1664,3 +1664,14 @@
     gap: 16px;
   }
 }
+
+.stat-card--interactive {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stat-card--interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand-blue);
+  box-shadow: var(--shadow-md);
+}

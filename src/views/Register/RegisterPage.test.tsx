@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import RegisterPage from "./RegisterPage";
 import { supabase } from "../../services/supabaseClient";
+import { authService } from "../../services/authService";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -10,6 +11,25 @@ vi.mock("next/navigation", () => ({
     replace: vi.fn(),
     back: vi.fn(),
   }),
+}));
+
+vi.mock("../../context/AuthContext", () => ({
+  useAuth: () => ({
+    user: null,
+    sessionStatus: null,
+    hasProfessionalSubscription: false,
+    subscriptionPlan: null,
+    refreshUser: vi.fn(),
+    refreshSession: vi.fn(),
+    logout: vi.fn(),
+  }),
+}));
+
+vi.mock("../../services/authService", () => ({
+  authService: {
+    register: vi.fn().mockResolvedValue({ token: "token-123" }),
+    login: vi.fn().mockRejectedValue(new Error("skip auto login")),
+  },
 }));
 
 // Mock Supabase client
@@ -21,7 +41,7 @@ vi.mock("../../services/supabaseClient", () => ({
   },
 }));
 
-const signUpMock = vi.mocked(supabase.auth.signUp);
+const registerMock = vi.mocked(authService.register);
 
 describe("RegisterPage", () => {
   const renderWithRouter = (ui) => {
@@ -62,10 +82,9 @@ describe("RegisterPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("llama a Supabase al enviar datos válidos", async () => {
-    signUpMock.mockResolvedValueOnce({
-      data: { user: { id: "1" } },
-      error: null,
+  it("llama a authService al enviar datos válidos", async () => {
+    registerMock.mockResolvedValueOnce({
+      token: "mock-token",
     } as any);
 
     renderWithRouter(React.createElement(RegisterPage));
@@ -83,19 +102,14 @@ describe("RegisterPage", () => {
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(signUpMock).toHaveBeenCalledWith({
+      expect(registerMock).toHaveBeenCalledWith({
+        profileName: "Juan Lopez",
         email: "juan@obsidian.pro",
         password: "Password1!",
-        options: {
-          data: {
-            full_name: "Juan Lopez",
-          },
-        },
+        role: "professional",
       });
       expect(
-        screen.getByText(
-          "¡Cuenta creada exitosamente! Por favor revise su correo.",
-        ),
+        screen.getByText("Registro exitoso"),
       ).toBeInTheDocument();
     });
   });

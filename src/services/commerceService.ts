@@ -1,0 +1,609 @@
+import { apiClient } from './apiClient';
+import { API_ENDPOINTS } from './api.config';
+
+export type PageResponse<T> = {
+  data?: T[];
+  items?: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages?: number;
+  hasPrev?: boolean;
+  hasNext?: boolean;
+};
+
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready_for_pickup'
+  | 'ready_for_dispatch'
+  | 'dispatched'
+  | 'in_transit'
+  | 'delivered'
+  | 'cancelled';
+
+export type DeliveryType = 'pickup' | 'shipment' | 'coordinate_with_merchant';
+
+export type OrderSummary = {
+  id: string;
+  order_number?: string | null;
+  status: OrderStatus;
+  delivery_type: DeliveryType;
+  total_amount: number | null;
+  shipping_cost?: number | null;
+  quantity: number | null;
+  created_at: string;
+  user_id?: string;
+  professional_id?: number;
+  buyer?: {
+    full_name?: string;
+    email?: string;
+    phone?: string;
+  } | null;
+  user?: {
+    full_name?: string;
+    email?: string;
+    phone?: string;
+  } | null;
+  professional_product?: {
+    product?: {
+      id: string;
+      name: string;
+      image_url?: string | null;
+      price?: number;
+    };
+  } | null;
+  service?: {
+    id: string;
+    name: string;
+    price?: number;
+  } | null;
+  service_id?: string | null;
+  appointment_status?: 'pending_appointment' | 'scheduled' | 'completed' | 'cancelled' | null;
+  appointment?: OrderServiceAppointment | null;
+  shipping_address?: {
+    street?: string;
+    number?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
+    lat?: number;
+    lng?: number;
+  } | null;
+  invoice_url?: string | null;
+  invoice_status?: 'issued' | 'not_issued' | null;
+  pickup_code?: string | null;
+  transport_shipment?: {
+    carrier_name?: string | null;
+    tracking_number?: string | null;
+    tracking_url?: string | null;
+  } | null;
+  items?: Array<{
+    id: string;
+    product_name?: string;
+    product_image?: string;
+    quantity: number;
+    unit_price: number;
+    subtotal: number;
+  }>;
+};
+
+export type OrderServiceAppointment = {
+  id?: string;
+  order_id?: string;
+  appointment_date: string;
+  appointment_time: string;
+  appointment_at?: string;
+  status?: string;
+  notes?: string | null;
+  created_at?: string;
+};
+
+export type Liquidation = {
+  id: string;
+  status: 'available' | 'pending' | 'in_process' | 'settled' | 'withheld' | string;
+  amount?: number;
+  platform_fee?: number;
+  tax_withholding?: number;
+  net_amount?: number;
+  created_at: string;
+  cutoff_date?: string;
+  scheduled_release_at?: string | null;
+  paid_to_merchant_at?: string | null;
+  receipt_url?: string | null;
+  orders?: OrderSummary[];
+};
+
+export type Branch = {
+  id: string;
+  company_id: number;
+  name: string;
+  street?: string | null;
+  number?: string | null;
+  floor?: string | null;
+  zip_code?: string | null;
+  province_id?: number | null;
+  department_id?: number | null;
+  lat?: number | null;
+  lng?: number | null;
+  phone?: string | null;
+  opening_hours?: string | null;
+  is_open?: boolean;
+  company_covers_shipping?: boolean;
+  is_pickup_point: boolean;
+  created_at?: string;
+};
+
+export type ProfessionalScore = {
+  id?: string;
+  professional_id?: number;
+  score: number;
+  medal: 'Novato' | 'Bronce' | 'Plata' | 'Oro' | 'Platino' | 'Mercado Lider' | 'Supremo' | string;
+  level?: string;
+  tier?: string;
+  total_completed_orders?: number;
+  completed_services_rate?: number;
+  average_rating?: number;
+  total_reviews?: number;
+  penalties_count?: number;
+  next_tier_score?: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ProfessionalReview = {
+  id: string;
+  professional_id: number;
+  user_id?: string;
+  user?: {
+    full_name?: string;
+    avatar?: string;
+  };
+  client_name?: string;
+  customer_name?: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+};
+
+export type UserDataBank = {
+  id?: string;
+  cbu_cvu: string;
+  alias?: string | null;
+  bank_name?: string | null;
+  account_holder?: string | null;
+  cuit_cuil?: string | null;
+};
+
+export type RiderVehicle = {
+  id: string;
+  vehicle_type: 'motorcycle' | 'car' | 'pickup' | 'van' | 'truck' | string;
+  brand?: string | null;
+  model?: string | null;
+  year?: number | null;
+  license_plate?: string | null;
+  capacity_kg?: number | null;
+  capacity_m3?: number | null;
+  is_active: boolean;
+};
+
+export type RiderDocument = {
+  id: string;
+  document_type: 'driving_license' | 'vehicle_registration' | 'insurance' | 'vtv_rto' | 'criminal_record' | string;
+  storage_path: string;
+  file_name: string;
+  mime_type?: string | null;
+  expires_at?: string | null;
+};
+
+export type RiderEmployee = {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  dni?: string;
+  phone?: string;
+  photo_url?: string;
+  status?: 'active' | 'on_trip' | 'inactive';
+  vehicle?: RiderVehicle | null;
+  vehicles?: RiderVehicle[];
+  documents?: RiderDocument[];
+};
+
+export type FleetTrackingItem = {
+  id: string;
+  driver_id: string;
+  driver_name: string;
+  driver_phone?: string;
+  driver_status: 'available' | 'on_trip' | 'offline';
+  vehicle_type: string;
+  current_lat: number;
+  current_lng: number;
+  current_shipment?: {
+    id: string;
+    order_id: string;
+    merchant_name: string;
+    origin_lat: number;
+    origin_lng: number;
+    destination_address: string;
+    destination_lat: number;
+    destination_lng: number;
+    status: string;
+    eta_minutes?: number;
+  } | null;
+  route_polyline?: Array<[number, number]>;
+};
+
+export type FleetMetrics = {
+  active_drivers: number;
+  trips_in_progress: number;
+  completed_today: number;
+  delayed_orders: number;
+};
+
+export type ProductVariant = {
+  id: number;
+  professional_product_id: string;
+  name: string;
+  attribute_name: string;
+  attribute_value: string;
+  price_difference: number;
+  stock: number;
+  sku?: string | null;
+  created_at?: string;
+};
+
+export type CartItem = {
+  id: string;
+  product_id?: string | null;
+  professional_product_id?: string | null;
+  service_id?: string | null;
+  quantity: number;
+  subtotal: number;
+  variant_id?: number | null;
+  variant?: ProductVariant | null;
+  product?: {
+    id: string;
+    name: string;
+    image_url?: string | null;
+    price: number;
+    stock?: number | null;
+    installments_enabled?: boolean;
+    max_installments?: number;
+    is_food_perishable?: boolean;
+    category?: { id: number; name: string } | null;
+    professional?: { id: number; name?: string; commercial_name?: string } | null;
+  } | null;
+  service?: {
+    id: string;
+    name: string;
+    price: number;
+    professional?: { id: number; name?: string; commercial_name?: string } | null;
+  } | null;
+};
+
+export type Cart = {
+  id: string | null;
+  professional_id: number | null;
+  items: CartItem[];
+  total: number;
+};
+
+export type CalculateShippingDto = {
+  merchant_id: number;
+  destination_zip: string;
+  destination_lat?: number;
+  destination_lng?: number;
+  items_count: number;
+  total_weight_kg?: number;
+};
+
+export type ShippingRate = {
+  delivery_type: DeliveryType | 'carrier';
+  title: string;
+  price: number;
+  estimated_delivery: string;
+};
+
+export type CheckoutDto = {
+  professional_id: number;
+  delivery_type: DeliveryType;
+  branch_id?: string;
+  shipping_address?: {
+    street: string;
+    number: string;
+    floor?: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    lat?: number;
+    lng?: number;
+  };
+  shipping_cost?: number;
+  payment_method: 'getnet' | 'paycloud_qr';
+  card_token?: string;
+  installments?: number;
+};
+
+export type PayCloudQrResponse = {
+  order_id: string;
+  qr_data: string;
+  qr_image_url?: string;
+  expires_at: string;
+  total_amount: number;
+};
+
+export type UserProfile = {
+  id: string;
+  email: string;
+  full_name?: string;
+  role?: string;
+  logistics_role?: 'company' | 'transport_company' | 'delivery' | 'buyer' | null;
+  has_commercial_account?: boolean;
+};
+
+const query = (params: Record<string, string | number | undefined | null>) => {
+  const value = new URLSearchParams();
+  Object.entries(params).forEach(([key, item]) => {
+    if (item !== undefined && item !== null && item !== '') {
+      value.set(key, String(item));
+    }
+  });
+  return value.toString() ? `?${value}` : '';
+};
+
+export const commerceService = {
+  // Orders
+  merchantOrders: (page = 1, limit = 10, status?: string) =>
+    apiClient<PageResponse<OrderSummary>>(
+      `${API_ENDPOINTS.orders.merchant}${query({ page, limit, status })}`
+    ),
+
+  buyerOrders: (page = 1, limit = 10, status?: string) =>
+    apiClient<PageResponse<OrderSummary>>(
+      `${API_ENDPOINTS.orders.mine}${query({ page, limit, status })}`
+    ),
+
+  orderDetail: (id: string) =>
+    apiClient<OrderSummary>(API_ENDPOINTS.orders.detail(id)),
+
+  confirmOrder: (id: string) =>
+    apiClient<OrderSummary>(API_ENDPOINTS.orders.confirm(id), { method: 'POST' }),
+
+  cancelOrder: (id: string, reason?: string) =>
+    apiClient<OrderSummary>(API_ENDPOINTS.orders.cancel(id), {
+      method: 'POST',
+      body: { reason },
+    }),
+
+  verifyPickup: (id: string, code: string) =>
+    apiClient<{ success: boolean; message: string }>(
+      API_ENDPOINTS.orders.pickupVerify(id),
+      { method: 'POST', body: { code } }
+    ),
+
+  uploadInvoice: (id: string, invoiceUrl: string) =>
+    apiClient<{ success: boolean; invoice_url: string }>(
+      API_ENDPOINTS.orders.invoice(id),
+      { method: 'POST', body: { invoice_url: invoiceUrl } }
+    ),
+
+  updateTransportShipment: (
+    id: string,
+    data: { carrier_name: string; tracking_number: string; tracking_url?: string }
+  ) =>
+    apiClient<OrderSummary>(API_ENDPOINTS.orders.transportShipment(id), {
+      method: 'POST',
+      body: data,
+    }),
+
+  calculateShipping: (data: CalculateShippingDto) =>
+    apiClient<ShippingRate[]>(API_ENDPOINTS.orders.calculateShipping, {
+      method: 'POST',
+      body: data,
+    }),
+
+  checkout: (data: CheckoutDto) =>
+    apiClient<{
+      order: OrderSummary;
+      qr?: PayCloudQrResponse;
+      payment_status: 'approved' | 'pending' | 'rejected';
+      redirect_url?: string;
+    }>(API_ENDPOINTS.orders.checkout, { method: 'POST', body: data }),
+
+  // Shipments workflow
+  orderShipment: (orderId: string) =>
+    apiClient<any>(API_ENDPOINTS.shipments.byOrder(orderId)),
+
+  preparingShipment: (shipmentId: string) =>
+    apiClient<any>(API_ENDPOINTS.shipments.preparing(shipmentId), { method: 'POST' }),
+
+  readyShipment: (shipmentId: string) =>
+    apiClient<any>(API_ENDPOINTS.shipments.ready(shipmentId), { method: 'POST' }),
+
+  uploadShipmentImage: (shipmentId: string, imageUrl: string) =>
+    apiClient<any>(API_ENDPOINTS.shipments.uploadImage(shipmentId), {
+      method: 'POST',
+      body: { image_url: imageUrl },
+    }),
+
+  handToCarrier: (shipmentId: string) =>
+    apiClient<any>(API_ENDPOINTS.shipments.handToCarrier(shipmentId), {
+      method: 'POST',
+    }),
+
+  inTransitShipment: (shipmentId: string) =>
+    apiClient<any>(API_ENDPOINTS.shipments.inTransit(shipmentId), { method: 'POST' }),
+
+  deliveredShipment: (shipmentId: string) =>
+    apiClient<any>(API_ENDPOINTS.shipments.delivered(shipmentId), { method: 'POST' }),
+
+  confirmReceipt: (shipmentId: string) =>
+    apiClient<any>(API_ENDPOINTS.shipments.confirmReceipt(shipmentId), {
+      method: 'POST',
+    }),
+
+  // Branches
+  branches: (companyId?: number) =>
+    apiClient<Branch[]>(
+      companyId ? API_ENDPOINTS.branches.byCompany(companyId) : API_ENDPOINTS.branches.base
+    ),
+
+  createBranch: (data: Partial<Branch>) =>
+    apiClient<Branch>(API_ENDPOINTS.branches.base, { method: 'POST', body: data }),
+
+  updateBranch: (id: string, data: Partial<Branch>) =>
+    apiClient<Branch>(API_ENDPOINTS.branches.detail(id), {
+      method: 'PATCH',
+      body: data,
+    }),
+
+  deleteBranch: (id: string) =>
+    apiClient<{ success: boolean }>(API_ENDPOINTS.branches.detail(id), {
+      method: 'DELETE',
+    }),
+
+  // Liquidations
+  liquidations: (page = 1, limit = 10, status?: string) =>
+    apiClient<PageResponse<Liquidation>>(
+      `${API_ENDPOINTS.liquidations.base}${query({ page, limit, status })}`
+    ),
+
+  liquidationDetail: (id: string) =>
+    apiClient<Liquidation>(API_ENDPOINTS.liquidations.detail(id)),
+
+  // Logistics & Fleet (Carrier)
+  fleetTracking: () =>
+    apiClient<FleetTrackingItem[]>(API_ENDPOINTS.logistics.fleetTracking),
+
+  fleetMetrics: () =>
+    apiClient<FleetMetrics>(API_ENDPOINTS.logistics.metrics),
+
+  employees: () =>
+    apiClient<RiderEmployee[]>(API_ENDPOINTS.logistics.employees),
+
+  createEmployee: (data: Partial<RiderEmployee> & { password?: string }) =>
+    apiClient<RiderEmployee>(API_ENDPOINTS.logistics.employees, {
+      method: 'POST',
+      body: data,
+    }),
+
+  vehicles: (employeeId: string) =>
+    apiClient<RiderVehicle[]>(API_ENDPOINTS.logistics.vehicles(employeeId)),
+
+  createVehicle: (employeeId: string, data: Omit<RiderVehicle, 'id'>) =>
+    apiClient<RiderVehicle>(API_ENDPOINTS.logistics.vehicles(employeeId), {
+      method: 'POST',
+      body: data,
+    }),
+
+  documents: (employeeId: string) =>
+    apiClient<RiderDocument[]>(API_ENDPOINTS.logistics.documents(employeeId)),
+
+  createDocumentUploadUrl: (employeeId: string, fileName: string) =>
+    apiClient<{ signedUrl: string; token: string; storage_path: string }>(
+      API_ENDPOINTS.logistics.documentUploadUrl(employeeId),
+      { method: 'POST', body: { file_name: fileName } }
+    ),
+
+  createDocument: (employeeId: string, data: Omit<RiderDocument, 'id'>) =>
+    apiClient<RiderDocument>(API_ENDPOINTS.logistics.documents(employeeId), {
+      method: 'POST',
+      body: data,
+    }),
+
+  // User Profile & Roles
+  getUserProfile: () =>
+    apiClient<UserProfile>(API_ENDPOINTS.users.profile),
+
+  // User Data Bank (CBU / Alias)
+  getUserBankData: () =>
+    apiClient<UserDataBank | null>(API_ENDPOINTS.userDataBank.my),
+
+  saveUserBankData: (data: UserDataBank) =>
+    apiClient<UserDataBank>(API_ENDPOINTS.userDataBank.base, {
+      method: 'POST',
+      body: data,
+    }),
+
+  // Product Variants
+  variants: (professionalProductId: string) =>
+    apiClient<ProductVariant[]>(API_ENDPOINTS.products.variants(professionalProductId)),
+
+  createVariant: (data: Omit<ProductVariant, 'id' | 'created_at'>) =>
+    apiClient<ProductVariant>(`${API_ENDPOINTS.products.list}/variants`, {
+      method: 'POST',
+      body: data,
+    }),
+
+  updateVariant: (id: number, data: Partial<ProductVariant>) =>
+    apiClient<ProductVariant>(API_ENDPOINTS.products.variantDetail(id), {
+      method: 'PATCH',
+      body: data,
+    }),
+
+  deleteVariant: (id: number) =>
+    apiClient<{ success: boolean }>(API_ENDPOINTS.products.variantDetail(id), {
+      method: 'DELETE',
+    }),
+
+  // Cart
+  cart: () => apiClient<Cart>(API_ENDPOINTS.users.cart),
+
+  addCartItem: (data: {
+    product_id?: string;
+    professional_product_id?: string;
+    service_id?: string;
+    quantity: number;
+    variant_id?: number;
+  }) =>
+    apiClient<Cart>(API_ENDPOINTS.users.cartItems, { method: 'POST', body: data }),
+
+  updateCartItem: (id: string, quantity: number) =>
+    apiClient<Cart>(API_ENDPOINTS.users.cartItem(id), {
+      method: 'PATCH',
+      body: { quantity },
+    }),
+
+  removeCartItem: (id: string) =>
+    apiClient<Cart>(API_ENDPOINTS.users.cartItem(id), { method: 'DELETE' }),
+
+  clearCart: () => apiClient<Cart>(API_ENDPOINTS.users.cart, { method: 'DELETE' }),
+
+  // Favorites
+  favorites: () =>
+    apiClient<{
+      merchants: Array<{ id: string; name: string; commercial_name?: string; image_url?: string; category?: string }>;
+      products: Array<{ id: string; name: string; price: number; image_url?: string; professional_id?: number }>;
+      services: Array<{ id: string; name: string; price: number; image_url?: string; professional_id?: number }>;
+    }>(API_ENDPOINTS.users.favorites),
+
+  removeFavorite: (id: string) =>
+    apiClient<{ success: boolean }>(API_ENDPOINTS.users.favoriteDetail(id), {
+      method: 'DELETE',
+    }),
+
+  // Service Appointments
+  assignServiceAppointment: (
+    orderId: string,
+    data: { appointment_date: string; appointment_time: string; notes?: string },
+  ) =>
+    apiClient<{ success: boolean; appointment: OrderServiceAppointment; message?: string }>(
+      API_ENDPOINTS.orders.serviceAppointment(orderId),
+      {
+        method: 'POST',
+        body: data,
+      },
+    ),
+
+  getServiceAppointment: (orderId: string) =>
+    apiClient<OrderServiceAppointment>(API_ENDPOINTS.orders.serviceAppointment(orderId)),
+
+  // Scoring & Reputation
+  getProfessionalScore: (professionalId: number | string) =>
+    apiClient<ProfessionalScore>(API_ENDPOINTS.scoring.professional(professionalId)),
+
+  getProfessionalReviews: (professionalId: number | string) =>
+    apiClient<ProfessionalReview[]>(API_ENDPOINTS.reviews.byProfessional(professionalId)),
+};

@@ -1,0 +1,440 @@
+.buyer-orders-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.buyer-orders-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.buyer-orders-section__subtitle {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.buyer-orders-section__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-black);
+  color: var(--text-primary);
+  margin-top: var(--space-1);
+}
+
+/* Orders List */
+.buyer-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.buyer-order-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.buyer-order-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-color);
+  box-shadow: var(--shadow-md);
+}
+
+.buyer-order-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--slate-200);
+  padding-bottom: var(--space-3);
+}
+
+.buyer-order-number {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+  color: var(--brand-blue);
+  font-size: var(--text-sm);
+  margin-right: var(--space-3);
+}
+
+.buyer-order-date {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.buyer-order-card__body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.buyer-order-product {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.buyer-order-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.buyer-order-title {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.buyer-order-delivery {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  display: block;
+  margin-top: var(--space-1);
+}
+
+.buyer-order-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.buyer-order-total-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.buyer-order-total-amount {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+}
+
+.buyer-order-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--slate-200);
+  padding-top: var(--space-3);
+}
+
+.buyer-view-detail-btn {
+  font-size: var(--text-xs);
+}
+
+/* Badges */
+.buyer-badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  background: var(--slate-200);
+  color: var(--text-secondary);
+}
+
+.buyer-badge--pending {
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--amber-dark);
+}
+
+.buyer-badge--confirmed {
+  background: var(--brand-blue-soft);
+  color: var(--brand-blue);
+}
+
+.buyer-badge--preparing {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--purple-dark);
+}
+
+.buyer-badge--ready {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--teal-accent);
+}
+
+.buyer-badge--transit {
+  background: rgba(37, 99, 235, 0.15);
+  color: var(--blue-dark);
+}
+
+.buyer-badge--delivered {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green-dark);
+}
+
+.buyer-badge--cancelled {
+  background: rgba(250, 82, 82, 0.15);
+  color: var(--error-color);
+}
+
+.buyer-badge--scheduled {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.buyer-badge--pending-appointment {
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--amber-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.buyer-order-service-tag {
+  margin-top: var(--space-2);
+}
+
+/* States */
+.buyer-state {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-12);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+}
+
+.buyer-state--error {
+  color: var(--error-color);
+}
+
+.buyer-state__spinner {
+  animation: spin 1s linear infinite;
+  color: var(--accent-color);
+}
+
+/* Modal Detail */
+.buyer-order-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-2) 0;
+}
+
+.buyer-step-tracker {
+  display: flex;
+  justify-content: space-between;
+  background: var(--surface-soft);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  gap: var(--space-2);
+}
+
+.tracker-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--slate-400);
+}
+
+.tracker-step--done {
+  color: var(--green-dark);
+  font-weight: var(--weight-bold);
+}
+
+.buyer-pickup-info-card,
+.buyer-shipment-tracking-card {
+  background: var(--surface-soft);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pickup-code-display {
+  background: var(--bg-card);
+  border: 2px dashed var(--brand-blue);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-6);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-black);
+  letter-spacing: 0.15em;
+  color: var(--brand-blue);
+}
+
+.pickup-qr-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+/* Service Appointment Card */
+.buyer-appointment-card {
+  width: 100%;
+}
+
+.buyer-appointment-content {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.buyer-appointment-content--scheduled {
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.buyer-appointment-content--pending {
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.buyer-appointment-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.buyer-appointment-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.buyer-appointment-icon-box--success {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green-dark);
+}
+
+.buyer-appointment-icon-box--pending {
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--amber-dark);
+}
+
+.buyer-appointment-title {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.buyer-appointment-sub {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 2px;
+}
+
+.buyer-appointment-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  background: var(--bg-card);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.buyer-appointment-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.buyer-appointment-detail-item--full {
+  grid-column: 1 / -1;
+}
+
+.buyer-appointment-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-weight: var(--weight-semibold);
+}
+
+.buyer-appointment-value {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: var(--weight-bold);
+}
+
+.buyer-appointment-notes {
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.buyer-appointment-notice {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.buyer-gcal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: var(--brand-blue);
+  color: var(--white);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  align-self: flex-start;
+  transition: all 0.2s ease;
+}
+
+.buyer-gcal-btn:hover {
+  background: var(--blue-dark);
+  transform: translateY(-1px);
+}
+
+.buyer-confirm-receipt-box {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--green-dark);
+}
+
+@media (max-width: 640px) {
+  .buyer-order-card__body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .buyer-order-summary {
+    align-items: flex-start;
+  }
+}

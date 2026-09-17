@@ -1,0 +1,203 @@
+.package-label-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-family: var(--font-primary);
+}
+
+.package-label-modal__intro {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.package-label-modal__toolbar {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+  background: var(--surface-soft);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.package-label-modal__bluetooth-status {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.package-label-modal__preview-wrapper {
+  background: #525659;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
+}
+
+/* Thermal Sticker (Target: 80mm width standard thermal label) */
+.thermal-sticker {
+  width: 80mm;
+  min-height: 110mm;
+  background: #ffffff;
+  color: #000000;
+  padding: 6mm;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  box-sizing: border-box;
+}
+
+.thermal-sticker__header {
+  text-align: center;
+  border-bottom: 2px dashed #000000;
+  padding-bottom: 4mm;
+  margin-bottom: 4mm;
+}
+
+.thermal-sticker__logo-title {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.thermal-sticker__subtitle {
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-top: 1mm;
+}
+
+.thermal-sticker__store-name {
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 1.5mm;
+}
+
+.thermal-sticker__qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3mm 0;
+  border-bottom: 1px dashed #000000;
+  margin-bottom: 3mm;
+}
+
+.thermal-sticker__qr-image {
+  width: 32mm;
+  height: 32mm;
+  image-rendering: pixelated;
+}
+
+.thermal-sticker__scan-code {
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-top: 1mm;
+}
+
+.thermal-sticker__section {
+  border-bottom: 1px dashed #000000;
+  padding-bottom: 3mm;
+  margin-bottom: 3mm;
+}
+
+.thermal-sticker__section-title {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  background: #000000;
+  color: #ffffff;
+  padding: 1px 4px;
+  display: inline-block;
+  margin-bottom: 2mm;
+}
+
+.thermal-sticker__field {
+  margin: 1mm 0;
+}
+
+.thermal-sticker__field strong {
+  font-weight: bold;
+}
+
+.thermal-sticker__address-box {
+  background: #f0f0f0;
+  border: 1px solid #000000;
+  padding: 2mm;
+  margin: 1.5mm 0;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.thermal-sticker__items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  margin-top: 1.5mm;
+}
+
+.thermal-sticker__items-table th {
+  border-bottom: 1px solid #000000;
+  text-align: left;
+  padding: 1mm 0;
+  font-weight: bold;
+}
+
+.thermal-sticker__items-table td {
+  padding: 1mm 0;
+  border-bottom: 0.5px solid #e0e0e0;
+}
+
+.thermal-sticker__footer {
+  text-align: center;
+  font-size: 9px;
+  padding-top: 2mm;
+}
+
+.thermal-sticker__security-code {
+  display: inline-block;
+  border: 2px solid #000000;
+  padding: 2mm 4mm;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin: 2mm 0;
+}
+
+/* Print Stylesheet for Thermal Roll / Sticker Printers */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #thermal-sticker-print-area,
+  #thermal-sticker-print-area * {
+    visibility: visible;
+  }
+
+  #thermal-sticker-print-area {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 4mm;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+}

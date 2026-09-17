@@ -1,11 +1,11 @@
-.favorites-page-wrapper {
+.purchases-page-wrapper {
   min-height: 100vh;
   background: var(--bg-color);
   display: flex;
   flex-direction: column;
 }
 
-.favorites-page-main {
+.purchases-page-main {
   flex: 1;
   max-width: var(--content-max-width);
   width: 100%;

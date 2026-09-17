@@ -1,5 +1,3 @@
-import { get } from "node:http";
-
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
@@ -31,6 +29,61 @@ export const API_ENDPOINTS = {
     benefits: (userId: string) =>
       `${API_BASE_URL}/api/users/${userId}/benefits`,
     mobilePhone: `${API_BASE_URL}/api/users/mobile-phone`,
+    profile: `${API_BASE_URL}/api/users/me/profile`,
+    cart: `${API_BASE_URL}/api/users/me/cart`,
+    cartItem: (id: string) => `${API_BASE_URL}/api/users/me/cart/items/${id}`,
+    cartItems: `${API_BASE_URL}/api/users/me/cart/items`,
+  },
+  orders: {
+    merchant: `${API_BASE_URL}/api/orders/merchant`,
+    mine: `${API_BASE_URL}/api/orders/me`,
+    detail: (id: string) => `${API_BASE_URL}/api/orders/${id}`,
+    serviceAppointment: (id: string) => `${API_BASE_URL}/api/orders/${id}/service-appointment`,
+    transportShipment: (id: string) => `${API_BASE_URL}/api/orders/${id}/transport-shipment`,
+    confirm: (id: string) => `${API_BASE_URL}/api/orders/${id}/confirm`,
+    pickupVerify: (id: string) => `${API_BASE_URL}/api/orders/${id}/pickup-verify`,
+    invoice: (id: string) => `${API_BASE_URL}/api/orders/${id}/invoice`,
+    calculateShipping: `${API_BASE_URL}/api/orders/calculate-shipping`,
+    checkout: `${API_BASE_URL}/api/orders/checkout`,
+    commissions: `${API_BASE_URL}/api/orders/commissions`,
+    cancel: (id: string) => `${API_BASE_URL}/api/orders/${id}/cancel`,
+  },
+  shipments: {
+    merchant: `${API_BASE_URL}/api/shipments/merchant`,
+    carrier: `${API_BASE_URL}/api/shipments/carrier`,
+    byOrder: (orderId: string) => `${API_BASE_URL}/api/shipments/order/${orderId}`,
+    confirmReceipt: (id: string) => `${API_BASE_URL}/api/shipments/${id}/confirm-receipt`,
+    uploadImage: (id: string) => `${API_BASE_URL}/api/shipments/${id}/upload-image`,
+    handToCarrier: (id: string) => `${API_BASE_URL}/api/shipments/${id}/hand-to-carrier`,
+    inTransit: (id: string) => `${API_BASE_URL}/api/shipments/${id}/in-transit`,
+    delivered: (id: string) => `${API_BASE_URL}/api/shipments/${id}/delivered`,
+    assign: (id: string) => `${API_BASE_URL}/api/shipments/${id}/assign`,
+    scan: (id: string) => `${API_BASE_URL}/api/shipments/scan/${id}`,
+    startTrip: (id: string) => `${API_BASE_URL}/api/shipments/${id}/start-trip`,
+    location: (id: string) => `${API_BASE_URL}/api/shipments/${id}/location`,
+    preparing: (id: string) => `${API_BASE_URL}/api/shipments/${id}/preparing`,
+    ready: (id: string) => `${API_BASE_URL}/api/shipments/${id}/ready`,
+    arrivedAtStore: (id: string) => `${API_BASE_URL}/api/shipments/${id}/arrived-at-store`,
+    cancel: (id: string) => `${API_BASE_URL}/api/shipments/${id}/cancel`,
+  },
+  branches: {
+    base: `${API_BASE_URL}/api/branches`,
+    byCompany: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}`,
+    detail: (id: string) => `${API_BASE_URL}/api/branches/${id}`,
+  },
+  liquidations: {
+    base: `${API_BASE_URL}/api/liquidations`,
+    detail: (id: string) => `${API_BASE_URL}/api/liquidations/${id}`,
+  },
+  logistics: {
+    dashboard: `${API_BASE_URL}/api/logistics/dashboard`,
+    metrics: `${API_BASE_URL}/api/logistics/dashboard/metrics`,
+    history: `${API_BASE_URL}/api/logistics/dashboard/history`,
+    fleetTracking: `${API_BASE_URL}/api/logistics/dashboard/fleet-tracking`,
+    employees: `${API_BASE_URL}/api/logistics/employees`,
+    vehicles: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/vehicles`,
+    documents: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents`,
+    documentUploadUrl: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents/upload-url`,
   },
   chats: {
     base: `${API_BASE_URL}/api/chats`,
@@ -93,6 +146,10 @@ export const API_ENDPOINTS = {
     unassignProfessional: (productId: string, professionalId: number) =>
       `${API_BASE_URL}/api/products/${productId}/professional/${professionalId}`,
     byEan: (ean: string) => `${API_BASE_URL}/api/products/ean/${ean}`,
+    variants: (professionalProductId: string) =>
+      `${API_BASE_URL}/api/products/variants/${professionalProductId}`,
+    variantDetail: (id: number) =>
+      `${API_BASE_URL}/api/products/variants/${id}`,
   },
   categoriesProducts: {
     list: `${API_BASE_URL}/api/categories/products`,
@@ -207,6 +264,12 @@ export const API_ENDPOINTS = {
     base: `${API_BASE_URL}/api/reviews`,
     byProfessional: (professionalId: string | number) =>
       `${API_BASE_URL}/api/reviews/professional/${professionalId}`,
+  },
+  scoring: {
+    professional: (id: string | number) => `${API_BASE_URL}/api/scoring/professionals/${id}`,
+    rider: (id: string) => `${API_BASE_URL}/api/scoring/riders/${id}`,
+    transport: (companyName: string) =>
+      `${API_BASE_URL}/api/scoring/transport/${encodeURIComponent(companyName)}`,
   },
   arca: {
     verify: (

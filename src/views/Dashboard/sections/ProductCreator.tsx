@@ -17,7 +17,9 @@ import {
   Video,
   Film,
   Trash2,
+  Layers,
 } from "lucide-react";
+import ProductVariantsModal from "./ProductVariantsModal";
 import { useAuth } from "../../../context/AuthContext";
 import {
   getProductCategoriesAction,
@@ -116,6 +118,14 @@ export default function ProductCreator({
   const [eanWholesalePrice, setEanWholesalePrice] = useState("");
   const [eanWholesaleUnit, setEanWholesaleUnit] = useState("");
 
+  const [installmentsEnabled, setInstallmentsEnabled] = useState(
+    Boolean(productToEdit?.installments_enabled)
+  );
+  const [maxInstallments, setMaxInstallments] = useState(
+    productToEdit?.max_installments || 3
+  );
+  const [variantsModalOpen, setVariantsModalOpen] = useState(false);
+
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-products"],
     queryFn: async () => {
@@ -123,6 +133,14 @@ export default function ProductCreator({
       return result?.data ?? [];
     },
   });
+
+  const selectedCategoryObj = categories.find(
+    (c: any) => String(c.id) === String(newProduct.categoryId)
+  );
+  const isFoodCategory = Boolean(
+    selectedCategoryObj?.name &&
+    /alimento|comida|bebida|pereced|fresco|panader/i.test(selectedCategoryObj.name)
+  );
 
   const { data: subcategories = [] } = useQuery({
     queryKey: ["categories-products-subcategories", newProduct.categoryId],
@@ -1293,6 +1311,67 @@ export default function ProductCreator({
                     </div>
                   </>
                 )}
+
+                {/* Cuotas sin interés */}
+                <div className="product-creator__field" style={{ marginTop: "16px" }}>
+                  <label className="product-creator__wholesale-row">
+                    <input
+                      type="checkbox"
+                      checked={!isFoodCategory && installmentsEnabled}
+                      disabled={isFoodCategory}
+                      onChange={(e) => setInstallmentsEnabled(e.target.checked)}
+                    />
+                    <span>Habilitar cuotas sin interés para este producto</span>
+                  </label>
+
+                  {isFoodCategory ? (
+                    <div
+                      style={{
+                        fontSize: "var(--text-xs)",
+                        color: "var(--amber-dark)",
+                        background: "rgba(251, 191, 36, 0.15)",
+                        padding: "8px 12px",
+                        borderRadius: "var(--radius-sm)",
+                        marginTop: "6px",
+                      }}
+                    >
+                      Por regulación comercial, los alimentos y perecederos no admiten financiación en cuotas.
+                    </div>
+                  ) : installmentsEnabled ? (
+                    <div style={{ marginTop: "8px" }}>
+                      <label style={{ fontSize: "var(--text-xs)", fontWeight: "var(--weight-bold)", color: "var(--text-secondary)" }}>
+                        Máximo de cuotas permitidas
+                      </label>
+                      <select
+                        value={maxInstallments}
+                        onChange={(e) => setMaxInstallments(parseInt(e.target.value, 10))}
+                        className="dash-products__modal-select"
+                        style={{ marginTop: "4px" }}
+                      >
+                        <option value={3}>Hasta 3 cuotas fijas</option>
+                        <option value={6}>Hasta 6 cuotas fijas</option>
+                        <option value={9}>Hasta 9 cuotas fijas</option>
+                        <option value={12}>Hasta 12 cuotas fijas</option>
+                      </select>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Variantes de producto */}
+                <div className="product-creator__field" style={{ marginTop: "16px" }}>
+                  <label style={{ fontSize: "var(--text-xs)", fontWeight: "var(--weight-bold)", color: "var(--text-secondary)", display: "block", marginBottom: "6px" }}>
+                    Variantes y Atributos (Color, Talle, Stock)
+                  </label>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setVariantsModalOpen(true)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 16px" }}
+                  >
+                    <Layers size={16} />
+                    <span>Gestionar variantes de producto</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1505,6 +1584,18 @@ export default function ProductCreator({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Modal de variantes */}
+      {variantsModalOpen && (
+        <ProductVariantsModal
+          isOpen={variantsModalOpen}
+          onClose={() => setVariantsModalOpen(false)}
+          professionalProductId={String(
+            productToEdit?.professional_product_id || productToEdit?.id || ""
+          )}
+          productName={newProduct.name || productToEdit?.name || "Producto"}
+        />
       )}
     </div>
   );

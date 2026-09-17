@@ -528,126 +528,28 @@ export default function SettingsPage() {
                 <AvatarSection userId={user.id} />
               )}
 
-              {/* Business Sections */}
-              {showSummary && (
-                <CompanyDisplaySection
-                  prof={{ ...profMe, companies: actualCompany }}
-                  onEdit={() => setIsEditingCompany(true)}
-                  provinceList={provinceList}
-                  departmentList={storeDepartmentList}
-                  arcaStatus={effectiveArcaStatus}
-                  loadingArca={loadingArca}
-                  categoryList={serviceCategoryList}
-                />
-              )}
-
-              {showEditForms && (
-                <div className="settings-forms-two-cols">
-                  <div className="settings-col-left">
-                    <BusinessInfoSection
-                      businessType={businessType}
-                      setBusinessType={setBusinessType}
-                      tradeName={tradeName}
-                      setTradeName={setTradeName}
-                      cuit={cuit}
-                      setCuit={setCuit}
-                    />
-
-                    <CategoriesSection
-                      selectedCategories={selectedCategories}
-                      onToggleCategory={(id: number) =>
-                        setSelectedCategories((curr) =>
-                          curr.includes(id)
-                            ? curr.filter((c) => c !== id)
-                            : [...curr, id],
-                        )
-                      }
-                      categoryList={serviceCategoryList}
-                    />
+              {/* Enlace a Datos Comerciales */}
+              {isProfessional && (
+                <div className="settings-commercial-redirect-card">
+                  <div className="settings-commercial-redirect-icon">
+                    <Building2 size={24} />
                   </div>
-
-                  <div className="settings-col-right">
-                    <HeadquartersSection
-                      selectedProvinces={selectedProvinces}
-                      onToggleProvince={(option) =>
-                        toggleSelection(setSelectedProvinces, option)
-                      }
-                      selectedDepartments={selectedDepartments}
-                      onToggleDepartment={(option) =>
-                        toggleSelection(setSelectedDepartments, option)
-                      }
-                      provinceList={provinceList}
-                      departmentList={departmentList}
-                    />
-
-                    <OperationsSection
-                      hasStorefront={hasStorefront}
-                      setHasStorefront={setHasStorefront}
-                      provinceList={provinceList}
-                      departmentList={storeDepartmentList}
-                      storeStreet={storeStreet}
-                      setStoreStreet={setStoreStreet}
-                      storeNumber={storeNumber}
-                      setStoreNumber={setStoreNumber}
-                      storeFloor={storeFloor}
-                      setStoreFloor={setStoreFloor}
-                      storeZip={storeZip}
-                      setStoreZip={setStoreZip}
-                      storeProvinceId={storeProvinceId}
-                      setStoreProvinceId={setStoreProvinceId}
-                      storeDepartmentId={storeDepartmentId}
-                      setStoreDepartmentId={setStoreDepartmentId}
-                      storeLat={storeLat}
-                      setStoreLat={setStoreLat}
-                      storeLng={storeLng}
-                      setStoreLng={setStoreLng}
-                    />
-
-                    <PaymentMethodsSection
-                      selectedPayments={selectedPayments}
-                      onTogglePayment={(option) =>
-                        toggleSelection(setSelectedPayments, option)
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-
-              {showEditForms && (
-                <>
-                  {saveStatus !== "idle" && (
-                    <div
-                      className={`settings-status-banner settings-status-banner--${saveStatus}`}
+                  <div className="settings-commercial-redirect-content">
+                    <h4>Datos Comerciales y Fiscales</h4>
+                    <p>
+                      La información fiscal, razón social, CUIT, CBU de cobro y
+                      sucursales se gestionan de forma centralizada en la sección
+                      <strong> Datos comerciales</strong> de tu panel.
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => router.push(`${ROUTES.dashboard}?view=commercial-data`)}
                     >
-                      {saveMessage}
-                    </div>
-                  )}
-
-                  <ActionsSection
-                    onSave={handleSave}
-                    onCancel={() => setIsEditingCompany(false)}
-                    isSaving={saveMutation.isPending}
-                  />
-                </>
-              )}
-
-              {showCTA && (
-                <div className="register-company-cta">
-                  <div className="cta-icon">
-                    <Building2 size={40} />
+                      <span>Ir a Datos Comerciales</span>
+                      <ExternalLink size={14} />
+                    </button>
                   </div>
-                  <h3>Completar Perfil Comercial</h3>
-                  <p>
-                    Aún no has registrado los datos de tu comercio o actividad
-                    autónoma. Completalos para aparecer en las búsquedas.
-                  </p>
-                  <button
-                    className="cta-register-btn"
-                    onClick={() => setIsEditingCompany(true)}
-                  >
-                    <PlusCircle size={18} />
-                    Comenzar Registro
-                  </button>
                 </div>
               )}
 

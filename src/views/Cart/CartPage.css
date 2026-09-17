@@ -1,11 +1,11 @@
-.favorites-page-wrapper {
+.cart-page-wrapper {
   min-height: 100vh;
   background: var(--bg-color);
   display: flex;
   flex-direction: column;
 }
 
-.favorites-page-main {
+.cart-page-main {
   flex: 1;
   max-width: var(--content-max-width);
   width: 100%;

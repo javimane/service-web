@@ -12,6 +12,27 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+vi.mock("../../context/AuthContext", () => ({
+  useAuth: () => ({
+    user: null,
+    sessionStatus: null,
+    hasProfessionalSubscription: false,
+    subscriptionPlan: null,
+    refreshUser: vi.fn(),
+    logout: vi.fn(),
+  }),
+}));
+
+vi.mock("../../services/authService", () => ({
+  authService: {
+    login: vi.fn().mockResolvedValue({
+      token: "mock-token",
+      sessionStatus: { is_professional: false },
+    }),
+    resetPassword: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 // Mock Supabase client
 vi.mock("../../services/supabaseClient", () => ({
   supabase: {
