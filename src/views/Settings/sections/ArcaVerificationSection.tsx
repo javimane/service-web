@@ -112,14 +112,7 @@ const ArcaVerificationSection = React.memo(
     return (
       <article className="arca-container">
         {isVerified ? (
-          <div
-            className="arca-badge arca-badge--verified"
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
+          <div className="arca-badge arca-badge--verified">
             <div className="arca-badge-content">
               <CheckCircle size={20} />
               <div className="arca-badge-text">

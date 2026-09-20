@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
   ShieldCheck,
+  ShieldAlert,
   MapPin,
   MessageCircle,
   Loader2,
@@ -14,13 +15,28 @@ import {
   ExternalLink,
   Play,
   Maximize,
+  CreditCard,
+  Sparkles,
 } from "lucide-react";
 import { getProductDetailAction } from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
+import {
+  commerceService,
+  ProductVariant,
+} from "../../services/commerceService";
+import { useAuth } from "../../context/AuthContext";
+import ProductPaymentModal from "./components/ProductPaymentModal";
+import ProductInstallmentsModal from "./components/ProductInstallmentsModal";
 import "./ProductDetailPage.css";
+
+const AGE_RESTRICTED_SUBCATEGORIES = new Set([
+  "2d6c30b1-95b8-4a2a-b43f-f9f09e5c507a",
+  "fb762aba-7df9-4f6c-b507-651323fab7bb",
+  "ea1d5cc2-5ed0-4227-a5e3-0f292d4ec67a",
+]);
 
 function formatPrice(n: number | null | undefined) {
   if (!n) return "0";
@@ -71,8 +87,15 @@ export default function ProductDetailPage({
   const id = queryId || extractIdFromSlug(seoPath);
 
   const router = useRouter();
+  const { user, isAgeVerified } = useAuth();
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const videoFrameRef = useRef<HTMLDivElement | null>(null);
+
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    null,
+  );
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isInstallmentsModalOpen, setIsInstallmentsModalOpen] = useState(false);
 
   const {
     data: item,
@@ -88,6 +111,19 @@ export default function ProductDetailPage({
     enabled: !!id,
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
+  });
+
+  const professionalProductId =
+    item?.ProfessionalProducts?.[0]?.id || undefined;
+
+  const { data: variants = [] } = useQuery<ProductVariant[]>({
+    queryKey: ["product-variants", professionalProductId],
+    queryFn: () =>
+      professionalProductId
+        ? commerceService.variants(professionalProductId)
+        : Promise.resolve([]),
+    enabled: !!professionalProductId,
+    staleTime: 1000 * 60 * 5,
   });
 
   // URL Normalization disabled - using query params approach instead
@@ -154,6 +190,15 @@ export default function ProductDetailPage({
     itemAny.SubCategory?.name ||
     itemAny.subCategory?.name ||
     itemAny.sub_category?.name;
+
+  const isAgeRestricted = Boolean(
+    productSubcategoryId &&
+    AGE_RESTRICTED_SUBCATEGORIES.has(
+      String(productSubcategoryId).toLowerCase(),
+    ),
+  );
+  const canPurchase = !isAgeRestricted || (Boolean(user) && isAgeVerified);
+
   const productOrigin = item.is_foreign ? "Externo" : "Local";
   const rawImages: any[] = item.Images || itemAny.images || [];
   const rawVideos: any[] = item.Videos || itemAny.videos || [];
@@ -206,6 +251,40 @@ export default function ProductDetailPage({
   // Price logic
   const originalPrice = professionalProduct?.price || item.price;
   const offerPrice = professionalProduct?.offer_price;
+
+  const activeOriginalPrice =
+    selectedVariant &&
+    !selectedVariant.use_product_price &&
+    selectedVariant.price
+      ? Number(selectedVariant.price)
+      : Number(originalPrice || 0);
+
+  const activeOfferPrice =
+    selectedVariant && !selectedVariant.use_product_price
+      ? selectedVariant.offer_price
+        ? Number(selectedVariant.offer_price)
+        : null
+      : offerPrice
+        ? Number(offerPrice)
+        : null;
+
+  const activeFinalPrice = activeOfferPrice || activeOriginalPrice;
+
+  const installmentsEnabled =
+    selectedVariant && selectedVariant.installments_enabled !== undefined
+      ? Boolean(selectedVariant.installments_enabled)
+      : Boolean(
+          professionalProduct?.installments_enabled ??
+          item.installments_enabled,
+        );
+
+  const maxInstallments =
+    selectedVariant && selectedVariant.max_installments
+      ? Number(selectedVariant.max_installments)
+      : Number(
+          professionalProduct?.max_installments || item.max_installments || 12,
+        );
+
   const currencyCode =
     professionalProduct?.currency_code ||
     item.currency_code ||
@@ -216,21 +295,33 @@ export default function ProductDetailPage({
     item.percent_discount ||
     itemAny.Product?.percent_discount ||
     0;
-  const hasDiscount = !!offerPrice || percentDiscount > 0;
+  const hasDiscount = !!activeOfferPrice || percentDiscount > 0;
   const discountVal =
     percentDiscount > 0
       ? percentDiscount
-      : offerPrice && originalPrice
-        ? Math.round((1 - offerPrice / originalPrice) * 100)
+      : activeOfferPrice && activeOriginalPrice
+        ? Math.round((1 - activeOfferPrice / activeOriginalPrice) * 100)
         : 0;
   const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
 
   const isWholesale =
-    professionalProduct?.wholesale === true || item.wholesale === true;
+    selectedVariant &&
+    !selectedVariant.use_product_price &&
+    selectedVariant.wholesale_price
+      ? true
+      : professionalProduct?.wholesale === true || item.wholesale === true;
   const wholesalePrice =
-    professionalProduct?.wholesale_price || item.wholesale_price;
+    selectedVariant &&
+    !selectedVariant.use_product_price &&
+    selectedVariant.wholesale_price
+      ? selectedVariant.wholesale_price
+      : professionalProduct?.wholesale_price || item.wholesale_price;
   const wholesaleUnit =
-    professionalProduct?.wholesale_unit || item.wholesale_unit;
+    selectedVariant &&
+    !selectedVariant.use_product_price &&
+    selectedVariant.wholesale_unit
+      ? selectedVariant.wholesale_unit
+      : professionalProduct?.wholesale_unit || item.wholesale_unit;
 
   const handleContact = () => {
     const productUrl = window.location.href;
@@ -513,12 +604,51 @@ export default function ProductDetailPage({
                     <span>{sellerProvince}</span>
                   </div>
 
+                  {/* Variants selector (if product has variants) */}
+                  {variants.length > 0 && (
+                    <div className="product-detail__variants-section">
+                      <span className="product-detail__variants-label">
+                        Elegí tu variante:
+                      </span>
+                      <div className="product-detail__variants-options">
+                        {variants.map((v) => {
+                          const isSelected = selectedVariant?.id === v.id;
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              className={`product-detail__variant-chip ${
+                                isSelected
+                                  ? "product-detail__variant-chip--active"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                setSelectedVariant(isSelected ? null : v)
+                              }
+                            >
+                              <span>
+                                {v.attribute_name}:{" "}
+                                <strong>{v.attribute_value}</strong>
+                              </span>
+                              {v.price && !v.use_product_price && (
+                                <span className="product-detail__variant-chip-price">
+                                  $
+                                  {Number(
+                                    v.offer_price || v.price,
+                                  ).toLocaleString("es-AR")}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="seller-card__price-row">
                     <div className="prices">
                       {(() => {
-                        const finalPrice = offerPrice
-                          ? offerPrice
-                          : originalPrice;
+                        const finalPrice = activeFinalPrice;
                         const isConsult =
                           !finalPrice || Number(finalPrice) <= 1;
 
@@ -532,10 +662,10 @@ export default function ProductDetailPage({
 
                         return (
                           <>
-                            {hasDiscount && originalPrice > 1 && (
+                            {hasDiscount && activeOriginalPrice > 1 && (
                               <span className="seller-original-price">
                                 {currencySymbol}
-                                {formatPrice(originalPrice)}
+                                {formatPrice(activeOriginalPrice)}
                               </span>
                             )}
                             <div className="seller-current-price-row">
@@ -543,7 +673,7 @@ export default function ProductDetailPage({
                                 {currencySymbol}
                                 {formatPrice(finalPrice)}
                               </span>
-                              {discountVal > 0 && originalPrice > 1 && (
+                              {discountVal > 0 && activeOriginalPrice > 1 && (
                                 <span className="seller-discount">
                                   {discountVal}% OFF
                                 </span>
@@ -602,13 +732,121 @@ export default function ProductDetailPage({
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {/* Installments Information Box */}
+                  {activeFinalPrice > 1 && (
+                    <div className="seller-installments-box">
+                      {installmentsEnabled ? (
+                        <>
+                          <div className="seller-installments-pill seller-installments-pill--free">
+                            <CreditCard size={16} />
+                            <span>
+                              Hasta {maxInstallments} cuotas sin interés de $
+                              {Math.round(
+                                activeFinalPrice / maxInstallments,
+                              ).toLocaleString("es-AR")}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="seller-installments-btn"
+                            onClick={() => setIsInstallmentsModalOpen(true)}
+                          >
+                            Ver medios de pago y cuotas sin interés
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="seller-installments-pill">
+                            <CreditCard size={16} />
+                            <span>
+                              1 pago de $
+                              {activeFinalPrice.toLocaleString("es-AR")}{" "}
+                              (débito/crédito)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="seller-installments-btn"
+                            onClick={() => setIsInstallmentsModalOpen(true)}
+                          >
+                            Ver opciones en cuotas fijas
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Age restriction alert */}
+                  {isAgeRestricted && !canPurchase && (
+                    <div className="product-detail__age-warning">
+                      <ShieldAlert
+                        size={20}
+                        className="product-detail__age-warning-icon"
+                      />
+                      <div className="product-detail__age-warning-body">
+                        <strong className="product-detail__age-warning-title">
+                          Producto para mayores de 18 años
+                        </strong>
+                        <p className="product-detail__age-warning-text">
+                          Para comprar este producto tenés que tener tu edad
+                          verificada en tu cuenta.
+                        </p>
+                        {!user ? (
+                          <button
+                            type="button"
+                            className="product-detail__age-warning-btn"
+                            onClick={() =>
+                              router.push(
+                                `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+                              )
+                            }
+                          >
+                            Iniciar sesión para verificar edad
+                          </button>
+                        ) : (
+                          <span className="product-detail__age-warning-badge">
+                            Edad no verificada · Actualizá tu cuenta para
+                            habilitar la compra
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="seller-actions-group">
+                    {activeFinalPrice > 1 && canPurchase && (
+                      <>
+                        <button
+                          type="button"
+                          className="seller-buy-btn"
+                          onClick={() => setIsPaymentModalOpen(true)}
+                        >
+                          <CreditCard size={18} />
+                          <span>Comprar ahora</span>
+                        </button>
+
+                        <div className="seller-protected-badge">
+                          <ShieldCheck
+                            size={18}
+                            className="seller-protected-badge__icon"
+                          />
+                          <span className="seller-protected-badge__text">
+                            Compra protegida o te devolvemos el dinero
+                          </span>
+                        </div>
+                      </>
+                    )}
 
                     <button
+                      type="button"
                       className="seller-contact-btn"
                       onClick={handleContact}
                     >
                       <MessageCircle size={16} />
-                      Contactar
+                      <span>Contactar al vendedor</span>
                     </button>
                   </div>
 
@@ -633,6 +871,32 @@ export default function ProductDetailPage({
           </div>
         </div>
       </main>
+
+      {/* Payment Checkout Modal (Getnet Cards + PayCloud QR) */}
+      <ProductPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        product={item}
+        professionalId={Number(professionalId || 0)}
+        professionalProductId={professionalProductId}
+        variants={variants}
+        selectedVariant={selectedVariant}
+        onSelectVariant={setSelectedVariant}
+        sellerName={sellerName}
+        sellerProvince={sellerProvince}
+        isAgeRestricted={isAgeRestricted}
+        canPurchase={canPurchase}
+      />
+
+      {/* Installments Breakdown Modal */}
+      <ProductInstallmentsModal
+        isOpen={isInstallmentsModalOpen}
+        onClose={() => setIsInstallmentsModalOpen(false)}
+        price={activeFinalPrice}
+        installmentsEnabled={installmentsEnabled}
+        maxInstallments={maxInstallments}
+        productName={productName}
+      />
 
       <Footer />
     </>

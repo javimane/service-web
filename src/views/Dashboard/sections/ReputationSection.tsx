@@ -130,10 +130,8 @@ export default function ReputationSection({
         100,
         Math.max(
           0,
-          Math.round(
-            ((score - tier.min) / (nextTier.min - tier.min)) * 100
-          )
-        )
+          Math.round(((score - tier.min) / (nextTier.min - tier.min)) * 100),
+        ),
       )
     : 100;
 
@@ -145,9 +143,9 @@ export default function ReputationSection({
           (
             reviews.reduce((acc, r) => acc + (r.rating || 5), 0) /
             reviews.length
-          ).toFixed(1)
+          ).toFixed(1),
         )
-      : 5.0);
+      : 0.0);
 
   const filteredReviews = reviews.filter((r) => {
     if (reviewFilter === "positive") return (r.rating || 5) >= 4;
@@ -165,9 +163,7 @@ export default function ReputationSection({
           <span className="reputation-section__subtitle">
             Rendimiento y Reputación
           </span>
-          <h1 className="reputation-section__title">
-            Scoring del Profesional
-          </h1>
+          <h1 className="reputation-section__title">Scoring del Profesional</h1>
         </div>
       </header>
 
@@ -201,7 +197,9 @@ export default function ReputationSection({
                   <Star
                     key={s}
                     size={16}
-                    fill={s <= Math.round(averageRating) ? "currentColor" : "none"}
+                    fill={
+                      s <= Math.round(averageRating) ? "currentColor" : "none"
+                    }
                   />
                 ))}
               </div>
@@ -351,7 +349,9 @@ export default function ReputationSection({
                     </div>
                     <span className="reputation-review-date">
                       {review.created_at
-                        ? new Date(review.created_at).toLocaleDateString("es-AR")
+                        ? new Date(review.created_at).toLocaleDateString(
+                            "es-AR",
+                          )
                         : "Reciente"}
                     </span>
                   </div>
@@ -367,7 +367,9 @@ export default function ReputationSection({
                   </div>
 
                   {review.comment && (
-                    <p className="reputation-review-comment">{review.comment}</p>
+                    <p className="reputation-review-comment">
+                      {review.comment}
+                    </p>
                   )}
                 </div>
               );
@@ -395,13 +397,17 @@ export default function ReputationSection({
                 <span className="reputation-rule-tag reputation-rule-tag--pos">
                   +10 pts
                 </span>
-                <span>Por cada venta o servicio completado y liquidado con éxito.</span>
+                <span>
+                  Por cada venta o servicio completado y liquidado con éxito.
+                </span>
               </li>
               <li className="reputation-rule-item">
                 <span className="reputation-rule-tag reputation-rule-tag--pos">
                   +5 pts
                 </span>
-                <span>Por cada valoración de 5 estrellas otorgada por tus clientes.</span>
+                <span>
+                  Por cada valoración de 5 estrellas otorgada por tus clientes.
+                </span>
               </li>
               <li className="reputation-rule-item">
                 <span className="reputation-rule-tag reputation-rule-tag--neg">
@@ -424,7 +430,8 @@ export default function ReputationSection({
                   Visibilidad
                 </span>
                 <span>
-                  Mayor exposición en las búsquedas locales del marketplace y mapa.
+                  Mayor exposición en las búsquedas locales del marketplace y
+                  mapa.
                 </span>
               </li>
               <li className="reputation-rule-item">
@@ -440,7 +447,8 @@ export default function ReputationSection({
                   Prioridad
                 </span>
                 <span>
-                  Prioridad en la asignación de pedidos con envíos y nuevos clientes.
+                  Prioridad en la asignación de pedidos con envíos y nuevos
+                  clientes.
                 </span>
               </li>
             </ul>

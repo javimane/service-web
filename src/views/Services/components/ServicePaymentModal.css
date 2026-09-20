@@ -1,0 +1,578 @@
+/* ServicePaymentModal.css */
+
+.service-payment-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-1);
+}
+
+.service-payment-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Service Card Preview */
+.service-payment-modal__service-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  gap: var(--space-3);
+}
+
+.service-payment-modal__service-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.service-payment-modal__service-name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.service-payment-modal__service-provider {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.service-payment-modal__service-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.service-payment-modal__service-price-amount {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  color: var(--accent-color);
+}
+
+.service-payment-modal__service-price-unit {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+/* Fields & Labels */
+.service-payment-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.service-payment-modal__label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.service-payment-modal__input,
+.service-payment-modal__select {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.service-payment-modal__input:focus,
+.service-payment-modal__select:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-transparent);
+}
+
+.service-payment-modal__input-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.service-payment-modal__input-icon {
+  position: absolute;
+  right: var(--space-3);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.service-payment-modal__row-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: var(--space-3);
+}
+
+/* Quantity Wrap */
+.service-payment-modal__qty-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.service-payment-modal__qty-btn {
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.service-payment-modal__qty-btn:hover:not(:disabled) {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.service-payment-modal__qty-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.service-payment-modal__qty-val {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  min-width: 24px;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+/* Payment Method Selector */
+.service-payment-modal__method-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.service-payment-modal__method-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.service-payment-modal__method-btn svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.service-payment-modal__method-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.service-payment-modal__method-info strong {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.service-payment-modal__method-info span {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.service-payment-modal__method-btn--active {
+  border-color: var(--accent-color);
+  background: var(--accent-transparent);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.service-payment-modal__method-btn--active svg {
+  color: var(--accent-color);
+}
+
+/* Card Section */
+.service-payment-modal__card-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+/* Shift Notice */
+.service-payment-modal__shift-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(29, 95, 191, 0.08);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+}
+
+.service-payment-modal__shift-notice--inline {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.service-payment-modal__shift-notice-icon {
+  color: var(--brand-blue);
+  flex-shrink: 0;
+}
+
+.service-payment-modal__shift-notice-text {
+  font-size: var(--text-xs);
+  color: var(--brand-blue);
+  font-weight: var(--weight-medium);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Protected Purchase Badge */
+.service-payment-modal__protection-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(64, 192, 87, 0.08);
+  border: 1px solid var(--success-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.service-payment-modal__protection-icon {
+  color: var(--success-color);
+  flex-shrink: 0;
+}
+
+/* Footer / Checkout CTA */
+.service-payment-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--space-2);
+}
+
+.service-payment-modal__footer-total {
+  display: flex;
+  flex-direction: column;
+}
+
+.service-payment-modal__total-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.service-payment-modal__total-val {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--accent-color);
+}
+
+.service-payment-modal__btn-primary {
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  padding: 14px 24px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: all 0.2s ease;
+}
+
+.service-payment-modal__btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-transparent);
+}
+
+.service-payment-modal__btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.service-payment-modal__btn-secondary {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: all 0.2s ease;
+}
+
+.service-payment-modal__btn-secondary:hover {
+  background: var(--surface-soft);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+/* Success View */
+.service-payment-modal__success-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  text-align: center;
+}
+
+.service-payment-modal__success-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-full);
+  background: rgba(64, 192, 87, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-payment-modal__success-icon {
+  color: var(--success-color);
+}
+
+.service-payment-modal__success-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Shift Card in Success View */
+.service-payment-modal__shift-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: rgba(29, 95, 191, 0.08);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.service-payment-modal__shift-card-icon {
+  color: var(--brand-blue);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.service-payment-modal__shift-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.service-payment-modal__shift-card-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--brand-blue);
+}
+
+.service-payment-modal__shift-card-desc {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.service-payment-modal__summary-card {
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.service-payment-modal__summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.service-payment-modal__summary-row strong {
+  color: var(--text-primary);
+}
+
+.service-payment-modal__summary-total {
+  font-size: var(--text-md);
+  color: var(--accent-color) !important;
+}
+
+.service-payment-modal__order-code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.service-payment-modal__success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.service-payment-modal__success-actions .service-payment-modal__btn-primary,
+.service-payment-modal__success-actions .service-payment-modal__btn-secondary {
+  width: 100%;
+}
+
+/* Active QR Screen */
+.service-payment-modal__qr-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.service-payment-modal__qr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: rgba(250, 82, 82, 0.1);
+  color: var(--error-color);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.service-payment-modal__qr-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.service-payment-modal__qr-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 420px;
+}
+
+.service-payment-modal__qr-frame {
+  background: #ffffff;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-payment-modal__qr-img {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+}
+
+.service-payment-modal__qr-placeholder {
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.service-payment-modal__qr-amount-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+
+.service-payment-modal__qr-amount-box strong {
+  font-size: var(--text-xl);
+  color: var(--accent-color);
+}
+
+.service-payment-modal__qr-actions {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.service-payment-modal__qr-actions .service-payment-modal__btn-primary {
+  width: 100%;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .service-payment-modal__service-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .service-payment-modal__service-price {
+    align-items: flex-start;
+  }
+
+  .service-payment-modal__method-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .service-payment-modal__row-group {
+    grid-template-columns: 1fr;
+  }
+
+  .service-payment-modal__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .service-payment-modal__btn-primary {
+    width: 100%;
+  }
+}

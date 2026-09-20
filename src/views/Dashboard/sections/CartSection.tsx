@@ -64,16 +64,26 @@ export default function CartSection() {
   const merchantId = cart?.professional_id || 1;
 
   // Fetch branches for merchant if pickup selected
-  const { data: branches = [] } = useQuery<Branch[]>({
+  const { data: rawBranches } = useQuery({
     queryKey: ["merchant-branches", merchantId],
     queryFn: () => commerceService.branches(merchantId),
     enabled: Boolean(merchantId),
   });
 
+  const branches: Branch[] = Array.isArray(rawBranches)
+    ? rawBranches
+    : Array.isArray((rawBranches as any)?.data)
+    ? (rawBranches as any).data
+    : Array.isArray((rawBranches as any)?.items)
+    ? (rawBranches as any).items
+    : [];
+
   useEffect(() => {
     if (branches.length > 0 && !selectedBranchId) {
       const firstPickup = branches.find((b) => b.is_pickup_point) || branches[0];
-      setSelectedBranchId(firstPickup.id);
+      if (firstPickup?.id) {
+        setSelectedBranchId(firstPickup.id);
+      }
     }
   }, [branches, selectedBranchId]);
 
@@ -107,10 +117,14 @@ export default function CartSection() {
         destination_zip: destZip.trim(),
         items_count: items.reduce((acc, i) => acc + i.quantity, 0),
       }),
-    onSuccess: (rates) => {
-      if (rates && rates.length > 0) {
-        setShippingCost(rates[0].price);
-        setEstimatedTime(rates[0].estimated_delivery);
+    onSuccess: (res: any) => {
+      if (Array.isArray(res) && res.length > 0) {
+        setShippingCost(res[0].price);
+        setEstimatedTime(res[0].estimated_delivery);
+        showSuccess("Costo de envío calculado.");
+      } else if (res && typeof res.shippingCost === "number") {
+        setShippingCost(res.shippingCost);
+        setEstimatedTime(res.delivery_estimate || "24 - 48 hs hábiles");
         showSuccess("Costo de envío calculado.");
       } else {
         setShippingCost(1800);
@@ -166,14 +180,16 @@ export default function CartSection() {
     return () => clearInterval(interval);
   }, [qrModalOpen, qrTimerSeconds]);
 
-  const subtotal = items.reduce((acc, curr) => acc + curr.subtotal, 0);
+  const subtotal = items.reduce((acc, curr) => acc + (curr.subtotal || 0), 0);
   const total = subtotal + (deliveryType === "shipment" ? shippingCost : 0);
 
   // Check if any product is perishable or has installment limits
   const hasPerishable = items.some((i) => i.product?.is_food_perishable);
   const maxInstallments = hasPerishable
     ? 1
-    : Math.min(...items.map((i) => i.product?.max_installments || 12));
+    : items.length > 0
+    ? Math.min(...items.map((i) => i.product?.max_installments || 12))
+    : 12;
 
   return (
     <div className="cart-section">

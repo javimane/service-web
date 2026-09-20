@@ -37,6 +37,8 @@ type SessionStatus = {
   email?: string | null;
   display_name?: string | null;
   company_name?: string | null;
+  role_id?: number;
+  is_age_verified?: boolean;
   subscription?: {
     status?: string;
     professional_id?: number | string;
@@ -51,6 +53,9 @@ type SessionStatus = {
 type AuthContextValue = {
   user: any;
   sessionStatus: SessionStatus | null;
+  roleId: number | null;
+  isAgeVerified: boolean;
+  isCompany: boolean;
   hasProfessionalSubscription: boolean;
   professionalPlanActive: boolean;
   subscriptionPlan: string | null;
@@ -123,6 +128,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (sessionStatus?.subscription?.status === "active" || hasActiveStatusFlag);
 
   const hasAddress = Boolean(sessionStatus?.has_professional_address);
+
+  const roleId = sessionStatus?.role_id ?? null;
+  const isAgeVerified = Boolean(sessionStatus?.is_age_verified);
+  const isCompany = roleId === 3;
 
   const subscriptionPlan = sessionStatus?.subscription?.plan ?? null;
 
@@ -464,6 +473,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         sessionStatus,
+        roleId,
+        isAgeVerified,
+        isCompany,
         hasProfessionalSubscription,
         professionalPlanActive,
         hasAddress,

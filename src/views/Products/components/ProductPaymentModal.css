@@ -1,0 +1,701 @@
+/* ═══════════════════════════════════════════════════════════
+   ProductPaymentModal — Full payment & checkout modal styling
+   ═══════════════════════════════════════════════════════════ */
+
+.product-payment-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.product-payment-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Auth Warning */
+.product-payment-modal__auth-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(250, 176, 5, 0.12);
+  border: 1px solid #d48c00;
+  color: var(--text-primary);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.product-payment-modal__auth-warning--error {
+  background: rgba(250, 82, 82, 0.08);
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+
+.product-payment-modal__link-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* Product summary header */
+.product-payment-modal__product-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.product-payment-modal__product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.product-payment-modal__product-name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.product-payment-modal__seller-tag {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.product-payment-modal__unit-price {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  color: var(--accent-color);
+  white-space: nowrap;
+}
+
+/* Sections */
+.product-payment-modal__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.product-payment-modal__label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Variants pills */
+.product-payment-modal__variants-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.product-payment-modal__variant-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.product-payment-modal__variant-pill:hover {
+  border-color: var(--accent-color);
+}
+
+.product-payment-modal__variant-pill--active {
+  border-color: var(--accent-color);
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+  font-weight: var(--weight-bold);
+}
+
+.product-payment-modal__variant-price {
+  font-size: var(--text-xs);
+  color: var(--accent-color);
+  font-weight: var(--weight-semibold);
+}
+
+/* Quantity selector */
+.product-payment-modal__qty-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: fit-content;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-2);
+}
+
+.product-payment-modal__qty-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+}
+
+.product-payment-modal__qty-btn:hover:not(:disabled) {
+  background: var(--accent-transparent);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.product-payment-modal__qty-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.product-payment-modal__qty-value {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  min-width: 28px;
+  text-align: center;
+}
+
+/* Delivery options */
+.product-payment-modal__delivery-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.product-payment-modal__delivery-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.product-payment-modal__delivery-card:hover {
+  border-color: var(--accent-color);
+}
+
+.product-payment-modal__delivery-card--active {
+  border-color: var(--accent-color);
+  background: var(--accent-transparent);
+}
+
+.product-payment-modal__delivery-card strong {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.product-payment-modal__delivery-card p {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.product-payment-modal__address-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+/* Automated Shipping Calculation & Vehicle box */
+.product-payment-modal__shipping-calc-box {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.product-payment-modal__shipping-calc-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.product-payment-modal__shipping-calc-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.product-payment-modal__shipping-calc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.product-payment-modal__shipping-calc-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.product-payment-modal__vehicle-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.product-payment-modal__night-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  background: var(--surface-soft);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--brand-blue);
+}
+
+.product-payment-modal__heavy-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  background: var(--accent-transparent);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--accent-color);
+}
+
+.product-payment-modal__shipping-calc-price {
+  font-size: var(--text-md);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.product-payment-modal__free-shipping-text {
+  color: var(--success-color);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-sm);
+}
+
+.product-payment-modal__shipping-calc-details {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.product-payment-modal__free-reason {
+  width: 100%;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--success-color);
+  font-weight: var(--weight-medium);
+}
+
+.product-payment-modal__shipping-calc-info {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Payment tabs */
+.product-payment-modal__payment-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.product-payment-modal__payment-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.product-payment-modal__payment-tab:hover {
+  border-color: var(--accent-color);
+}
+
+.product-payment-modal__payment-tab--active {
+  border-color: var(--accent-color);
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+}
+
+/* Card Block */
+.product-payment-modal__card-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.product-payment-modal__form-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.product-payment-modal__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.product-payment-modal__form-group.flex-1 {
+  flex: 1;
+}
+
+.product-payment-modal__form-group.flex-2 {
+  flex: 2;
+}
+
+.product-payment-modal__input-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+}
+
+.product-payment-modal__form-group input,
+.product-payment-modal__select {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 10px var(--space-3);
+  font-size: var(--text-sm);
+  font-family: var(--font-primary);
+  color: var(--text-primary);
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.product-payment-modal__form-group input:focus,
+.product-payment-modal__select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-transparent);
+}
+
+.product-payment-modal__installments-tag {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  margin-top: 2px;
+}
+
+.product-payment-modal__installments-tag--success {
+  color: var(--success-color);
+}
+
+.product-payment-modal__installments-tag--info {
+  color: var(--text-secondary);
+}
+
+/* PayCloud QR info block */
+.product-payment-modal__qr-info-block {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.product-payment-modal__qr-info-icon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.product-payment-modal__qr-info-block strong {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.product-payment-modal__qr-info-block p {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Total summary block */
+.product-payment-modal__total-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.product-payment-modal__summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.product-payment-modal__summary-row--total {
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-2);
+  margin-top: 2px;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+}
+
+.product-payment-modal__total-price-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.product-payment-modal__total-price-wrap strong {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--accent-color);
+}
+
+.product-payment-modal__installment-preview {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+/* Actions */
+.product-payment-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.product-payment-modal__btn-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 200px;
+}
+
+.product-payment-modal__security-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+/* QR Screen */
+.product-payment-modal__qr-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+
+.product-payment-modal__qr-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.product-payment-modal__qr-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.product-payment-modal__qr-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  max-width: 420px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.product-payment-modal__qr-frame {
+  padding: var(--space-4);
+  background: var(--white);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-payment-modal__qr-img {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+}
+
+.product-payment-modal__qr-placeholder {
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+.product-payment-modal__qr-amount-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+
+.product-payment-modal__qr-amount-box strong {
+  font-size: var(--text-xl);
+  color: var(--accent-color);
+}
+
+.product-payment-modal__qr-actions {
+  width: 100%;
+}
+
+.product-payment-modal__btn-full {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+/* Success Screen */
+.product-payment-modal__success-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+}
+
+.product-payment-modal__success-icon-wrap {
+  color: var(--success-color);
+}
+
+.product-payment-modal__success-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.product-payment-modal__success-desc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  max-width: 400px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.product-payment-modal__success-card {
+  width: 100%;
+  padding: var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .product-payment-modal__payment-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .product-payment-modal__form-row {
+    flex-direction: column;
+  }
+
+  .product-payment-modal__actions {
+    flex-direction: column;
+  }
+
+  .product-payment-modal__btn-submit {
+    width: 100%;
+  }
+}

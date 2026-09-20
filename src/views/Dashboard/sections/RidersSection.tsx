@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Truck,
@@ -15,7 +15,13 @@ import {
   XCircle,
   Clock,
   Car,
-  ShieldAlert,
+  Pencil,
+  Trash2,
+  KeyRound,
+  X,
+  Save,
+  ChevronRight,
+  IdCard,
 } from "lucide-react";
 import {
   commerceService,
@@ -27,6 +33,39 @@ import { useAlert } from "@/context/AlertContext";
 import Modal from "@/components/Modal/Modal";
 import "./RidersSection.css";
 
+/* ─── Types ─────────────────────────────────────────────── */
+type FormMode = "create" | "edit";
+
+interface RiderForm {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  phone: string;
+  dni: string;
+  vehicle_type: string;
+  brand: string;
+  model: string;
+  year: number | "";
+  license_plate: string;
+  capacity_kg: number | "";
+}
+
+const EMPTY_FORM: RiderForm = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  password: "",
+  phone: "",
+  dni: "",
+  vehicle_type: "motorcycle",
+  brand: "",
+  model: "",
+  year: "",
+  license_plate: "",
+  capacity_kg: "",
+};
+
 const REQUIRED_DOCS = [
   { type: "driving_license", label: "Licencia de Conducir" },
   { type: "vehicle_registration", label: "Cédula del Vehículo" },
@@ -35,34 +74,43 @@ const REQUIRED_DOCS = [
   { type: "criminal_record", label: "Certificado de Antecedentes Penales" },
 ];
 
+const VEHICLE_LABELS: Record<string, string> = {
+  motorcycle: "Moto",
+  car: "Automóvil",
+  pickup: "Camioneta",
+  van: "Furgón",
+  truck: "Camión",
+};
+
+/* ─── Component ──────────────────────────────────────────── */
 export default function RidersSection() {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useAlert();
 
-  const [addRiderModalOpen, setAddRiderModalOpen] = useState(false);
-  const [selectedRiderForDocs, setSelectedRiderForDocs] = useState<RiderEmployee | null>(null);
-  const [addDocModalOpen, setAddDocModalOpen] = useState(false);
+  /* ── form state ── */
+  const [mode, setMode] = useState<FormMode>("create");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<RiderForm>(EMPTY_FORM);
+  const [changePassword, setChangePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
 
-  // New Rider Form
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [dni, setDni] = useState("");
-  const [vehicleType, setVehicleType] = useState("motorcycle");
-  const [brand, setBrand] = useState("");
-  const [model, setModel] = useState("");
-  const [year, setYear] = useState<number | "">("");
-  const [licensePlate, setLicensePlate] = useState("");
-  const [capacityKg, setCapacityKg] = useState<number | "">("");
-
-  // New Doc Form
+  /* ── docs modal ── */
+  const [docsRider, setDocsRider] = useState<RiderEmployee | null>(null);
+  const [addDocOpen, setAddDocOpen] = useState(false);
   const [docType, setDocType] = useState("driving_license");
-  const [docFileName, setDocFileName] = useState("");
-  const [docStoragePath, setDocStoragePath] = useState("");
-  const [docExpiresAt, setDocExpiresAt] = useState("");
+  const [docExpiry, setDocExpiry] = useState("");
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const docFileRef = useRef<HTMLInputElement>(null);
 
+  /* ── delete confirm ── */
+  const [deleteTarget, setDeleteTarget] = useState<RiderEmployee | null>(null);
+
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  useEffect(() => {
+    setCurrentTime(Date.now());
+  }, []);
+
+  /* ─── Queries ─────────────────────────────────────────── */
   const {
     data: riders = [],
     isLoading,
@@ -78,36 +126,36 @@ export default function RidersSection() {
     refetch: refetchDocs,
     isLoading: isLoadingDocs,
   } = useQuery<RiderDocument[]>({
-    queryKey: ["rider-documents", selectedRiderForDocs?.id],
+    queryKey: ["rider-documents", docsRider?.id],
     queryFn: () =>
-      selectedRiderForDocs
-        ? commerceService.documents(selectedRiderForDocs.id)
+      docsRider
+        ? commerceService.documents(docsRider.id)
         : Promise.resolve([]),
-    enabled: Boolean(selectedRiderForDocs),
+    enabled: Boolean(docsRider),
   });
 
-  const createEmployeeMutation = useMutation({
+  /* ─── Mutations ───────────────────────────────────────── */
+  const createMutation = useMutation({
     mutationFn: async () => {
-      // 1. Create employee
       const employee = await commerceService.createEmployee({
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        email: email.trim(),
-        password: password.trim(),
-        phone: phone.trim(),
-        dni: dni.trim(),
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        email: form.email.trim(),
+        password: form.password.trim(),
+        phone: form.phone.trim() || undefined,
+        dni: form.dni.trim() || undefined,
         status: "active",
       });
 
-      // 2. Create vehicle if entered
-      if (employee.id && licensePlate.trim()) {
+      if (employee.id && form.license_plate.trim()) {
         await commerceService.createVehicle(employee.id, {
-          vehicle_type: vehicleType,
-          brand: brand.trim() || undefined,
-          model: model.trim() || undefined,
-          year: typeof year === "number" ? year : undefined,
-          license_plate: licensePlate.trim(),
-          capacity_kg: typeof capacityKg === "number" ? capacityKg : undefined,
+          vehicle_type: form.vehicle_type,
+          brand: form.brand.trim() || undefined,
+          model: form.model.trim() || undefined,
+          year: typeof form.year === "number" ? form.year : undefined,
+          license_plate: form.license_plate.trim(),
+          capacity_kg:
+            typeof form.capacity_kg === "number" ? form.capacity_kg : undefined,
           is_active: true,
         });
       }
@@ -116,83 +164,132 @@ export default function RidersSection() {
     onSuccess: () => {
       showSuccess("Rider registrado exitosamente.");
       queryClient.invalidateQueries({ queryKey: ["logistics-employees"] });
-      setAddRiderModalOpen(false);
-      resetRiderForm();
+      resetForm();
     },
-    onError: () => showError("Error al dar de alta al rider."),
+    onError: (e: any) =>
+      showError(e?.message || "Error al dar de alta al rider."),
   });
 
-  const createDocMutation = useMutation({
+  const updateMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedRiderForDocs) return;
-      return commerceService.createDocument(selectedRiderForDocs.id, {
-        document_type: docType,
-        storage_path: docStoragePath.trim() || `riders/${docType}_${Date.now()}.pdf`,
-        file_name: docFileName.trim() || `${docType}.pdf`,
-        expires_at: docExpiresAt || undefined,
+      if (!editingId) return;
+      await commerceService.updateEmployee(editingId, {
+        first_name: form.first_name.trim() || undefined,
+        last_name: form.last_name.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        dni: form.dni.trim() || undefined,
       });
+      if (changePassword && newPassword.length >= 6) {
+        await commerceService.updateEmployeePassword(editingId, newPassword);
+      }
     },
     onSuccess: () => {
-      showSuccess("Documento cargado correctamente.");
-      refetchDocs();
-      setAddDocModalOpen(false);
+      showSuccess("Datos del rider actualizados.");
+      queryClient.invalidateQueries({ queryKey: ["logistics-employees"] });
+      resetForm();
     },
-    onError: () => showError("No se pudo cargar el documento."),
+    onError: (e: any) =>
+      showError(e?.message || "Error al actualizar el rider."),
   });
 
-  const resetRiderForm = () => {
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPassword("");
-    setPhone("");
-    setDni("");
-    setVehicleType("motorcycle");
-    setBrand("");
-    setModel("");
-    setYear("");
-    setLicensePlate("");
-    setCapacityKg("");
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => commerceService.deleteEmployee(id),
+    onSuccess: () => {
+      showSuccess("Rider dado de baja correctamente.");
+      queryClient.invalidateQueries({ queryKey: ["logistics-employees"] });
+      setDeleteTarget(null);
+    },
+    onError: () => showError("Error al dar de baja al rider."),
+  });
+
+  /* ─── Helpers ─────────────────────────────────────────── */
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setMode("create");
+    setEditingId(null);
+    setChangePassword(false);
+    setNewPassword("");
   };
 
-  const [currentTime, setCurrentTime] = useState<number>(0);
+  const startEdit = (r: RiderEmployee) => {
+    setMode("edit");
+    setEditingId(r.id);
+    setChangePassword(false);
+    setNewPassword("");
+    setForm({
+      first_name: r.first_name ?? "",
+      last_name: r.last_name ?? "",
+      email: r.email ?? "",
+      password: "",
+      phone: r.phone ?? "",
+      dni: r.dni ?? "",
+      vehicle_type:
+        (r.vehicle ?? r.vehicles?.[0])?.vehicle_type ?? "motorcycle",
+      brand: (r.vehicle ?? r.vehicles?.[0])?.brand ?? "",
+      model: (r.vehicle ?? r.vehicles?.[0])?.model ?? "",
+      year: (r.vehicle ?? r.vehicles?.[0])?.year ?? "",
+      license_plate: (r.vehicle ?? r.vehicles?.[0])?.license_plate ?? "",
+      capacity_kg: (r.vehicle ?? r.vehicles?.[0])?.capacity_kg ?? "",
+    });
+    // Scroll to form
+    document
+      .getElementById("riders-form-panel")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
-  useEffect(() => {
-    setCurrentTime(Date.now());
-  }, []);
+  const setField = <K extends keyof RiderForm>(key: K, val: RiderForm[K]) =>
+    setForm((f) => ({ ...f, [key]: val }));
 
   const getDocStatus = (expiresAt?: string | null) => {
     if (!expiresAt) return { label: "Sin vencimiento", color: "green" };
     if (!currentTime) return { label: "Vigente", color: "green" };
     const exp = new Date(expiresAt).getTime();
     const daysLeft = (exp - currentTime) / (1000 * 60 * 60 * 24);
-
-    if (daysLeft < 0) {
-      return { label: "Vencido", color: "red" };
-    }
-    if (daysLeft <= 30) {
+    if (daysLeft < 0) return { label: "Vencido", color: "red" };
+    if (daysLeft <= 30)
       return { label: `Vence en ${Math.ceil(daysLeft)} días`, color: "amber" };
-    }
     return { label: "Al día", color: "green" };
   };
 
-  const getVehicleTypeLabel = (type?: string) => {
-    switch (type) {
-      case "motorcycle":
-        return "Moto";
-      case "car":
-        return "Auto";
-      case "pickup":
-        return "Camioneta";
-      case "van":
-        return "Furgón";
-      case "truck":
-        return "Camión";
-      default:
-        return type || "Vehículo";
+  /* ─── Document upload ─────────────────────────────────── */
+  const handleDocUpload = async () => {
+    if (!docsRider || !docFileRef.current?.files?.[0]) {
+      showError("Seleccioná un archivo antes de subir.");
+      return;
+    }
+    const file = docFileRef.current.files[0];
+    setUploadingDoc(true);
+    try {
+      const { signedUrl, storage_path } =
+        await commerceService.createDocumentUploadUrl(docsRider.id, file.name);
+
+      await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      await commerceService.createDocument(docsRider.id, {
+        document_type: docType,
+        storage_path,
+        file_name: file.name,
+        mime_type: file.type,
+        expires_at: docExpiry || undefined,
+      });
+
+      showSuccess("Documento subido correctamente.");
+      refetchDocs();
+      setAddDocOpen(false);
+      setDocExpiry("");
+      if (docFileRef.current) docFileRef.current.value = "";
+    } catch (e: any) {
+      showError(e?.message || "Error al subir el documento.");
+    } finally {
+      setUploadingDoc(false);
     }
   };
 
+  /* ─── Render ──────────────────────────────────────────── */
   return (
     <div className="riders-section">
       <header className="riders-section__header">
@@ -200,288 +297,467 @@ export default function RidersSection() {
           <span className="riders-section__subtitle">Gestión de Logística</span>
           <h1 className="riders-section__title">Riders y Fleteros</h1>
         </div>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => setAddRiderModalOpen(true)}
-        >
-          <Plus size={18} />
-          <span>Agregar rider / fletero</span>
-        </button>
       </header>
 
-      {/* Grid or States */}
-      {isLoading ? (
-        <div className="riders-state riders-state--loading">
-          <Clock className="riders-state__spinner" size={32} />
-          <p>Cargando flota de choferes...</p>
-        </div>
-      ) : isError ? (
-        <div className="riders-state riders-state--error">
-          <AlertTriangle size={32} />
-          <p>Error al cargar los conductores de la flota.</p>
-          <button type="button" className="btn-primary" onClick={() => refetch()}>
-            Reintentar
-          </button>
-        </div>
-      ) : riders.length === 0 ? (
-        <div className="riders-state riders-state--empty">
-          <Truck size={48} />
-          <h3>No tenés conductores registrados</h3>
-          <p>
-            Da de alta a tus choferes y fleteros con sus vehículos y documentación
-            reglamentaria para asignarlos a viajes de entrega.
-          </p>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => setAddRiderModalOpen(true)}
-          >
-            <Plus size={18} />
-            <span>Dar de alta primer chofer</span>
-          </button>
-        </div>
-      ) : (
-        <div className="riders-grid">
-          {riders.map((r) => {
-            const v = r.vehicle || (r.vehicles && r.vehicles[0]);
-            return (
-              <div key={r.id} className="rider-card">
-                <div className="rider-card__header">
-                  <div className="rider-avatar">
-                    <User size={22} />
-                  </div>
-                  <div className="rider-info">
-                    <h3 className="rider-name">
-                      {r.first_name} {r.last_name}
-                    </h3>
-                    <span className="rider-dni">DNI: {r.dni || "—"}</span>
-                  </div>
-                  <span
-                    className={`rider-status-pill rider-status-pill--${
-                      r.status || "active"
-                    }`}
-                  >
-                    {r.status === "on_trip"
-                      ? "En viaje"
-                      : r.status === "inactive"
-                      ? "Inactivo"
-                      : "Activo"}
-                  </span>
-                </div>
-
-                <div className="rider-card__details">
-                  <div className="rider-detail-item">
-                    <Phone size={14} />
-                    <span>{r.phone || "No informado"}</span>
-                  </div>
-                  <div className="rider-detail-item">
-                    <Mail size={14} />
-                    <span>{r.email || "No informado"}</span>
-                  </div>
-                  <div className="rider-detail-item">
-                    <Car size={14} />
-                    <span>
-                      {getVehicleTypeLabel(v?.vehicle_type)}
-                      {v?.license_plate ? ` • ${v.license_plate}` : ""}
-                      {v?.brand ? ` (${v.brand} ${v.model || ""})` : ""}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="rider-card__footer">
-                  <button
-                    type="button"
-                    className="btn-secondary rider-doc-btn"
-                    onClick={() => setSelectedRiderForDocs(r)}
-                  >
-                    <FileText size={16} />
-                    <span>Documentación</span>
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Add Rider Modal */}
-      {addRiderModalOpen && (
-        <Modal
-          isOpen={addRiderModalOpen}
-          onClose={() => setAddRiderModalOpen(false)}
-          title="Alta de Rider / Fletero"
-        >
-          <form
-            className="rider-modal-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              createEmployeeMutation.mutate();
-            }}
-          >
-            <h4 className="rider-form-subtitle">Datos Personales y Acceso</h4>
-            <div className="rider-form-row">
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">Nombre*</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Juan"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-              </div>
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">Apellido*</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Pérez"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
+      <div className="riders-layout">
+        {/* ── LEFT: Form ─────────────────────────────────── */}
+        <aside className="riders-form-panel" id="riders-form-panel">
+          <div className="riders-form-card">
+            <div className="riders-form-card__header">
+              <h2 className="riders-form-card__title">
+                {mode === "create" ? (
+                  <>
+                    <Plus size={18} />
+                    Dar de alta rider
+                  </>
+                ) : (
+                  <>
+                    <Pencil size={18} />
+                    Editar rider
+                  </>
+                )}
+              </h2>
+              {mode === "edit" && (
+                <button
+                  type="button"
+                  className="riders-form-card__cancel"
+                  onClick={resetForm}
+                >
+                  <X size={16} />
+                  Cancelar edición
+                </button>
+              )}
             </div>
 
-            <div className="rider-form-row">
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">DNI*</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="38123456"
-                  value={dni}
-                  onChange={(e) => setDni(e.target.value)}
-                />
-              </div>
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">Teléfono Móvil*</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="+54 9 11 1234-5678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-            </div>
+            <form
+              className="riders-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (mode === "create") createMutation.mutate();
+                else updateMutation.mutate();
+              }}
+            >
+              {/* Personal data */}
+              <h4 className="riders-form__subtitle">Datos Personales</h4>
 
-            <div className="rider-form-row">
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">Email de Acceso App*</label>
+              <div className="riders-form__row">
+                <div className="riders-form__group">
+                  <label className="riders-form__label">Nombre *</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="Juan"
+                    value={form.first_name}
+                    onChange={(e) => setField("first_name", e.target.value)}
+                  />
+                </div>
+                <div className="riders-form__group">
+                  <label className="riders-form__label">Apellido *</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="Pérez"
+                    value={form.last_name}
+                    onChange={(e) => setField("last_name", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="riders-form__row">
+                <div className="riders-form__group">
+                  <label className="riders-form__label">DNI</label>
+                  <input
+                    type="text"
+                    placeholder="38123456"
+                    value={form.dni}
+                    onChange={(e) => setField("dni", e.target.value)}
+                  />
+                </div>
+                <div className="riders-form__group">
+                  <label className="riders-form__label">Teléfono Móvil</label>
+                  <input
+                    type="tel"
+                    placeholder="+54 9 11 1234-5678"
+                    value={form.phone}
+                    onChange={(e) => setField("phone", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Access credentials */}
+              <h4 className="riders-form__subtitle">Acceso a la App</h4>
+
+              <div className="riders-form__group">
+                <label className="riders-form__label">
+                  Email de Acceso {mode === "create" ? "*" : ""}
+                </label>
                 <input
                   type="email"
-                  required
-                  placeholder="chofer@miempresa.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  required={mode === "create"}
+                  disabled={mode === "edit"}
+                  placeholder="chofer@empresa.com"
+                  value={form.email}
+                  onChange={(e) => setField("email", e.target.value)}
                 />
+                {mode === "edit" && (
+                  <span className="riders-form__hint">
+                    El email no puede cambiarse por seguridad.
+                  </span>
+                )}
               </div>
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">Contraseña Inicial*</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
 
-            <h4 className="rider-form-subtitle">Vehículo Asignado</h4>
-            <div className="rider-form-row">
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">Tipo de Vehículo*</label>
-                <select
-                  value={vehicleType}
-                  onChange={(e) => setVehicleType(e.target.value)}
-                >
-                  <option value="motorcycle">Moto</option>
-                  <option value="car">Automóvil</option>
-                  <option value="pickup">Camioneta</option>
-                  <option value="van">Furgón</option>
-                  <option value="truck">Camión</option>
-                </select>
-              </div>
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">Patente / Dominio*</label>
-                <input
-                  type="text"
-                  placeholder="AF123JK"
-                  value={licensePlate}
-                  onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
-                />
-              </div>
-            </div>
+              {mode === "create" ? (
+                <div className="riders-form__group">
+                  <label className="riders-form__label">
+                    Contraseña Inicial *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) => setField("password", e.target.value)}
+                  />
+                </div>
+              ) : (
+                <div className="riders-form__group">
+                  <label className="riders-form__label riders-form__label--toggle">
+                    <input
+                      type="checkbox"
+                      checked={changePassword}
+                      onChange={(e) => setChangePassword(e.target.checked)}
+                    />
+                    Cambiar contraseña
+                  </label>
+                  {changePassword && (
+                    <input
+                      type="password"
+                      minLength={6}
+                      required
+                      placeholder="Nueva contraseña (mín. 6 caracteres)"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  )}
+                </div>
+              )}
 
-            <div className="rider-form-row">
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">Marca y Modelo</label>
-                <input
-                  type="text"
-                  placeholder="Honda XR 250"
-                  value={brand}
-                  onChange={(e) => setBrand(e.target.value)}
-                />
-              </div>
-              <div className="rider-form-group flex-1">
-                <label className="commercial-label">Capacidad de Carga (kg)</label>
-                <input
-                  type="number"
-                  placeholder="30"
-                  value={capacityKg}
-                  onChange={(e) => setCapacityKg(parseFloat(e.target.value) || "")}
-                />
-              </div>
-            </div>
+              {/* Vehicle */}
+              {mode === "create" && (
+                <>
+                  <h4 className="riders-form__subtitle">Vehículo Asignado</h4>
 
-            <div className="modal-actions-row">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setAddRiderModalOpen(false)}
-              >
-                Cancelar
-              </button>
+                  <div className="riders-form__row">
+                    <div className="riders-form__group">
+                      <label className="riders-form__label">
+                        Tipo de Vehículo *
+                      </label>
+                      <select
+                        value={form.vehicle_type}
+                        onChange={(e) =>
+                          setField("vehicle_type", e.target.value)
+                        }
+                      >
+                        {Object.entries(VEHICLE_LABELS).map(([v, l]) => (
+                          <option key={v} value={v}>
+                            {l}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="riders-form__group">
+                      <label className="riders-form__label">
+                        Patente / Dominio
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="AB123CD"
+                        value={form.license_plate}
+                        onChange={(e) =>
+                          setField(
+                            "license_plate",
+                            e.target.value.toUpperCase()
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="riders-form__row">
+                    <div className="riders-form__group">
+                      <label className="riders-form__label">
+                        Marca y Modelo
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Honda XR 250"
+                        value={form.brand}
+                        onChange={(e) => setField("brand", e.target.value)}
+                      />
+                    </div>
+                    <div className="riders-form__group">
+                      <label className="riders-form__label">
+                        Capacidad de Carga (kg)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="30"
+                        value={form.capacity_kg}
+                        onChange={(e) =>
+                          setField(
+                            "capacity_kg",
+                            parseFloat(e.target.value) || ""
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
               <button
                 type="submit"
-                className="btn-primary"
-                disabled={createEmployeeMutation.isPending}
+                className="btn-primary riders-form__submit"
+                disabled={
+                  createMutation.isPending || updateMutation.isPending
+                }
               >
-                Dar de alta chofer
+                <Save size={16} />
+                {mode === "create" ? "Dar de alta" : "Guardar cambios"}
               </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+            </form>
+          </div>
+        </aside>
 
-      {/* Documents Modal */}
-      {selectedRiderForDocs && (
-        <Modal
-          isOpen={Boolean(selectedRiderForDocs)}
-          onClose={() => setSelectedRiderForDocs(null)}
-          title={`Documentación — ${selectedRiderForDocs.first_name} ${selectedRiderForDocs.last_name}`}
-        >
-          <div className="rider-docs-modal">
-            <div className="rider-docs-header">
-              <p>Requisitos reglamentarios vigentes para circulación y transporte.</p>
+        {/* ── RIGHT: Riders list ──────────────────────────── */}
+        <div className="riders-list-panel">
+          {isLoading ? (
+            <div className="riders-state riders-state--loading">
+              <Clock className="riders-state__spinner" size={32} />
+              <p>Cargando flota de choferes...</p>
+            </div>
+          ) : isError ? (
+            <div className="riders-state riders-state--error">
+              <AlertTriangle size={32} />
+              <p>Error al cargar los conductores.</p>
               <button
                 type="button"
-                className="btn-secondary"
-                onClick={() => setAddDocModalOpen(true)}
+                className="btn-primary"
+                onClick={() => refetch()}
               >
-                <Upload size={16} />
-                <span>Subir documento</span>
+                Reintentar
               </button>
             </div>
+          ) : riders.length === 0 ? (
+            <div className="riders-state riders-state--empty">
+              <Truck size={48} />
+              <h3>No hay conductores registrados</h3>
+              <p>
+                Usá el formulario de la izquierda para dar de alta a tu primer
+                chofer.
+              </p>
+            </div>
+          ) : (
+            <div className="riders-table-wrap">
+              <table className="riders-table">
+                <thead>
+                  <tr>
+                    <th>Chofer</th>
+                    <th>Contacto</th>
+                    <th>Vehículo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {riders.map((r) => {
+                    const v = r.vehicle ?? r.vehicles?.[0];
+                    return (
+                      <tr
+                        key={r.id}
+                        className={
+                          editingId === r.id ? "riders-table__row--editing" : ""
+                        }
+                      >
+                        <td>
+                          <div className="rider-table-name">
+                            <div className="rider-table-avatar">
+                              <User size={16} />
+                            </div>
+                            <div>
+                              <span className="rider-table-fullname">
+                                {r.first_name} {r.last_name}
+                              </span>
+                              {r.dni && (
+                                <span className="rider-table-dni">
+                                  DNI: {r.dni}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="rider-table-contact">
+                            {r.email && (
+                              <span>
+                                <Mail size={12} />
+                                {r.email}
+                              </span>
+                            )}
+                            {r.phone && (
+                              <span>
+                                <Phone size={12} />
+                                {r.phone}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          {v ? (
+                            <div className="rider-table-vehicle">
+                              <Car size={13} />
+                              <span>
+                                {VEHICLE_LABELS[v.vehicle_type] ??
+                                  v.vehicle_type}
+                                {v.license_plate
+                                  ? ` — ${v.license_plate}`
+                                  : ""}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="rider-table-no-vehicle">
+                              Sin vehículo
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <span
+                            className={`rider-status-pill rider-status-pill--${r.status ?? "active"}`}
+                          >
+                            {r.status === "on_trip"
+                              ? "En viaje"
+                              : r.status === "inactive"
+                                ? "Inactivo"
+                                : "Activo"}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="rider-table-actions">
+                            <button
+                              type="button"
+                              className="rider-action-btn rider-action-btn--edit"
+                              title="Editar"
+                              onClick={() => startEdit(r)}
+                            >
+                              <Pencil size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="rider-action-btn rider-action-btn--docs"
+                              title="Documentación"
+                              onClick={() => setDocsRider(r)}
+                            >
+                              <FileText size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="rider-action-btn rider-action-btn--delete"
+                              title="Dar de baja"
+                              onClick={() => setDeleteTarget(r)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Documents Modal ──────────────────────────────── */}
+      {docsRider && (
+        <Modal
+          isOpen={Boolean(docsRider)}
+          onClose={() => {
+            setDocsRider(null);
+            setAddDocOpen(false);
+          }}
+          title={`Documentación — ${docsRider.first_name} ${docsRider.last_name}`}
+        >
+          <div className="rider-docs-modal">
+            <p className="rider-docs-modal__info">
+              Requisitos reglamentarios vigentes para circulación y transporte.
+            </p>
+
+            <button
+              type="button"
+              className="btn-secondary rider-docs-modal__upload-btn"
+              onClick={() => setAddDocOpen((v) => !v)}
+            >
+              <Upload size={15} />
+              {addDocOpen ? "Cancelar" : "Subir documento"}
+            </button>
+
+            {addDocOpen && (
+              <div className="rider-doc-upload-form">
+                <div className="riders-form__group">
+                  <label className="riders-form__label">Tipo de Documento</label>
+                  <select
+                    value={docType}
+                    onChange={(e) => setDocType(e.target.value)}
+                  >
+                    {REQUIRED_DOCS.map((d) => (
+                      <option key={d.type} value={d.type}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="riders-form__group">
+                  <label className="riders-form__label">
+                    Archivo (PDF, imagen)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                    ref={docFileRef}
+                  />
+                </div>
+                <div className="riders-form__group">
+                  <label className="riders-form__label">
+                    Fecha de Vencimiento
+                  </label>
+                  <input
+                    type="date"
+                    value={docExpiry}
+                    onChange={(e) => setDocExpiry(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={uploadingDoc}
+                  onClick={handleDocUpload}
+                >
+                  {uploadingDoc ? "Subiendo..." : "Confirmar subida"}
+                </button>
+              </div>
+            )}
 
             {isLoadingDocs ? (
               <p>Cargando documentos...</p>
             ) : (
               <div className="docs-list">
                 {REQUIRED_DOCS.map((req) => {
-                  const uploaded = riderDocs.find((d) => d.document_type === req.type);
+                  const uploaded = riderDocs.find(
+                    (d) => d.document_type === req.type
+                  );
                   const statusInfo = uploaded
                     ? getDocStatus(uploaded.expires_at)
                     : { label: "Falta presentar", color: "red" };
@@ -492,7 +768,7 @@ export default function RidersSection() {
                         <FileText size={18} className="doc-item__icon" />
                         <div>
                           <span className="doc-item__name">{req.label}</span>
-                          {uploaded && uploaded.expires_at && (
+                          {uploaded?.expires_at && (
                             <span className="doc-item__expiry">
                               Vence:{" "}
                               {new Date(uploaded.expires_at).toLocaleDateString(
@@ -502,7 +778,6 @@ export default function RidersSection() {
                           )}
                         </div>
                       </div>
-
                       <span
                         className={`doc-status-badge doc-status-badge--${statusInfo.color}`}
                       >
@@ -517,71 +792,41 @@ export default function RidersSection() {
         </Modal>
       )}
 
-      {/* Add Document Modal */}
-      {addDocModalOpen && (
+      {/* ── Delete Confirm Modal ──────────────────────────── */}
+      {deleteTarget && (
         <Modal
-          isOpen={addDocModalOpen}
-          onClose={() => setAddDocModalOpen(false)}
-          title="Cargar Documento"
+          isOpen={Boolean(deleteTarget)}
+          onClose={() => setDeleteTarget(null)}
+          title="Confirmar Baja"
         >
-          <form
-            className="rider-modal-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              createDocMutation.mutate();
-            }}
-          >
-            <div className="rider-form-group">
-              <label className="commercial-label">Tipo de Documento*</label>
-              <select
-                value={docType}
-                onChange={(e) => setDocType(e.target.value)}
-              >
-                {REQUIRED_DOCS.map((d) => (
-                  <option key={d.type} value={d.type}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="rider-form-group">
-              <label className="commercial-label">Nombre del archivo o URL*</label>
-              <input
-                type="text"
-                required
-                placeholder="licencia_frente.pdf"
-                value={docFileName}
-                onChange={(e) => setDocFileName(e.target.value)}
-              />
-            </div>
-
-            <div className="rider-form-group">
-              <label className="commercial-label">Fecha de Vencimiento</label>
-              <input
-                type="date"
-                value={docExpiresAt}
-                onChange={(e) => setDocExpiresAt(e.target.value)}
-              />
-            </div>
-
-            <div className="modal-actions-row">
+          <div className="rider-delete-confirm">
+            <AlertTriangle size={36} className="rider-delete-confirm__icon" />
+            <p>
+              ¿Estás seguro que querés dar de baja a{" "}
+              <strong>
+                {deleteTarget.first_name} {deleteTarget.last_name}
+              </strong>
+              ? El rider quedará inactivo.
+            </p>
+            <div className="rider-delete-confirm__actions">
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => setAddDocModalOpen(false)}
+                onClick={() => setDeleteTarget(null)}
               >
                 Cancelar
               </button>
               <button
-                type="submit"
-                className="btn-primary"
-                disabled={createDocMutation.isPending}
+                type="button"
+                className="btn-primary btn-primary--danger"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(deleteTarget.id)}
               >
-                Guardar documento
+                <Trash2 size={16} />
+                Sí, dar de baja
               </button>
             </div>
-          </form>
+          </div>
         </Modal>
       )}
     </div>

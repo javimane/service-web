@@ -1,0 +1,328 @@
+/* ShippingRatesModal.css */
+
+.shipping-rates-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-1);
+}
+
+/* Hero */
+.shipping-rates-modal__hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.shipping-rates-modal__hero-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: rgba(29, 95, 191, 0.1);
+  color: var(--brand-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shipping-rates-modal__hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.shipping-rates-modal__hero-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.shipping-rates-modal__hero-subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Rates Table */
+.shipping-rates-modal__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
+
+.shipping-rates-modal__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.shipping-rates-modal__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.shipping-rates-modal__table th {
+  background: var(--surface-soft);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.shipping-rates-modal__table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.shipping-rates-modal__table tr:last-child td {
+  border-bottom: none;
+}
+
+.shipping-rates-modal__row--active {
+  background: rgba(29, 95, 191, 0.06);
+}
+
+.shipping-rates-modal__cell-vehicle {
+  display: flex;
+  align-items: center;
+}
+
+.shipping-rates-modal__vehicle-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.shipping-rates-modal__vehicle-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.shipping-rates-modal__vehicle-code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  display: block;
+}
+
+.shipping-rates-modal__th-right,
+.shipping-rates-modal__td-right {
+  text-align: right;
+}
+
+.shipping-rates-modal__td-min {
+  font-weight: var(--weight-bold);
+  color: var(--brand-blue);
+}
+
+.shipping-rates-modal__td-night {
+  color: #7950f2;
+  font-weight: var(--weight-medium);
+}
+
+/* Simulator Card */
+.shipping-rates-modal__sim-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.shipping-rates-modal__sim-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.shipping-rates-modal__sim-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.shipping-rates-modal__sim-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.shipping-rates-modal__sim-field label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+
+.shipping-rates-modal__sim-input {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.shipping-rates-modal__sim-input:focus {
+  border-color: var(--brand-blue);
+  box-shadow: 0 0 0 3px rgba(29, 95, 191, 0.1);
+}
+
+.shipping-rates-modal__sim-field--checkbox {
+  justify-content: center;
+  padding-bottom: 6px;
+}
+
+.shipping-rates-modal__checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.shipping-rates-modal__sim-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-1);
+}
+
+.shipping-rates-modal__sim-vehicle-tag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.shipping-rates-modal__sim-vehicle-tag svg {
+  color: var(--brand-blue);
+}
+
+.shipping-rates-modal__sim-price-tag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.shipping-rates-modal__sim-price-tag strong {
+  font-size: var(--text-lg);
+  color: var(--accent-color);
+}
+
+/* Callout Info */
+.shipping-rates-modal__callout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(29, 95, 191, 0.08);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+}
+
+.shipping-rates-modal__callout-icon {
+  color: var(--brand-blue);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.shipping-rates-modal__callout-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.shipping-rates-modal__callout-body strong {
+  font-size: var(--text-xs);
+  color: var(--brand-blue);
+}
+
+.shipping-rates-modal__callout-body p {
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Footer CTA */
+.shipping-rates-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
+.shipping-rates-modal__btn-close {
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shipping-rates-modal__btn-close:hover {
+  background: var(--accent-hover);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .shipping-rates-modal__sim-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .shipping-rates-modal__sim-result {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+}

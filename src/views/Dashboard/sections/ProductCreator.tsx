@@ -18,9 +18,13 @@ import {
   Film,
   Trash2,
   Layers,
+  Truck,
+  Info,
+  Percent,
 } from "lucide-react";
-import ProductVariantsModal from "./ProductVariantsModal";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
+import { useAlert } from "../../../context/AlertContext";
 import {
   getProductCategoriesAction,
   getProductSubcategoriesAction,
@@ -29,6 +33,7 @@ import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
 import { getMultimediaUploadUrlAction } from "../../../app/actions/multimedia";
 import { multimediaService } from "../../../services/multimediaService";
+import { commerceService } from "../../../services/commerceService";
 import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
 import { cropImageToSquare } from "../../../utils/imageUtils";
 import "./DashboardProducts.css";
@@ -43,6 +48,17 @@ import {
 } from "@/app/actions/products";
 
 const MAX_PRODUCT_VIDEOS = 2;
+
+const INSTALLMENT_COMMISSIONS: Record<number, number> = {
+  1: 11.0,
+  2: 13.5,
+  3: 15.0,
+  6: 19.5,
+  9: 23.0,
+  12: 27.0,
+  18: 35.0,
+};
+const IVA_RATE = 0.21;
 
 const moveArrayItem = <T,>(arr: T[], from: number, to: number) => {
   if (to < 0 || to >= arr.length || from === to) return arr;
@@ -61,6 +77,8 @@ export default function ProductCreator({
   onBack,
   productToEdit,
 }: ProductCreatorProps) {
+  const router = useRouter();
+  const { showError } = useAlert();
   const queryClient = useQueryClient();
   const { sessionStatus } = useAuth();
 
@@ -119,12 +137,41 @@ export default function ProductCreator({
   const [eanWholesaleUnit, setEanWholesaleUnit] = useState("");
 
   const [installmentsEnabled, setInstallmentsEnabled] = useState(
-    Boolean(productToEdit?.installments_enabled)
+    Boolean(productToEdit?.installments_enabled),
   );
   const [maxInstallments, setMaxInstallments] = useState(
-    productToEdit?.max_installments || 3
+    productToEdit?.max_installments || 3,
   );
-  const [variantsModalOpen, setVariantsModalOpen] = useState(false);
+  const [freeShipping, setFreeShipping] = useState(
+    Boolean(productToEdit?.free_shipping),
+  );
+  const [freeShippingRadiusKm, setFreeShippingRadiusKm] = useState(
+    productToEdit?.free_shipping_radius_km !== undefined &&
+      productToEdit?.free_shipping_radius_km !== null
+      ? String(productToEdit.free_shipping_radius_km)
+      : "",
+  );
+  const [freeShippingMinAmount, setFreeShippingMinAmount] = useState(
+    productToEdit?.free_shipping_min_amount !== undefined &&
+      productToEdit?.free_shipping_min_amount !== null
+      ? String(productToEdit.free_shipping_min_amount)
+      : "",
+  );
+  const [freeShippingMaxWeight, setFreeShippingMaxWeight] = useState(
+    productToEdit?.free_shipping_max_weight !== undefined &&
+      productToEdit?.free_shipping_max_weight !== null
+      ? String(productToEdit.free_shipping_max_weight)
+      : "",
+  );
+
+  const { data: shippingPolicy } = useQuery({
+    queryKey: ["shipping-policy", professionalId],
+    queryFn: async () => {
+      if (!professionalId) return null;
+      return await commerceService.getShippingPolicy(Number(professionalId));
+    },
+    enabled: Boolean(professionalId),
+  });
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-products"],
@@ -135,11 +182,13 @@ export default function ProductCreator({
   });
 
   const selectedCategoryObj = categories.find(
-    (c: any) => String(c.id) === String(newProduct.categoryId)
+    (c: any) => String(c.id) === String(newProduct.categoryId),
   );
   const isFoodCategory = Boolean(
     selectedCategoryObj?.name &&
-    /alimento|comida|bebida|pereced|fresco|panader/i.test(selectedCategoryObj.name)
+    /alimento|comida|bebida|pereced|fresco|panader/i.test(
+      selectedCategoryObj.name,
+    ),
   );
 
   const { data: subcategories = [] } = useQuery({
@@ -295,6 +344,34 @@ export default function ProductCreator({
       setFormStock(
         fullProduct.stock !== undefined ? String(fullProduct.stock) : "",
       );
+
+      if (fullProduct.installments_enabled !== undefined) {
+        setInstallmentsEnabled(Boolean(fullProduct.installments_enabled));
+      }
+      if (fullProduct.max_installments) {
+        setMaxInstallments(Number(fullProduct.max_installments));
+      }
+      if (fullProduct.free_shipping !== undefined) {
+        setFreeShipping(Boolean(fullProduct.free_shipping));
+      }
+      if (
+        fullProduct.free_shipping_radius_km !== undefined &&
+        fullProduct.free_shipping_radius_km !== null
+      ) {
+        setFreeShippingRadiusKm(String(fullProduct.free_shipping_radius_km));
+      }
+      if (
+        fullProduct.free_shipping_min_amount !== undefined &&
+        fullProduct.free_shipping_min_amount !== null
+      ) {
+        setFreeShippingMinAmount(String(fullProduct.free_shipping_min_amount));
+      }
+      if (
+        fullProduct.free_shipping_max_weight !== undefined &&
+        fullProduct.free_shipping_max_weight !== null
+      ) {
+        setFreeShippingMaxWeight(String(fullProduct.free_shipping_max_weight));
+      }
 
       // Extract images
       let imgs: string[] = [];
@@ -576,6 +653,24 @@ export default function ProductCreator({
         wholesale: newProduct.wholesale,
         wholesale_price: Number(newProduct.wholesale_price) || 0,
         wholesale_unit: Number(newProduct.wholesale_unit) || 0,
+        installments_enabled: !isFoodCategory && installmentsEnabled,
+        max_installments: installmentsEnabled ? maxInstallments : null,
+        free_shipping: freeShipping,
+        free_shipping_radius_km: freeShipping
+          ? freeShippingRadiusKm
+            ? Number(freeShippingRadiusKm)
+            : null
+          : null,
+        free_shipping_min_amount: freeShipping
+          ? freeShippingMinAmount
+            ? Number(freeShippingMinAmount)
+            : null
+          : null,
+        free_shipping_max_weight: freeShipping
+          ? freeShippingMaxWeight
+            ? Number(freeShippingMaxWeight)
+            : null
+          : null,
       };
 
       if (productToEdit) {
@@ -640,6 +735,12 @@ export default function ProductCreator({
             wholesale: payload.wholesale,
             wholesale_price: payload.wholesale_price,
             wholesale_unit: payload.wholesale_unit,
+            installments_enabled: payload.installments_enabled,
+            max_installments: payload.max_installments,
+            free_shipping: payload.free_shipping,
+            free_shipping_radius_km: payload.free_shipping_radius_km,
+            free_shipping_min_amount: payload.free_shipping_min_amount,
+            free_shipping_max_weight: payload.free_shipping_max_weight,
           },
         });
       } else {
@@ -660,6 +761,15 @@ export default function ProductCreator({
 
   const set = (key: string, val: string | boolean) =>
     setNewProduct((p) => ({ ...p, [key]: val }));
+
+  const currentPriceNumber = parseFloat(formPrice) || 0;
+  const activeInstallmentRate = installmentsEnabled
+    ? (INSTALLMENT_COMMISSIONS[maxInstallments] ?? 15.0)
+    : 11.0;
+  const commissionAmount = currentPriceNumber * (activeInstallmentRate / 100);
+  const ivaOnCommission = commissionAmount * IVA_RATE;
+  const totalDeduction = commissionAmount + ivaOnCommission;
+  const netEarnings = Math.max(0, currentPriceNumber - totalDeduction);
 
   return (
     <div className="product-creator">
@@ -1313,7 +1423,7 @@ export default function ProductCreator({
                 )}
 
                 {/* Cuotas sin interés */}
-                <div className="product-creator__field" style={{ marginTop: "16px" }}>
+                <div className="product-creator__field">
                   <label className="product-creator__wholesale-row">
                     <input
                       type="checkbox"
@@ -1325,48 +1435,213 @@ export default function ProductCreator({
                   </label>
 
                   {isFoodCategory ? (
-                    <div
-                      style={{
-                        fontSize: "var(--text-xs)",
-                        color: "var(--amber-dark)",
-                        background: "rgba(251, 191, 36, 0.15)",
-                        padding: "8px 12px",
-                        borderRadius: "var(--radius-sm)",
-                        marginTop: "6px",
-                      }}
-                    >
-                      Por regulación comercial, los alimentos y perecederos no admiten financiación en cuotas.
+                    <div className="product-creator__food-alert">
+                      Por regulación comercial, los alimentos y perecederos no
+                      admiten financiación en cuotas.
                     </div>
-                  ) : installmentsEnabled ? (
-                    <div style={{ marginTop: "8px" }}>
-                      <label style={{ fontSize: "var(--text-xs)", fontWeight: "var(--weight-bold)", color: "var(--text-secondary)" }}>
-                        Máximo de cuotas permitidas
-                      </label>
-                      <select
-                        value={maxInstallments}
-                        onChange={(e) => setMaxInstallments(parseInt(e.target.value, 10))}
-                        className="dash-products__modal-select"
-                        style={{ marginTop: "4px" }}
-                      >
-                        <option value={3}>Hasta 3 cuotas fijas</option>
-                        <option value={6}>Hasta 6 cuotas fijas</option>
-                        <option value={9}>Hasta 9 cuotas fijas</option>
-                        <option value={12}>Hasta 12 cuotas fijas</option>
-                      </select>
+                  ) : (
+                    <>
+                      {installmentsEnabled && (
+                        <div className="product-creator__installments-config">
+                          <label className="product-creator__installments-label">
+                            Máximo de cuotas permitidas
+                          </label>
+                          <select
+                            value={maxInstallments}
+                            onChange={(e) =>
+                              setMaxInstallments(parseInt(e.target.value, 10))
+                            }
+                            className="dash-products__modal-select"
+                          >
+                            <option value={3}>Hasta 3 cuotas fijas</option>
+                            <option value={6}>Hasta 6 cuotas fijas</option>
+                            <option value={9}>Hasta 9 cuotas fijas</option>
+                            <option value={12}>Hasta 12 cuotas fijas</option>
+                            <option value={18}>Hasta 18 cuotas fijas</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Desglose de comisión de venta + 21% IVA */}
+                      {currentPriceNumber > 0 && (
+                        <div className="product-creator__commission-box">
+                          <div className="product-creator__commission-header">
+                            <span className="product-creator__commission-title">
+                              <Percent size={14} /> Desglose de retención y
+                              liquidación
+                            </span>
+                            <span className="product-creator__commission-badge">
+                              {installmentsEnabled
+                                ? `Hasta ${maxInstallments} cuotas (${activeInstallmentRate}% base)`
+                                : "1 pago contado (11% base)"}
+                            </span>
+                          </div>
+
+                          <div className="product-creator__commission-rows">
+                            <div className="product-creator__commission-row">
+                              <span>Precio de venta al público:</span>
+                              <strong>
+                                $
+                                {currentPriceNumber.toLocaleString("es-AR", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </strong>
+                            </div>
+                            <div className="product-creator__commission-row product-creator__commission-row--deduction">
+                              <span>
+                                Comisión de plataforma ({activeInstallmentRate}
+                                %):
+                              </span>
+                              <strong>
+                                -$
+                                {commissionAmount.toLocaleString("es-AR", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </strong>
+                            </div>
+                            <div className="product-creator__commission-row product-creator__commission-row--deduction">
+                              <span>IVA sobre comisión (21%):</span>
+                              <strong>
+                                -$
+                                {ivaOnCommission.toLocaleString("es-AR", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </strong>
+                            </div>
+                            <div className="product-creator__commission-row product-creator__commission-row--deduction">
+                              <span>
+                                Total retención (
+                                {(activeInstallmentRate * 1.21).toFixed(2)}%):
+                              </span>
+                              <strong>
+                                -$
+                                {totalDeduction.toLocaleString("es-AR", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </strong>
+                            </div>
+                            <div className="product-creator__commission-row product-creator__commission-row--total">
+                              <span>Cobras neto en tu cuenta:</span>
+                              <strong>
+                                $
+                                {netEarnings.toLocaleString("es-AR", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </strong>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Envío gratis */}
+                <div className="product-creator__field">
+                  <label className="product-creator__wholesale-row">
+                    <input
+                      type="checkbox"
+                      checked={freeShipping}
+                      onChange={(e) => setFreeShipping(e.target.checked)}
+                    />
+                    <span>Ofrecer envío gratis en este producto</span>
+                  </label>
+
+                  {freeShipping && (
+                    <div className="product-creator__shipping-box">
+                      {shippingPolicy?.has_own_riders ? (
+                        <div className="product-creator__shipping-notice product-creator__shipping-notice--own-riders">
+                          <Truck size={18} />
+                          <div>
+                            <strong>Flota propia de riders:</strong> Al contar
+                            con logística independiente, la plataforma no
+                            descontará costo de envío por las ventas de este
+                            producto.
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="product-creator__shipping-notice product-creator__shipping-notice--platform">
+                            <Truck size={18} />
+                            <div>
+                              <strong>Envíos con la plataforma:</strong>{" "}
+                              Configura las condiciones bajo las cuales
+                              absorberás el costo del envío para el comprador:
+                            </div>
+                          </div>
+
+                          <div className="product-creator__shipping-grid">
+                            <div className="product-creator__field">
+                              <label>Radio cobertura (km)</label>
+                              <input
+                                type="number"
+                                min="1"
+                                placeholder="Ej: 5 (opcional)"
+                                value={freeShippingRadiusKm}
+                                onChange={(e) =>
+                                  setFreeShippingRadiusKm(e.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="product-creator__field">
+                              <label>Compra mínima ($)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder="Ej: 15000 (opcional)"
+                                value={freeShippingMinAmount}
+                                onChange={(e) =>
+                                  setFreeShippingMinAmount(e.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="product-creator__field">
+                              <label>Peso máx. (kg)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                placeholder="Ej: 5 (opcional)"
+                                value={freeShippingMaxWeight}
+                                onChange={(e) =>
+                                  setFreeShippingMaxWeight(e.target.value)
+                                }
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  ) : null}
+                  )}
                 </div>
 
                 {/* Variantes de producto */}
-                <div className="product-creator__field" style={{ marginTop: "16px" }}>
-                  <label style={{ fontSize: "var(--text-xs)", fontWeight: "var(--weight-bold)", color: "var(--text-secondary)", display: "block", marginBottom: "6px" }}>
-                    Variantes y Atributos (Color, Talle, Stock)
+                <div className="product-creator__field">
+                  <label className="product-creator__installments-label">
+                    Variantes y Atributos (Color, Talle, Precios y Stock)
                   </label>
                   <button
                     type="button"
-                    className="btn-secondary"
-                    onClick={() => setVariantsModalOpen(true)}
-                    style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 16px" }}
+                    className="btn-secondary product-creator__variants-trigger"
+                    onClick={() => {
+                      const productId =
+                        productToEdit?.professional_product_id ||
+                        productToEdit?.id;
+                      if (productId) {
+                        router.push(
+                          `/panel?view=products-variants&productId=${productId}`,
+                        );
+                      } else {
+                        showError(
+                          "Primero debes guardar el producto para poder gestionar sus variantes.",
+                        );
+                      }
+                    }}
                   >
                     <Layers size={16} />
                     <span>Gestionar variantes de producto</span>
@@ -1584,18 +1859,6 @@ export default function ProductCreator({
             </button>
           </div>
         </div>
-      )}
-
-      {/* Modal de variantes */}
-      {variantsModalOpen && (
-        <ProductVariantsModal
-          isOpen={variantsModalOpen}
-          onClose={() => setVariantsModalOpen(false)}
-          professionalProductId={String(
-            productToEdit?.professional_product_id || productToEdit?.id || ""
-          )}
-          productName={newProduct.name || productToEdit?.name || "Producto"}
-        />
       )}
     </div>
   );

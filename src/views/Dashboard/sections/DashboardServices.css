@@ -35,6 +35,34 @@
   margin: 0;
 }
 
+.dash-services__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dash-services__commissions-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 12px 18px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dash-services__commissions-btn:hover {
+  background: var(--surface-soft);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: translateY(-1px);
+}
+
 .dash-services__add-btn {
   display: flex;
   align-items: center;

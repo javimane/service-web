@@ -1,6 +1,11 @@
 "use client";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  useQuery,
+} from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -13,6 +18,7 @@ import {
   Loader2,
   AlertTriangle,
   Share2,
+  Percent,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { getServicesByProfessionalAction } from "../../../app/actions/services";
@@ -23,6 +29,7 @@ import {
   updateServiceAction,
 } from "../../../app/actions/services";
 import { getAccessToken } from "../../../utils/auth";
+import CommissionsModal from "../../../components/CommissionsModal/CommissionsModal";
 import "./DashboardServices.css";
 
 export default function DashboardServices() {
@@ -37,6 +44,7 @@ export default function DashboardServices() {
   const [submittedSearchQuery, setSubmittedSearchQuery] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [commissionsModalOpen, setCommissionsModalOpen] = useState(false);
 
   // Add/Edit modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -94,7 +102,7 @@ export default function DashboardServices() {
   const services = useMemo(() => {
     if (!data) return [];
     return data.pages.flatMap((page: any) =>
-      Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : []
+      Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : [],
     );
   }, [data]);
 
@@ -107,7 +115,7 @@ export default function DashboardServices() {
           fetchNextPage();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (observerTarget.current) {
@@ -277,10 +285,21 @@ export default function DashboardServices() {
           <span className="dash-services__label">GESTIÓN</span>
           <h1 className="dash-services__title">Servicios</h1>
         </div>
-        <button className="dash-services__add-btn" onClick={openAddModal}>
-          <Plus size={18} />
-          <span>Nuevo Servicio</span>
-        </button>
+        <div className="dash-services__actions">
+          <button
+            type="button"
+            className="dash-services__commissions-btn"
+            onClick={() => setCommissionsModalOpen(true)}
+            title="Ver tabla de comisiones por venta en 1 pago y cuotas + IVA"
+          >
+            <Percent size={16} />
+            <span>Comisiones</span>
+          </button>
+          <button className="dash-services__add-btn" onClick={openAddModal}>
+            <Plus size={18} />
+            <span>Nuevo Servicio</span>
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -394,10 +413,20 @@ export default function DashboardServices() {
             ))}
           </div>
         )}
-        
+
         {/* Infinite Scroll Observer Target */}
         {hasNextPage && (
-          <div ref={observerTarget} style={{ padding: "20px", textAlign: "center", display: "flex", justifyContent: "center", gap: "8px", alignItems: "center" }}>
+          <div
+            ref={observerTarget}
+            style={{
+              padding: "20px",
+              textAlign: "center",
+              display: "flex",
+              justifyContent: "center",
+              gap: "8px",
+              alignItems: "center",
+            }}
+          >
             {isFetchingNextPage && (
               <>
                 <Loader2 className="animate-spin" size={20} />
@@ -589,6 +618,13 @@ export default function DashboardServices() {
           </div>
         </div>
       )}
+
+      {/* Commissions Modal */}
+      <CommissionsModal
+        isOpen={commissionsModalOpen}
+        onClose={() => setCommissionsModalOpen(false)}
+        title="Comisiones por Venta de Servicios"
+      />
     </div>
   );
 }

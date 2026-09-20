@@ -11,10 +11,14 @@ import {
   ArrowLeft,
   Loader2,
   Share2,
+  CreditCard,
+  ShieldCheck,
 } from "lucide-react";
 import { getServiceDetailAction } from "../../app/actions/services";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
+import ServicePaymentModal from "./components/ServicePaymentModal";
+import ProductInstallmentsModal from "../Products/components/ProductInstallmentsModal";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAlert } from "../../context/AlertContext";
 import "./ServiceDetailPage.css";
@@ -31,6 +35,9 @@ export default function ServiceDetailPage({
   const id = queryId || extractIdFromSlug(seoPath);
   const router = useRouter();
   const { showSuccess: showSuccessAlert } = useAlert();
+
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isInstallmentsModalOpen, setIsInstallmentsModalOpen] = useState(false);
 
   const {
     data: service,
@@ -131,11 +138,14 @@ export default function ServiceDetailPage({
     company?.companies_arca?.[0]?.is_verified ||
     company?.CompanyArca?.[0]?.is_verified ||
     false;
-  const basePrice = Number(service.base_price);
+  const basePrice = Number(svc.price ?? svc.base_price ?? 0);
   const price =
     Number.isFinite(basePrice) && basePrice > 1
       ? `$${basePrice.toLocaleString("es-AR")}`
       : "Consultar";
+
+  const installmentsEnabled = svc.installments_enabled !== false;
+  const maxInstallments = Math.max(1, Number(svc.max_installments || 12));
 
   const professionalId = service.professional_id || professional?.id || "";
 
@@ -210,7 +220,72 @@ export default function ServiceDetailPage({
               <div className="service-detail__section">
                 <h2 className="service-detail__section-title">Precio</h2>
                 <p className="service-detail__price-large">{price}</p>
+
+                {basePrice > 1 && (
+                  <div className="service-detail__installments-box">
+                    {installmentsEnabled ? (
+                      <>
+                        <div className="service-detail__installments-pill service-detail__installments-pill--free">
+                          <CreditCard size={16} />
+                          <span>
+                            Hasta {maxInstallments} cuotas sin interés de $
+                            {Math.round(
+                              basePrice / maxInstallments
+                            ).toLocaleString("es-AR")}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="service-detail__installments-btn"
+                          onClick={() => setIsInstallmentsModalOpen(true)}
+                        >
+                          Ver medios de pago y cuotas sin interés
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="service-detail__installments-pill">
+                          <CreditCard size={16} />
+                          <span>
+                            1 pago de ${basePrice.toLocaleString("es-AR")} (débito/crédito)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="service-detail__installments-btn"
+                          onClick={() => setIsInstallmentsModalOpen(true)}
+                        >
+                          Ver opciones en cuotas fijas (Getnet)
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Purchase Section & Protected Purchase Badge */}
+              {basePrice > 1 && (
+                <div className="service-detail__purchase-section">
+                  <button
+                    type="button"
+                    className="service-detail__buy-btn"
+                    onClick={() => setIsPaymentModalOpen(true)}
+                  >
+                    <CreditCard size={18} />
+                    <span>Contratar servicio</span>
+                  </button>
+
+                  <div className="service-detail__protected-badge">
+                    <ShieldCheck
+                      size={18}
+                      className="service-detail__protected-badge-icon"
+                    />
+                    <span className="service-detail__protected-badge-text">
+                      Compra protegida o te devolvemos el dinero
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action buttons */}
@@ -244,6 +319,25 @@ export default function ServiceDetailPage({
           </div>
         </div>
       </main>
+
+      {/* Service Payment Modal (No shipping, with shift assignment notice) */}
+      <ServicePaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        service={service}
+        professionalId={professionalId}
+        professionalName={professionalName}
+      />
+
+      {/* Installments Breakdown Modal */}
+      <ProductInstallmentsModal
+        isOpen={isInstallmentsModalOpen}
+        onClose={() => setIsInstallmentsModalOpen(false)}
+        price={basePrice}
+        installmentsEnabled={installmentsEnabled}
+        maxInstallments={maxInstallments}
+        productName={service.name}
+      />
 
       <Footer />
     </>

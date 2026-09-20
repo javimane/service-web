@@ -248,11 +248,44 @@ export type ProductVariant = {
   name: string;
   attribute_name: string;
   attribute_value: string;
+  use_product_price?: boolean;
+  price?: number;
+  offer_price?: number;
+  wholesale_price?: number;
+  wholesale_unit?: number;
+  installments_enabled?: boolean;
+  max_installments?: number;
+  free_shipping?: boolean;
   price_difference: number;
   stock: number;
   sku?: string | null;
+  image_url?: string | null;
+  images?: string[];
+  images_to_save?: string[];
+  images_to_delete?: string[];
+  video_url?: string | null;
+  videos?: string[];
+  videos_to_save?: string[];
+  videos_to_delete?: string[];
   created_at?: string;
+  updated_at?: string;
 };
+
+export type ShippingPolicy = {
+  professional_id?: number;
+  has_own_riders: boolean;
+  free_shipping_radius_km: number;
+  free_shipping_min_amount: number;
+  free_shipping_max_weight: number;
+  local_free_km?: number;
+  local_price_per_km?: number;
+  min_units_free?: number;
+  base_weight_allowance?: number;
+  local_price_per_extra_kg?: number;
+  national_flat_price?: number;
+  national_price_per_extra_kg?: number;
+};
+
 
 export type CartItem = {
   id: string;
@@ -291,11 +324,29 @@ export type Cart = {
 };
 
 export type CalculateShippingDto = {
-  merchant_id: number;
-  destination_zip: string;
+  merchant_id?: number;
+  professional_product_id?: string;
+  variant_id?: string | number;
+  quantity?: number;
+  installments?: number;
+  delivery_type?: DeliveryType;
+  delivery_address_id?: string;
+  branch_id?: string;
+  shipping_address?: {
+    street?: string;
+    number?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
+    lat?: number;
+    lng?: number;
+    latitude?: number;
+    longitude?: number;
+  };
+  destination_zip?: string;
   destination_lat?: number;
   destination_lng?: number;
-  items_count: number;
+  items_count?: number;
   total_weight_kg?: number;
 };
 
@@ -306,8 +357,69 @@ export type ShippingRate = {
   estimated_delivery: string;
 };
 
+export type MarketplaceCommission = {
+  id: number;
+  installments: number;
+  commission_pct: number;
+  iva_pct: number;
+  iva_commission_pct: number;
+  total_commission_pct: number;
+  description?: string;
+  is_active: boolean;
+};
+
+export type PlatformShippingRate = {
+  id: number;
+  vehicle_code: 'bicycle' | 'motorcycle' | 'car' | 'van' | 'truck' | string;
+  name: string;
+  price_per_km: number;
+  min_price_first_km: number;
+  night_price_per_km: number;
+  extra_price_per_kg: number;
+  max_weight_kg: number;
+  is_active: boolean;
+};
+
+export type CalculateShippingResponse = {
+  shippingCost: number;
+  shipping_cost?: number;
+  unitPrice: number;
+  professionalProduct?: any;
+  commission_preview?: any;
+  vehicle?: {
+    code: string;
+    name: string;
+    is_heavy?: boolean;
+    max_weight_kg?: number;
+    price_per_km?: number;
+    min_price_first_km?: number;
+    night_price_per_km?: number;
+    extra_price_per_kg?: number;
+  };
+  distance_km?: number;
+  total_weight_kg?: number;
+  estimated_weight_kg?: number;
+  is_night?: boolean;
+  is_night_rate?: boolean;
+  is_free_shipping?: boolean;
+  free_shipping_reason?: string;
+  requires_heavy_vehicle?: boolean;
+  delivery_estimate?: string;
+};
+
 export type CheckoutDto = {
   professional_id: number;
+  professional_product_id?: string;
+  variant_id?: number;
+  service_id?: string;
+  quantity?: number;
+  items?: Array<{
+    professional_product_id?: string;
+    variant_id?: number;
+    service_id?: string;
+    quantity: number;
+    unit_price?: number;
+  }>;
   delivery_type: DeliveryType;
   branch_id?: string;
   shipping_address?: {
@@ -321,9 +433,16 @@ export type CheckoutDto = {
     lng?: number;
   };
   shipping_cost?: number;
-  payment_method: 'getnet' | 'paycloud_qr';
+  payment_method: 'getnet' | 'getnet_card' | 'paycloud_qr';
   card_token?: string;
   installments?: number;
+  card_details?: {
+    card_number?: string;
+    cardholder_name?: string;
+    expiration?: string;
+    cvv?: string;
+    dni?: string;
+  };
 };
 
 export type PayCloudQrResponse = {
@@ -399,10 +518,16 @@ export const commerceService = {
     }),
 
   calculateShipping: (data: CalculateShippingDto) =>
-    apiClient<ShippingRate[]>(API_ENDPOINTS.orders.calculateShipping, {
+    apiClient<CalculateShippingResponse>(API_ENDPOINTS.orders.calculateShipping, {
       method: 'POST',
       body: data,
     }),
+
+  commissions: () =>
+    apiClient<MarketplaceCommission[]>(API_ENDPOINTS.orders.commissions),
+
+  shippingRates: () =>
+    apiClient<PlatformShippingRate[]>(API_ENDPOINTS.orders.shippingRates),
 
   checkout: (data: CheckoutDto) =>
     apiClient<{
@@ -445,10 +570,15 @@ export const commerceService = {
     }),
 
   // Branches
-  branches: (companyId?: number) =>
-    apiClient<Branch[]>(
+  branches: async (companyId?: number): Promise<Branch[]> => {
+    const res = await apiClient<any>(
       companyId ? API_ENDPOINTS.branches.byCompany(companyId) : API_ENDPOINTS.branches.base
-    ),
+    );
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.data)) return res.data;
+    if (res && Array.isArray(res.items)) return res.items;
+    return [];
+  },
 
   createBranch: (data: Partial<Branch>) =>
     apiClient<Branch>(API_ENDPOINTS.branches.base, { method: 'POST', body: data }),
@@ -487,6 +617,23 @@ export const commerceService = {
     apiClient<RiderEmployee>(API_ENDPOINTS.logistics.employees, {
       method: 'POST',
       body: data,
+    }),
+
+  updateEmployee: (id: string, data: Partial<Omit<RiderEmployee, 'id' | 'vehicle' | 'vehicles' | 'documents'>>) =>
+    apiClient<RiderEmployee>(API_ENDPOINTS.logistics.employeeDetail(id), {
+      method: 'PUT',
+      body: data,
+    }),
+
+  updateEmployeePassword: (id: string, password: string) =>
+    apiClient<{ ok: boolean }>(API_ENDPOINTS.logistics.employeePassword(id), {
+      method: 'PUT',
+      body: { password },
+    }),
+
+  deleteEmployee: (id: string) =>
+    apiClient<{ ok: boolean }>(API_ENDPOINTS.logistics.employeeDetail(id), {
+      method: 'DELETE',
     }),
 
   vehicles: (employeeId: string) =>
@@ -532,14 +679,14 @@ export const commerceService = {
     apiClient<ProductVariant[]>(API_ENDPOINTS.products.variants(professionalProductId)),
 
   createVariant: (data: Omit<ProductVariant, 'id' | 'created_at'>) =>
-    apiClient<ProductVariant>(`${API_ENDPOINTS.products.list}/variants`, {
+    apiClient<ProductVariant>(API_ENDPOINTS.products.variants(data.professional_product_id), {
       method: 'POST',
       body: data,
     }),
 
   updateVariant: (id: number, data: Partial<ProductVariant>) =>
     apiClient<ProductVariant>(API_ENDPOINTS.products.variantDetail(id), {
-      method: 'PATCH',
+      method: 'PUT',
       body: data,
     }),
 
@@ -547,6 +694,57 @@ export const commerceService = {
     apiClient<{ success: boolean }>(API_ENDPOINTS.products.variantDetail(id), {
       method: 'DELETE',
     }),
+
+  // Free Shipping & Logistics Policies
+  bulkUpdateFreeShipping: (
+    professionalId: number,
+    data: {
+      free_shipping: boolean;
+      categoryId?: number;
+      category_id?: number;
+      subcategoryId?: string;
+      subcategory_id?: string;
+      productIds?: (string | number)[];
+      product_ids?: (string | number)[];
+      free_shipping_radius_km?: number;
+      free_shipping_min_amount?: number;
+      free_shipping_max_weight?: number;
+    },
+  ) => {
+    const payload = {
+      free_shipping: data.free_shipping,
+      category_id: data.category_id ?? data.categoryId,
+      subcategory_id: data.subcategory_id ?? data.subcategoryId,
+      product_ids: data.product_ids ?? data.productIds,
+      free_shipping_radius_km: data.free_shipping_radius_km,
+      free_shipping_min_amount: data.free_shipping_min_amount,
+      free_shipping_max_weight: data.free_shipping_max_weight,
+    };
+    return apiClient<{ updatedCount: number }>(
+      API_ENDPOINTS.products.freeShippingBulk(professionalId),
+      {
+        method: 'PUT',
+        body: payload,
+      },
+    );
+  },
+
+  getShippingPolicy: (professionalId: number) =>
+    apiClient<ShippingPolicy | null>(
+      API_ENDPOINTS.products.shippingPolicy(professionalId),
+    ),
+
+  updateShippingPolicy: (
+    professionalId: number,
+    data: Partial<ShippingPolicy>,
+  ) =>
+    apiClient<ShippingPolicy>(
+      API_ENDPOINTS.products.shippingPolicy(professionalId),
+      {
+        method: 'PUT',
+        body: data,
+      },
+    ),
 
   // Cart
   cart: () => apiClient<Cart>(API_ENDPOINTS.users.cart),

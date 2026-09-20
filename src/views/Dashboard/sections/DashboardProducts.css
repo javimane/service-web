@@ -1457,3 +1457,50 @@
   background: var(--surface-soft);
   color: var(--accent-color);
 }
+
+/* Free Shipping & Installments item badges */
+.dash-products__item-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.dash-products__badge--free-shipping {
+  background: rgba(64, 192, 87, 0.12);
+  color: var(--success-color);
+  border: 1px solid var(--success-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--text-xs);
+  padding: 1px 6px;
+}
+
+.dash-products__badge--installments {
+  background: rgba(29, 95, 191, 0.1);
+  color: var(--brand-blue);
+  border: 1px solid var(--brand-blue);
+  font-size: var(--text-xs);
+  padding: 1px 6px;
+}
+
+/* Bulk Free Shipping Modal */
+.dash-products__bulk-shipping-params {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.dash-products__bulk-shipping-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .dash-products__bulk-shipping-inputs {
+    grid-template-columns: 1fr;
+  }
+}

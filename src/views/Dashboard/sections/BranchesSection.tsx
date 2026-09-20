@@ -49,14 +49,22 @@ export default function BranchesSection() {
   const [lng, setLng] = useState<number | "">(-58.3816);
 
   const {
-    data: branches = [],
+    data: rawBranches,
     isLoading,
     isError,
     refetch,
-  } = useQuery<Branch[]>({
+  } = useQuery({
     queryKey: ["merchant-branches", companyId],
     queryFn: () => commerceService.branches(companyId),
   });
+
+  const branches: Branch[] = Array.isArray(rawBranches)
+    ? rawBranches
+    : Array.isArray((rawBranches as any)?.data)
+      ? (rawBranches as any).data
+      : Array.isArray((rawBranches as any)?.items)
+        ? (rawBranches as any).items
+        : [];
 
   const toggleOpenMutation = useMutation({
     mutationFn: ({ id, is_open }: { id: string; is_open: boolean }) =>
@@ -66,7 +74,7 @@ export default function BranchesSection() {
       showSuccess(
         vars.is_open
           ? "Sucursal abierta. Ahora puede recibir pedidos."
-          : "Sucursal cerrada temporalmente."
+          : "Sucursal cerrada temporalmente.",
       );
     },
     onError: () => showError("No se pudo actualizar el estado de la sucursal."),
@@ -83,7 +91,7 @@ export default function BranchesSection() {
       showSuccess(
         editingBranch
           ? "Sucursal actualizada correctamente."
-          : "Sucursal agregada con éxito."
+          : "Sucursal agregada con éxito.",
       );
       queryClient.invalidateQueries({ queryKey: ["merchant-branches"] });
       closeModal();
@@ -103,8 +111,13 @@ export default function BranchesSection() {
   });
 
   const togglePickupMutation = useMutation({
-    mutationFn: ({ id, is_pickup_point }: { id: string; is_pickup_point: boolean }) =>
-      commerceService.updateBranch(id, { is_pickup_point }),
+    mutationFn: ({
+      id,
+      is_pickup_point,
+    }: {
+      id: string;
+      is_pickup_point: boolean;
+    }) => commerceService.updateBranch(id, { is_pickup_point }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["merchant-branches"] });
       showSuccess("Estado de punto de retiro actualizado.");
@@ -179,10 +192,15 @@ export default function BranchesSection() {
       <header className="branches-section__header">
         <div>
           <span className="branches-section__subtitle">Gestión Comercial</span>
-          <h1 className="branches-section__title">Sucursales y Puntos de Retiro</h1>
+          <h1 className="branches-section__title">
+            Sucursales y Puntos de Retiro
+          </h1>
         </div>
-        <button type="button" className="btn-primary" onClick={openAddModal}>
-          <Plus size={18} />
+        <button
+          type="button"
+          className="branches-section__add-btn"
+          onClick={openAddModal}
+        >
           <span>Agregar sucursal</span>
         </button>
       </header>
@@ -197,7 +215,11 @@ export default function BranchesSection() {
         <div className="branches-state branches-state--error">
           <AlertCircle size={32} />
           <p>Error al obtener las sucursales.</p>
-          <button type="button" className="btn-primary" onClick={() => refetch()}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => refetch()}
+          >
             Reintentar
           </button>
         </div>
@@ -206,22 +228,32 @@ export default function BranchesSection() {
           <Store size={48} />
           <h3>No tenés sucursales registradas</h3>
           <p>
-            Agregá tu casa central o puntos de venta físicos para habilitar el retiro
-            en tienda para tus compradores.
+            Agregá tu casa central o puntos de venta físicos para habilitar el
+            retiro en tienda para tus compradores.
           </p>
-          <button type="button" className="btn-primary" onClick={openAddModal}>
-            <Plus size={18} />
+          <button
+            type="button"
+            className="branches-section__add-btn"
+            onClick={openAddModal}
+          >
+            <Plus size={18} className="branches-section__add-icon" />
             <span>Crear primera sucursal</span>
           </button>
         </div>
       ) : (
         <div className="branches-grid">
           {branches.map((b) => (
-            <div key={b.id} className={`branch-card ${b.is_open === false ? "branch-card--closed" : ""}`}>
+            <div
+              key={b.id}
+              className={`branch-card ${b.is_open === false ? "branch-card--closed" : ""}`}
+            >
               {b.is_open === false && (
                 <div className="branch-card__alert-closed" role="alert">
                   <AlertCircle size={16} />
-                  <span>⚠️ Sucursal Cerrada - No se recibirán nuevos pedidos inmediatos</span>
+                  <span>
+                    ⚠️ Sucursal Cerrada - No se recibirán nuevos pedidos
+                    inmediatos
+                  </span>
                 </div>
               )}
 
@@ -456,7 +488,9 @@ export default function BranchesSection() {
                 </span>
               </label>
               <p className="branch-checkbox-tooltip">
-                ℹ️ Si marcas esta opción, las devoluciones no liquidarán costo de envío a riders externos y los envíos serán gestionados por tu propio personal.
+                ℹ️ Si marcas esta opción, las devoluciones no liquidarán costo
+                de envío a riders externos y los envíos serán gestionados por tu
+                propio personal.
               </p>
             </div>
 
@@ -483,7 +517,9 @@ export default function BranchesSection() {
             {/* Coordinates / Map adjustment */}
             <div className="branch-coords-box">
               <div className="branch-coords-header-row">
-                <span className="commercial-label">Ubicación Geográfica (Coordenadas)</span>
+                <span className="commercial-label">
+                  Ubicación Geográfica (Coordenadas)
+                </span>
                 <button
                   type="button"
                   className="branch-gps-btn"
@@ -495,7 +531,10 @@ export default function BranchesSection() {
                           setLng(Number(pos.coords.longitude.toFixed(6)));
                           showSuccess("Coordenadas GPS obtenidas con éxito.");
                         },
-                        () => showError("No se pudo obtener la ubicación GPS actual.")
+                        () =>
+                          showError(
+                            "No se pudo obtener la ubicación GPS actual.",
+                          ),
                       );
                     }
                   }}
@@ -546,12 +585,16 @@ export default function BranchesSection() {
             </div>
 
             <div className="modal-actions-row">
-              <button type="button" className="btn-secondary" onClick={closeModal}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={closeModal}
+              >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="btn-primary"
+                className="branches-section__add-btn"
                 disabled={saveMutation.isPending}
               >
                 {editingBranch ? "Guardar cambios" : "Crear sucursal"}
@@ -571,8 +614,8 @@ export default function BranchesSection() {
           <div className="delete-confirm-modal">
             <p>
               ¿Estás seguro de que deseás eliminar la sucursal{" "}
-              <strong>{branchToDelete.name}</strong>? Los compradores ya no podrán
-              seleccionar este punto de retiro.
+              <strong>{branchToDelete.name}</strong>? Los compradores ya no
+              podrán seleccionar este punto de retiro.
             </p>
             <div className="modal-actions-row">
               <button

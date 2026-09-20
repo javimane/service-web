@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
     calculateShipping: `${API_BASE_URL}/api/orders/calculate-shipping`,
     checkout: `${API_BASE_URL}/api/orders/checkout`,
     commissions: `${API_BASE_URL}/api/orders/commissions`,
+    shippingRates: `${API_BASE_URL}/api/orders/shipping-rates`,
     cancel: (id: string) => `${API_BASE_URL}/api/orders/${id}/cancel`,
   },
   shipments: {
@@ -81,6 +82,8 @@ export const API_ENDPOINTS = {
     history: `${API_BASE_URL}/api/logistics/dashboard/history`,
     fleetTracking: `${API_BASE_URL}/api/logistics/dashboard/fleet-tracking`,
     employees: `${API_BASE_URL}/api/logistics/employees`,
+    employeeDetail: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}`,
+    employeePassword: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/password`,
     vehicles: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/vehicles`,
     documents: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents`,
     documentUploadUrl: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents/upload-url`,
@@ -150,6 +153,10 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/api/products/variants/${professionalProductId}`,
     variantDetail: (id: number) =>
       `${API_BASE_URL}/api/products/variants/${id}`,
+    freeShippingBulk: (professionalId: number) =>
+      `${API_BASE_URL}/api/products/professional/${professionalId}/free-shipping-bulk`,
+    shippingPolicy: (professionalId: number) =>
+      `${API_BASE_URL}/api/products/professional/${professionalId}/shipping-policy`,
   },
   categoriesProducts: {
     list: `${API_BASE_URL}/api/categories/products`,

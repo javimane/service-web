@@ -47,7 +47,7 @@ import Modal from "../Modal/Modal";
 import { userService } from "../../services/userService";
 import { commerceService } from "../../services/commerceService";
 import { useAlert } from "@/context/AlertContext";
-import logoWordmark from "../../images/Logo solo nombre sin fondo.png";
+import "./DashboardSidebar.css";
 
 type DashboardSidebarProps = {
   activeItem?: string;
@@ -125,43 +125,52 @@ export default function DashboardSidebar({
     staleTime: 5 * 60 * 1000,
   });
 
-  const isTransport = userProfile?.logistics_role === "transport_company";
+  const isProfessionalActive = Boolean(
+    sessionStatus?.is_professional &&
+    (sessionStatus?.professional_active || hasProfessionalSubscription)
+  );
+
+  const isCompanyActive = Boolean(
+    sessionStatus?.role_id === 3 && isProfessionalActive
+  );
+
+  const isEmployer =
+    userProfile?.logistics_role === "transport_company" ||
+    userProfile?.logistics_role === "company" ||
+    isCompanyActive;
 
   const toggleMenu = (key: string) => {
     setExpandedMenus((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const alwaysEnabledItems = new Set([
+  // Basic buyer / general menus allowed for role 2 (or non-professional users)
+  const userAllowedItems = new Set([
+    "dashboard",
     "overview",
-    "sales",
-    "liquidations",
-    "commercial-data",
-    "branches",
-    "riders",
-    "fleet-map",
-    "products",
-    "services",
-    "proposals",
-    "proposals-view",
-    "job-requests",
+    "purchases",
+    "favorites",
+    "cart",
     "messages",
     "notifications",
     "subscription",
     "settings",
-    "referrals",
     "faq",
-    "purchases",
-    "favorites",
-    "cart",
-    "reputation",
+    "report-errors",
   ]);
 
   const isFreePlan = subscriptionPlan === "free";
 
   const isItemLocked = (key: string) => {
-    if (!hasProfessionalSubscription) {
-      return !alwaysEnabledItems.has(key);
+    // Role 3 (Company) that is professional and active has access to ALL menus!
+    if (isCompanyActive) {
+      return false;
     }
+
+    // Role 2 (or any user without active professional subscription) has professional and company menus disabled
+    if (!isProfessionalActive) {
+      return !userAllowedItems.has(key);
+    }
+
     if (isFreePlan) {
       const blockedForFree = new Set([
         "proposals-create",
@@ -178,7 +187,7 @@ export default function DashboardSidebar({
   };
 
   const getLockedTitle = (label: string, isLocked: boolean) =>
-    isLocked ? `${label} · Requiere suscripción profesional activa` : label;
+    isLocked ? `${label} · Requiere cuenta profesional o empresa activa` : label;
 
   const handleSupport = () => {
     setIsSupportModalOpen(true);
@@ -282,7 +291,7 @@ export default function DashboardSidebar({
       onClick: () => goToDashboardView("reputation"),
     },
     // Transport & Logistics
-    ...(isTransport
+    ...(isEmployer
       ? [
           {
             key: "riders",
@@ -467,8 +476,7 @@ export default function DashboardSidebar({
       const isExpanded = expandedMenus[item.key];
       const isActive =
         activeItem === item.key ||
-        (item.subItems &&
-          item.subItems.some((sub) => activeItem === sub.key));
+        (item.subItems && item.subItems.some((sub) => activeItem === sub.key));
 
       if (item.expandable && item.subItems) {
         return (
@@ -495,7 +503,7 @@ export default function DashboardSidebar({
                 </>
               )}
             </button>
-            {!isCollapsed && isExpanded && (
+            {isExpanded && (
               <div className="sub-menu">
                 {item.subItems.map((subItem) => {
                   const isSubLocked = isItemLocked(subItem.key);
@@ -505,7 +513,13 @@ export default function DashboardSidebar({
                       key={subItem.key}
                       type="button"
                       className={`sub-nav-item ${isSubActive ? "active" : ""} ${isSubLocked ? "nav-item--locked" : ""}`}
-                      onClick={() => handleNavigation(subItem.onClick)}
+                      onClick={() => {
+                        if (isSubLocked) {
+                          showError("Esta sección requiere una cuenta profesional o empresa activa.");
+                          return;
+                        }
+                        handleNavigation(subItem.onClick);
+                      }}
                       title={getLockedTitle(subItem.label, isSubLocked)}
                     >
                       <span className="sub-nav-dot" />
@@ -524,7 +538,13 @@ export default function DashboardSidebar({
           key={item.key}
           type="button"
           className={`nav-item ${isActive ? "active" : ""} ${isLocked ? "nav-item--locked" : ""}`}
-          onClick={() => handleNavigation(item.onClick)}
+          onClick={() => {
+            if (isLocked) {
+              showError("Esta sección requiere una cuenta profesional o empresa activa.");
+              return;
+            }
+            handleNavigation(item.onClick);
+          }}
           title={getLockedTitle(item.label, isLocked)}
         >
           <Icon size={20} className="nav-icon" />
@@ -614,33 +634,34 @@ export default function DashboardSidebar({
   return (
     <>
       <aside
-        className={`dashboard-sidebar ${isCollapsed ? "collapsed" : ""}`}
+        className={`dashboard-sidebar ${isCollapsed ? "dashboard-sidebar--collapsed collapsed" : ""}`}
       >
-        <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <img src={logoWordmark.src} alt="Sercio" />
-          </div>
+        <div
+          className="sidebar-header"
+          onClick={isCollapsed ? onToggle : undefined}
+        >
+          {!isCollapsed && <span className="sidebar-header__title">Menú</span>}
           {onToggle && (
             <button
               type="button"
-              className="toggle-btn"
-              onClick={onToggle}
-              title={isCollapsed ? "Expandir" : "Colapsar"}
+              className="sidebar-toggle-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
+              title={isCollapsed ? "Desplegar menú a la derecha" : "Colapsar menú"}
+              aria-label={isCollapsed ? "Desplegar menú a la derecha" : "Colapsar menú"}
             >
-              {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              {isCollapsed ? (
+                <PanelLeftOpen size={20} />
+              ) : (
+                <PanelLeftClose size={20} />
+              )}
             </button>
           )}
         </div>
 
-        <div
-          style={{
-            padding: "0 var(--space-4)",
-            marginBottom: "var(--space-2)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+        <div className="sidebar-home-wrap">
           <button
             type="button"
             className="brand-home-btn"
@@ -648,7 +669,7 @@ export default function DashboardSidebar({
             title="Ir a Inicio"
           >
             <Home size={18} />
-            {!isCollapsed && <span>Inicio</span>}
+            {!isCollapsed && <span className="nav-label">Inicio</span>}
           </button>
         </div>
 

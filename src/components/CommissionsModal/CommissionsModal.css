@@ -1,0 +1,277 @@
+/* CommissionsModal.css */
+
+.commissions-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-1);
+}
+
+/* Hero Section */
+.commissions-modal__hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.commissions-modal__hero-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.commissions-modal__hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.commissions-modal__hero-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.commissions-modal__hero-subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Simulator Box */
+.commissions-modal__simulator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.commissions-modal__simulator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--space-3);
+}
+
+.commissions-modal__simulator-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.commissions-modal__simulator-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  gap: var(--space-1);
+}
+
+.commissions-modal__simulator-currency {
+  font-weight: var(--weight-bold);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.commissions-modal__simulator-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  width: 110px;
+  text-align: right;
+}
+
+/* Table Wrap */
+.commissions-modal__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
+
+.commissions-modal__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.commissions-modal__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.commissions-modal__table th {
+  background: var(--surface-soft);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.commissions-modal__table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.commissions-modal__table tr:last-child td {
+  border-bottom: none;
+}
+
+.commissions-modal__row--highlight {
+  background: var(--accent-transparent);
+}
+
+.commissions-modal__cell-plan {
+  white-space: nowrap;
+}
+
+.commissions-modal__plan-badge {
+  display: flex;
+  flex-direction: column;
+}
+
+.commissions-modal__plan-badge strong {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.commissions-modal__plan-badge span {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.commissions-modal__th-right,
+.commissions-modal__td-right {
+  text-align: right;
+}
+
+.commissions-modal__td-total-pct {
+  color: var(--accent-color) !important;
+}
+
+.commissions-modal__td-deduction {
+  color: var(--error-color);
+  font-weight: var(--weight-medium);
+}
+
+.commissions-modal__th-net,
+.commissions-modal__td-net {
+  color: var(--success-color);
+}
+
+/* Callout Info */
+.commissions-modal__callout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(29, 95, 191, 0.08);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+}
+
+.commissions-modal__callout-icon {
+  color: var(--brand-blue);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.commissions-modal__callout-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.commissions-modal__callout-body strong {
+  font-size: var(--text-xs);
+  color: var(--brand-blue);
+}
+
+.commissions-modal__callout-body p {
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Footer CTA */
+.commissions-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
+.commissions-modal__btn-close {
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.commissions-modal__btn-close:hover {
+  background: var(--accent-hover);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .commissions-modal__simulator-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .commissions-modal__simulator-input-wrap {
+    width: 100%;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  .commissions-modal__table {
+    font-size: var(--text-xs);
+  }
+
+  .commissions-modal__table th,
+  .commissions-modal__table td {
+    padding: var(--space-2) var(--space-3);
+  }
+}

@@ -1,0 +1,211 @@
+/* ═══════════════════════════════════════════════════════════
+   ProductInstallmentsModal — Installments breakdown modal
+   ═══════════════════════════════════════════════════════════ */
+
+.product-installments-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+
+.product-installments-modal__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.product-installments-modal__product-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.product-installments-modal__price-badge {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  color: var(--accent-color);
+}
+
+.product-installments-modal__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Highlight box for interest-free */
+.product-installments-modal__highlight-box {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  background: var(--accent-transparent);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.product-installments-modal__highlight-icon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.product-installments-modal__highlight-title {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--accent-color);
+  margin-bottom: var(--space-1);
+}
+
+.product-installments-modal__highlight-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Info box for standard financing */
+.product-installments-modal__info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.product-installments-modal__info-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.product-installments-modal__info-title {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.product-installments-modal__info-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Installment Items list */
+.product-installments-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.product-installments-modal__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.product-installments-modal__item:hover {
+  border-color: var(--accent-color);
+}
+
+.product-installments-modal__item--free {
+  border-color: var(--border-color);
+}
+
+.product-installments-modal__item--free:hover {
+  border-color: var(--success-color);
+  background: rgba(64, 192, 87, 0.04);
+}
+
+.product-installments-modal__item-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.product-installments-modal__item-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.product-installments-modal__item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.product-installments-modal__item-count {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.product-installments-modal__item-total {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+/* Badges */
+.product-installments-modal__badge {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.product-installments-modal__badge--success {
+  background: rgba(64, 192, 87, 0.12);
+  color: var(--success-color);
+}
+
+.product-installments-modal__badge--neutral {
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.product-installments-modal__footer-note {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: var(--space-2) 0 0 0;
+}
+
+.product-installments-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+
+.product-installments-modal__btn-close {
+  min-width: 140px;
+}
+
+@media (max-width: 640px) {
+  .product-installments-modal__item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .product-installments-modal__badge {
+    align-self: flex-start;
+  }
+}

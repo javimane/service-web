@@ -3,6 +3,10 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  max-width: 820px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .headquarters-section .section-header {
@@ -12,9 +16,12 @@
 .geo-selector {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
-  height: 500px; /* Fixed height to force scroll if content is long */
+  height: 480px; /* Fixed height to force scroll if content is long */
   border-top: 1px solid var(--border-color);
   background: var(--bg-card);
+  width: 100%;
+  max-width: 820px;
+  box-sizing: border-box;
 }
 
 .geo-column {

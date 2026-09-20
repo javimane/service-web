@@ -33,6 +33,7 @@ import ProposalsView from "./sections/ProposalsView";
 import PromotionCreator from "./sections/PromotionCreator";
 import AllPromotionsPage from "./sections/AllPromotionsPage";
 import ProductCreator from "./sections/ProductCreator";
+import ProductVariantsSection from "./sections/ProductVariantsSection";
 import NotificationsPage from "./sections/NotificationsPage";
 import DashboardProducts from "./sections/DashboardProducts";
 import SubscriptionSection from "./sections/SubscriptionSection";
@@ -170,6 +171,12 @@ export default function DashboardPage() {
   };
   const handleShowProducts = () =>
     router.push(`${ROUTES.dashboard}?view=products`);
+  const handleShowProductVariants = (product?: any) => {
+    const id = product?.professional_product_id || product?.id;
+    router.push(
+      `${ROUTES.dashboard}?view=products-variants${id ? `&productId=${id}` : ""}`
+    );
+  };
   const handleShowServices = () =>
     router.push(`${ROUTES.dashboard}?view=services`);
   const handleShowSubscription = () =>
@@ -544,10 +551,16 @@ export default function DashboardPage() {
                 onBack={handleShowProducts}
                 productToEdit={editingProduct}
               />
+            ) : view === "products-variants" ? (
+              <ProductVariantsSection
+                productId={searchParams.get("productId") || editingProduct?.id || editingProduct?.professional_product_id || undefined}
+                onBack={handleShowProducts}
+              />
             ) : view === "products" ? (
               <DashboardProducts
                 onCreateNew={() => handleShowProductsCreate()}
                 onEdit={handleShowProductsCreate}
+                onManageVariants={handleShowProductVariants}
               />
             ) : view === "sales" ? (
               <SalesSection />

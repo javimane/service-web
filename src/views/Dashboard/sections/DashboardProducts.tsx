@@ -27,6 +27,8 @@ import {
   Camera,
   Share2,
   RefreshCw,
+  Truck,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import {
@@ -46,7 +48,10 @@ import {
 } from "../../../app/actions/categories";
 import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
+import { commerceService } from "../../../services/commerceService";
 import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
+import CommissionsModal from "../../../components/CommissionsModal/CommissionsModal";
+import ShippingRatesModal from "../../../components/ShippingRatesModal/ShippingRatesModal";
 import "./DashboardProducts.css";
 
 const MAX_PRODUCT_IMAGES = 10;
@@ -171,9 +176,11 @@ type EditImageItem =
 export default function DashboardProducts({
   onCreateNew,
   onEdit,
+  onManageVariants,
 }: {
   onCreateNew?: () => void;
   onEdit?: (product: any) => void;
+  onManageVariants?: (product: any) => void;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -204,6 +211,21 @@ export default function DashboardProducts({
   const [bulkScope, setBulkScope] = useState<"all" | "category" | "subcategory">("all");
   const [bulkSelectedCategories, setBulkSelectedCategories] = useState<number[]>([]);
   const [bulkSelectedSubcategories, setBulkSelectedSubcategories] = useState<string[]>([]);
+
+  // Bulk free shipping modal
+  const [bulkShippingOpen, setBulkShippingOpen] = useState(false);
+  const [bulkShippingScope, setBulkShippingScope] = useState<"all" | "category" | "subcategory">("all");
+  const [bulkShippingSelectedCategories, setBulkShippingSelectedCategories] = useState<number[]>([]);
+  const [bulkShippingSelectedSubcategories, setBulkShippingSelectedSubcategories] = useState<string[]>([]);
+  const [bulkShippingEnable, setBulkShippingEnable] = useState<boolean>(true);
+  const [bulkShippingRadiusKm, setBulkShippingRadiusKm] = useState<string>("");
+  const [bulkShippingMinAmount, setBulkShippingMinAmount] = useState<string>("");
+  const [bulkShippingMaxWeight, setBulkShippingMaxWeight] = useState<string>("");
+  const [bulkShippingApplied, setBulkShippingApplied] = useState(false);
+
+  // Platform commissions and shipping rates modals
+  const [commissionsModalOpen, setCommissionsModalOpen] = useState(false);
+  const [shippingRatesModalOpen, setShippingRatesModalOpen] = useState(false);
 
   // Add product modal
   const [addOpen, setAddOpen] = useState(false);
@@ -362,6 +384,15 @@ export default function DashboardProducts({
     enabled: !!professionalId,
   });
 
+  const { data: shippingPolicy } = useQuery({
+    queryKey: ["shipping-policy", professionalId],
+    queryFn: async () => {
+      if (!professionalId) return null;
+      return await commerceService.getShippingPolicy(Number(professionalId));
+    },
+    enabled: !!professionalId,
+  });
+
   const profCategoriesList = useMemo(() => {
     return (profCategoriesData?.categories || []).map((cat: any) => ({
       id: cat.id,
@@ -451,6 +482,12 @@ export default function DashboardProducts({
       wholesale_price:
         item.wholesale_price || item.Product?.wholesale_price || 0,
       wholesale_unit: item.wholesale_unit || item.Product?.wholesale_unit || 0,
+      free_shipping: item.free_shipping ?? item.Product?.free_shipping ?? false,
+      free_shipping_radius_km: item.free_shipping_radius_km ?? item.Product?.free_shipping_radius_km ?? null,
+      free_shipping_min_amount: item.free_shipping_min_amount ?? item.Product?.free_shipping_min_amount ?? null,
+      free_shipping_max_weight: item.free_shipping_max_weight ?? item.Product?.free_shipping_max_weight ?? null,
+      installments_enabled: item.installments_enabled ?? false,
+      max_installments: item.max_installments ?? 3,
     }));
   }, [productsData]);
 
@@ -554,6 +591,50 @@ export default function DashboardProducts({
     },
   });
 
+  const bulkShippingMutation = useMutation({
+    mutationFn: async () => {
+      if (!professionalId) return;
+      const common = {
+        free_shipping: bulkShippingEnable,
+        free_shipping_radius_km: bulkShippingRadiusKm ? Number(bulkShippingRadiusKm) : undefined,
+        free_shipping_min_amount: bulkShippingMinAmount ? Number(bulkShippingMinAmount) : undefined,
+        free_shipping_max_weight: bulkShippingMaxWeight ? Number(bulkShippingMaxWeight) : undefined,
+      };
+
+      if (bulkShippingScope === "category") {
+        for (const catId of bulkShippingSelectedCategories) {
+          await commerceService.bulkUpdateFreeShipping(Number(professionalId), {
+            ...common,
+            category_id: catId,
+          });
+        }
+      } else if (bulkShippingScope === "subcategory") {
+        for (const subcatId of bulkShippingSelectedSubcategories) {
+          await commerceService.bulkUpdateFreeShipping(Number(professionalId), {
+            ...common,
+            subcategory_id: subcatId,
+          });
+        }
+      } else {
+        await commerceService.bulkUpdateFreeShipping(Number(professionalId), common);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["professional-products"] });
+      setBulkShippingApplied(true);
+      setTimeout(() => {
+        setBulkShippingApplied(false);
+        setBulkShippingOpen(false);
+        setBulkShippingScope("all");
+        setBulkShippingSelectedCategories([]);
+        setBulkShippingSelectedSubcategories([]);
+        setBulkShippingRadiusKm("");
+        setBulkShippingMinAmount("");
+        setBulkShippingMaxWeight("");
+      }, 1200);
+    },
+  });
+
   // Modal helper states for values not in the "newProduct" object
   const [formPrice, setFormPrice] = useState("");
   const [formStock, setFormStock] = useState("");
@@ -644,6 +725,39 @@ export default function DashboardProducts({
       setBulkSelectedSubcategories([]);
     } else {
       setBulkSelectedSubcategories(profSubcategoriesList.map((s) => s.id));
+    }
+  };
+
+  // Bulk free shipping helpers
+  const toggleBulkShippingCategory = (catId: number) => {
+    setBulkShippingSelectedCategories((prev) =>
+      prev.includes(catId)
+        ? prev.filter((id) => id !== catId)
+        : [...prev, catId],
+    );
+  };
+
+  const selectAllBulkShippingCategories = () => {
+    if (bulkShippingSelectedCategories.length === profCategoriesList.length) {
+      setBulkShippingSelectedCategories([]);
+    } else {
+      setBulkShippingSelectedCategories(profCategoriesList.map((c) => c.id));
+    }
+  };
+
+  const toggleBulkShippingSubcategory = (subcat: string) => {
+    setBulkShippingSelectedSubcategories((prev) =>
+      prev.includes(subcat)
+        ? prev.filter((s) => s !== subcat)
+        : [...prev, subcat],
+    );
+  };
+
+  const selectAllBulkShippingSubcategories = () => {
+    if (bulkShippingSelectedSubcategories.length === profSubcategoriesList.length) {
+      setBulkShippingSelectedSubcategories([]);
+    } else {
+      setBulkShippingSelectedSubcategories(profSubcategoriesList.map((s) => s.id));
     }
   };
 
@@ -1271,6 +1385,29 @@ export default function DashboardProducts({
           <Percent size={16} />
           <span>Modificar Precios</span>
         </button>
+        <button
+          className="dash-products__bulk-btn"
+          onClick={() => setBulkShippingOpen(true)}
+        >
+          <Truck size={16} />
+          <span>Envío Gratis</span>
+        </button>
+        <button
+          type="button"
+          className="dash-products__bulk-btn"
+          onClick={() => setCommissionsModalOpen(true)}
+        >
+          <Percent size={16} />
+          <span>Comisiones</span>
+        </button>
+        <button
+          type="button"
+          className="dash-products__bulk-btn"
+          onClick={() => setShippingRatesModalOpen(true)}
+        >
+          <Truck size={16} />
+          <span>Costos de Envíos</span>
+        </button>
       </div>
 
       {/* Product list table */}
@@ -1339,6 +1476,18 @@ export default function DashboardProducts({
                     <span className="dash-products__product-name">
                       {product.name}
                     </span>
+                    <div className="dash-products__item-badges">
+                      {product.free_shipping && (
+                        <span className="dash-products__badge dash-products__badge--free-shipping" title="Envío gratis disponible">
+                          <Truck size={11} /> Envío Gratis
+                        </span>
+                      )}
+                      {product.installments_enabled && (
+                        <span className="dash-products__badge dash-products__badge--installments" title="Cuotas sin interés">
+                          {product.max_installments} Cuotas s/int
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span className="dash-products__badge">
@@ -1402,6 +1551,21 @@ export default function DashboardProducts({
                         }}
                       >
                         <Share2 size={15} />
+                      </button>
+                      <button
+                        className="dash-products__action-btn"
+                        aria-label="Gestionar variantes"
+                        title="Gestionar variantes"
+                        onClick={() => {
+                          if (onManageVariants) {
+                            onManageVariants(product);
+                          } else {
+                            const id = product.professional_product_id || product.id;
+                            router.push(`/panel?view=products-variants&productId=${id}`);
+                          }
+                        }}
+                      >
+                        <Layers size={15} />
                       </button>
                       <button
                         className="dash-products__action-btn"
@@ -1763,6 +1927,260 @@ export default function DashboardProducts({
                   </>
                 ) : (
                   "Aplicar Cambios"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Bulk Free Shipping Modal ===== */}
+      {bulkShippingOpen && (
+        <div
+          className="dash-products__overlay"
+          onClick={() => setBulkShippingOpen(false)}
+        >
+          <div
+            className="dash-products__modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="dash-products__modal-content">
+              <div className="dash-products__modal-header">
+                <h2>Configurar Envío Gratis</h2>
+                <button
+                  className="dash-products__modal-close"
+                  onClick={() => setBulkShippingOpen(false)}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <p className="dash-products__modal-desc">
+                Habilita o deshabilita el envío gratis de forma masiva en tus productos o segmentando por categorías y subcategorías.
+              </p>
+
+              {/* Scope select */}
+              <div className="dash-products__modal-field">
+                <label>Aplicar a</label>
+                <div className="dash-products__modal-toggle">
+                  <button
+                    type="button"
+                    className={bulkShippingScope === "all" ? "active" : ""}
+                    onClick={() => setBulkShippingScope("all")}
+                  >
+                    Todos los productos
+                  </button>
+                  <button
+                    type="button"
+                    className={bulkShippingScope === "category" ? "active" : ""}
+                    onClick={() => setBulkShippingScope("category")}
+                  >
+                    Por Categoría ({profCategoriesList.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={bulkShippingScope === "subcategory" ? "active" : ""}
+                    onClick={() => setBulkShippingScope("subcategory")}
+                  >
+                    Por Subcategoría ({profSubcategoriesList.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Category selector */}
+              {bulkShippingScope === "category" && (
+                <div className="dash-products__modal-field">
+                  <div className="dash-products__modal-field-header">
+                    <label>
+                      Seleccionar Categorías ({bulkShippingSelectedCategories.length})
+                    </label>
+                    {profCategoriesList.length > 0 && (
+                      <button
+                        type="button"
+                        className="dash-products__modal-link-btn"
+                        onClick={selectAllBulkShippingCategories}
+                      >
+                        {bulkShippingSelectedCategories.length === profCategoriesList.length
+                          ? "Desmarcar todas"
+                          : "Seleccionar todas"}
+                      </button>
+                    )}
+                  </div>
+                  {profCategoriesList.length === 0 ? (
+                    <p className="dash-products__modal-hint">
+                      No se encontraron categorías asociadas a tus productos.
+                    </p>
+                  ) : (
+                    <div className="dash-products__chips-grid">
+                      {profCategoriesList.map((cat) => {
+                        const isSelected = bulkShippingSelectedCategories.includes(cat.id);
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            className={`dash-products__chip ${isSelected ? "dash-products__chip--active" : ""}`}
+                            onClick={() => toggleBulkShippingCategory(cat.id)}
+                          >
+                            <span className="dash-products__chip-checkbox">
+                              {isSelected && <Check size={12} />}
+                            </span>
+                            <span>{cat.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Subcategory selector */}
+              {bulkShippingScope === "subcategory" && (
+                <div className="dash-products__modal-field">
+                  <div className="dash-products__modal-field-header">
+                    <label>
+                      Seleccionar Subcategorías ({bulkShippingSelectedSubcategories.length})
+                    </label>
+                    {profSubcategoriesList.length > 0 && (
+                      <button
+                        type="button"
+                        className="dash-products__modal-link-btn"
+                        onClick={selectAllBulkShippingSubcategories}
+                      >
+                        {bulkShippingSelectedSubcategories.length === profSubcategoriesList.length
+                          ? "Desmarcar todas"
+                          : "Seleccionar todas"}
+                      </button>
+                    )}
+                  </div>
+                  {profSubcategoriesList.length === 0 ? (
+                    <p className="dash-products__modal-hint">
+                      No se encontraron subcategorías asociadas a tus productos.
+                    </p>
+                  ) : (
+                    <div className="dash-products__chips-grid">
+                      {profSubcategoriesList.map((subcat) => {
+                        const isSelected = bulkShippingSelectedSubcategories.includes(subcat.id);
+                        return (
+                          <button
+                            key={subcat.id}
+                            type="button"
+                            className={`dash-products__chip ${isSelected ? "dash-products__chip--active" : ""}`}
+                            onClick={() => toggleBulkShippingSubcategory(subcat.id)}
+                          >
+                            <span className="dash-products__chip-checkbox">
+                              {isSelected && <Check size={12} />}
+                            </span>
+                            <span>{subcat.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action: Enable vs Disable */}
+              <div className="dash-products__modal-field">
+                <label>Acción</label>
+                <div className="dash-products__modal-toggle">
+                  <button
+                    type="button"
+                    className={bulkShippingEnable ? "active" : ""}
+                    onClick={() => setBulkShippingEnable(true)}
+                  >
+                    Activar Envío Gratis
+                  </button>
+                  <button
+                    type="button"
+                    className={!bulkShippingEnable ? "active" : ""}
+                    onClick={() => setBulkShippingEnable(false)}
+                  >
+                    Quitar Envío Gratis
+                  </button>
+                </div>
+              </div>
+
+              {/* Additional shipping params if enabling */}
+              {bulkShippingEnable && (
+                <div className="dash-products__bulk-shipping-params">
+                  {shippingPolicy?.has_own_riders ? (
+                    <div className="product-creator__shipping-notice product-creator__shipping-notice--own-riders">
+                      <Truck size={18} />
+                      <div>
+                        <strong>Flota propia activa:</strong> Al tener habilitada tu logística de repartidores propios, no se deducirán costos de envío de la plataforma.
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="product-creator__shipping-notice product-creator__shipping-notice--platform">
+                        <Truck size={18} />
+                        <div>
+                          <strong>Logística de la plataforma:</strong> Define los parámetros de cobertura de envío gratis que absorberás:
+                        </div>
+                      </div>
+
+                      <div className="dash-products__bulk-shipping-inputs">
+                        <div className="dash-products__modal-field">
+                          <label>Radio máx. (km)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="Ej: 5 (opcional)"
+                            value={bulkShippingRadiusKm}
+                            onChange={(e) => setBulkShippingRadiusKm(e.target.value)}
+                            className="dash-products__modal-input"
+                          />
+                        </div>
+                        <div className="dash-products__modal-field">
+                          <label>Compra mín. ($)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Ej: 15000 (opcional)"
+                            value={bulkShippingMinAmount}
+                            onChange={(e) => setBulkShippingMinAmount(e.target.value)}
+                            className="dash-products__modal-input"
+                          />
+                        </div>
+                        <div className="dash-products__modal-field">
+                          <label>Peso máx. (kg)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            placeholder="Ej: 5 (opcional)"
+                            value={bulkShippingMaxWeight}
+                            onChange={(e) => setBulkShippingMaxWeight(e.target.value)}
+                            className="dash-products__modal-input"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                className={`dash-products__modal-apply ${bulkShippingApplied ? "dash-products__modal-apply--done" : ""}`}
+                onClick={() => bulkShippingMutation.mutate()}
+                disabled={
+                  (bulkShippingScope === "category" && bulkShippingSelectedCategories.length === 0) ||
+                  (bulkShippingScope === "subcategory" && bulkShippingSelectedSubcategories.length === 0) ||
+                  bulkShippingApplied ||
+                  bulkShippingMutation.isPending
+                }
+              >
+                {bulkShippingApplied ? (
+                  <>
+                    <Check size={18} /> Aplicado
+                  </>
+                ) : bulkShippingMutation.isPending ? (
+                  <>
+                    <Loader2 className="dash-products__spinner" size={18} /> Actualizando...
+                  </>
+                ) : (
+                  "Aplicar a los productos"
                 )}
               </button>
             </div>
@@ -2273,6 +2691,18 @@ export default function DashboardProducts({
           </div>
         </div>
       )}
+
+      {/* Commissions Modal */}
+      <CommissionsModal
+        isOpen={commissionsModalOpen}
+        onClose={() => setCommissionsModalOpen(false)}
+      />
+
+      {/* Shipping Rates Modal */}
+      <ShippingRatesModal
+        isOpen={shippingRatesModalOpen}
+        onClose={() => setShippingRatesModalOpen(false)}
+      />
     </div>
   );
 }
