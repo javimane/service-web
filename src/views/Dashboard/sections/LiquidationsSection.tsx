@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   DollarSign,
   Clock,
@@ -13,11 +13,17 @@ import {
   ChevronRight,
   ShieldCheck,
   Eye,
+  Download,
+  FileClock,
+  X,
 } from "lucide-react";
 import {
   commerceService,
   Liquidation,
   PageResponse,
+  Branch,
+  GeneratedReportNotification,
+  LiquidationsReportType,
 } from "@/services/commerceService";
 import Pagination from "@/components/Pagination/Pagination";
 import Modal from "@/components/Modal/Modal";
@@ -39,6 +45,13 @@ export default function LiquidationsSection() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedLiquidation, setSelectedLiquidation] = useState<Liquidation | null>(null);
+  const [reportType, setReportType] = useState<LiquidationsReportType>("full");
+  const [dateFrom, setDateFrom] = useState(() => `${new Date().getFullYear()}-01-01`);
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [includeTaxes, setIncludeTaxes] = useState(true);
+  const [branchId, setBranchId] = useState("");
+  const [reportsModalOpen, setReportsModalOpen] = useState(false);
+  const [reportRequested, setReportRequested] = useState(false);
 
   const {
     data: liquidationsData,
@@ -53,6 +66,47 @@ export default function LiquidationsSection() {
   const liquidations = liquidationsData?.items ?? liquidationsData?.data ?? [];
   const total = liquidationsData?.total ?? liquidations.length;
   const totalPages = liquidationsData?.totalPages ?? (Math.ceil(total / 10) || 1);
+
+  const { data: branches = [] } = useQuery<Branch[]>({
+    queryKey: ["report-branches"],
+    queryFn: () => commerceService.branches(),
+  });
+
+  const {
+    data: notifications = [],
+    refetch: refetchReports,
+  } = useQuery<GeneratedReportNotification[]>({
+    queryKey: ["generated-liquidation-reports"],
+    queryFn: () => commerceService.getGeneratedReports(),
+    enabled: reportsModalOpen,
+    refetchInterval: reportsModalOpen && reportRequested ? 8_000 : false,
+  });
+
+  const generatedReports = notifications.filter(
+    (notification) => notification.type === "report_ready",
+  );
+
+  const reportMutation = useMutation({
+    mutationFn: () => commerceService.requestLiquidationsReport({
+      reportType,
+      dateFrom,
+      dateTo,
+      includeTaxes,
+      branchId: branchId ? Number(branchId) : undefined,
+      language: "es",
+    }),
+    onSuccess: async (response) => {
+      if (!response.queued) throw new Error(response.message);
+      setReportRequested(true);
+      setReportsModalOpen(true);
+      await refetchReports();
+    },
+  });
+
+  const handleGenerateReport = () => {
+    if (!dateFrom || !dateTo || dateFrom > dateTo) return;
+    reportMutation.mutate();
+  };
 
   // Header Metrics Calculations
   const availableBalance = liquidations
@@ -154,6 +208,63 @@ export default function LiquidationsSection() {
           </div>
         </div>
       </div>
+
+      <section className="liquidations-report-panel" aria-labelledby="liquidations-report-title">
+        <div className="liquidations-report-panel__heading">
+          <div>
+            <span className="liquidations-report-panel__eyebrow">Reportes contables</span>
+            <h2 id="liquidations-report-title">Exportá el período que necesitás</h2>
+          </div>
+          <button
+            type="button"
+            className="liquidations-report-panel__history-btn"
+            onClick={() => setReportsModalOpen(true)}
+          >
+            <FileClock size={17} /> Mis reportes
+          </button>
+        </div>
+
+        <div className="liquidations-report-panel__fields">
+          <label className="liquidations-report-panel__field">
+            <span>Desde</span>
+            <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+          </label>
+          <label className="liquidations-report-panel__field">
+            <span>Hasta</span>
+            <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+          </label>
+          <label className="liquidations-report-panel__field">
+            <span>Contenido</span>
+            <select value={reportType} onChange={(event) => setReportType(event.target.value as LiquidationsReportType)}>
+              <option value="settlement">Solo liquidaciones</option>
+              <option value="sale">Solo ventas</option>
+              <option value="full">Ventas y liquidaciones</option>
+            </select>
+          </label>
+          <label className="liquidations-report-panel__field">
+            <span>Sucursal</span>
+            <select value={branchId} onChange={(event) => setBranchId(event.target.value)}>
+              <option value="">Todas las sucursales</option>
+              {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+            </select>
+          </label>
+          <label className="liquidations-report-panel__taxes">
+            <input type="checkbox" checked={includeTaxes} onChange={(event) => setIncludeTaxes(event.target.checked)} />
+            <span>Incluir impuestos y retenciones</span>
+          </label>
+          <button
+            type="button"
+            className="liquidations-report-panel__generate-btn"
+            disabled={reportMutation.isPending || !dateFrom || !dateTo || dateFrom > dateTo}
+            onClick={handleGenerateReport}
+          >
+            <FileText size={17} />
+            {reportMutation.isPending ? "Enviando..." : "Generar reporte"}
+          </button>
+        </div>
+        {dateFrom > dateTo && <p className="liquidations-report-panel__error">La fecha final debe ser posterior a la fecha inicial.</p>}
+        {reportMutation.isError && <p className="liquidations-report-panel__error">{reportMutation.error.message || "No se pudo preparar el reporte."}</p>}
+      </section>
 
       {/* Filter Tabs */}
       <div className="liquidations-filters">
@@ -361,6 +472,40 @@ export default function LiquidationsSection() {
           </div>
         </Modal>
       )}
+
+      <Modal isOpen={reportsModalOpen} onClose={() => setReportsModalOpen(false)} title="Reportes generados">
+        <div className="liquidations-reports-modal">
+          <div className="liquidations-reports-modal__notice">
+            <Clock size={18} />
+            <p>Los archivos y sus enlaces de descarga duran 1 día. Después se eliminan automáticamente.</p>
+          </div>
+          {reportRequested && generatedReports.length === 0 && (
+            <div className="liquidations-reports-modal__pending">
+              <FileClock size={28} />
+              <p>Estamos preparando tu reporte. Esta ventana se actualizará automáticamente cuando esté listo.</p>
+            </div>
+          )}
+          {!reportRequested && generatedReports.length === 0 && (
+            <div className="liquidations-reports-modal__pending">
+              <FileText size={28} />
+              <p>Todavía no hay reportes disponibles.</p>
+            </div>
+          )}
+          <div className="liquidations-reports-modal__list">
+            {generatedReports.map((report) => (
+              <article className="liquidations-reports-modal__item" key={report.id}>
+                <div>
+                  <strong>{report.title}</strong>
+                  <span>{new Date(report.created_at).toLocaleString("es-AR")}</span>
+                </div>
+                <a href={report.content} target="_blank" rel="noreferrer" className="liquidations-reports-modal__download">
+                  <Download size={16} /> Descargar
+                </a>
+              </article>
+            ))}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

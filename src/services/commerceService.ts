@@ -25,6 +25,16 @@ export type OrderStatus =
 
 export type DeliveryType = 'pickup' | 'shipment' | 'coordinate_with_merchant';
 
+export type LiquidationsReportType = 'settlement' | 'sale' | 'full';
+
+export type GeneratedReportNotification = {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+  created_at: string;
+};
+
 export type OrderSummary = {
   id: string;
   order_number?: string | null;
@@ -803,6 +813,22 @@ export const commerceService = {
 
   liquidationDetail: (id: string) =>
     apiClient<Liquidation>(API_ENDPOINTS.liquidations.detail(id)),
+
+  requestLiquidationsReport: (data: {
+    reportType: LiquidationsReportType;
+    dateFrom: string;
+    dateTo: string;
+    includeTaxes: boolean;
+    branchId?: number;
+    language: 'es' | 'en';
+  }) =>
+    apiClient<{ queued: boolean; message: string }>(
+      API_ENDPOINTS.reports.merchantLiquidations,
+      { method: 'POST', body: data },
+    ),
+
+  getGeneratedReports: () =>
+    apiClient<GeneratedReportNotification[]>(API_ENDPOINTS.notifications.base),
 
   // Logistics & Fleet (Carrier)
   fleetTracking: () =>

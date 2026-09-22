@@ -38,7 +38,7 @@ const DEFAULT_CENTER = { lat: -34.6037, lng: -58.3816 }; // Buenos Aires
 const GOOGLE_MAPS_API_KEY =
   process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
   process.env.NEXT_PUBLIC_GOOGLE_API_KEY ||
-  "AIzaSyDM4stJEAxZmVFzQeSqO0uw5fFL154__WM";
+  "";
 
 // Helper para calcular coordenadas válidas del chofer
 function getDriverCoords(

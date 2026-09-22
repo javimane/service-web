@@ -92,6 +92,9 @@ export const API_ENDPOINTS = {
     base: `${API_BASE_URL}/api/liquidations`,
     detail: (id: string) => `${API_BASE_URL}/api/liquidations/${id}`,
   },
+  reports: {
+    merchantLiquidations: `${API_BASE_URL}/api/reports/merchant/liquidations`,
+  },
   logistics: {
     dashboard: `${API_BASE_URL}/api/logistics/dashboard`,
     metrics: `${API_BASE_URL}/api/logistics/dashboard/metrics`,
@@ -204,6 +207,7 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/api/communications/requests/professional/${professionalId}`,
   },
   notifications: {
+    base: `${API_BASE_URL}/api/notifications`,
     stream: `${API_BASE_URL}/api/notifications/stream`,
   },
   payments: {
