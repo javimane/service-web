@@ -1,0 +1,240 @@
+/* BatchOrderTicketsModal.css */
+.batch-tickets-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-family: var(--font-primary);
+}
+
+.batch-tickets-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.batch-tickets-modal__summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.batch-tickets-modal__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.batch-tickets-modal__subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.batch-tickets-modal__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.batch-tickets-modal__print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.batch-tickets-modal__print-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.batch-tickets-modal__secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.batch-tickets-modal__secondary-btn:hover {
+  background: var(--border-color);
+}
+
+.batch-tickets-modal__preview-scroll {
+  background: #525659;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  max-height: 65vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+/* Individual Ticket in Batch */
+.batch-ticket-container {
+  width: 80mm;
+  min-height: 110mm;
+  background: #ffffff;
+  color: #000000;
+  padding: 6mm;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.batch-ticket-container__type-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: #000000;
+  color: #ffffff;
+  padding: 2px 6px;
+  margin-bottom: 4mm;
+}
+
+.batch-ticket-container__header {
+  text-align: center;
+  border-bottom: 2px dashed #000000;
+  padding-bottom: 4mm;
+  margin-bottom: 4mm;
+}
+
+.batch-ticket-container__title {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.batch-ticket-container__store {
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.batch-ticket-container__order-number {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-top: 3mm;
+}
+
+.batch-ticket-container__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3mm;
+}
+
+.batch-ticket-container__row {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px dashed #cccccc;
+  padding-bottom: 2mm;
+}
+
+.batch-ticket-container__label {
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #555555;
+}
+
+.batch-ticket-container__val {
+  font-size: 11px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.batch-ticket-container__val--highlight {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.batch-ticket-container__total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  padding: 3mm 0;
+  margin-top: 2mm;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.batch-ticket-container__footer {
+  text-align: center;
+  font-size: 9px;
+  color: #666666;
+  margin-top: 4mm;
+  border-top: 1px dashed #000000;
+  padding-top: 3mm;
+}
+
+/* Print Styles for continuous thermal printing */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #batch-tickets-print-root,
+  #batch-tickets-print-root * {
+    visibility: visible;
+  }
+
+  #batch-tickets-print-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 0;
+    background: #ffffff !important;
+  }
+
+  .batch-ticket-container {
+    width: 80mm;
+    margin: 0;
+    padding: 4mm;
+    box-shadow: none !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .batch-tickets-modal__header,
+  .batch-tickets-modal__actions {
+    display: none !important;
+  }
+}

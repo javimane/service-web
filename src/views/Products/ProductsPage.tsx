@@ -15,6 +15,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import ProductFilters from "./ProductFilters";
+import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 import "./ProductsPage.css";
 import {
   getProductCategoriesAction,
@@ -45,6 +46,7 @@ const defaultFilters = {
   brand: "",
   ean: "",
   wholesale: "all",
+  is_offer: "all",
   limit: "10",
   sortBy: "price-asc",
 };
@@ -61,6 +63,7 @@ export default function ProductsPage() {
   const urlSearch = searchParams?.get("search") || searchParams?.get("q") || "";
   const urlWholesale = searchParams?.get("wholesale");
   const urlBrand = searchParams?.get("brand");
+  const urlIsOffer = searchParams?.get("is_offer") || searchParams?.get("has_offer");
 
   const [filters, setFilters] = useState(() => ({
     ...defaultFilters,
@@ -69,6 +72,7 @@ export default function ProductsPage() {
     provinceId: urlProvince || defaultFilters.provinceId,
     search: urlSearch || defaultFilters.search,
     wholesale: urlWholesale || defaultFilters.wholesale,
+    is_offer: urlIsOffer || defaultFilters.is_offer,
     brand: urlBrand || defaultFilters.brand,
   }));
 
@@ -137,6 +141,7 @@ export default function ProductsPage() {
     const prov = searchParams.get("provinceId") || searchParams.get("province");
     const q = searchParams.get("search") || searchParams.get("q");
     const ws = searchParams.get("wholesale");
+    const ofr = searchParams.get("is_offer") || searchParams.get("has_offer");
     const br = searchParams.get("brand");
 
     setFilters((prev) => {
@@ -158,6 +163,7 @@ export default function ProductsPage() {
       const nextProv = prov ?? prev.provinceId;
       const nextSearch = q !== null ? q : prev.search;
       const nextWs = ws ?? prev.wholesale;
+      const nextOfr = ofr ?? prev.is_offer;
       const nextBr = br !== null ? br : prev.brand;
 
       // Do not trigger state update if identical
@@ -167,6 +173,7 @@ export default function ProductsPage() {
         prev.provinceId === nextProv &&
         prev.search === nextSearch &&
         prev.wholesale === nextWs &&
+        prev.is_offer === nextOfr &&
         prev.brand === nextBr
       ) {
         return prev;
@@ -179,6 +186,7 @@ export default function ProductsPage() {
         provinceId: nextProv,
         search: nextSearch,
         wholesale: nextWs,
+        is_offer: nextOfr,
         brand: nextBr,
       };
     });
@@ -257,6 +265,7 @@ export default function ProductsPage() {
             ? undefined
             : effectiveFilters.is_foreign === "external",
         wholesale: effectiveFilters.wholesale === "true" ? true : undefined,
+        is_offer: effectiveFilters.is_offer === "true" ? true : undefined,
       };
       const result = await getProductsAction(params);
       return result?.data;
@@ -625,16 +634,29 @@ export default function ProductsPage() {
                 }
               >
                 {productsList.map((product) => (
-                  <button
+                  <div
                     key={product.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     className="product-card"
                     onClick={() => {
                       router.push(`/productos${product._original.seo_path}`);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        router.push(`/productos${product._original.seo_path}`);
+                      }
+                    }}
                   >
                     <div className="product-card__image">
                       <img src={product.image} alt={product.title} />
+                      <div className="product-card__favorite-wrap">
+                        <FavoriteButton
+                          type="product"
+                          targetId={product._original?.id || product.id}
+                          size={16}
+                        />
+                      </div>
                       {product.is_foreign && (
                         <span className="product-card__badge-foreign">
                           <Globe size={10} /> EXTERNO
@@ -687,7 +709,7 @@ export default function ProductsPage() {
                         )}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </AsyncWrapper>
             </div>

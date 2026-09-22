@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Clock,
@@ -14,18 +14,29 @@ import {
   Printer,
   AlertTriangle,
   CheckCircle2,
+  Store,
+  CheckSquare,
+  Square,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import {
   commerceService,
   OrderSummary,
   OrderStatus,
   PageResponse,
+  Branch,
 } from "@/services/commerceService";
+import { useAuth } from "@/context/AuthContext";
 import Pagination from "@/components/Pagination/Pagination";
 import Modal from "@/components/Modal/Modal";
 import { useAlert } from "@/context/AlertContext";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
 import AssignServiceAppointmentModal from "./AssignServiceAppointmentModal";
 import PackageThermalLabelModal from "./PackageThermalLabelModal";
+import ServiceOrderVoucherModal from "./ServiceOrderVoucherModal";
+import BatchOrderTicketsModal from "./BatchOrderTicketsModal";
 import "./SalesSection.css";
 
 const STATUS_FILTERS: Array<{ label: string; value: string }> = [
@@ -40,11 +51,22 @@ const STATUS_FILTERS: Array<{ label: string; value: string }> = [
 ];
 
 export default function SalesSection() {
+  const token = getAccessToken();
+  setApiAccessToken(token);
   const queryClient = useQueryClient();
+  const { sessionStatus } = useAuth();
   const { showSuccess, showError } = useAlert();
+
+  const companyId = sessionStatus?.company_id || 1;
 
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [isAutoPrintActive, setIsAutoPrintActive] = useState<boolean>(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [selectedOrdersForBatchPrint, setSelectedOrdersForBatchPrint] = useState<OrderSummary[]>([]);
+  const [batchPrintModalOpen, setBatchPrintModalOpen] = useState(false);
+
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -56,13 +78,54 @@ export default function SalesSection() {
   const [transportTrackingUrl, setTransportTrackingUrl] = useState("");
   const [selectedOrderForAppointment, setSelectedOrderForAppointment] = useState<OrderSummary | null>(null);
   const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<OrderSummary | null>(null);
+  const [selectedOrderForServiceVoucher, setSelectedOrderForServiceVoucher] = useState<OrderSummary | null>(null);
 
-  const { data: ordersData, isLoading, isError, refetch } = useQuery<PageResponse<OrderSummary>>({
-    queryKey: ["merchant-orders", page, statusFilter],
-    queryFn: () => commerceService.merchantOrders(page, 10, statusFilter || undefined),
+  // Fetch branches
+  const { data: rawBranches } = useQuery({
+    queryKey: ["merchant-branches", companyId],
+    queryFn: () => commerceService.branches(companyId),
   });
 
-  const orders = ordersData?.items ?? ordersData?.data ?? [];
+  const branches: Branch[] = Array.isArray(rawBranches)
+    ? rawBranches
+    : Array.isArray((rawBranches as any)?.data)
+      ? (rawBranches as any).data
+      : Array.isArray((rawBranches as any)?.items)
+        ? (rawBranches as any).items
+        : [];
+
+  // Restore active branch and auto-print preference from localStorage
+  useEffect(() => {
+    try {
+      const savedBranch = localStorage.getItem("sercio_sales_branch_id");
+      if (savedBranch) {
+        setSelectedBranchId(savedBranch);
+      }
+      const savedAutoPrint = localStorage.getItem("sercio_autoprint_active");
+      if (savedAutoPrint !== null) {
+        setIsAutoPrintActive(savedAutoPrint === "true");
+      }
+    } catch {
+      // ignore storage error
+    }
+  }, []);
+
+  const { data: ordersData, isLoading, isError, refetch } = useQuery<PageResponse<OrderSummary>>({
+    queryKey: ["merchant-orders", page, statusFilter, selectedBranchId],
+    queryFn: () =>
+      commerceService.merchantOrders(
+        page,
+        10,
+        statusFilter || undefined,
+        selectedBranchId || undefined
+      ),
+    refetchInterval: isAutoPrintActive ? 10000 : false,
+  });
+
+  const orders = React.useMemo(
+    () => ordersData?.items ?? ordersData?.data ?? [],
+    [ordersData]
+  );
   const totalOrders = ordersData?.total ?? orders.length;
   const totalPages = ordersData?.totalPages ?? (Math.ceil(totalOrders / 10) || 1);
 
@@ -84,6 +147,116 @@ export default function SalesSection() {
   const monthlyBilling = orders
     .filter((o) => o.status !== "cancelled")
     .reduce((acc, curr) => acc + (curr.total_amount ?? 0), 0);
+
+  const updateBranchAutoPrintMutation = useMutation({
+    mutationFn: ({
+      branchId,
+      auto_print_tickets,
+    }: {
+      branchId: string;
+      auto_print_tickets: boolean;
+    }) => commerceService.updateBranch(branchId, { auto_print_tickets }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["merchant-branches"] });
+    },
+  });
+
+  const handleBranchChange = (branchId: string) => {
+    setSelectedBranchId(branchId);
+    setPage(1);
+    try {
+      localStorage.setItem("sercio_sales_branch_id", branchId);
+    } catch {
+      // ignore
+    }
+
+    if (branchId) {
+      const found = branches.find((b) => b.id === branchId);
+      if (found && typeof found.auto_print_tickets === "boolean") {
+        setIsAutoPrintActive(found.auto_print_tickets);
+        try {
+          localStorage.setItem("sercio_autoprint_active", String(found.auto_print_tickets));
+        } catch {
+          // ignore
+        }
+      }
+    }
+  };
+
+  const toggleAutoPrint = () => {
+    const nextVal = !isAutoPrintActive;
+    setIsAutoPrintActive(nextVal);
+    try {
+      localStorage.setItem("sercio_autoprint_active", String(nextVal));
+    } catch {
+      // ignore
+    }
+
+    if (selectedBranchId) {
+      updateBranchAutoPrintMutation.mutate({
+        branchId: selectedBranchId,
+        auto_print_tickets: nextVal,
+      });
+    }
+
+    if (nextVal) {
+      showSuccess(
+        selectedBranchId
+          ? "Impresión automática activada para la sucursal seleccionada."
+          : "Impresión automática activada para órdenes entrantes."
+      );
+    } else {
+      showSuccess("Impresión automática pausada.");
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (orders.length === 0) return;
+    const allVisibleSelected = orders.every((o) => selectedOrderIds.includes(o.id));
+    if (allVisibleSelected) {
+      setSelectedOrderIds((prev) => prev.filter((id) => !orders.some((o) => o.id === id)));
+    } else {
+      const newIds = new Set([...selectedOrderIds, ...orders.map((o) => o.id)]);
+      setSelectedOrderIds(Array.from(newIds));
+    }
+  };
+
+  const toggleSelectOrder = (orderId: string) => {
+    setSelectedOrderIds((prev) =>
+      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]
+    );
+  };
+
+  const handleOpenBatchPrint = () => {
+    const selectedList = orders.filter((o) => selectedOrderIds.includes(o.id));
+    if (selectedList.length === 0) {
+      showError("Selecciona al menos una venta para imprimir.");
+      return;
+    }
+    setSelectedOrdersForBatchPrint(selectedList);
+    setBatchPrintModalOpen(true);
+  };
+
+  // Auto-print effect when new unprinted orders arrive
+  useEffect(() => {
+    if (!isAutoPrintActive || orders.length === 0) return;
+
+    const unprinted = orders.filter((o) => {
+      if (o.status === "cancelled") return false;
+      if (selectedBranchId && o.branch_id && o.branch_id !== selectedBranchId) return false;
+      try {
+        return !localStorage.getItem(`sercio_printed_ticket_${o.id}`);
+      } catch {
+        return false;
+      }
+    });
+
+    if (unprinted.length > 0) {
+      setSelectedOrdersForBatchPrint(unprinted);
+      setBatchPrintModalOpen(true);
+      showSuccess(`¡Venta entrante! Preparando ticket de ${unprinted.length} orden(es)...`);
+    }
+  }, [orders, isAutoPrintActive, selectedBranchId, showSuccess]);
 
   // Mutations
   const confirmMutation = useMutation({
@@ -266,6 +439,95 @@ export default function SalesSection() {
         </div>
       </div>
 
+      {/* Branch & Auto-print Toolbar */}
+      <div className="sales-branch-toolbar">
+        <div className="sales-branch-control">
+          <div className="sales-branch-control__icon">
+            <Store size={20} />
+          </div>
+          <label htmlFor="sales-branch-select" className="sales-branch-control__label">
+            Sucursal de este puesto:
+          </label>
+          <select
+            id="sales-branch-select"
+            className="sales-branch-select"
+            value={selectedBranchId}
+            onChange={(e) => handleBranchChange(e.target.value)}
+          >
+            <option value="">Todas las sucursales</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name} {b.street ? `(${b.street} ${b.number || ""})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="sales-autoprint-control">
+          <button
+            type="button"
+            className={`sales-autoprint-toggle-btn ${
+              isAutoPrintActive ? "sales-autoprint-toggle-btn--active" : ""
+            }`}
+            onClick={toggleAutoPrint}
+            title={
+              isAutoPrintActive
+                ? "Click para pausar la impresión automática de tickets"
+                : "Click para activar la impresión automática de tickets al ingresar ventas"
+            }
+          >
+            <Printer size={16} />
+            <span>
+              {isAutoPrintActive
+                ? "Impresión automática: ACTIVADA"
+                : "Impresión automática: DESACTIVADA"}
+            </span>
+            {isAutoPrintActive ? (
+              <ToggleRight size={22} />
+            ) : (
+              <ToggleLeft size={22} />
+            )}
+          </button>
+          <span className="sales-autoprint-hint">
+            {isAutoPrintActive
+              ? "🟢 Detectando e imprimiendo tickets automáticamente."
+              : "⚪ Impresión manual individual o por lote."}
+          </span>
+        </div>
+      </div>
+
+      {/* Batch Action Bar */}
+      {selectedOrderIds.length > 0 && (
+        <div className="sales-batch-bar">
+          <div className="sales-batch-bar__info">
+            <CheckSquare size={18} />
+            <span>
+              <strong>{selectedOrderIds.length}</strong>{" "}
+              {selectedOrderIds.length === 1
+                ? "venta seleccionada"
+                : "ventas seleccionadas"}
+            </span>
+          </div>
+          <div className="sales-batch-bar__actions">
+            <button
+              type="button"
+              className="sales-batch-bar__print-btn"
+              onClick={handleOpenBatchPrint}
+            >
+              <Printer size={16} />
+              <span>Imprimir tickets seleccionados ({selectedOrderIds.length})</span>
+            </button>
+            <button
+              type="button"
+              className="btn-secondary sales-batch-bar__clear-btn"
+              onClick={() => setSelectedOrderIds([])}
+            >
+              Deseleccionar todas
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Filter Tabs */}
       <div className="sales-filters">
         {STATUS_FILTERS.map((f) => (
@@ -311,10 +573,23 @@ export default function SalesSection() {
             <table className="sales-table">
               <thead>
                 <tr>
+                  <th className="sales-table__col-check">
+                    <input
+                      type="checkbox"
+                      className="sales-checkbox"
+                      checked={
+                        orders.length > 0 &&
+                        orders.every((o) => selectedOrderIds.includes(o.id))
+                      }
+                      onChange={toggleSelectAll}
+                      aria-label="Seleccionar todas las ventas visibles"
+                    />
+                  </th>
                   <th>Orden</th>
                   <th>Fecha</th>
                   <th>Cliente</th>
                   <th>Artículo / Productos</th>
+                  <th>Sucursal</th>
                   <th>Entrega</th>
                   <th>Estado</th>
                   <th>Total</th>
@@ -336,6 +611,15 @@ export default function SalesSection() {
 
                   return (
                     <tr key={order.id}>
+                      <td className="sales-table__cell-check">
+                        <input
+                          type="checkbox"
+                          className="sales-checkbox"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={() => toggleSelectOrder(order.id)}
+                          aria-label={`Seleccionar orden ${order.id}`}
+                        />
+                      </td>
                       <td className="sales-table__order-id">
                         #{order.order_number || order.id.slice(0, 8)}
                       </td>
@@ -365,6 +649,11 @@ export default function SalesSection() {
                             )}
                           </div>
                         </div>
+                      </td>
+                      <td>
+                        <span className="sales-table__branch-tag">
+                          {order.branch?.name || (order.branch_id ? "Sucursal asignada" : "Central")}
+                        </span>
                       </td>
                       <td>{getDeliveryLabel(order.delivery_type)}</td>
                       <td>{getStatusBadge(order.status)}</td>
@@ -404,6 +693,18 @@ export default function SalesSection() {
                             >
                               <Printer size={14} />
                               <span>Etiqueta</span>
+                            </button>
+                          )}
+
+                          {(order.service_id || order.service) && (
+                            <button
+                              type="button"
+                              className="sales-action-btn sales-action-btn--label"
+                              title="Imprimir Ficha y Comprobante de Servicio"
+                              onClick={() => setSelectedOrderForServiceVoucher(order)}
+                            >
+                              <Printer size={14} />
+                              <span>Ficha</span>
                             </button>
                           )}
                         </div>
@@ -461,7 +762,9 @@ export default function SalesSection() {
                   <span className="order-detail-label">Teléfono:</span>
                   <span className="order-detail-value">
                     {selectedOrder.buyer?.phone ||
+                      selectedOrder.buyer?.phone_number ||
                       selectedOrder.user?.phone ||
+                      selectedOrder.user?.phone_number ||
                       "No informado"}
                   </span>
                 </div>
@@ -482,6 +785,70 @@ export default function SalesSection() {
                     {selectedOrder.shipping_address.city},{" "}
                     {selectedOrder.shipping_address.state} (CP{" "}
                     {selectedOrder.shipping_address.zip_code})
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Billing Data Info for Invoice */}
+            <div className="order-detail-section">
+              <h4 className="order-detail-section__title">
+                Datos de Facturación para Factura
+              </h4>
+              {selectedOrder.billing_data || selectedOrder.billing_profile ? (
+                (() => {
+                  const bd =
+                    selectedOrder.billing_data || selectedOrder.billing_profile;
+                  const isRespInscripto =
+                    bd.tax_condition === "responsable_inscripto";
+                  return (
+                    <div className="order-detail-grid">
+                      <div>
+                        <span className="order-detail-label">Nombre / Razón Social:</span>
+                        <span className="order-detail-value">
+                          {bd.company_name || bd.full_name}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="order-detail-label">Titular:</span>
+                        <span className="order-detail-value">{bd.full_name}</span>
+                      </div>
+                      <div>
+                        <span className="order-detail-label">CUIT / CUIL:</span>
+                        <span className="order-detail-value order-detail-value--cuit">
+                          {bd.cuit}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="order-detail-label">Condición frente al IVA:</span>
+                        <span className="order-detail-value">
+                          <span
+                            className={`sales-billing-badge ${
+                              isRespInscripto
+                                ? "sales-billing-badge--company"
+                                : "sales-billing-badge--final"
+                            }`}
+                          >
+                            {isRespInscripto
+                              ? "Responsable Inscripto (Factura A)"
+                              : "Consumidor Final (Factura B)"}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="sales-billing-empty">
+                  <p>
+                    El comprador no registró CUIT específico. Emitir como{" "}
+                    <strong>Consumidor Final (Factura B)</strong> a nombre de:{" "}
+                    <strong>
+                      {selectedOrder.buyer?.full_name ||
+                        selectedOrder.user?.full_name ||
+                        "Consumidor Final"}
+                    </strong>
+                    .
                   </p>
                 </div>
               )}
@@ -608,6 +975,20 @@ export default function SalesSection() {
                 </div>
               )}
 
+              {/* Service Voucher Print button for service orders */}
+              {(selectedOrder.service_id || selectedOrder.service) && (
+                <div className="order-print-label-row">
+                  <button
+                    type="button"
+                    className="btn-secondary order-print-label-btn"
+                    onClick={() => setSelectedOrderForServiceVoucher(selectedOrder)}
+                  >
+                    <Printer size={16} />
+                    <span>🖨️ Imprimir Ficha de Servicio (con Domicilio y Teléfono)</span>
+                  </button>
+                </div>
+              )}
+
               {selectedOrder.status === "confirmed" && (
                 <div className="order-actions-group">
                   <button
@@ -708,10 +1089,13 @@ export default function SalesSection() {
               )}
 
               {/* WhatsApp direct contact if buyer has phone */}
-              {(selectedOrder.buyer?.phone || selectedOrder.user?.phone) && (
+              {(selectedOrder.buyer?.phone ||
+                selectedOrder.buyer?.phone_number ||
+                selectedOrder.user?.phone ||
+                selectedOrder.user?.phone_number) && (
                 <div className="whatsapp-contact-box">
                   <a
-                    href={`https://wa.me/${(selectedOrder.buyer?.phone || selectedOrder.user?.phone)?.replace(/\D/g, "")}`}
+                    href={`https://wa.me/${(selectedOrder.buyer?.phone || selectedOrder.buyer?.phone_number || selectedOrder.user?.phone || selectedOrder.user?.phone_number)?.replace(/\D/g, "")}`}
                     target="_blank"
                     rel="noreferrer"
                     className="whatsapp-btn"
@@ -885,6 +1269,36 @@ export default function SalesSection() {
           order={selectedOrderForLabel}
           isOpen={Boolean(selectedOrderForLabel)}
           onClose={() => setSelectedOrderForLabel(null)}
+        />
+      )}
+
+      {/* Service Order Voucher Modal */}
+      {selectedOrderForServiceVoucher && (
+        <ServiceOrderVoucherModal
+          order={selectedOrderForServiceVoucher}
+          isOpen={Boolean(selectedOrderForServiceVoucher)}
+          onClose={() => setSelectedOrderForServiceVoucher(null)}
+        />
+      )}
+
+      {/* Batch Order Tickets Modal */}
+      {batchPrintModalOpen && selectedOrdersForBatchPrint.length > 0 && (
+        <BatchOrderTicketsModal
+          isOpen={batchPrintModalOpen}
+          onClose={() => {
+            setBatchPrintModalOpen(false);
+            setSelectedOrdersForBatchPrint([]);
+          }}
+          orders={selectedOrdersForBatchPrint}
+          branchName={
+            branches.find((b) => b.id === selectedBranchId)?.name ||
+            "Sucursal Principal"
+          }
+          onPrinted={(printedIds) => {
+            setSelectedOrderIds((prev) =>
+              prev.filter((id) => !printedIds.includes(id))
+            );
+          }}
         />
       )}
     </div>

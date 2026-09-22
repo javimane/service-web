@@ -1,6 +1,7 @@
 "use client";
 import { MapPin, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
+import FavoriteButton from "../FavoriteButton/FavoriteButton";
 import "./NearbyServiceCard.css";
 
 export default function NearbyServiceCard({ service, onClick }) {
@@ -44,6 +45,7 @@ export default function NearbyServiceCard({ service, onClick }) {
           <span className="nearby-card__distance">
             <MapPin size={12} /> {distance}
           </span>
+          <FavoriteButton type="service" targetId={id} size={14} />
         </div>
       </div>
 

@@ -36,6 +36,27 @@
   letter-spacing: 0.05em;
 }
 
+.card-top-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.card-top-actions .favorite-btn--icon {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+}
+
+.card-top-actions .favorite-btn--icon:hover {
+  background: var(--white);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
 .card-share-btn {
   background: var(--surface-soft);
   border: 1px solid var(--border-color);

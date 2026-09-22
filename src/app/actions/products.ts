@@ -25,6 +25,11 @@ const productListSchema = z.object({
   brand: z.string().optional(),
   ean: z.string().optional(),
   wholesale: z.boolean().optional(),
+  is_offer: z.boolean().optional(),
+  has_offer: z.boolean().optional(),
+  offer_price: z.number().optional(),
+  offer_price_min: z.number().optional(),
+  offer_price_max: z.number().optional(),
 });
 const authTokenSchema = z.string().optional();
 const tokenizedRecordSchema = z
@@ -96,6 +101,11 @@ export const getProductsByProfessionalAction = publicAction
       subcategoryId: z.string().optional(),
       page: z.number().optional(),
       limit: z.number().optional(),
+      is_offer: z.boolean().optional(),
+      has_offer: z.boolean().optional(),
+      offer_price: z.number().optional(),
+      offer_price_min: z.number().optional(),
+      offer_price_max: z.number().optional(),
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
@@ -103,6 +113,16 @@ export const getProductsByProfessionalAction = publicAction
     const query = new URLSearchParams();
     if (queryParams.wholesale !== undefined)
       query.append("wholesale", String(queryParams.wholesale));
+    if (queryParams.is_offer !== undefined)
+      query.append("is_offer", String(queryParams.is_offer));
+    if (queryParams.has_offer !== undefined)
+      query.append("has_offer", String(queryParams.has_offer));
+    if (queryParams.offer_price !== undefined)
+      query.append("offer_price", String(queryParams.offer_price));
+    if (queryParams.offer_price_min !== undefined)
+      query.append("offer_price_min", String(queryParams.offer_price_min));
+    if (queryParams.offer_price_max !== undefined)
+      query.append("offer_price_max", String(queryParams.offer_price_max));
     if (queryParams.ean) query.append("ean", queryParams.ean);
     if (queryParams.name) query.append("name", queryParams.name);
     if (queryParams.categoryId !== undefined)

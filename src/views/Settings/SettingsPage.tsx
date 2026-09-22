@@ -13,6 +13,8 @@ import HeadquartersSection from "./sections/HeadquartersSection";
 import OperationsSection from "./sections/OperationsSection";
 import PaymentMethodsSection from "./sections/PaymentMethodsSection";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
+import BillingDataSection from "./sections/BillingDataSection";
+import DeliveryAddressSection from "./sections/DeliveryAddressSection";
 import ProvinceNovedadesSection from "./sections/ProvinceNovedadesSection";
 import ActionsSection from "./sections/ActionsSection";
 import CompanyDisplaySection from "./sections/CompanyDisplaySection";
@@ -513,6 +515,12 @@ export default function SettingsPage() {
                   email: user?.email || "",
                 }}
               />
+
+              {/* Billing and fiscal data for invoice generation */}
+              <BillingDataSection userId={user?.id} />
+
+              {/* Delivery address for receiving product orders */}
+              <DeliveryAddressSection userId={user?.id} />
 
               {/* Province news feed selection (for all authenticated users) */}
               {user?.id && (

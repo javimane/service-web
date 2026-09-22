@@ -19,6 +19,8 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ServicePaymentModal from "./components/ServicePaymentModal";
 import ProductInstallmentsModal from "../Products/components/ProductInstallmentsModal";
+import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
+import CommentsCarousel from "../../components/CommentsCarousel/CommentsCarousel";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAlert } from "../../context/AlertContext";
 import "./ServiceDetailPage.css";
@@ -163,13 +165,22 @@ export default function ServiceDetailPage({
       <Navbar />
 
       <main className="service-detail-page">
-        <button
-          onClick={() => router.back()}
-          className="service-detail__back-btn"
-        >
-          <ArrowLeft size={18} />
-          Volver
-        </button>
+        <div className="service-detail__top-nav">
+          <button
+            onClick={() => router.back()}
+            className="service-detail__back-btn"
+          >
+            <ArrowLeft size={18} />
+            Volver
+          </button>
+
+          <FavoriteButton
+            type="service"
+            targetId={service.id}
+            size={22}
+            className="service-detail__favorite-btn"
+          />
+        </div>
 
         <div className="service-detail__layout">
           {/* Professional Card */}
@@ -318,6 +329,12 @@ export default function ServiceDetailPage({
             </div>
           </div>
         </div>
+
+        <CommentsCarousel
+          type="service"
+          targetId={String(service.id || id || "")}
+          title="Opiniones sobre el Servicio"
+        />
       </main>
 
       {/* Service Payment Modal (No shipping, with shift assignment notice) */}

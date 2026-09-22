@@ -1981,6 +1981,32 @@
   box-shadow: var(--shadow-md) !important;
 }
 
+.cta-button.profile-favorite-btn {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1.5px solid var(--border-color) !important;
+  padding: 16px !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  font-size: 0.88rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: all 0.3s ease !important;
+  margin-top: 8px !important;
+  width: 100% !important;
+  cursor: pointer !important;
+}
+
+.cta-button.profile-favorite-btn:hover {
+  transform: translateY(-2px) !important;
+  border-color: var(--accent-color) !important;
+  color: var(--accent-color) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
 .cta-button.store-btn {
   background: linear-gradient(
     135deg,

@@ -201,3 +201,9 @@
     box-shadow: none !important;
   }
 }
+
+.thermal-sticker__note-text {
+  font-size: 9px;
+  font-style: italic;
+  margin-top: 4px;
+}

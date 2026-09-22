@@ -1,10 +1,12 @@
 import React from "react";
+import FavoriteButton from "../FavoriteButton/FavoriteButton";
 import "./ProductCard.css";
 
 const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
   // Data is nested inside product.Product
   const info = product.Product || {};
   const images = info.Images || [];
+  const productId = product.product_id || info.id || product.id;
 
   const primaryImage =
     images.find((img) => img.display_order === 0)?.image_url ||
@@ -40,6 +42,9 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
     >
       <div className="nearby-product-card__image">
         <img src={primaryImage} alt={name} loading="lazy" draggable="false" />
+        <div className="nearby-product-card__favorite-wrap">
+          <FavoriteButton type="product" targetId={productId} size={16} />
+        </div>
         {hasOffer && !product.wholesale && !isConsultar && (
           <span className="nearby-product-card__badge">OFERTA</span>
         )}

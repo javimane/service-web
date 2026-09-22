@@ -15,6 +15,8 @@ import {
   Users,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
 import {
   commerceService,
   ProfessionalScore,
@@ -93,6 +95,8 @@ interface ReputationSectionProps {
 export default function ReputationSection({
   professionalIdProp,
 }: ReputationSectionProps) {
+  const token = getAccessToken();
+  setApiAccessToken(token);
   const { sessionStatus } = useAuth();
   const professionalId =
     professionalIdProp ||

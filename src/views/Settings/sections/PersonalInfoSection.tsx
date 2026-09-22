@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   User,
   Mail,
+  Phone,
   Lock,
   Edit2,
   Check,
@@ -40,10 +41,12 @@ export default function PersonalInfoSection({
   const queryClient = useQueryClient();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -79,8 +82,10 @@ export default function PersonalInfoSection({
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || "");
+      setPhone(profile.phone || profile.phone_number || "");
     } else {
       setDisplayName(initialData.displayName);
+      setPhone("");
     }
     setEmail(initialData.email);
   }, [profile, initialData]);
@@ -136,6 +141,37 @@ export default function PersonalInfoSection({
       });
     },
   });
+
+  const updatePhoneMutation = useMutation({
+    mutationFn: async (newPhone: string) => {
+      const token = await getAccessToken();
+      const result = await updateProfileAction({
+        id: userId,
+        data: { phone: newPhone, phone_number: newPhone },
+        token,
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      setIsEditingPhone(false);
+      setNotification({
+        type: "success",
+        message: "Número de teléfono actualizado con éxito.",
+      });
+    },
+    onError: () => {
+      setNotification({
+        type: "error",
+        message: "Error al actualizar el teléfono.",
+      });
+    },
+  });
+
+  const handleUpdatePhone = () => {
+    updatePhoneMutation.mutate(phone.trim());
+  };
 
   const updatePasswordMutation = useMutation({
     mutationFn: (newPass: string) => authService.updatePassword(newPass),
@@ -248,6 +284,7 @@ export default function PersonalInfoSection({
   const loading =
     updateNameMutation.isPending ||
     updateEmailMutation.isPending ||
+    updatePhoneMutation.isPending ||
     updatePasswordMutation.isPending;
 
   return (
@@ -380,6 +417,58 @@ export default function PersonalInfoSection({
                   <button
                     className="personal-action-btn"
                     onClick={() => setIsEditingEmail(true)}
+                  >
+                    <Edit2 size={16} /> Modificar
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Phone Field */}
+            <div className="personal-field-row">
+              <div className="personal-field-content">
+                <span className="personal-field-label">
+                  <Phone size={16} /> Teléfono
+                </span>
+                {isEditingPhone ? (
+                  <input
+                    type="tel"
+                    className="personal-input"
+                    placeholder="Ej: 11 2345 6789"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    autoFocus
+                  />
+                ) : (
+                  <span className="personal-field-value">
+                    {phone || "Sin definir"}
+                  </span>
+                )}
+              </div>
+              <div className="personal-field-actions">
+                {isEditingPhone ? (
+                  <>
+                    <button
+                      className="personal-action-btn personal-action-btn--save"
+                      onClick={handleUpdatePhone}
+                      disabled={loading}
+                    >
+                      <Check size={16} />
+                    </button>
+                    <button
+                      className="personal-action-btn personal-action-btn--cancel"
+                      onClick={() => {
+                        setIsEditingPhone(false);
+                        setPhone(profile?.phone || profile?.phone_number || "");
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="personal-action-btn"
+                    onClick={() => setIsEditingPhone(true)}
                   >
                     <Edit2 size={16} /> Modificar
                   </button>

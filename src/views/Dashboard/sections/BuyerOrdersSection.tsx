@@ -17,6 +17,7 @@ import {
   Calendar,
   CalendarCheck,
   CalendarClock,
+  Star,
 } from "lucide-react";
 import {
   commerceService,
@@ -27,14 +28,20 @@ import {
 import Pagination from "@/components/Pagination/Pagination";
 import Modal from "@/components/Modal/Modal";
 import { useAlert } from "@/context/AlertContext";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
+import OrderReviewModal from "./OrderReviewModal";
 import "./BuyerOrdersSection.css";
 
 export default function BuyerOrdersSection() {
+  const token = getAccessToken();
+  setApiAccessToken(token);
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useAlert();
 
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
+  const [reviewOrder, setReviewOrder] = useState<OrderSummary | null>(null);
 
   const {
     data: ordersData,
@@ -57,7 +64,12 @@ export default function BuyerOrdersSection() {
       queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
       refetch();
       if (selectedOrder) {
-        setSelectedOrder({ ...selectedOrder, status: "delivered" });
+        const updated = {
+          ...selectedOrder,
+          status: "delivered" as OrderStatus,
+        };
+        setSelectedOrder(updated);
+        setReviewOrder(updated);
       }
     },
     onError: () => showError("No se pudo confirmar la recepción."),
@@ -66,20 +78,40 @@ export default function BuyerOrdersSection() {
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case "pending":
-        return <span className="buyer-badge buyer-badge--pending">Pendiente de confirmación</span>;
+        return (
+          <span className="buyer-badge buyer-badge--pending">
+            Pendiente de confirmación
+          </span>
+        );
       case "confirmed":
-        return <span className="buyer-badge buyer-badge--confirmed">Confirmado</span>;
+        return (
+          <span className="buyer-badge buyer-badge--confirmed">Confirmado</span>
+        );
       case "preparing":
-        return <span className="buyer-badge buyer-badge--preparing">En preparación</span>;
+        return (
+          <span className="buyer-badge buyer-badge--preparing">
+            En preparación
+          </span>
+        );
       case "ready_for_pickup":
-        return <span className="buyer-badge buyer-badge--ready">Listo para retirar</span>;
+        return (
+          <span className="buyer-badge buyer-badge--ready">
+            Listo para retirar
+          </span>
+        );
       case "dispatched":
       case "in_transit":
-        return <span className="buyer-badge buyer-badge--transit">En camino</span>;
+        return (
+          <span className="buyer-badge buyer-badge--transit">En camino</span>
+        );
       case "delivered":
-        return <span className="buyer-badge buyer-badge--delivered">Entregado</span>;
+        return (
+          <span className="buyer-badge buyer-badge--delivered">Entregado</span>
+        );
       case "cancelled":
-        return <span className="buyer-badge buyer-badge--cancelled">Cancelado</span>;
+        return (
+          <span className="buyer-badge buyer-badge--cancelled">Cancelado</span>
+        );
       default:
         return <span className="buyer-badge">{status}</span>;
     }
@@ -102,7 +134,7 @@ export default function BuyerOrdersSection() {
     title: string,
     dateStr: string,
     timeStr: string,
-    notes?: string | null
+    notes?: string | null,
   ) => {
     try {
       const [year, month, day] = dateStr.split("-").map(Number);
@@ -119,11 +151,11 @@ export default function BuyerOrdersSection() {
         ? `Turno coordinado en Sercio. Notas: ${notes}`
         : "Turno coordinado en Sercio.";
       return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-        title
+        title,
       )}&dates=${dates}&details=${encodeURIComponent(details)}`;
     } catch {
       return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-        title
+        title,
       )}`;
     }
   };
@@ -147,7 +179,11 @@ export default function BuyerOrdersSection() {
         <div className="buyer-state buyer-state--error">
           <AlertCircle size={32} />
           <p>Error al obtener tus compras.</p>
-          <button type="button" className="btn-primary" onClick={() => refetch()}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => refetch()}
+          >
             Reintentar
           </button>
         </div>
@@ -155,7 +191,9 @@ export default function BuyerOrdersSection() {
         <div className="buyer-state buyer-state--empty">
           <ShoppingBag size={48} />
           <h3>Aún no realizaste ninguna compra</h3>
-          <p>Explorá los productos y servicios de comercios locales en Sercio.</p>
+          <p>
+            Explorá los productos y servicios de comercios locales en Sercio.
+          </p>
         </div>
       ) : (
         <div className="buyer-orders-list">
@@ -201,7 +239,9 @@ export default function BuyerOrdersSection() {
                         <div className="buyer-order-service-tag">
                           {order.appointment ? (
                             <span className="buyer-badge buyer-badge--scheduled">
-                              <CalendarCheck size={12} /> Turno: {order.appointment.appointment_date} {order.appointment.appointment_time}hs
+                              <CalendarCheck size={12} /> Turno:{" "}
+                              {order.appointment.appointment_date}{" "}
+                              {order.appointment.appointment_time}hs
                             </span>
                           ) : (
                             <span className="buyer-badge buyer-badge--pending-appointment">
@@ -214,7 +254,9 @@ export default function BuyerOrdersSection() {
                   </div>
 
                   <div className="buyer-order-summary">
-                    <span className="buyer-order-total-label">Total pagado:</span>
+                    <span className="buyer-order-total-label">
+                      Total pagado:
+                    </span>
                     <span className="buyer-order-total-amount">
                       ${Number(order.total_amount ?? 0).toLocaleString("es-AR")}
                     </span>
@@ -230,6 +272,17 @@ export default function BuyerOrdersSection() {
                     <Eye size={16} />
                     <span>Ver detalle y seguimiento</span>
                   </button>
+
+                  {order.status !== "cancelled" && (
+                    <button
+                      type="button"
+                      className="buyer-review-btn"
+                      onClick={() => setReviewOrder(order)}
+                    >
+                      <Star size={15} />
+                      <span>Calificar compra</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -312,7 +365,9 @@ export default function BuyerOrdersSection() {
                         <CalendarCheck size={24} />
                       </div>
                       <div>
-                        <h4 className="buyer-appointment-title">Turno Confirmado</h4>
+                        <h4 className="buyer-appointment-title">
+                          Turno Confirmado
+                        </h4>
                         <span className="buyer-appointment-sub">
                           Coordinado con el profesional
                         </span>
@@ -320,21 +375,29 @@ export default function BuyerOrdersSection() {
                     </div>
                     <div className="buyer-appointment-details">
                       <div className="buyer-appointment-detail-item">
-                        <span className="buyer-appointment-label">Fecha programada:</span>
+                        <span className="buyer-appointment-label">
+                          Fecha programada:
+                        </span>
                         <strong className="buyer-appointment-value">
                           {selectedOrder.appointment.appointment_date}
                         </strong>
                       </div>
                       <div className="buyer-appointment-detail-item">
-                        <span className="buyer-appointment-label">Horario:</span>
+                        <span className="buyer-appointment-label">
+                          Horario:
+                        </span>
                         <strong className="buyer-appointment-value">
                           {selectedOrder.appointment.appointment_time} hs
                         </strong>
                       </div>
                       {selectedOrder.appointment.notes && (
                         <div className="buyer-appointment-detail-item buyer-appointment-detail-item--full">
-                          <span className="buyer-appointment-label">Indicaciones:</span>
-                          <p className="buyer-appointment-notes">{selectedOrder.appointment.notes}</p>
+                          <span className="buyer-appointment-label">
+                            Indicaciones:
+                          </span>
+                          <p className="buyer-appointment-notes">
+                            {selectedOrder.appointment.notes}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -343,7 +406,7 @@ export default function BuyerOrdersSection() {
                         `Turno Sercio: ${selectedOrder.service?.name || "Servicio Contratado"}`,
                         selectedOrder.appointment.appointment_date,
                         selectedOrder.appointment.appointment_time,
-                        selectedOrder.appointment.notes
+                        selectedOrder.appointment.notes,
                       )}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -360,14 +423,17 @@ export default function BuyerOrdersSection() {
                         <CalendarClock size={24} />
                       </div>
                       <div>
-                        <h4 className="buyer-appointment-title">Turno en Coordinación</h4>
+                        <h4 className="buyer-appointment-title">
+                          Turno en Coordinación
+                        </h4>
                         <span className="buyer-appointment-sub">
                           Pendiente de asignación por el profesional
                         </span>
                       </div>
                     </div>
                     <p className="buyer-appointment-notice">
-                      El profesional está coordinando la fecha y hora de tu turno. Te notificaremos en cuanto esté listo.
+                      El profesional está coordinando la fecha y hora de tu
+                      turno. Te notificaremos en cuanto esté listo.
                     </p>
                   </div>
                 )}
@@ -443,9 +509,7 @@ export default function BuyerOrdersSection() {
             {selectedOrder.status !== "delivered" &&
               selectedOrder.status !== "cancelled" && (
                 <div className="buyer-confirm-receipt-box">
-                  <p>
-                    ¿Ya recibiste tu producto en tus manos y está en orden?
-                  </p>
+                  <p>¿Ya recibiste tu producto en tus manos y está en orden?</p>
                   <button
                     type="button"
                     className="btn-primary"
@@ -458,9 +522,32 @@ export default function BuyerOrdersSection() {
                   </button>
                 </div>
               )}
+
+            {/* Review Purchase Action */}
+            {selectedOrder.status !== "cancelled" && (
+              <div className="buyer-review-action-row">
+                <button
+                  type="button"
+                  className="buyer-review-btn"
+                  onClick={() => setReviewOrder(selectedOrder)}
+                >
+                  <Star size={16} />
+                  <span>Dejar reseña sobre esta compra</span>
+                </button>
+              </div>
+            )}
           </div>
         </Modal>
       )}
+
+      <OrderReviewModal
+        isOpen={Boolean(reviewOrder)}
+        onClose={() => setReviewOrder(null)}
+        order={reviewOrder}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+        }}
+      />
     </div>
   );
 }

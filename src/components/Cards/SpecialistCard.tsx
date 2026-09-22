@@ -1,6 +1,7 @@
 import Link from "next/link";
 import "./SpecialistCard.css";
 import { ROUTES } from "../../routes/paths";
+import FavoriteButton from "../FavoriteButton/FavoriteButton";
 
 export interface ProfessionalCategory {
   Category: {
@@ -86,6 +87,11 @@ export default function SpecialistCard({ specialist }: SpecialistCardProps) {
 
   return (
     <article className="specialist-card">
+      {/* Favorite Button */}
+      <div className="specialist-card__favorite-wrap">
+        <FavoriteButton type="professional" targetId={id} size={16} />
+      </div>
+
       {/* Yellow Promotion Badge */}
       {has_promotions && (
         <span className="specialist-card__promo-badge">Tiene Promos</span>

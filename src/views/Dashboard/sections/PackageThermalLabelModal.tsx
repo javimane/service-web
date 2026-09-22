@@ -33,15 +33,46 @@ export default function PackageThermalLabelModal({
   const orderNum = order.order_number || `#ORD-${order.id.slice(0, 8).toUpperCase()}`;
   const clientName =
     order.buyer?.full_name || order.user?.full_name || "Cliente Sercio";
-  const clientPhone =
-    order.buyer?.phone || order.user?.phone || "Sin teléfono";
-  const address = order.shipping_address;
-  const addressLine = address
-    ? `${address.street || ""} ${address.number || ""}${
-        address.city ? `, ${address.city}` : ""
-      }${address.state ? `, ${address.state}` : ""}`.trim()
+
+  const address: any = order.delivery_address || order.shipping_address;
+  const streetPart = address
+    ? `${address.street || address.street_name || ""} ${address.number || address.street_number || ""}`.trim()
     : "Retiro en local / Acordar con vendedor";
-  const zipCode = address?.zip_code ? `CP ${address.zip_code}` : "";
+
+  const deptoPart = address
+    ? [
+        address.floor ? `Piso ${address.floor}` : "",
+        address.apartment_number ? `Dpto ${address.apartment_number}` : "",
+        address.block ? `Mz ${address.block}` : "",
+      ]
+        .filter(Boolean)
+        .join(" - ")
+    : "";
+
+  const betweenPart = address?.between_streets
+    ? `Entre: ${address.between_streets}`
+    : "";
+
+  const notesPart = address?.notes
+    ? `Nota: ${address.notes}`
+    : "";
+
+  const cityProvincePart = address
+    ? [
+        address.department || address.city,
+        address.province || address.state,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "";
+
+  const zipCode = address?.postal_code || address?.zip_code
+    ? `CP ${address.postal_code || address.zip_code}`
+    : "";
+
+  const addressLine = [streetPart, deptoPart, betweenPart, cityProvincePart, zipCode]
+    .filter(Boolean)
+    .join(" - ");
 
   const isDeliveryByCompany =
     order.delivery_type === "coordinate_with_merchant" ||
@@ -114,12 +145,18 @@ export default function PackageThermalLabelModal({
       doc.text("DESTINATARIO:", 6, 59);
       doc.setFont("courier", "normal");
       doc.text(clientName, 6, 64);
-      doc.text(`Tel: ${clientPhone}`, 6, 68);
-      doc.text(addressLine, 6, 73, { maxWidth: 68 });
-      if (zipCode) {
-        doc.text(zipCode, 6, 81);
+      doc.text(streetPart, 6, 69);
+      if (deptoPart || betweenPart) {
+        doc.setFontSize(8);
+        doc.text([deptoPart, betweenPart].filter(Boolean).join(" | "), 6, 73, { maxWidth: 68 });
       }
-      doc.line(5, 84, 75, 84);
+      doc.setFontSize(8);
+      doc.text(`${cityProvincePart} ${zipCode}`.trim(), 6, 78, { maxWidth: 68 });
+      if (notesPart) {
+        doc.setFontSize(7);
+        doc.text(notesPart, 6, 82, { maxWidth: 68 });
+      }
+      doc.line(5, 85, 75, 85);
 
       doc.setFont("courier", "bold");
       doc.text(`TIPO: ${deliveryTypeLabel}`, 6, 89);
@@ -202,8 +239,11 @@ export default function PackageThermalLabelModal({
         `--------------------------------\n` +
         `PEDIDO: ${orderNum}\n` +
         `DESTINATARIO: ${clientName}\n` +
-        `TELEFONO: ${clientPhone}\n` +
-        `DIRECCION: ${addressLine}\n` +
+        `DIRECCION: ${streetPart}\n` +
+        (deptoPart ? `DEPTO/PISO: ${deptoPart}\n` : "") +
+        (betweenPart ? `${betweenPart}\n` : "") +
+        (cityProvincePart ? `LOCALIDAD: ${cityProvincePart} ${zipCode}\n` : "") +
+        (notesPart ? `${notesPart}\n` : "") +
         `ENVIO: ${deliveryTypeLabel}\n` +
         (order.pickup_code ? `CODIGO RETIRO: ${order.pickup_code}\n` : "") +
         `--------------------------------\n\n\n`;
@@ -311,17 +351,18 @@ export default function PackageThermalLabelModal({
               <div className="thermal-sticker__scan-code">{orderNum}</div>
             </div>
 
-            {/* Recipient info */}
+            {/* Recipient info (Phone omitted for privacy/courier rule) */}
             <div className="thermal-sticker__section">
               <span className="thermal-sticker__section-title">DESTINATARIO</span>
               <div className="thermal-sticker__field">
                 <strong>Nombre:</strong> {clientName}
               </div>
-              <div className="thermal-sticker__field">
-                <strong>Teléfono:</strong> {clientPhone}
-              </div>
               <div className="thermal-sticker__address-box">
-                📍 {addressLine} {zipCode}
+                <div>📍 <strong>{streetPart}</strong></div>
+                {deptoPart && <div>{deptoPart}</div>}
+                {betweenPart && <div>{betweenPart}</div>}
+                {cityProvincePart && <div>{cityProvincePart} {zipCode}</div>}
+                {notesPart && <div className="thermal-sticker__note-text">{notesPart}</div>}
               </div>
             </div>
 

@@ -101,9 +101,136 @@
 .fleet-map-canvas {
   width: 100%;
   height: 100%;
+  min-height: 500px;
   position: relative;
-  background-image: radial-gradient(var(--slate-300) 1px, transparent 1px);
-  background-size: 24px 24px;
+}
+
+.fleet-map-loading {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.fleet-map-loading-spinner {
+  animation: spin 1s linear infinite;
+  color: var(--brand-blue);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fleet-map-controls {
+  position: absolute;
+  bottom: var(--space-4);
+  right: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  z-index: 5;
+}
+
+.fleet-map-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.fleet-map-btn:hover {
+  background: var(--surface-soft);
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
+}
+
+.fleet-map-btn--active {
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
+  background: var(--surface-soft);
+}
+
+.fleet-map-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.fleet-map-infowindow {
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 220px;
+  color: #000000;
+}
+
+.fleet-map-infowindow__title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fleet-map-infowindow__desc {
+  font-size: var(--text-xs);
+  margin: 0;
+  line-height: 1.4;
+  color: #4b5563;
+}
+
+.fleet-map-infowindow__status {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.fleet-map-infowindow__status--available {
+  background: rgba(64, 192, 87, 0.15);
+  color: #2b8a3e;
+}
+
+.fleet-map-infowindow__status--on_trip {
+  background: rgba(29, 95, 191, 0.15);
+  color: #1d5fbf;
+}
+
+.fleet-map-infowindow__status--offline {
+  background: rgba(128, 132, 133, 0.15);
+  color: #495057;
+}
+
+.driver-modal-contact-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 /* Pins */

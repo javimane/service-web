@@ -21,6 +21,8 @@ import {
 } from "@/services/commerceService";
 import Pagination from "@/components/Pagination/Pagination";
 import Modal from "@/components/Modal/Modal";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
 import "./LiquidationsSection.css";
 
 const STATUS_FILTERS: Array<{ label: string; value: string }> = [
@@ -32,6 +34,8 @@ const STATUS_FILTERS: Array<{ label: string; value: string }> = [
 ];
 
 export default function LiquidationsSection() {
+  const token = getAccessToken();
+  setApiAccessToken(token);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedLiquidation, setSelectedLiquidation] = useState<Liquidation | null>(null);

@@ -128,8 +128,8 @@ export default function FavoritesSection() {
                   <div key={m.id} className="favorite-card">
                     <div className="favorite-card__top">
                       <div className="favorite-avatar">
-                        {m.image_url ? (
-                          <img src={m.image_url} alt={m.name} />
+                        {m.image_url || m.avatar_url ? (
+                          <img src={m.image_url || m.avatar_url} alt={m.name} />
                         ) : (
                           <Store size={24} />
                         )}
@@ -153,7 +153,10 @@ export default function FavoritesSection() {
                       <button
                         type="button"
                         className="btn-primary favorite-action-btn"
-                        onClick={() => router.push(`/perfil/${m.id}`)}
+                        onClick={() => {
+                          const target = m.seo_path ? `/perfil${m.seo_path}` : `/perfil/${m.professional_id || m.id}`;
+                          router.push(target);
+                        }}
                       >
                         <span>Visitar tienda</span>
                         <ExternalLink size={14} />
@@ -198,7 +201,7 @@ export default function FavoritesSection() {
                     <div className="favorite-card__info">
                       <h3 className="favorite-card__name">{p.name}</h3>
                       <span className="favorite-card__price">
-                        ${Number(p.price).toLocaleString("es-AR")}
+                        {p.price > 1 ? `$${Number(p.price).toLocaleString("es-AR")}` : "Consultar"}
                       </span>
                     </div>
 
@@ -206,11 +209,13 @@ export default function FavoritesSection() {
                       <button
                         type="button"
                         className="btn-primary favorite-action-btn"
-                        disabled={addToCartMutation.isPending}
-                        onClick={() => addToCartMutation.mutate(p.id)}
+                        onClick={() => {
+                          const target = p.seo_path ? `/productos${p.seo_path}` : `/productos/${p.product_id || p.id}`;
+                          router.push(target);
+                        }}
                       >
-                        <ShoppingCart size={14} />
-                        <span>Agregar al carrito</span>
+                        <ExternalLink size={14} />
+                        <span>Ver producto</span>
                       </button>
                     </div>
                   </div>
@@ -248,7 +253,7 @@ export default function FavoritesSection() {
                     <div className="favorite-card__info">
                       <h3 className="favorite-card__name">{s.name}</h3>
                       <span className="favorite-card__price">
-                        ${Number(s.price).toLocaleString("es-AR")}
+                        {s.price > 1 ? `$${Number(s.price).toLocaleString("es-AR")}` : "Consultar"}
                       </span>
                     </div>
 
@@ -256,9 +261,13 @@ export default function FavoritesSection() {
                       <button
                         type="button"
                         className="btn-primary favorite-action-btn"
-                        onClick={() => router.push(ROUTES.messages)}
+                        onClick={() => {
+                          const target = s.seo_path ? `/servicios${s.seo_path}` : `/servicios/${s.service_id || s.id}`;
+                          router.push(target);
+                        }}
                       >
-                        <span>Contratar / Consultar</span>
+                        <span>Ver servicio</span>
+                        <ExternalLink size={14} />
                       </button>
                     </div>
                   </div>

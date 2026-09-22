@@ -37,14 +37,24 @@ export type OrderSummary = {
   user_id?: string;
   professional_id?: number;
   buyer?: {
+    id?: string;
+    display_name?: string;
+    first_name?: string;
+    last_name?: string;
     full_name?: string;
     email?: string;
     phone?: string;
+    phone_number?: string;
   } | null;
   user?: {
+    id?: string;
+    display_name?: string;
+    first_name?: string;
+    last_name?: string;
     full_name?: string;
     email?: string;
     phone?: string;
+    phone_number?: string;
   } | null;
   professional_product?: {
     product?: {
@@ -64,16 +74,34 @@ export type OrderSummary = {
   appointment?: OrderServiceAppointment | null;
   shipping_address?: {
     street?: string;
+    street_name?: string;
     number?: string;
+    street_number?: string;
+    floor?: string;
+    apartment_number?: string;
+    floor_apartment?: string;
+    block?: string;
+    between_streets?: string;
+    notes?: string;
     city?: string;
+    department?: string;
     state?: string;
+    province?: string;
     zip_code?: string;
+    postal_code?: string;
     lat?: number;
     lng?: number;
+    latitude?: number;
+    longitude?: number;
+    phone?: string;
   } | null;
+  delivery_address?: UserAddress | null;
   invoice_url?: string | null;
   invoice_status?: 'issued' | 'not_issued' | null;
   pickup_code?: string | null;
+  billing_data_id?: string | null;
+  billing_data?: UserBillingData | any;
+  billing_profile?: UserBillingData | any;
   transport_shipment?: {
     carrier_name?: string | null;
     tracking_number?: string | null;
@@ -87,6 +115,8 @@ export type OrderSummary = {
     unit_price: number;
     subtotal: number;
   }>;
+  branch_id?: string | null;
+  branch?: Branch | null;
 };
 
 export type OrderServiceAppointment = {
@@ -132,6 +162,7 @@ export type Branch = {
   is_open?: boolean;
   company_covers_shipping?: boolean;
   is_pickup_point: boolean;
+  auto_print_tickets?: boolean;
   created_at?: string;
 };
 
@@ -174,6 +205,34 @@ export type UserDataBank = {
   bank_name?: string | null;
   account_holder?: string | null;
   cuit_cuil?: string | null;
+};
+
+export type UserPaymentMethod = {
+  id: string;
+  user_id: string;
+  getnet_card_token: string;
+  last_four: string;
+  card_brand?: string;
+  card_type?: 'credit' | 'debit' | string;
+  bank_name?: string;
+  card_holder_name?: string;
+  expiry_month?: number;
+  expiry_year?: number;
+  is_default: boolean;
+  created_at: string;
+  updated_at?: string;
+};
+
+export type CreatePaymentMethodDto = {
+  getnet_card_token: string;
+  last_four?: string;
+  card_brand?: string;
+  card_type?: 'credit' | 'debit' | string;
+  bank_name?: string;
+  card_holder_name?: string;
+  expiry_month?: number;
+  expiry_year?: number;
+  is_default?: boolean;
 };
 
 export type RiderVehicle = {
@@ -407,6 +466,91 @@ export type CalculateShippingResponse = {
   delivery_estimate?: string;
 };
 
+export type TaxCondition = 'consumidor_final' | 'responsable_inscripto';
+
+export type UserBillingData = {
+  id: string;
+  user_id: string;
+  full_name: string;
+  cuit: string;
+  tax_condition: TaxCondition;
+  company_name?: string | null;
+  is_default: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CreateUserBillingDataDto = {
+  full_name: string;
+  cuit: string;
+  tax_condition: TaxCondition;
+  company_name?: string | null;
+  is_default?: boolean;
+};
+
+export type UpdateUserBillingDataDto = {
+  full_name?: string;
+  cuit?: string;
+  tax_condition?: TaxCondition;
+  company_name?: string | null;
+  is_default?: boolean;
+};
+
+export type UserAddress = {
+  id: string;
+  user_id?: string;
+  name?: string;
+  phone?: string;
+  street?: string;
+  street_name?: string;
+  number?: string;
+  street_number?: string;
+  apartment_number?: string;
+  floor?: string;
+  floor_apartment?: string;
+  block?: string;
+  between_streets?: string;
+  notes?: string;
+  department_id?: number | null;
+  department?: string;
+  city?: string;
+  province_id?: number | null;
+  province?: string;
+  postal_code?: string;
+  zip_code?: string;
+  country?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_default?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CreateUserAddressDto = {
+  name?: string;
+  phone?: string;
+  street?: string;
+  street_name?: string;
+  number?: string;
+  street_number?: string;
+  apartment_number?: string;
+  floor?: string;
+  floor_apartment?: string;
+  block?: string;
+  between_streets?: string;
+  notes?: string;
+  department_id?: number | null;
+  department?: string;
+  city?: string;
+  province_id?: number | null;
+  province?: string;
+  postal_code?: string;
+  zip_code?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_default?: boolean;
+};
+
 export type CheckoutDto = {
   professional_id: number;
   professional_product_id?: string;
@@ -433,6 +577,7 @@ export type CheckoutDto = {
     lng?: number;
   };
   shipping_cost?: number;
+  billing_data_id?: string;
   payment_method: 'getnet' | 'getnet_card' | 'paycloud_qr';
   card_token?: string;
   installments?: number;
@@ -474,9 +619,9 @@ const query = (params: Record<string, string | number | undefined | null>) => {
 
 export const commerceService = {
   // Orders
-  merchantOrders: (page = 1, limit = 10, status?: string) =>
+  merchantOrders: (page = 1, limit = 10, status?: string, branch_id?: string) =>
     apiClient<PageResponse<OrderSummary>>(
-      `${API_ENDPOINTS.orders.merchant}${query({ page, limit, status })}`
+      `${API_ENDPOINTS.orders.merchant}${query({ page, limit, status, branch_id })}`
     ),
 
   buyerOrders: (page = 1, limit = 10, status?: string) =>
@@ -528,6 +673,62 @@ export const commerceService = {
 
   shippingRates: () =>
     apiClient<PlatformShippingRate[]>(API_ENDPOINTS.orders.shippingRates),
+
+  // Billing Data methods
+  getMyBillingData: () =>
+    apiClient<UserBillingData[]>(API_ENDPOINTS.billingData.my),
+
+  createBillingData: (data: CreateUserBillingDataDto) =>
+    apiClient<UserBillingData>(API_ENDPOINTS.billingData.base, {
+      method: 'POST',
+      body: data,
+    }),
+
+  updateBillingData: (id: string, data: UpdateUserBillingDataDto) =>
+    apiClient<UserBillingData>(API_ENDPOINTS.billingData.detail(id), {
+      method: 'PUT',
+      body: data,
+    }),
+
+  deleteBillingData: (id: string) =>
+    apiClient<{ success: boolean }>(API_ENDPOINTS.billingData.detail(id), {
+      method: 'DELETE',
+    }),
+
+  attachOrderBillingData: (orderId: string, billingDataId: string) =>
+    apiClient<{ success: boolean; order_id: string; billing_data_id: string; billing_data: any }>(
+      API_ENDPOINTS.orders.attachBillingData(orderId),
+      {
+        method: 'PATCH',
+        body: { billing_data_id: billingDataId },
+      },
+    ),
+
+  // User Delivery Addresses
+  getUserAddresses: () =>
+    apiClient<UserAddress[]>(API_ENDPOINTS.userAddresses.base),
+
+  createUserAddress: (data: CreateUserAddressDto) =>
+    apiClient<UserAddress>(API_ENDPOINTS.userAddresses.base, {
+      method: 'POST',
+      body: data,
+    }),
+
+  updateUserAddress: (id: string, data: Partial<CreateUserAddressDto>) =>
+    apiClient<UserAddress>(API_ENDPOINTS.userAddresses.detail(id), {
+      method: 'PUT',
+      body: data,
+    }),
+
+  setDefaultUserAddress: (id: string) =>
+    apiClient<UserAddress>(API_ENDPOINTS.userAddresses.setDefault(id), {
+      method: 'PATCH',
+    }),
+
+  deleteUserAddress: (id: string) =>
+    apiClient<{ ok: boolean }>(API_ENDPOINTS.userAddresses.detail(id), {
+      method: 'DELETE',
+    }),
 
   checkout: (data: CheckoutDto) =>
     apiClient<{
@@ -772,10 +973,66 @@ export const commerceService = {
   // Favorites
   favorites: () =>
     apiClient<{
-      merchants: Array<{ id: string; name: string; commercial_name?: string; image_url?: string; category?: string }>;
-      products: Array<{ id: string; name: string; price: number; image_url?: string; professional_id?: number }>;
-      services: Array<{ id: string; name: string; price: number; image_url?: string; professional_id?: number }>;
+      data?: Array<{
+        id: string;
+        favorite_id?: string;
+        type: 'professional' | 'product' | 'service';
+        product_id?: string;
+        service_id?: string;
+        professional_id?: number;
+        name: string;
+        title?: string;
+        price?: number;
+        image_url?: string;
+        avatar_url?: string;
+        seo_path?: string;
+        rating?: number;
+        category?: string;
+      }>;
+      merchants: Array<{
+        id: string;
+        name: string;
+        commercial_name?: string;
+        image_url?: string;
+        avatar_url?: string;
+        category?: string;
+        rating?: number;
+        seo_path?: string;
+        professional_id?: number;
+      }>;
+      products: Array<{
+        id: string;
+        product_id?: string;
+        name: string;
+        price: number;
+        image_url?: string;
+        seo_path?: string;
+        professional_id?: number;
+      }>;
+      services: Array<{
+        id: string;
+        service_id?: string;
+        name: string;
+        price: number;
+        image_url?: string;
+        seo_path?: string;
+        professional_id?: number;
+      }>;
+      total?: number;
     }>(API_ENDPOINTS.users.favorites),
+
+  addFavorite: (data: {
+    professionalId?: number | string;
+    productId?: string;
+    serviceId?: string;
+    professional_id?: number | string;
+    product_id?: string;
+    service_id?: string;
+  }) =>
+    apiClient<any>(API_ENDPOINTS.users.favorites, {
+      method: 'POST',
+      body: data,
+    }),
 
   removeFavorite: (id: string) =>
     apiClient<{ success: boolean }>(API_ENDPOINTS.users.favoriteDetail(id), {
@@ -804,4 +1061,24 @@ export const commerceService = {
 
   getProfessionalReviews: (professionalId: number | string) =>
     apiClient<ProfessionalReview[]>(API_ENDPOINTS.reviews.byProfessional(professionalId)),
+
+  // User Payment Methods (Saved Cards)
+  getUserPaymentMethods: () =>
+    apiClient<UserPaymentMethod[]>(API_ENDPOINTS.paymentMethods.base),
+
+  createUserPaymentMethod: (data: CreatePaymentMethodDto) =>
+    apiClient<UserPaymentMethod>(API_ENDPOINTS.paymentMethods.base, {
+      method: 'POST',
+      body: data,
+    }),
+
+  deleteUserPaymentMethod: (id: string) =>
+    apiClient<void>(API_ENDPOINTS.paymentMethods.detail(id), {
+      method: 'DELETE',
+    }),
+
+  setDefaultPaymentMethod: (id: string) =>
+    apiClient<UserPaymentMethod>(API_ENDPOINTS.paymentMethods.setDefault(id), {
+      method: 'PATCH',
+    }),
 };

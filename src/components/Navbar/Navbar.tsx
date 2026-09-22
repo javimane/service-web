@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import { supabase } from "../../services/supabaseClient";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
 import { useAuthModal } from "../../context/AuthModalContext";
+import { commerceService } from "../../services/commerceService";
 import {
   Bell,
   User,
@@ -42,6 +43,7 @@ import {
   Users,
   CreditCard,
   HelpCircle,
+  MapPin,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
@@ -99,6 +101,34 @@ export default function Navbar() {
     },
     enabled: !!user?.id,
   });
+
+  // Traer direcciones del usuario para el botón "Enviar a:"
+  const { data: userAddresses = [] } = useQuery({
+    queryKey: ["user-addresses", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      try {
+        const list = await commerceService.getUserAddresses();
+        return Array.isArray(list) ? list : [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const defaultAddress = useMemo(() => {
+    return userAddresses.find((a: any) => a.is_default) || userAddresses[0] || null;
+  }, [userAddresses]);
+
+  const deliveryAddressLabel = useMemo(() => {
+    if (!defaultAddress) return "Elegir dirección";
+    const street = defaultAddress.street || defaultAddress.street_name || "";
+    const num = defaultAddress.number || defaultAddress.street_number || "";
+    if (!street && !num) return "Elegir dirección";
+    return `${street} ${num}`.trim();
+  }, [defaultAddress]);
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
@@ -406,6 +436,22 @@ export default function Navbar() {
             <BrandLogo className="navbar__brand-mark" />
           </Link>
 
+          {/* Enviar a: [calle y número] */}
+          <button
+            type="button"
+            className="navbar__deliver-btn navbar__deliver-btn--desktop"
+            onClick={() => router.push(`${ROUTES.settings}#delivery-address`)}
+            title="Ver o cambiar dirección de entrega"
+          >
+            <MapPin size={18} className="navbar__deliver-icon" />
+            <div className="navbar__deliver-info">
+              <span className="navbar__deliver-sub">Enviar a</span>
+              <span className="navbar__deliver-title" title={deliveryAddressLabel}>
+                {deliveryAddressLabel}
+              </span>
+            </div>
+          </button>
+
           {/* Search (Desktop/Tablet) */}
           <div className="navbar__search navbar__search--desktop">
             <SearchBar />
@@ -617,6 +663,16 @@ export default function Navbar() {
 
         {/* Mobile-only search bar row */}
         <div className="navbar__search-mobile">
+          <button
+            type="button"
+            className="navbar__deliver-btn navbar__deliver-btn--mobile"
+            onClick={() => router.push(`${ROUTES.settings}#delivery-address`)}
+            title="Ver o cambiar dirección de entrega"
+          >
+            <MapPin size={15} className="navbar__deliver-icon" />
+            <span className="navbar__deliver-sub">Enviar a:</span>
+            <span className="navbar__deliver-title">{deliveryAddressLabel}</span>
+          </button>
           <SearchBar />
         </div>
       </div>

@@ -124,12 +124,21 @@
 .buyer-order-card__footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
   border-top: 1px solid var(--slate-200);
   padding-top: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .buyer-view-detail-btn {
   font-size: var(--text-xs);
+}
+
+.buyer-review-action-row {
+  margin-top: var(--space-4);
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Badges */

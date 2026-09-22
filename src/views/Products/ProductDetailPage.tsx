@@ -30,6 +30,8 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import ProductPaymentModal from "./components/ProductPaymentModal";
 import ProductInstallmentsModal from "./components/ProductInstallmentsModal";
+import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
+import CommentsCarousel from "../../components/CommentsCarousel/CommentsCarousel";
 import "./ProductDetailPage.css";
 
 const AGE_RESTRICTED_SUBCATEGORIES = new Set([
@@ -848,6 +850,14 @@ export default function ProductDetailPage({
                       <MessageCircle size={16} />
                       <span>Contactar al vendedor</span>
                     </button>
+
+                    <FavoriteButton
+                      type="product"
+                      targetId={item?.id || id}
+                      variant="banner"
+                      showLabel
+                      className="product-detail-favorite-btn"
+                    />
                   </div>
 
                   {productLink && (
@@ -870,6 +880,12 @@ export default function ProductDetailPage({
             </div>
           </div>
         </div>
+
+        <CommentsCarousel
+          type="product"
+          targetId={String(item?.id || id || "")}
+          title="Opiniones sobre el Producto"
+        />
       </main>
 
       {/* Payment Checkout Modal (Getnet Cards + PayCloud QR) */}

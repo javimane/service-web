@@ -69,7 +69,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const normalizeSessionPayload = (payload: any) => {
+export const normalizeSessionPayload = (payload: any) => {
   const data = payload?.data ?? payload ?? null;
 
   const nextUser =
@@ -100,8 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStatus?.status === true || sessionStatus?.status === "active";
 
   const subscriptionStatus = sessionStatus?.subscription?.status;
-  const isSubscriptionCancelled = subscriptionStatus === "cancelled" || subscriptionStatus === "canceled";
-  
+  const isSubscriptionCancelled =
+    subscriptionStatus === "cancelled" || subscriptionStatus === "canceled";
+
   let isSubscriptionExpired = false;
   if (isSubscriptionCancelled) {
     const expiresAt = sessionStatus?.subscription?.expires_at;
@@ -137,55 +138,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = async () => {
     try {
-      // 1. Check if the Supabase client has an active session (e.g. from OAuth redirect)
-      const {
-        data: { session: supabaseSession },
-      } = await supabase.auth.getSession();
+      // 1. Si venimos de un redirect de Google OAuth (y solo en ese caso), sincronizar con NestJS
+      const isOAuthRedirect =
+        typeof window !== "undefined" &&
+        (window.location.search.includes("auth=success") ||
+          window.location.hash.includes("access_token"));
 
-      if (supabaseSession) {
+      if (isOAuthRedirect) {
         try {
-          // Try to get NestJS session
-          const session = await authService.getSession();
-          const { nextUser, nextSessionStatus } =
-            normalizeSessionPayload(session);
-          setUser(nextUser);
-          if (nextSessionStatus !== null) {
-            setSessionStatus(nextSessionStatus);
-          }
-          setLoading(false);
-          return;
-        } catch (apiErr) {
-          // If NestJS is not authenticated, sync the Supabase session
-          console.log("Syncing Supabase OAuth session with NestJS API...");
-          try {
+          const {
+            data: { session: supabaseSession },
+          } = await supabase.auth.getSession();
+          if (supabaseSession?.access_token) {
+            console.log(
+              "Syncing Supabase Google OAuth session with NestJS API...",
+            );
             const syncResponse = await authService.syncOAuth({
               access_token: supabaseSession.access_token,
               refresh_token: supabaseSession.refresh_token || "",
             });
             const { nextUser, nextSessionStatus } =
               normalizeSessionPayload(syncResponse);
-            setUser(nextUser);
+            if (nextUser) setUser(nextUser);
             if (nextSessionStatus !== null) {
               setSessionStatus(nextSessionStatus);
             }
             setLoading(false);
             return;
-          } catch (syncErr) {
-            console.error("Failed to sync Supabase OAuth session:", syncErr);
           }
+        } catch (syncErr) {
+          console.error("Failed to sync Supabase OAuth session:", syncErr);
         }
       }
 
-      // 2. Default flow
+      // 2. Flujo principal: obtener la sesión desde la API de NestJS usando su cookie
       const session = await authService.getSession();
       const { nextUser, nextSessionStatus } = normalizeSessionPayload(session);
-      setUser(nextUser);
+      if (nextUser) {
+        setUser(nextUser);
+      }
       if (nextSessionStatus !== null) {
         setSessionStatus(nextSessionStatus);
       }
     } catch (err) {
-      setUser(null);
-      setSessionStatus(null);
+      // Solo resetear a null si no hay ninguna cookie ni token activo
+      const hasCookie = typeof document !== "undefined" && (document.cookie.includes("token=") || document.cookie.includes("access_token="));
+      const hasLocalToken = typeof localStorage !== "undefined" && Boolean(localStorage.getItem("token") || localStorage.getItem("access_token"));
+      if (!hasCookie && !hasLocalToken) {
+        setUser(null);
+        setSessionStatus(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -223,7 +225,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const payload = JSON.parse(event.data);
 
             // Ignorar los eventos de tipo ping que mantienen viva la conexión
-            if (payload.type === "ping" || payload.message === "keep-alive" || payload.data?.message === "keep-alive" || payload.data?.type === "ping") {
+            if (
+              payload.type === "ping" ||
+              payload.message === "keep-alive" ||
+              payload.data?.message === "keep-alive" ||
+              payload.data?.type === "ping"
+            ) {
               return;
             }
 
@@ -450,6 +457,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (typeof window !== "undefined") {
+      try {
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie =
+          "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      } catch (e) {}
+      localStorage.removeItem("token");
       localStorage.removeItem("access_token");
       localStorage.removeItem("registered_device_token");
       localStorage.removeItem("firebase_token");

@@ -15,6 +15,7 @@ import {
   ShoppingBag,
   ChevronLeft,
   ChevronRight,
+  Flame,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getProfessionalDetailAction } from "../../app/actions/professionals";
@@ -27,6 +28,8 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
+import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
+import useCarouselDrag from "../../hooks/useCarouselDrag";
 import "./ProfessionalStorePage.css";
 
 function formatPrice(n: any) {
@@ -47,6 +50,7 @@ const defaultFilters = {
   priceMax: "",
   ean: "",
   wholesale: false,
+  is_offer: false,
   sortBy: "price-asc",
 };
 
@@ -72,6 +76,17 @@ export default function ProfessionalStorePage() {
   const [page, setPage] = useState(1);
 
   const searchRef = useRef<HTMLDivElement>(null);
+  const offerSliderRef = useRef<HTMLDivElement>(null);
+
+  const {
+    showLeftArrow: showOfferLeftArrow,
+    showRightArrow: showOfferRightArrow,
+    scrollCarousel: scrollOfferCarousel,
+    handlePointerDown: handleOfferPointerDown,
+    handlePointerMove: handleOfferPointerMove,
+    handlePointerUp: handleOfferPointerUp,
+    updateArrowVisibility: updateOfferArrowVisibility,
+  } = useCarouselDrag(offerSliderRef, ".store-offer-card");
 
   // Debounce search input for suggestions (300ms)
   useEffect(() => {
@@ -164,6 +179,82 @@ export default function ProfessionalStorePage() {
     gcTime: 1000 * 60 * 5,
   });
 
+  const { data: offerProductsData } = useQuery({
+    queryKey: ["store-offer-products", id],
+    queryFn: async () => {
+      const result = await getProductsAction({
+        professionalId: id ? Number(id) : undefined,
+        has_offer: true,
+        limit: 20,
+      });
+      return result?.data;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15,
+  });
+
+  const offerProductsList = useMemo(() => {
+    if (!offerProductsData) return [];
+    const p = offerProductsData as any;
+    const rawList = Array.isArray(offerProductsData)
+      ? offerProductsData
+      : Array.isArray(p?.data)
+        ? p.data
+        : [];
+
+    return rawList.map((item: any) => {
+      const images = item.Images || [];
+      const sorted = [...images].sort(
+        (a: any, b: any) => (a.display_order || 0) - (b.display_order || 0),
+      );
+      const primaryImage =
+        sorted[0]?.image_url ||
+        item.image_url ||
+        "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80";
+
+      const sellers: any[] = item.ProfessionalProducts || [];
+      const myEntry =
+        sellers.find(
+          (s: any) =>
+            String(s.professional_id) === String(id) ||
+            String(s.Professional?.id) === String(id),
+        ) || sellers[0];
+
+      const displayPrice = myEntry?.price ?? item.price ?? 0;
+      const offerPrice = myEntry?.offer_price;
+      const percentDiscount =
+        item.percent_discount ||
+        myEntry?.percent_discount ||
+        myEntry?.discount_percentage ||
+        0;
+      const currencyCode =
+        item.currency_code || myEntry?.currency_code || "ARG";
+      const displayDiscount =
+        percentDiscount > 0
+          ? percentDiscount
+          : offerPrice && displayPrice
+            ? Math.round((1 - offerPrice / displayPrice) * 100)
+            : 0;
+
+      return {
+        id: item.id,
+        productId: item.id,
+        title: item.name || "Producto en oferta",
+        price: displayPrice,
+        offerPrice: offerPrice,
+        discount: displayDiscount,
+        currencyCode,
+        image: primaryImage,
+        seo_path: item.seo_path,
+        wholesale: myEntry?.wholesale,
+        wholesale_price: myEntry?.wholesale_price,
+        wholesale_unit: myEntry?.wholesale_unit,
+        _original: item,
+      };
+    });
+  }, [offerProductsData, id]);
+
   const { data: productsData, isLoading: loadingProducts } = useQuery({
     queryKey: [
       "store-products",
@@ -175,6 +266,7 @@ export default function ProfessionalStorePage() {
       filters.priceMin,
       filters.priceMax,
       filters.wholesale,
+      filters.is_offer,
       filters.sortBy,
       page,
     ],
@@ -192,6 +284,7 @@ export default function ProfessionalStorePage() {
         priceMax: filters.priceMax ? Number(filters.priceMax) : undefined,
         ean: debouncedEan || undefined,
         wholesale: filters.wholesale || undefined,
+        is_offer: filters.is_offer || undefined,
         sortBy: filters.sortBy,
       });
       return result?.data;
@@ -408,6 +501,142 @@ export default function ProfessionalStorePage() {
       </header>
 
       <main className="store-main">
+        {/* OFFERS CAROUSEL */}
+        {offerProductsList.length > 0 && (
+          <section className="store-offers-section">
+            <div className="store-offers-section__header">
+              <div className="store-offers-section__title-group">
+                <span className="store-offers-section__badge">
+                  <Flame size={13} /> Ofertas Destacadas
+                </span>
+                <h2 className="store-offers-section__title">
+                  Ofertas especiales de la tienda
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="store-offers-section__see-all"
+                onClick={() => handleFilterChange("is_offer", true)}
+              >
+                Ver todas ({offerProductsList.length}) <span>&gt;</span>
+              </button>
+            </div>
+
+            <div className="store-offers-section__carousel-wrap">
+              <button
+                className={`carousel-control carousel-control--left ${
+                  showOfferLeftArrow ? "" : "carousel-control--hidden"
+                }`}
+                type="button"
+                onClick={() => scrollOfferCarousel(-1)}
+                aria-label="Anterior"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              <div
+                ref={offerSliderRef}
+                className="store-offers-section__scroll"
+                onScroll={updateOfferArrowVisibility}
+                onPointerDown={handleOfferPointerDown}
+                onPointerMove={handleOfferPointerMove}
+                onPointerUp={handleOfferPointerUp}
+                onPointerCancel={handleOfferPointerUp}
+                onPointerLeave={handleOfferPointerUp}
+              >
+                {offerProductsList.map((product) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    className="store-offer-card"
+                    onClick={() => {
+                      const slug = product.title
+                        ? product.title
+                            .trim()
+                            .toLowerCase()
+                            .replace(/\s+/g, "-")
+                        : `product-${product.id}`;
+                      router.push(`/productos/${slug}?id=${product.id}`);
+                    }}
+                  >
+                    <div className="store-offer-card__image">
+                      <img
+                        src={product.image}
+                        alt={product.title}
+                        draggable="false"
+                      />
+                      <div className="store-offer-card__favorite-wrap">
+                        <FavoriteButton
+                          type="product"
+                          targetId={product.id}
+                          size={16}
+                        />
+                      </div>
+                      <div className="store-offer-card__badges">
+                        <span className="store-offer-card__badge-offer">
+                          <Flame size={10} /> OFERTA
+                        </span>
+                        {product.discount > 0 && (
+                          <span className="store-offer-card__badge-discount">
+                            -{product.discount}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="store-offer-card__body">
+                      <h3 className="store-offer-card__title">
+                        {product.title}
+                      </h3>
+
+                      <div className="store-offer-card__pricing">
+                        {product.price > 1 && product.offerPrice > 0 && (
+                          <span className="store-offer-card__original">
+                            {product.currencyCode === "USD" ? "USD $" : "$"}
+                            {formatPrice(product.price)}
+                          </span>
+                        )}
+                        <div className="store-offer-card__price-row">
+                          <span className="store-offer-card__price">
+                            {(() => {
+                              const finalPrice =
+                                product.offerPrice > 0
+                                  ? product.offerPrice
+                                  : product.price;
+                              if (!finalPrice || finalPrice <= 1) {
+                                return "Consultar";
+                              }
+                              return `${
+                                product.currencyCode === "USD" ? "USD $" : "$"
+                              }${formatPrice(finalPrice)}`;
+                            })()}
+                          </span>
+                          {product.discount > 0 && product.price > 1 && (
+                            <span className="store-offer-card__discount-tag">
+                              {product.discount}% OFF
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                className={`carousel-control carousel-control--right ${
+                  showOfferRightArrow ? "" : "carousel-control--hidden"
+                }`}
+                type="button"
+                onClick={() => scrollOfferCarousel(1)}
+                aria-label="Siguiente"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </section>
+        )}
+
         {/* Toolbar */}
         <div className="store-toolbar">
           <div className="store-search" ref={searchRef}>
@@ -469,6 +698,14 @@ export default function ProfessionalStorePage() {
             )}
           </div>
           <div className="store-toolbar__right">
+            <button
+              type="button"
+              className={`store-offer-chip ${filters.is_offer ? "store-offer-chip--active" : ""}`}
+              onClick={() => handleFilterChange("is_offer", !filters.is_offer)}
+            >
+              <Flame size={15} />
+              <span>Solo Ofertas</span>
+            </button>
             <div className="store-sort">
               <SlidersHorizontal size={15} />
               <select
@@ -558,6 +795,20 @@ export default function ProfessionalStorePage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="store-filter-section">
+              <label>Ofertas</label>
+              <label className="store-filter-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={filters.is_offer}
+                  onChange={(e) =>
+                    handleFilterChange("is_offer", e.target.checked)
+                  }
+                />
+                Solo ofertas 🔥
+              </label>
             </div>
 
             <div className="store-filter-section">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import { authService } from "../../services/authService";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth, normalizeSessionPayload } from "../../context/AuthContext";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import { supabase } from "../../services/supabaseClient";
 import "./LoginPage.css";
@@ -38,6 +38,7 @@ export default function LoginPage({
   const {
     refreshSession,
     setSessionStatus,
+    setUser,
     sessionStatus,
     user,
   } = useAuth();
@@ -184,37 +185,43 @@ export default function LoginPage({
       });
 
       // Sincronizar login con la base de datos de Chat (Supabase)
-      const { error: chatLoginError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
+      try {
+        const { error: chatLoginError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
 
-      if (chatLoginError) {
-        console.error(
-          "Error al iniciar sesión en el chat:",
-          chatLoginError.message,
-        );
-        // Opcional: Decidir si el login general falla si el chat falla.
+        if (chatLoginError) {
+          console.error(
+            "Error al iniciar sesión en el chat:",
+            chatLoginError.message,
+          );
+        }
+      } catch (chatErr: any) {
+        console.error("Error al conectar con Supabase Chat:", chatErr);
       }
 
       // Marcar que estamos procesando el submit para que useEffect no interfiera
       isHandlingSubmitRef.current = true;
 
-      let isNewUser = false;
+      // Actualizar estado del contexto de auth inmediatamente desde la respuesta de login
+      const { nextUser, nextSessionStatus } = normalizeSessionPayload(response);
+      if (nextUser) {
+        setUser(nextUser);
+      }
+      if (nextSessionStatus) {
+        setSessionStatus(nextSessionStatus);
+      }
+      if (typeof window !== "undefined") {
+        localStorage.setItem("was_logged_in", "true");
+      }
+
       let isProf = false;
       let hasSubscription = false;
       let hasCompany = false;
 
-      if (response?.sessionStatus) {
-        setSessionStatus(response.sessionStatus);
-        const st = response.sessionStatus;
-        if (st.user_created_at && st.user_last_sign_in_at) {
-          const created = new Date(st.user_created_at).getTime();
-          const lastSignIn = new Date(st.user_last_sign_in_at).getTime();
-          if (Math.abs(lastSignIn - created) < 5 * 60 * 1000) {
-            isNewUser = true;
-          }
-        }
+      const st = response?.sessionStatus || nextSessionStatus;
+      if (st) {
         isProf = !!st.is_professional;
         const sub = st.subscription;
         // Verificar suscripción real: el objeto subscription debe tener plan y status activo
@@ -240,17 +247,19 @@ export default function LoginPage({
         localStorage.removeItem("show_plans_on_login");
       }
 
+      // Intentar sincronizar sesión con la API de NestJS en segundo plano
+      try {
+        await refreshSession();
+      } catch (refreshErr) {
+        console.warn("refreshSession background warning:", refreshErr);
+      }
+
       if (isProf) {
         // 1. Es profesional sin suscripción → mostrar planes
-        // (NO llamamos refreshSession aquí porque el modal de planes maneja la navegación)
         if (!hasSubscription || needsPlan) {
           setShowPlanModal(true);
           return;
         }
-
-        // Para los casos 2 y 3, siempre refrescar la sesión primero
-        // para que el contexto de auth quede completamente actualizado
-        await refreshSession();
 
         // 2. Tiene suscripción pero no completó los datos de empresa → settings
         if (!hasCompany) {
@@ -259,18 +268,16 @@ export default function LoginPage({
           return;
         }
 
-        // 3. Tiene suscripción y empresa completa → normal
+        // 3. Tiene suscripción y empresa completa → dashboard
         if (isModal) {
           onClose?.();
         } else {
-          router.push(isNewUser ? ROUTES.dashboard : ROUTES.home);
+          router.push(ROUTES.dashboard);
         }
         return;
       }
 
-      // Usuario normal: refrescar sesión y navegar
-      await refreshSession();
-
+      // Usuario normal: navegar a home
       if (isModal) {
         onClose?.();
       } else {

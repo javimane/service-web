@@ -573,6 +573,46 @@
   margin-top: var(--space-4);
 }
 
+/* Billing Data in Sales Detail */
+.order-detail-value--cuit {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.sales-billing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.sales-billing-badge--final {
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.sales-billing-badge--company {
+  background: var(--accent-transparent);
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+}
+
+.sales-billing-empty {
+  padding: var(--space-2) 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.sales-billing-empty p {
+  margin: 0;
+  line-height: 1.4;
+}
+
 @media (max-width: 640px) {
   .order-detail-grid {
     grid-template-columns: 1fr;
@@ -581,3 +621,187 @@
     flex-direction: column;
   }
 }
+
+/* Branch & Auto-print Toolbar */
+.sales-branch-toolbar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.sales-branch-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sales-branch-control__icon {
+  color: var(--accent-color);
+  display: flex;
+  align-items: center;
+}
+
+.sales-branch-control__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.sales-branch-select {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  outline: none;
+  cursor: pointer;
+  min-width: 220px;
+  transition: border-color 0.2s ease;
+}
+
+.sales-branch-select:focus {
+  border-color: var(--accent-color);
+}
+
+.sales-autoprint-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sales-autoprint-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sales-autoprint-toggle-btn:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.sales-autoprint-toggle-btn--active {
+  background: var(--accent-transparent);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.sales-autoprint-hint {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Batch Action Bar */
+.sales-batch-bar {
+  background: var(--accent-transparent);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  animation: fadeIn 0.2s ease-in;
+}
+
+.sales-batch-bar__info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--accent-color);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.sales-batch-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.sales-batch-bar__print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sales-batch-bar__print-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.sales-batch-bar__clear-btn {
+  font-size: var(--text-xs);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Table Checkbox */
+.sales-table__col-check,
+.sales-table__cell-check {
+  width: 42px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.sales-checkbox {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: var(--accent-color);
+  vertical-align: middle;
+}
+
+.sales-table__branch-tag {
+  display: inline-block;
+  font-size: var(--text-xs);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-weight: var(--weight-medium);
+}
+
+@media (max-width: 768px) {
+  .sales-branch-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .sales-branch-select {
+    width: 100%;
+  }
+}
+

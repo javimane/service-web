@@ -1,0 +1,169 @@
+/* ServiceOrderVoucherModal.css */
+
+.service-voucher-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.service-voucher-modal__actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.service-voucher-modal__preview-wrapper {
+  display: flex;
+  justify-content: center;
+  background: var(--surface-soft);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+
+/* Printable Voucher Card */
+.service-voucher {
+  width: 100%;
+  max-width: 380px;
+  background: #ffffff;
+  color: #000000;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-family: var(--font-mono);
+}
+
+.service-voucher__header {
+  text-align: center;
+  border-bottom: 2px solid #000000;
+  padding-bottom: var(--space-2);
+}
+
+.service-voucher__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  margin: 0;
+  letter-spacing: 0.05em;
+  color: #000000;
+}
+
+.service-voucher__store-name {
+  font-size: var(--text-sm);
+  color: #333333;
+  margin-top: 2px;
+}
+
+.service-voucher__order-id {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: #555555;
+  margin-top: 2px;
+}
+
+.service-voucher__section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px dashed #cccccc;
+  padding-bottom: var(--space-2);
+}
+
+.service-voucher__section--highlight {
+  background: rgba(0, 0, 0, 0.03);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid #e0e0e0;
+}
+
+.service-voucher__section-title {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: #222222;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.service-voucher__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: #111111;
+}
+
+.service-voucher__field--phone {
+  font-size: var(--text-md);
+  color: #000000;
+  font-weight: var(--weight-bold);
+}
+
+.service-voucher__address-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.02);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.service-voucher__address-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: #000000;
+}
+
+.service-voucher__address-detail {
+  font-size: var(--text-xs);
+  color: #444444;
+}
+
+.service-voucher__address-notes {
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: #555555;
+  margin-top: 2px;
+}
+
+.service-voucher__footer {
+  text-align: center;
+  font-size: var(--text-xs);
+  color: #666666;
+  font-style: italic;
+  margin-top: var(--space-1);
+}
+
+.service-voucher__footer p {
+  margin: 0;
+}
+
+/* Print Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #service-voucher-print-area,
+  #service-voucher-print-area * {
+    visibility: visible;
+  }
+
+  #service-voucher-print-area {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 4mm;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}

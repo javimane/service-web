@@ -149,6 +149,7 @@ export default function DashboardSidebar({
     "overview",
     "purchases",
     "favorites",
+    "payment-methods",
     "cart",
     "messages",
     "notifications",
@@ -331,6 +332,12 @@ export default function DashboardSidebar({
       label: "FAVORITOS",
       icon: Heart,
       onClick: () => goToDashboardView("favorites"),
+    },
+    {
+      key: "payment-methods",
+      label: "TARJETAS",
+      icon: CreditCard,
+      onClick: () => goToDashboardView("payment-methods"),
     },
     {
       key: "cart",

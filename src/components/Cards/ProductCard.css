@@ -144,3 +144,10 @@
   color: var(--text-secondary);
   font-weight: 600;
 }
+
+.nearby-product-card__favorite-wrap {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 5;
+}

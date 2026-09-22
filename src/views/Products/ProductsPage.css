@@ -431,6 +431,13 @@
   transform: scale(1.1);
 }
 
+.product-card__favorite-wrap {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 5;
+}
+
 /* Body */
 .product-card__body {
   padding: 20px;

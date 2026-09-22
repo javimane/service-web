@@ -312,7 +312,6 @@ export default function PromotionCreator({
 
   return (
     <div className="promo-creator">
-
       {/* Header */}
       <div className="promo-creator__header">
         <div>

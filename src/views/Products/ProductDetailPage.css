@@ -662,6 +662,12 @@
   box-shadow: 0 4px 12px var(--highlight-glow-strong);
 }
 
+.product-detail-favorite-btn {
+  width: 100%;
+  margin-top: 8px;
+  justify-content: center;
+}
+
 .sellers-empty {
   text-align: center;
   padding: 2rem 1rem;

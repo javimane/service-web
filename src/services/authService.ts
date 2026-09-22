@@ -112,11 +112,16 @@ export const authService = {
    * @param {Object} data - { email: string; password: string }
    * @returns {Promise<LoginResponse>} Supabase auth response
    */
-  login: (data: LoginRequest) =>
-    apiClient<LoginResponse>(API_ENDPOINTS.auth.login, {
+  login: async (data: LoginRequest) => {
+    const res = await apiClient<LoginResponse>(API_ENDPOINTS.auth.login, {
       method: "POST",
       body: JSON.stringify(data),
-    }),
+    });
+
+    // The API owns access_token/refresh_token HttpOnly cookies. Chat signs in
+    // separately against its own Supabase project in LoginPage.
+    return res;
+  },
 
   /**
    * @route POST /api/auth/sync-oauth
@@ -124,11 +129,13 @@ export const authService = {
    * @param {Object} data - Contains access_token and refresh_token from Supabase OAuth
    * @returns {Promise<any>}
    */
-  syncOAuth: (data: { access_token: string; refresh_token: string }) =>
-    apiClient(API_ENDPOINTS.auth.syncOAuth, {
+  syncOAuth: async (data: { access_token: string; refresh_token: string }) => {
+    const res = await apiClient<any>(API_ENDPOINTS.auth.syncOAuth, {
       method: "POST",
       body: JSON.stringify(data),
-    }),
+    });
+    return res;
+  },
 
   /**
    * @route POST /api/auth/google-calendar/tokens
@@ -193,14 +200,23 @@ export const authService = {
    * @auth Cookie
    * @returns {Promise<any>}
    */
-  logout: () =>
-    apiClient<any>(
+  logout: async () => {
+    try {
+      if (typeof window !== "undefined") {
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        localStorage.removeItem("token");
+        localStorage.removeItem("access_token");
+      }
+    } catch (e) {}
+    return apiClient<any>(
       (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000") +
         "/api/auth/logout",
       {
         method: "POST",
       },
-    ),
+    );
+  },
 
   /**
    * @route PUT /api/auth/update-email

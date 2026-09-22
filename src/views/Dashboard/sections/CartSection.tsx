@@ -30,9 +30,13 @@ import {
 import { useAlert } from "@/context/AlertContext";
 import Modal from "@/components/Modal/Modal";
 import { ROUTES } from "@/routes/paths";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
 import "./CartSection.css";
 
 export default function CartSection() {
+  const token = getAccessToken();
+  setApiAccessToken(token);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useAlert();

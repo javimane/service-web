@@ -30,6 +30,8 @@ import {
   RiderDocument,
 } from "@/services/commerceService";
 import { useAlert } from "@/context/AlertContext";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
 import Modal from "@/components/Modal/Modal";
 import "./RidersSection.css";
 
@@ -84,6 +86,8 @@ const VEHICLE_LABELS: Record<string, string> = {
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function RidersSection() {
+  const token = getAccessToken();
+  setApiAccessToken(token);
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useAlert();
 

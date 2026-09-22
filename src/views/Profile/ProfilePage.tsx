@@ -62,6 +62,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import ReelCard from "../../components/Cards/ReelCard";
 import ReelsTheaterModal from "../../components/ReelsTheater/ReelsTheaterModal";
+import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 
 // Custom hook for drag-to-scroll
 function useDraggableScroll() {
@@ -1054,6 +1055,14 @@ export default function ProfilePage({
           >
             COMPARTIR PERFIL <Share2 size={18} />
           </button>
+
+          <FavoriteButton
+            type="professional"
+            targetId={professional?.id || id}
+            variant="banner"
+            showLabel
+            className="cta-button profile-favorite-btn"
+          />
 
           {/* Review Button — only for authenticated users who've chatted with this professional */}
           {user && hasChattedWithProfessional && (

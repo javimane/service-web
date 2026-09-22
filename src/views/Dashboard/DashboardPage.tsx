@@ -60,6 +60,7 @@ import RidersSection from "./sections/RidersSection";
 import FleetMapSection from "./sections/FleetMapSection";
 import BuyerOrdersSection from "./sections/BuyerOrdersSection";
 import FavoritesSection from "./sections/FavoritesSection";
+import PaymentMethodsSection from "./sections/PaymentMethodsSection";
 import CartSection from "./sections/CartSection";
 import ReputationSection from "./sections/ReputationSection";
 import { commerceService } from "../../services/commerceService";
@@ -302,6 +303,7 @@ export default function DashboardPage() {
     "fleet-map",
     "purchases",
     "favorites",
+    "payment-methods",
     "cart",
     "reputation",
   ]);
@@ -578,6 +580,8 @@ export default function DashboardPage() {
               <BuyerOrdersSection />
             ) : view === "favorites" ? (
               <FavoritesSection />
+            ) : view === "payment-methods" ? (
+              <PaymentMethodsSection />
             ) : view === "cart" ? (
               <CartSection />
             ) : view === "reputation" ? (

@@ -22,6 +22,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import Modal from "@/components/Modal/Modal";
+import OrderBillingDataCard from "@/components/OrderBillingDataCard/OrderBillingDataCard";
 import "./ServicePaymentModal.css";
 
 interface ServicePaymentModalProps {
@@ -350,6 +351,14 @@ export default function ServicePaymentModal({
                 </div>
               )}
             </div>
+
+            {/* Post-Purchase Billing Data Card */}
+            {completedOrder.id && (
+              <OrderBillingDataCard
+                orderId={completedOrder.id}
+                initialBillingData={completedOrder.billing_data}
+              />
+            )}
 
             <div className="service-payment-modal__success-actions">
               <button

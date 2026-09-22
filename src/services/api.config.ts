@@ -47,7 +47,23 @@ export const API_ENDPOINTS = {
     checkout: `${API_BASE_URL}/api/orders/checkout`,
     commissions: `${API_BASE_URL}/api/orders/commissions`,
     shippingRates: `${API_BASE_URL}/api/orders/shipping-rates`,
+    attachBillingData: (id: string) => `${API_BASE_URL}/api/orders/${id}/billing-data`,
     cancel: (id: string) => `${API_BASE_URL}/api/orders/${id}/cancel`,
+  },
+  billingData: {
+    my: `${API_BASE_URL}/api/user-billing-data/my`,
+    base: `${API_BASE_URL}/api/user-billing-data`,
+    detail: (id: string) => `${API_BASE_URL}/api/user-billing-data/${id}`,
+  },
+  userAddresses: {
+    base: `${API_BASE_URL}/api/user-addresses`,
+    detail: (id: string) => `${API_BASE_URL}/api/user-addresses/${id}`,
+    setDefault: (id: string) => `${API_BASE_URL}/api/user-addresses/${id}/set-default`,
+  },
+  paymentMethods: {
+    base: `${API_BASE_URL}/api/payment-methods`,
+    detail: (id: string) => `${API_BASE_URL}/api/payment-methods/${id}`,
+    setDefault: (id: string) => `${API_BASE_URL}/api/payment-methods/${id}/set-default`,
   },
   shipments: {
     merchant: `${API_BASE_URL}/api/shipments/merchant`,

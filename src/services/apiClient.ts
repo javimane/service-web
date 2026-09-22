@@ -1,4 +1,5 @@
 import axios, { InternalAxiosRequestConfig } from "axios";
+import { getAccessToken } from "../utils/auth";
 
 const isBrowser = typeof window !== "undefined";
 
@@ -6,6 +7,20 @@ const isBrowser = typeof window !== "undefined";
 const axiosInstance = axios.create({
   withCredentials: true,
 });
+
+let currentApiAccessToken: string | undefined;
+
+/**
+ * Allows client views to explicitly provide the API JWT for their requests.
+ * The HttpOnly access_token cookie remains the fallback for the proxy.
+ */
+export function setApiAccessToken(token?: string): void {
+  currentApiAccessToken = token;
+}
+
+// API sessions travel as cookies; their value is not necessarily a JWT.
+export { isSupabaseToken } from "../utils/apiAuth";
+import { apiAccessToken, apiCookieHeader, browserApiUrl, parseApiCookies, stripApiTokenHeaders } from "../utils/apiAuth";
 
 // Request interceptor
 axiosInstance.interceptors.request.use(
@@ -23,22 +38,30 @@ axiosInstance.interceptors.request.use(
       config.headers["x-api-key"] = apiKey;
     }
 
+    stripApiTokenHeaders(config.headers);
+    for (const name of Object.keys(config.headers)) {
+      if (name.toLowerCase() === "cookie") delete config.headers[name];
+    }
+    if (isBrowser) {
+      const token = currentApiAccessToken || getAccessToken();
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (isBrowser && config.url) {
+      config.url = browserApiUrl(config.url);
+    }
     if (!isBrowser) {
       try {
-        const { cookies } = await import("next/headers");
-        const cookieStore = await cookies();
-        const access_token = cookieStore.get("access_token")?.value;
-        const refresh_token = cookieStore.get("refresh_token")?.value;
-
-        const cookieArray: string[] = [];
-        if (access_token) cookieArray.push(`access_token=${access_token}`);
-        if (refresh_token) cookieArray.push(`refresh_token=${refresh_token}`);
-
-        if (cookieArray.length > 0) {
-          config.headers.Cookie = cookieArray.join("; ");
-        }
-      } catch (e) {
-        // Ignore error if not in Next.js SSR context
+        const { cookies, headers } = await import("next/headers");
+        const requestCookies = [
+          ...(await cookies()).getAll(),
+          ...parseApiCookies((await headers()).get("cookie")),
+        ];
+        const cookieHeader = apiCookieHeader(requestCookies);
+        const accessToken = apiAccessToken(requestCookies);
+        if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+        if (cookieHeader) config.headers.Cookie = cookieHeader;
+      } catch {
+        // No request cookie store outside Next.js request scope.
       }
     }
     return config;
@@ -70,7 +93,7 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !/\/api\/(?:backend\/)?auth\/(login|register|sync-oauth|refresh)(?:[/?]|$)/.test(originalRequest.url || "")) {
       // Si estamos en el servidor, verificar si podemos escribir cookies (Server Actions / Route Handlers)
       // Si no podemos (SSR page render), no refrescamos para no desincronizar/rotar el token
       if (!isBrowser) {
@@ -90,11 +113,12 @@ axiosInstance.interceptors.response.use(
         }
       }
 
-      if (isRefreshing) {
+      if (isBrowser && isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
         })
           .then(() => {
+            originalRequest._retry = true;
             if (originalRequest.headers) {
               delete originalRequest.headers.Authorization;
               delete originalRequest.headers.authorization;
@@ -119,20 +143,14 @@ axiosInstance.interceptors.response.use(
           try {
             const { cookies } = await import("next/headers");
             const cookieStore = await cookies();
-            const access_token = cookieStore.get("access_token")?.value;
-            const refresh_token = cookieStore.get("refresh_token")?.value;
-            const cookieArray: string[] = [];
-            if (access_token) cookieArray.push(`access_token=${access_token}`);
-            if (refresh_token) cookieArray.push(`refresh_token=${refresh_token}`);
-            if (cookieArray.length > 0) {
-              refreshHeaders.Cookie = cookieArray.join("; ");
-            }
+            const cookieHeader = apiCookieHeader(cookieStore.getAll());
+            if (cookieHeader) refreshHeaders.Cookie = cookieHeader;
           } catch (e) {
             // Ignorar
           }
         }
 
-        const refreshResponse = await axios.post(refreshUrl, {}, { 
+        const refreshResponse = await axios.post(isBrowser ? browserApiUrl(refreshUrl) : refreshUrl, {}, { 
           withCredentials: true,
           headers: refreshHeaders
         });
@@ -164,6 +182,7 @@ axiosInstance.interceptors.response.use(
                   }
                   
                   cookieStore.set(name, value, options);
+
                 }
               }
             }
@@ -171,6 +190,8 @@ axiosInstance.interceptors.response.use(
             // Ignorar
           }
         }
+        // Browser applies Set-Cookie itself. Never promote a chat session from
+        // the response body into API cookies or localStorage.
         
         if (originalRequest.headers) {
           delete originalRequest.headers.Authorization;
@@ -187,8 +208,9 @@ axiosInstance.interceptors.response.use(
         processQueue(err, null);
         
         if (isBrowser) {
-          const isRefreshEndpoint = originalRequest.url?.includes("/api/auth/refresh");
-          const isLoginEndpoint = originalRequest.url?.includes("/api/auth/login");
+          const isRefreshEndpoint = /\/api\/(?:backend\/)?auth\/refresh/.test(originalRequest.url || "");
+          const isLoginEndpoint = /\/api\/(?:backend\/)?auth\/login/.test(originalRequest.url || "");
+          const isSessionEndpoint = /\/api\/(?:backend\/)?auth\/session/.test(originalRequest.url || "");
           
           // Force logout if we explicitly see a refresh token already used error, or if we were logged in
           const isAlreadyUsedError = 
@@ -196,7 +218,12 @@ axiosInstance.interceptors.response.use(
             err?.response?.data?.msg?.includes('Already Used') ||
             err?.message?.includes('refresh_token_already_used');
 
-          if ((!isRefreshEndpoint && !isLoginEndpoint) || isAlreadyUsedError) {
+          const wasLoggedIn = localStorage.getItem("was_logged_in") === "true";
+          const isAuthPage =
+            window.location.pathname.includes("/login") ||
+            window.location.pathname.includes("/register");
+
+          if (!isAuthPage && !isSessionEndpoint && ((!isRefreshEndpoint && !isLoginEndpoint && wasLoggedIn) || isAlreadyUsedError)) {
             localStorage.removeItem("was_logged_in");
             window.dispatchEvent(new CustomEvent("session-expired"));
           }

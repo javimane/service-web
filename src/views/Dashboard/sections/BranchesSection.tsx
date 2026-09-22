@@ -19,10 +19,14 @@ import {
 import { commerceService, Branch } from "@/services/commerceService";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
 import Modal from "@/components/Modal/Modal";
 import "./BranchesSection.css";
 
 export default function BranchesSection() {
+  const token = getAccessToken();
+  setApiAccessToken(token);
   const queryClient = useQueryClient();
   const { sessionStatus } = useAuth();
   const { showSuccess, showError } = useAlert();
@@ -45,6 +49,7 @@ export default function BranchesSection() {
   const [isPickupPoint, setIsPickupPoint] = useState(true);
   const [isOpen, setIsOpen] = useState(true);
   const [companyCoversShipping, setCompanyCoversShipping] = useState(false);
+  const [autoPrintTickets, setAutoPrintTickets] = useState(false);
   const [lat, setLat] = useState<number | "">(-34.6037);
   const [lng, setLng] = useState<number | "">(-58.3816);
 
@@ -137,6 +142,7 @@ export default function BranchesSection() {
     setIsPickupPoint(true);
     setIsOpen(true);
     setCompanyCoversShipping(false);
+    setAutoPrintTickets(false);
     setLat(-34.6037);
     setLng(-58.3816);
     setModalOpen(true);
@@ -154,6 +160,7 @@ export default function BranchesSection() {
     setIsPickupPoint(b.is_pickup_point);
     setIsOpen(b.is_open ?? true);
     setCompanyCoversShipping(b.company_covers_shipping ?? false);
+    setAutoPrintTickets(b.auto_print_tickets ?? false);
     setLat(b.lat ?? -34.6037);
     setLng(b.lng ?? -58.3816);
     setModalOpen(true);
@@ -182,6 +189,7 @@ export default function BranchesSection() {
       is_pickup_point: isPickupPoint,
       is_open: isOpen,
       company_covers_shipping: companyCoversShipping,
+      auto_print_tickets: autoPrintTickets,
       lat: typeof lat === "number" ? lat : undefined,
       lng: typeof lng === "number" ? lng : undefined,
     });
@@ -359,6 +367,14 @@ export default function BranchesSection() {
                       🛵 Envíos por riders de Sercio
                     </span>
                   )}
+                  {b.auto_print_tickets && (
+                    <span
+                      className="shipping-badge shipping-badge--internal"
+                      title="Impresión automática de tickets activada para esta sucursal"
+                    >
+                      🖨️ Auto-impresión activa
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -491,6 +507,24 @@ export default function BranchesSection() {
                 ℹ️ Si marcas esta opción, las devoluciones no liquidarán costo
                 de envío a riders externos y los envíos serán gestionados por tu
                 propio personal.
+              </p>
+            </div>
+
+            {/* Auto Print Tickets */}
+            <div className="branch-checkbox-card">
+              <label className="branch-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={autoPrintTickets}
+                  onChange={(e) => setAutoPrintTickets(e.target.checked)}
+                />
+                <span className="branch-checkbox-text">
+                  🖨️ Impresión automática de tickets
+                </span>
+              </label>
+              <p className="branch-checkbox-tooltip">
+                ℹ️ Imprime automáticamente los comprobantes y etiquetas de ventas
+                de productos y servicios asignadas a esta sucursal.
               </p>
             </div>
 

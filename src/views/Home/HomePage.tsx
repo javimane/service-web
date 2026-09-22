@@ -41,6 +41,10 @@ const NearbyProductsSection = dynamic(
   () => import("./sections/NearbyProductsSection"),
   { ssr: false },
 );
+const OfferProductsSection = dynamic(
+  () => import("./sections/OfferProductsSection"),
+  { ssr: false },
+);
 const ProfessionalReelsSection = dynamic(
   () => import("./sections/ProfessionalReelsSection"),
   { ssr: false },
@@ -307,6 +311,10 @@ export default function HomePage() {
           userProvinceId={userProvinceId}
         />
         <StoresSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+        <OfferProductsSection
           userProvince={userProvince}
           userProvinceId={userProvinceId}
         />

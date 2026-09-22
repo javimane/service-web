@@ -1,4 +1,5 @@
 import { MapPin, Star, ArrowRight, CheckCircle, Share2 } from "lucide-react";
+import FavoriteButton from "../FavoriteButton/FavoriteButton";
 import "./ServiceCard.css";
 
 export default function ServiceCard({ service, viewMode = "grid", onClick }) {
@@ -60,14 +61,17 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
           <MapPin size={12} className="loc-icon" />
           <span>{locationName.toUpperCase()}</span>
         </div>
-        <button
-          className="card-share-btn"
-          title="Compartir servicio"
-          type="button"
-          onClick={handleShare}
-        >
-          <Share2 size={14} />
-        </button>
+        <div className="card-top-actions">
+          <FavoriteButton type="service" targetId={service.id} size={14} />
+          <button
+            className="card-share-btn"
+            title="Compartir servicio"
+            type="button"
+            onClick={handleShare}
+          >
+            <Share2 size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Title */}

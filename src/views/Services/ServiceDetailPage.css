@@ -5,6 +5,35 @@
   margin: 0 auto;
 }
 
+.service-detail__top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto var(--space-4) auto;
+}
+
+.service-detail__top-nav .service-detail__back-btn {
+  margin-bottom: 0;
+}
+
+.service-detail__favorite-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.service-detail__favorite-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-color);
+  box-shadow: var(--shadow-md);
+}
+
 .service-detail__back-btn {
   display: flex;
   align-items: center;
@@ -21,7 +50,7 @@
 }
 
 .service-detail__back-btn:hover {
-  background-color: var(--gray-100);
+  background-color: var(--surface-soft);
   border-color: var(--accent-color);
 }
 

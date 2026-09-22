@@ -19,16 +19,19 @@ import {
   Lock,
   MapPin,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   commerceService,
   ProductVariant,
   PayCloudQrResponse,
   DeliveryType,
   CalculateShippingResponse,
+  UserPaymentMethod,
 } from "@/services/commerceService";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import Modal from "@/components/Modal/Modal";
+import OrderBillingDataCard from "@/components/OrderBillingDataCard/OrderBillingDataCard";
 import "./ProductPaymentModal.css";
 
 interface ProductPaymentModalProps {
@@ -84,12 +87,37 @@ export default function ProductPaymentModal({
   >("getnet_card");
   const [installments, setInstallments] = useState<number>(1);
 
+  // Saved payment methods
+  const { data: savedCards = [] } = useQuery<UserPaymentMethod[]>({
+    queryKey: ["user-payment-methods"],
+    queryFn: async () => {
+      return await commerceService.getUserPaymentMethods();
+    },
+    enabled: isOpen,
+  });
+
+  const [useSavedCard, setUseSavedCard] = useState<boolean>(true);
+  const [selectedSavedCardId, setSelectedSavedCardId] = useState<string>("");
+  const [saveCardForFuture, setSaveCardForFuture] = useState<boolean>(false);
+  const [cardBank, setCardBank] = useState<string>("Santander");
+  const [cardType, setCardType] = useState<"credit" | "debit">("credit");
+
   // Card details (Getnet)
   const [cardNumber, setCardNumber] = useState("");
   const [cardHolder, setCardHolder] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [cardDni, setCardDni] = useState("");
+
+  useEffect(() => {
+    if (savedCards && savedCards.length > 0) {
+      const defaultCard = savedCards.find((c) => c.is_default) || savedCards[0];
+      setSelectedSavedCardId(defaultCard.id);
+      setUseSavedCard(true);
+    } else {
+      setUseSavedCard(false);
+    }
+  }, [savedCards]);
 
   // Results / loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -309,34 +337,61 @@ export default function ProductPaymentModal({
       }
     }
 
+    const selectedCard = savedCards.find((c) => c.id === selectedSavedCardId);
+
     if (paymentMethod === "getnet_card") {
-      const cleanNum = cardNumber.replace(/\s/g, "");
-      if (cleanNum.length < 15) {
-        showError("Número de tarjeta inválido.");
-        return;
-      }
-      if (!cardHolder.trim()) {
-        showError("Ingresa el nombre del titular de la tarjeta.");
-        return;
-      }
-      if (cardExpiry.length < 5) {
-        showError("Fecha de vencimiento inválida (MM/AA).");
-        return;
-      }
-      if (cardCvv.length < 3) {
-        showError("Código de seguridad (CVV) inválido.");
-        return;
-      }
-      if (!cardDni.trim()) {
-        showError("Ingresa el DNI del titular.");
-        return;
+      if (useSavedCard && selectedCard) {
+        if (cardCvv.length > 0 && cardCvv.length < 3) {
+          showError("Código de seguridad (CVV) inválido.");
+          return;
+        }
+      } else {
+        const cleanNum = cardNumber.replace(/\s/g, "");
+        if (cleanNum.length < 15) {
+          showError("Número de tarjeta inválido.");
+          return;
+        }
+        if (!cardHolder.trim()) {
+          showError("Ingresa el nombre del titular de la tarjeta.");
+          return;
+        }
+        if (cardExpiry.length < 5) {
+          showError("Fecha de vencimiento inválida (MM/AA).");
+          return;
+        }
+        if (cardCvv.length < 3) {
+          showError("Código de seguridad (CVV) inválido.");
+          return;
+        }
+        if (!cardDni.trim()) {
+          showError("Ingresa el DNI del titular.");
+          return;
+        }
       }
     }
 
     setIsSubmitting(true);
     try {
-      // Simulate token generation for Getnet card
-      const token = `gn_tok_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      let token: string;
+      let cardLastFour: string;
+      let cardholderName: string;
+      let expiration: string;
+
+      if (paymentMethod === "getnet_card" && useSavedCard && selectedCard) {
+        token = selectedCard.getnet_card_token;
+        cardLastFour = selectedCard.last_four;
+        cardholderName = selectedCard.card_holder_name || "TITULAR";
+        expiration =
+          selectedCard.expiry_month && selectedCard.expiry_year
+            ? `${String(selectedCard.expiry_month).padStart(2, "0")}/${String(selectedCard.expiry_year).slice(-2)}`
+            : "12/28";
+      } else {
+        // Simulate token generation for Getnet card
+        token = `gn_tok_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        cardLastFour = cardNumber.replace(/\s/g, "").slice(-4);
+        cardholderName = cardHolder.trim();
+        expiration = cardExpiry;
+      }
 
       const res = await commerceService.checkout({
         professional_id: professionalId,
@@ -362,11 +417,11 @@ export default function ProductPaymentModal({
         card_details:
           paymentMethod === "getnet_card"
             ? {
-                card_number: cardNumber.replace(/\s/g, "").slice(-4),
-                cardholder_name: cardHolder.trim(),
-                expiration: cardExpiry,
+                card_number: cardLastFour,
+                cardholder_name: cardholderName,
+                expiration: expiration,
                 cvv: cardCvv,
-                dni: cardDni.trim(),
+                dni: cardDni.trim() || "0",
               }
             : undefined,
       });
@@ -375,6 +430,28 @@ export default function ProductPaymentModal({
         setActiveQr(res.qr);
         setQrSecondsLeft(900);
       } else {
+        // Si pagó con tarjeta nueva y marcó guardar tarjeta
+        if (
+          paymentMethod === "getnet_card" &&
+          !useSavedCard &&
+          saveCardForFuture
+        ) {
+          const [mmStr, yyStr] = cardExpiry.split("/");
+          commerceService
+            .createUserPaymentMethod({
+              getnet_card_token: token,
+              last_four: cardLastFour,
+              card_brand: cardBrand || "tarjeta",
+              card_type: cardType,
+              bank_name: cardBank,
+              card_holder_name: cardholderName,
+              expiry_month: parseInt(mmStr, 10) || 12,
+              expiry_year: 2000 + (parseInt(yyStr, 10) || 28),
+              is_default: savedCards.length === 0,
+            })
+            .catch((e) => console.error("Error guardando tarjeta:", e));
+        }
+
         setCompletedOrder(res.order || { id: `ORD-${Date.now()}` });
         showSuccess("¡Pago procesado con éxito!");
       }
@@ -495,6 +572,14 @@ export default function ProductPaymentModal({
                 </strong>
               </div>
             </div>
+
+            {/* Post-Purchase Billing Data Card */}
+            {completedOrder?.id && (
+              <OrderBillingDataCard
+                orderId={completedOrder.id}
+                initialBillingData={completedOrder.billing_data}
+              />
+            )}
 
             <button
               type="button"
@@ -896,78 +981,219 @@ export default function ProductPaymentModal({
                     )}
                   </div>
 
-                  {/* Card fields */}
-                  <div className="product-payment-modal__form-group">
-                    <label className="product-payment-modal__input-label">
-                      Número de tarjeta * {cardBrand && `(${cardBrand})`}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="4509 0000 0000 0000"
-                      value={cardNumber}
-                      onChange={handleCardNumberChange}
-                    />
-                  </div>
+                  {/* Selector de tarjeta guardada vs nueva */}
+                  {savedCards.length > 0 && (
+                    <div className="product-payment-modal__form-group">
+                      <label className="product-payment-modal__input-label">
+                        Método de tarjeta
+                      </label>
+                      <div className="product-payment-modal__payment-methods-grid">
+                        <button
+                          type="button"
+                          className={`product-payment-modal__method-btn ${
+                            useSavedCard
+                              ? "product-payment-modal__method-btn--active"
+                              : ""
+                          }`}
+                          onClick={() => setUseSavedCard(true)}
+                        >
+                          <CreditCard size={18} />
+                          <span>Tarjeta guardada ({savedCards.length})</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`product-payment-modal__method-btn ${
+                            !useSavedCard
+                              ? "product-payment-modal__method-btn--active"
+                              : ""
+                          }`}
+                          onClick={() => setUseSavedCard(false)}
+                        >
+                          <CreditCard size={18} />
+                          <span>Ingresar otra tarjeta</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-                  <div className="product-payment-modal__form-group">
-                    <label className="product-payment-modal__input-label">
-                      Nombre y apellido impreso en la tarjeta *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="JUAN PEREZ"
-                      value={cardHolder}
-                      onChange={(e) =>
-                        setCardHolder(e.target.value.toUpperCase())
-                      }
-                    />
-                  </div>
+                  {/* Si usa tarjeta guardada */}
+                  {useSavedCard && savedCards.length > 0 ? (
+                    <div className="product-payment-modal__form-group">
+                      <label className="product-payment-modal__input-label">
+                        Selecciona tu tarjeta guardada
+                      </label>
+                      <select
+                        className="product-payment-modal__select"
+                        value={selectedSavedCardId}
+                        onChange={(e) => setSelectedSavedCardId(e.target.value)}
+                      >
+                        {savedCards.map((sc) => {
+                          const brand = (sc.card_brand || "Tarjeta").toUpperCase();
+                          const bank = sc.bank_name || "Banco";
+                          const type = sc.card_type === "debit" ? "Débito" : "Crédito";
+                          const def = sc.is_default ? " ★ Predeterminada" : "";
+                          return (
+                            <option key={sc.id} value={sc.id}>
+                              {bank} •••• {sc.last_four} ({brand} {type}) - {sc.card_holder_name || "Titular"}{def}
+                            </option>
+                          );
+                        })}
+                      </select>
 
-                  <div className="product-payment-modal__form-row">
-                    <div className="product-payment-modal__form-group flex-1">
-                      <label className="product-payment-modal__input-label">
-                        Vencimiento *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="MM/AA"
-                        value={cardExpiry}
-                        onChange={handleExpiryChange}
-                      />
+                      <div className="product-payment-modal__form-row product-payment-modal__saved-card-row">
+                        <div className="product-payment-modal__form-group flex-1">
+                          <label className="product-payment-modal__input-label">
+                            Cód. seg. (CVV)
+                          </label>
+                          <input
+                            type="password"
+                            maxLength={4}
+                            placeholder="123"
+                            value={cardCvv}
+                            onChange={(e) =>
+                              setCardCvv(e.target.value.replace(/\D/g, ""))
+                            }
+                          />
+                        </div>
+                        <div className="product-payment-modal__form-group flex-1">
+                          <label className="product-payment-modal__input-label">
+                            DNI del titular *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="38123456"
+                            value={cardDni}
+                            onChange={(e) =>
+                              setCardDni(e.target.value.replace(/\D/g, ""))
+                            }
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="product-payment-modal__form-group flex-1">
-                      <label className="product-payment-modal__input-label">
-                        Cód. seg. (CVV) *
+                  ) : (
+                    /* Si ingresa tarjeta nueva */
+                    <>
+                      <div className="product-payment-modal__form-group">
+                        <label className="product-payment-modal__input-label">
+                          Número de tarjeta * {cardBrand && `(${cardBrand})`}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="4509 0000 0000 0000"
+                          value={cardNumber}
+                          onChange={handleCardNumberChange}
+                        />
+                      </div>
+
+                      <div className="product-payment-modal__form-group">
+                        <label className="product-payment-modal__input-label">
+                          Nombre y apellido impreso en la tarjeta *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="JUAN PEREZ"
+                          value={cardHolder}
+                          onChange={(e) =>
+                            setCardHolder(e.target.value.toUpperCase())
+                          }
+                        />
+                      </div>
+
+                      <div className="product-payment-modal__form-row">
+                        <div className="product-payment-modal__form-group flex-1">
+                          <label className="product-payment-modal__input-label">
+                            Banco emisor
+                          </label>
+                          <select
+                            className="product-payment-modal__select"
+                            value={cardBank}
+                            onChange={(e) => setCardBank(e.target.value)}
+                          >
+                            <option value="Santander">Santander</option>
+                            <option value="Galicia">Galicia</option>
+                            <option value="BBVA">BBVA</option>
+                            <option value="Macro">Macro</option>
+                            <option value="Banco Nación">Banco Nación</option>
+                            <option value="Banco Provincia">Banco Provincia</option>
+                            <option value="Mercado Pago">Mercado Pago</option>
+                            <option value="Brubank">Brubank</option>
+                            <option value="Ualá">Ualá</option>
+                            <option value="Otro">Otro Banco</option>
+                          </select>
+                        </div>
+                        <div className="product-payment-modal__form-group flex-1">
+                          <label className="product-payment-modal__input-label">
+                            Tipo
+                          </label>
+                          <select
+                            className="product-payment-modal__select"
+                            value={cardType}
+                            onChange={(e) => setCardType(e.target.value as any)}
+                          >
+                            <option value="credit">Crédito</option>
+                            <option value="debit">Débito</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="product-payment-modal__form-row">
+                        <div className="product-payment-modal__form-group flex-1">
+                          <label className="product-payment-modal__input-label">
+                            Vencimiento *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="MM/AA"
+                            value={cardExpiry}
+                            onChange={handleExpiryChange}
+                          />
+                        </div>
+                        <div className="product-payment-modal__form-group flex-1">
+                          <label className="product-payment-modal__input-label">
+                            Cód. seg. (CVV) *
+                          </label>
+                          <input
+                            type="password"
+                            required
+                            maxLength={4}
+                            placeholder="123"
+                            value={cardCvv}
+                            onChange={(e) =>
+                              setCardCvv(e.target.value.replace(/\D/g, ""))
+                            }
+                          />
+                        </div>
+                        <div className="product-payment-modal__form-group flex-1">
+                          <label className="product-payment-modal__input-label">
+                            DNI del titular *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="38123456"
+                            value={cardDni}
+                            onChange={(e) =>
+                              setCardDni(e.target.value.replace(/\D/g, ""))
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      {/* Checkbox para guardar tarjeta */}
+                      <label className="product-payment-modal__save-card-label">
+                        <input
+                          type="checkbox"
+                          checked={saveCardForFuture}
+                          onChange={(e) => setSaveCardForFuture(e.target.checked)}
+                        />
+                        Guardar esta tarjeta de forma segura para compras futuras
                       </label>
-                      <input
-                        type="password"
-                        required
-                        maxLength={4}
-                        placeholder="123"
-                        value={cardCvv}
-                        onChange={(e) =>
-                          setCardCvv(e.target.value.replace(/\D/g, ""))
-                        }
-                      />
-                    </div>
-                    <div className="product-payment-modal__form-group flex-1">
-                      <label className="product-payment-modal__input-label">
-                        DNI del titular *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="38123456"
-                        value={cardDni}
-                        onChange={(e) =>
-                          setCardDni(e.target.value.replace(/\D/g, ""))
-                        }
-                      />
-                    </div>
-                  </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 /* PayCloud QR Info Block */

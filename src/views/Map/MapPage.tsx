@@ -74,14 +74,16 @@ const createCustomIcon = (avatarUrl: string, hasPromotions: boolean) => {
   return L.divIcon({
     className: `custom-map-marker ${hasPromotions ? "custom-map-marker--has-promotions" : ""}`,
     html: `
-        <div class="custom-map-marker__pin">
-          <img src="${avatarUrl}" alt="Local" />
-          ${hasPromotions ? '<span class="custom-map-marker__promo-badge">PROMO</span>' : ""}
+        <div class="custom-map-marker__wrapper">
+          ${hasPromotions ? '<span class="custom-map-marker__promo-badge">PROMOS</span>' : ""}
+          <div class="custom-map-marker__pin">
+            <img src="${avatarUrl}" alt="Local" />
+          </div>
         </div>
       `,
     iconSize: [46, 46],
     iconAnchor: [23, 46], // punto de anclaje en la base
-    popupAnchor: [0, -50], // popup arriba del pin
+    popupAnchor: [0, -52], // popup arriba del pin
   });
 };
 
