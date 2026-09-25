@@ -12,6 +12,7 @@ import Footer from "@/components/Footer/Footer";
 import Modal from "../../components/Modal/Modal";
 import { API_BASE_URL } from "../../services/api.config";
 import RegisterPlanSelection from "../Register/RegisterPlanSelection";
+import { Eye, EyeOff } from "lucide-react";
 
 type LoginPageProps = {
   isModal?: boolean;
@@ -44,12 +45,38 @@ export default function LoginPage({
   } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const errorParam = params.get("error");
+      if (errorParam === "rider_not_allowed") {
+        setAuthError(
+          "Los repartidores no tienen acceso a la plataforma web. Por favor, utilizá la aplicación móvil.",
+        );
+      }
+    }
+  }, []);
+
   // Este useEffect solo maneja el caso OAuth (Google login).
   // Para form login (handleSubmit), la lógica es directa y marca isHandlingSubmitRef.
   useEffect(() => {
     // Solo correr si NO estamos en medio de un handleSubmit (evita race conditions)
     if (isHandlingSubmitRef.current) return;
     if (user && sessionStatus) {
+      const isRider =
+        user?.user_metadata?.role === "delivery" ||
+        user?.user_metadata?.role === "rider" ||
+        sessionStatus?.logistics_role === "delivery";
+
+      if (isRider) {
+        authService.logout().catch(() => {});
+        setUser(null);
+        setSessionStatus(null);
+        setAuthError(
+          "Los repartidores no tienen acceso a la plataforma web. Por favor, utilizá la aplicación móvil.",
+        );
+        return;
+      }
       let isNewUser = false;
       const createdAt = sessionStatus.user_created_at
         ? new Date(sessionStatus.user_created_at).getTime()
@@ -101,16 +128,16 @@ export default function LoginPage({
         }
       }
     }
-  }, [user, sessionStatus, isModal, onClose, router]);
+  }, [user, sessionStatus, isModal, onClose, router, setUser, setSessionStatus]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.email) {
-      newErrors.email = "El correo electrónico es requerido";
+    if (!formData.email.trim()) {
+      newErrors.email = "Ingresá tu email";
     } else if (
-      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email.trim())
     ) {
-      newErrors.email = "El formato del correo es inválido";
+      newErrors.email = "Ingresá un email válido";
     }
 
     if (!formData.password) {
@@ -137,7 +164,7 @@ export default function LoginPage({
 
   const handleForgotPassword = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!formData.email) {
+    if (!formData.email.trim()) {
       setErrors((prev) => ({
         ...prev,
         email: "Ingrese su correo electrónico para recuperar la contraseña",
@@ -179,15 +206,37 @@ export default function LoginPage({
     setAuthError("");
 
     try {
+      const email = formData.email.trim();
       const response = await authService.login({
-        email: formData.email,
+        email,
         password: formData.password,
       });
 
-      // Sincronizar login con la base de datos de Chat (Supabase)
+      // Validar si el usuario es un repartidor/rider
+      const { nextUser, nextSessionStatus } = normalizeSessionPayload(response);
+      const isRider =
+        nextUser?.user_metadata?.role === "delivery" ||
+        nextUser?.user_metadata?.role === "rider" ||
+        nextSessionStatus?.logistics_role === "delivery";
+
+      if (isRider) {
+        await authService.logout().catch(() => {});
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("token");
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("was_logged_in");
+        }
+        setUser(null);
+        setSessionStatus(null);
+        setAuthError(
+          "Los repartidores no tienen acceso a la plataforma web. Por favor, utilizá la aplicación móvil.",
+        );
+        return;
+      }
+
       try {
         const { error: chatLoginError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
+          email,
           password: formData.password,
         });
 
@@ -205,7 +254,6 @@ export default function LoginPage({
       isHandlingSubmitRef.current = true;
 
       // Actualizar estado del contexto de auth inmediatamente desde la respuesta de login
-      const { nextUser, nextSessionStatus } = normalizeSessionPayload(response);
       if (nextUser) {
         setUser(nextUser);
       }
@@ -301,15 +349,17 @@ export default function LoginPage({
 
       <form className="login-form" onSubmit={handleSubmit} noValidate>
         <div className="input-group">
-          <label htmlFor="email">CORREO ELECTRÓNICO</label>
+          <label htmlFor="email">EMAIL</label>
           <div className={`input-wrapper ${errors.email ? "has-error" : ""}`}>
             <input
               id="email"
               name="email"
               type="email"
+              autoCapitalize="none"
+              autoComplete="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="arquitecto@obsidian.pro"
+              placeholder="tu@email.com"
             />
             <span className="input-icon">@</span>
           </div>
@@ -346,8 +396,9 @@ export default function LoginPage({
               aria-label={
                 showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
               }
+              aria-pressed={showPassword}
             >
-              {showPassword ? "🔓" : "🔒"}
+              {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
             </button>
           </div>
           {errors.password && (

@@ -26,6 +26,10 @@
   --error-hover: #dc2626;
   --success-color: #40c057;
   --success-accent: #22c55e;
+  --action-add-bg: color-mix(in srgb, var(--success-color) 30%, var(--bg-card));
+  --action-add-hover: color-mix(in srgb, var(--success-color) 44%, var(--bg-card));
+  --action-cancel-bg: color-mix(in srgb, var(--error-color) 25%, var(--bg-card));
+  --action-cancel-hover: color-mix(in srgb, var(--error-color) 38%, var(--bg-card));
 
   /* ═══════════════════════════════════════
      EXTENDED COLOR PALETTE
@@ -97,8 +101,8 @@
   --weight-extrabold: 800;
   --weight-black: 900;
 
-  --text-xs: 0.625rem; /* 10px */
-  --text-sm: 0.75rem; /* 12px */
+  --text-xs: 0.72rem; /* 10px */
+  --text-sm: 0.8125rem; /* 13px */
   --text-base: 0.875rem; /* 14px */
   --text-md: 1rem; /* 16px */
   --text-lg: 1.125rem; /* 18px */
@@ -355,6 +359,46 @@ a:hover {
 /* ===== Global Loader Animation ===== */
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Shared action tones override local button variants throughout the app. */
+:is(button, a, label)[data-action-tone="add"],
+:is(button, a, label)[data-action-tone="upload"] {
+  background: var(--action-add-bg) !important;
+  background-image: none !important;
+  border-color: var(--success-color) !important;
+  color: var(--text-primary) !important;
+  transition: all 0.2s ease;
+}
+
+:is(button, a, label)[data-action-tone="add"]:hover:not(:disabled),
+:is(button, a, label)[data-action-tone="upload"]:hover:not(:disabled) {
+  background: var(--action-add-hover) !important;
+  background-image: none !important;
+  color: var(--text-primary) !important;
+}
+
+:is(button, a, label)[data-action-tone="cancel"] {
+  background: var(--action-cancel-bg) !important;
+  background-image: none !important;
+  border-color: var(--error-color) !important;
+  color: var(--text-primary) !important;
+  transition: all 0.2s ease;
+}
+
+:is(button, a, label)[data-action-tone="cancel"]:hover:not(:disabled) {
+  background: var(--action-cancel-hover) !important;
+  background-image: none !important;
+  color: var(--text-primary) !important;
+}
+
+:is(button, a, label)[data-action-tone] :is(span, svg) {
+  color: inherit !important;
+}
+
+:is(button, a, label)[data-action-tone]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 @keyframes spin {

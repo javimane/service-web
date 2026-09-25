@@ -391,6 +391,8 @@ export default function ProductsPage() {
         wholesale: firstSeller.wholesale,
         wholesale_price: firstSeller.wholesale_price,
         wholesale_unit: firstSeller.wholesale_unit,
+        offer_2x1: firstSeller.offer_2x1,
+        offer_3x2: firstSeller.offer_3x2,
         sellers: sellers,
         _original: item,
       };
@@ -674,6 +676,7 @@ export default function ProductsPage() {
                         {product.seller}
                       </span>
                       <h3 className="product-card__title">{product.title}</h3>
+                      {(product.offer_2x1 || product.offer_3x2) && <span className="product-card__quantity-offer">{product.offer_2x1 ? "2x1" : "3x2"}</span>}
 
                       <div className="product-card__pricing">
                         {product.originalPrice > 1 && (

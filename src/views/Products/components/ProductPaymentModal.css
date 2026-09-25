@@ -713,3 +713,24 @@
     width: 100%;
   }
 }
+.product-payment-modal__schedule-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--radius-md);
+  background: var(--accent-transparent);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.product-payment-modal__schedule-option input[type="checkbox"] {
+  flex: none;
+  width: var(--space-4);
+  height: var(--space-4);
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent-color);
+}

@@ -256,7 +256,7 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
           </div>
         </div>
 
-        <button
+        <button data-action-tone="add"
           type="button"
           className="btn-primary delivery-address-section__add-btn"
           onClick={handleOpenCreate}
@@ -281,7 +281,7 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
             Agrega tu domicilio de entrega para que los envíos de tus compras
             lleguen de forma rápida y precisa.
           </p>
-          <button
+          <button data-action-tone="add"
             type="button"
             className="btn-primary"
             onClick={handleOpenCreate}
@@ -618,7 +618,7 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
 
           {/* Botones de acción */}
           <div className="delivery-address-form__actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="btn-secondary"
               onClick={() => setIsModalOpen(false)}

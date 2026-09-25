@@ -58,6 +58,7 @@ import "./ProfilePage.css";
 import ProductCard from "../../components/Cards/ProductCard";
 import PromotionDetailModal from "../../components/Modals/PromotionDetailModal";
 import ProfileServiceDetailModal from "./sections/ProfileServiceDetailModal";
+import ProfileBranches from "./sections/ProfileBranches";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import ReelCard from "../../components/Cards/ReelCard";
@@ -950,6 +951,8 @@ export default function ProfilePage({
               )}
             </div>
           )}
+
+          {professionalId && <ProfileBranches professionalId={Number(professionalId)} />}
 
           <div
             className="profile-sidebar__availability-wrapper"

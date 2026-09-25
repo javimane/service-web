@@ -13,7 +13,7 @@ export default function ActionsSection({ onSave, onCancel, isSaving }) {
         </div>
         <div className="settings-actions-buttons">
           {onCancel && (
-            <button 
+            <button data-action-tone="cancel"
               type="button" 
               className="settings-cancel-btn" 
               onClick={onCancel}

@@ -486,7 +486,7 @@ export default function SubscriptionSection() {
           </button>
 
           {hasSubscription && isActiveProPlan && (
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="subscription-btn subscription-btn--cancel"
               onClick={() => setShowCancelConfirm(true)}
@@ -520,7 +520,7 @@ export default function SubscriptionSection() {
               facturación actual.
             </p>
             <div className="subscription-confirm__actions">
-              <button
+              <button data-action-tone="cancel"
                 type="button"
                 className="subscription-btn subscription-btn--cancel-confirm"
                 onClick={handleCancelSubscription}

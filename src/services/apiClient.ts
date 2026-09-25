@@ -233,8 +233,10 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    const message =
-      error.response?.data?.message || error.message || "Error de red";
+    const responseMessage = error.response?.data?.message;
+    const message = Array.isArray(responseMessage)
+      ? responseMessage.join(". ")
+      : responseMessage || error.message || "Error de red";
     return Promise.reject(new Error(message));
   },
 );

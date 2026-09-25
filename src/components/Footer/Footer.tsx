@@ -126,6 +126,9 @@ export default function Footer() {
           <Link href={ROUTES.privacy} className="footer__link-btn">
             Privacidad
           </Link>
+          <Link href="/devoluciones" className="footer__link-btn">
+            Devoluciones
+          </Link>
           <button
             type="button"
             className="footer__link-btn"

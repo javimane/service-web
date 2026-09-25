@@ -513,7 +513,7 @@ export default function CommercialDataSection() {
                   </p>
                 </div>
                 {actualCompany && (
-                  <button
+                  <button data-action-tone="cancel"
                     type="button"
                     className="btn-secondary"
                     onClick={() => setIsEditingCompany(false)}
@@ -596,7 +596,7 @@ export default function CommercialDataSection() {
                 {/* Action buttons */}
                 <div className="commercial-form-actions">
                   {actualCompany && (
-                    <button
+                    <button data-action-tone="cancel"
                       type="button"
                       className="btn-secondary"
                       onClick={() => setIsEditingCompany(false)}
@@ -784,7 +784,7 @@ export default function CommercialDataSection() {
             </div>
 
             <div className="modal-actions-row">
-              <button
+              <button data-action-tone="cancel"
                 type="button"
                 className="btn-secondary"
                 onClick={() => setEditBankModalOpen(false)}

@@ -27,6 +27,7 @@ import {
 } from "@/services/commerceService";
 import Pagination from "@/components/Pagination/Pagination";
 import Modal from "@/components/Modal/Modal";
+import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
 import { useAlert } from "@/context/AlertContext";
 import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
@@ -235,6 +236,9 @@ export default function BuyerOrdersSection() {
                       <span className="buyer-order-delivery">
                         {getDeliveryText(order.delivery_type)}
                       </span>
+                      {order.scheduled_delivery_date && (
+                        <span className="buyer-order-schedule">Envío programado: {order.scheduled_delivery_date.split("-").reverse().join("/")}</span>
+                      )}
                       {(order.service_id || order.service) && (
                         <div className="buyer-order-service-tag">
                           {order.appointment ? (
@@ -355,6 +359,8 @@ export default function BuyerOrdersSection() {
               </div>
             </div>
 
+            <ReturnsPolicyLink />
+
             {/* Service Appointment Section */}
             {(selectedOrder.service_id || selectedOrder.service) && (
               <div className="buyer-appointment-card">
@@ -401,7 +407,7 @@ export default function BuyerOrdersSection() {
                         </div>
                       )}
                     </div>
-                    <a
+                    <a data-action-tone="add"
                       href={buildGoogleCalendarUrl(
                         `Turno Sercio: ${selectedOrder.service?.name || "Servicio Contratado"}`,
                         selectedOrder.appointment.appointment_date,
@@ -462,6 +468,9 @@ export default function BuyerOrdersSection() {
             {selectedOrder.delivery_type === "shipment" && (
               <div className="buyer-shipment-tracking-card">
                 <h4>Seguimiento de Envío a Domicilio</h4>
+                {selectedOrder.scheduled_delivery_date && (
+                  <p>Envío programado para el {selectedOrder.scheduled_delivery_date.split("-").reverse().join("/")}.</p>
+                )}
                 <p>
                   Tu pedido se encuentra asignado a la red de logística local.
                 </p>

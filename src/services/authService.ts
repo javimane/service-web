@@ -2,7 +2,8 @@ import { API_ENDPOINTS } from "./api.config";
 import { apiClient } from "./apiClient";
 
 type LoginRequest = {
-  email: string;
+  email?: string;
+  username?: string;
   password: string;
 };
 
@@ -109,7 +110,7 @@ export const authService = {
   /**
    * @route POST /api/auth/login
    * @auth No
-   * @param {Object} data - { email: string; password: string }
+   * @param {Object} data - { email?: string; username?: string; password: string }
    * @returns {Promise<LoginResponse>} Supabase auth response
    */
   login: async (data: LoginRequest) => {

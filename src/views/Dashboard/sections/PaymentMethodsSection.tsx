@@ -213,7 +213,7 @@ export default function PaymentMethodsSection() {
             y contrataciones.
           </p>
         </div>
-        <button
+        <button data-action-tone="add"
           type="button"
           className="payment-methods__add-btn"
           onClick={handleOpenModal}
@@ -228,8 +228,7 @@ export default function PaymentMethodsSection() {
         <ShieldCheck className="payment-methods__security-icon" size={20} />
         <span>
           Tus datos están protegidos por el estándar internacional de seguridad
-          bancaria <strong>PCI-DSS</strong> y tokenizados por{" "}
-          <strong>Getnet</strong>. Nunca guardamos los números completos de tu
+          bancaria <strong>PCI-DSS</strong> y tokenizados. Nunca guardamos los números completos de tu
           tarjeta ni tu código de seguridad (CVV).
         </span>
       </div>
@@ -263,7 +262,7 @@ export default function PaymentMethodsSection() {
             Agrega tus tarjetas de crédito o débito para comprar y contratar
             servicios en 1 clic de forma segura.
           </p>
-          <button
+          <button data-action-tone="add"
             type="button"
             className="payment-methods__add-btn"
             onClick={handleOpenModal}
@@ -551,7 +550,7 @@ export default function PaymentMethodsSection() {
               </div>
 
               <div className="payment-methods__modal-footer">
-                <button
+                <button data-action-tone="cancel"
                   type="button"
                   className="payment-methods__btn-secondary"
                   onClick={handleCloseModal}

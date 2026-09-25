@@ -175,7 +175,7 @@ export default function DashboardPage() {
   const handleShowProductVariants = (product?: any) => {
     const id = product?.professional_product_id || product?.id;
     router.push(
-      `${ROUTES.dashboard}?view=products-variants${id ? `&productId=${id}` : ""}`
+      `${ROUTES.dashboard}?view=products-variants${id ? `&productId=${id}` : ""}`,
     );
   };
   const handleShowServices = () =>
@@ -555,7 +555,12 @@ export default function DashboardPage() {
               />
             ) : view === "products-variants" ? (
               <ProductVariantsSection
-                productId={searchParams.get("productId") || editingProduct?.id || editingProduct?.professional_product_id || undefined}
+                productId={
+                  searchParams.get("productId") ||
+                  editingProduct?.id ||
+                  editingProduct?.professional_product_id ||
+                  undefined
+                }
                 onBack={handleShowProducts}
               />
             ) : view === "products" ? (
@@ -660,7 +665,9 @@ export default function DashboardPage() {
                         <LayoutDashboard size={20} className="icon-purple" />
                       </div>
                       <div className="stat-value-group">
-                        <span className="card-label">PRESUPUESTOS ACEPTADOS</span>
+                        <span className="card-label">
+                          PRESUPUESTOS ACEPTADOS
+                        </span>
                         <h2 className="big-value">
                           {acceptedProposalsCount !== null
                             ? acceptedProposalsCount.toLocaleString("es-AR")
@@ -671,7 +678,9 @@ export default function DashboardPage() {
 
                     <div
                       className="stat-card compact-stat-box stat-card--interactive"
-                      onClick={() => router.push(`${ROUTES.dashboard}?view=reputation`)}
+                      onClick={() =>
+                        router.push(`${ROUTES.dashboard}?view=reputation`)
+                      }
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
@@ -894,8 +903,8 @@ export default function DashboardPage() {
           title="Mejorá tu cuenta"
         >
           <p>
-            Para acceder a esta funcionalidad necesitás una suscripción
-            profesional.
+            Para acceder a esta funcionalidad necesitás una suscripción Básica o
+            Premium.
           </p>
           <div className="upgrade-actions">
             <button

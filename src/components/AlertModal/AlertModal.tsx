@@ -96,6 +96,7 @@ export default function AlertModal({
         <div className="alert-modal__footer">
           {showCancel && (
             <button
+              data-action-tone={/^cancelar\b/i.test(cancelText) ? "cancel" : undefined}
               className="alert-modal__btn alert-modal__btn--secondary"
               onClick={onClose}
             >
@@ -103,6 +104,7 @@ export default function AlertModal({
             </button>
           )}
           <button
+            data-action-tone={/^(agregar|añadir)\b/i.test(confirmText) ? "add" : /^subir\b/i.test(confirmText) ? "upload" : undefined}
             className="alert-modal__btn alert-modal__btn--primary"
             onClick={() => {
               if (onConfirm) onConfirm();

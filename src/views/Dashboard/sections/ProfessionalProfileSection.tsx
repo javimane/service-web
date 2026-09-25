@@ -1093,7 +1093,7 @@ export default function ProfessionalProfileSection() {
               <label className="professional-profile__field professional-profile__field--full">
                 <span>Foto de perfil</span>
                 <div className="professional-profile__photo-upload">
-                  <label className="professional-profile__upload-btn">
+                  <label data-action-tone="upload" className="professional-profile__upload-btn">
                     <Camera size={16} /> Subir nueva foto
                     <input
                       type="file"
@@ -1115,7 +1115,7 @@ export default function ProfessionalProfileSection() {
               <label className="professional-profile__field professional-profile__field--full">
                 <span>Imagen de Portfolio / Portada</span>
                 <div className="professional-profile__photo-upload">
-                  <label className="professional-profile__upload-btn">
+                  <label data-action-tone="upload" className="professional-profile__upload-btn">
                     <Camera size={16} /> Subir nueva imagen
                     <input
                       type="file"
@@ -1302,7 +1302,7 @@ export default function ProfessionalProfileSection() {
               )}
             </div>
 
-            <button
+            <button data-action-tone="add"
               type="button"
               className="professional-profile__add-btn"
               onClick={addSlot}
@@ -1320,7 +1320,7 @@ export default function ProfessionalProfileSection() {
                 <ImagePlus size={18} />
                 <h3>Imágenes de presentación</h3>
               </div>
-              <button
+              <button data-action-tone="add"
                 type="button"
                 className="professional-profile__add-btn"
                 onClick={openImageModal}
@@ -1372,7 +1372,7 @@ export default function ProfessionalProfileSection() {
                 <Video size={18} />
                 <h3>Videos de presentación</h3>
               </div>
-              <button
+              <button data-action-tone="add"
                 type="button"
                 className={`professional-profile__add-btn ${subscriptionPlan === "free" ? "professional-profile__add-btn--disabled" : ""}`}
                 onClick={openVideoModal}
@@ -1489,7 +1489,7 @@ export default function ProfessionalProfileSection() {
             handleAddImage();
           }}
         >
-          <label className="professional-profile__dropzone">
+          <label data-action-tone="upload" className="professional-profile__dropzone">
             <input
               type="file"
               accept="image/*"
@@ -1550,14 +1550,14 @@ export default function ProfessionalProfileSection() {
           )}
 
           <div className="professional-profile__modal-actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="professional-profile__cancel-btn"
               onClick={() => setIsImageModalOpen(false)}
             >
               Cancelar
             </button>
-            <button
+            <button data-action-tone="upload"
               type="submit"
               className="professional-profile__save-btn"
               disabled={newImageFiles.length === 0 || isUploadingImages}
@@ -1611,7 +1611,7 @@ export default function ProfessionalProfileSection() {
             </label>
           </div>
           <div className="professional-profile__modal-actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="professional-profile__cancel-btn"
               onClick={() => setIsEditVideoModalOpen(false)}
@@ -1755,14 +1755,14 @@ export default function ProfessionalProfileSection() {
           )}
 
           <div className="professional-profile__modal-actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="professional-profile__cancel-btn"
               onClick={() => setIsVideoModalOpen(false)}
             >
               Cancelar
             </button>
-            <button
+            <button data-action-tone="upload"
               type="submit"
               className="professional-profile__save-btn"
               disabled={

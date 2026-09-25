@@ -31,94 +31,24 @@ export default function CommissionsModal({
 }: CommissionsModalProps) {
   const [simulationAmount, setSimulationAmount] = useState<number>(10000);
 
-  const { data: commissions, isLoading } = useQuery<MarketplaceCommission[]>({
+  const {
+    data: commissions = [],
+    isLoading,
+    isError,
+  } = useQuery<MarketplaceCommission[]>({
     queryKey: ["marketplace-commissions"],
     queryFn: async () => {
       const res = await commerceService.commissions();
       return Array.isArray(res) ? res : [];
     },
     enabled: isOpen,
-    staleTime: 1000 * 60 * 30, // 30 mins
+    staleTime: 1000 * 60 * 5,
   });
 
   if (!isOpen) return null;
 
-  // Fallback default rates if DB is empty or loading error
-  const ratesList: MarketplaceCommission[] =
-    commissions && commissions.length > 0
-      ? commissions
-      : [
-          {
-            id: 1,
-            installments: 1,
-            commission_pct: 11.0,
-            iva_pct: 21.0,
-            iva_commission_pct: 2.31,
-            total_commission_pct: 13.31,
-            description: "1 pago (débito / crédito 1 cuota / QR)",
-            is_active: true,
-          },
-          {
-            id: 2,
-            installments: 2,
-            commission_pct: 13.5,
-            iva_pct: 21.0,
-            iva_commission_pct: 2.84,
-            total_commission_pct: 16.34,
-            description: "2 cuotas sin interés",
-            is_active: true,
-          },
-          {
-            id: 3,
-            installments: 3,
-            commission_pct: 15.0,
-            iva_pct: 21.0,
-            iva_commission_pct: 3.15,
-            total_commission_pct: 18.15,
-            description: "3 cuotas sin interés",
-            is_active: true,
-          },
-          {
-            id: 4,
-            installments: 6,
-            commission_pct: 19.5,
-            iva_pct: 21.0,
-            iva_commission_pct: 4.1,
-            total_commission_pct: 23.6,
-            description: "6 cuotas sin interés",
-            is_active: true,
-          },
-          {
-            id: 5,
-            installments: 9,
-            commission_pct: 23.0,
-            iva_pct: 21.0,
-            iva_commission_pct: 4.83,
-            total_commission_pct: 27.83,
-            description: "9 cuotas sin interés",
-            is_active: true,
-          },
-          {
-            id: 6,
-            installments: 12,
-            commission_pct: 27.0,
-            iva_pct: 21.0,
-            iva_commission_pct: 5.67,
-            total_commission_pct: 32.67,
-            description: "12 cuotas sin interés",
-            is_active: true,
-          },
-          {
-            id: 7,
-            installments: 18,
-            commission_pct: 35.0,
-            iva_pct: 21.0,
-            iva_commission_pct: 7.35,
-            total_commission_pct: 42.35,
-            description: "18 cuotas sin interés",
-            is_active: true,
-          },
-        ];
+  const ratesList = commissions;
+  const benefitPct = ratesList[0]?.commission_benefit_pct ?? 0;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
@@ -133,11 +63,22 @@ export default function CommissionsModal({
               Esquema de Comisiones por Venta
             </h3>
             <p className="commissions-modal__hero-subtitle">
-              Tarifas por cobro en 1 pago (débito, crédito y QR) y ventas en cuotas
-              sin interés. Incluye el desglose de IVA (21%).
+              Tarifas por cobro en 1 pago (débito, crédito y QR) y ventas en
+              cuotas sin interés. Incluye el desglose de IVA (21%).
             </p>
           </div>
         </div>
+
+        {benefitPct > 0 && (
+          <div className="commissions-modal__benefit" role="status">
+            <Percent size={18} aria-hidden="true" />
+            <span>
+              <strong>Beneficio de Comisiones:</strong> ya aplicamos tu
+              descuento de {benefitPct.toLocaleString("es-AR")} puntos
+              porcentuales a cada tasa.
+            </span>
+          </div>
+        )}
 
         {/* Simulator Box */}
         <div className="commissions-modal__simulator">
@@ -170,12 +111,16 @@ export default function CommissionsModal({
               <Loader2 className="animate-spin" size={24} />
               <span>Cargando comisiones vigentes...</span>
             </div>
+          ) : isError || ratesList.length === 0 ? (
+            <p role="status">
+              No se pudieron consultar las comisiones vigentes.
+            </p>
           ) : (
             <table className="commissions-modal__table">
               <thead>
                 <tr>
                   <th>Plan de Venta</th>
-                  <th className="commissions-modal__th-right">Comisión Base</th>
+                  <th className="commissions-modal__th-right">Comisión</th>
                   <th className="commissions-modal__th-right">IVA (21%)</th>
                   <th className="commissions-modal__th-right">Total c/IVA</th>
                   {simulationAmount > 0 && (
@@ -192,17 +137,20 @@ export default function CommissionsModal({
                 {ratesList.map((rate) => {
                   const commPct = Number(rate.commission_pct);
                   const ivaPct = Number(rate.iva_pct || 21.0);
+                  const effectivePct = Number(
+                    rate.effective_commission_pct ?? commPct,
+                  );
                   const ivaCommPct = Number(
-                    rate.iva_commission_pct || ((commPct * ivaPct) / 100).toFixed(2)
+                    ((effectivePct * ivaPct) / 100).toFixed(2),
                   );
                   const totalCommPct = Number(
-                    rate.total_commission_pct ||
-                      (commPct + ivaCommPct).toFixed(2)
+                    (effectivePct + ivaCommPct).toFixed(2),
                   );
-
-                  const totalDeduction = simulationAmount
-                    ? Math.round((simulationAmount * totalCommPct) / 100)
-                    : 0;
+                  const commissionAmount =
+                    Math.round(simulationAmount * effectivePct) / 100;
+                  const ivaAmount = Math.round(commissionAmount * ivaPct) / 100;
+                  const totalDeduction =
+                    Math.round((commissionAmount + ivaAmount) * 100) / 100;
                   const netReceive = simulationAmount
                     ? simulationAmount - totalDeduction
                     : 0;
@@ -232,7 +180,24 @@ export default function CommissionsModal({
                         </div>
                       </td>
                       <td className="commissions-modal__td-right">
-                        {commPct.toFixed(2)}%
+                        <span className="commissions-modal__commission-values">
+                          {benefitPct > 0 && (
+                            <>
+                              <span className="commissions-modal__base-rate">
+                                {commPct.toFixed(2)}%
+                              </span>
+                              <span
+                                className="commissions-modal__discount"
+                                title="Descuento sobre la comisión base"
+                              >
+                                −{benefitPct.toLocaleString("es-AR")} puntos
+                              </span>
+                            </>
+                          )}
+                          <strong className="commissions-modal__effective-rate">
+                            {effectivePct.toFixed(2)}%
+                          </strong>
+                        </span>
                       </td>
                       <td className="commissions-modal__td-right">
                         +{ivaCommPct.toFixed(2)}%
@@ -246,7 +211,9 @@ export default function CommissionsModal({
                             -${totalDeduction.toLocaleString("es-AR")}
                           </td>
                           <td className="commissions-modal__td-right commissions-modal__td-net">
-                            <strong>${netReceive.toLocaleString("es-AR")}</strong>
+                            <strong>
+                              ${netReceive.toLocaleString("es-AR")}
+                            </strong>
                           </td>
                         </>
                       )}
@@ -266,9 +233,10 @@ export default function CommissionsModal({
             <p>
               El IVA del 21% se calcula sobre el monto de la comisión de la
               plataforma. Si activás cuotas sin interés en tus productos o
-              servicios, la plataforma deduce la comisión correspondiente al plan
-              seleccionado por el comprador y acredita el importe neto en tu
-              cuenta bancaria (CBU / CVU / Alias).
+              servicios, la plataforma deduce la comisión correspondiente al
+              plan seleccionado por el comprador. El simulador aplica tu
+              beneficio de comisiones, si corresponde, y muestra el importe neto
+              estimado.
             </p>
           </div>
         </div>

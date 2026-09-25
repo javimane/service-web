@@ -14,7 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import {
-  getProfessionalsAction,
+  getProfessionalMapLocationsAction,
   incrementProfessionalViewsAction,
 } from "../../app/actions/professionals";
 import Navbar from "../../components/Navbar/Navbar";
@@ -22,6 +22,23 @@ import MapSidebar from "./MapSidebar";
 import { AlertCircle, CheckCircle2, MapPin, Star, User } from "lucide-react";
 import MapPromotionsModal from "./MapPromotionsModal";
 import "./MapPage.css";
+
+type ProfessionalMapLocation = {
+  id: string;
+  professional_id: number;
+  name: string;
+  company_name: string;
+  avatar_url: string | null;
+  specialty: string | null;
+  rating_avg: number | null;
+  is_verified: boolean;
+  has_promotions: boolean;
+  seo_path: string;
+  street_name: string | null;
+  street_number: string | null;
+  latitude: number;
+  longitude: number;
+};
 
 const defaultCenter = {
   lat: -34.6037, // Buenos Aires
@@ -195,123 +212,42 @@ export default function MapPage() {
     }
   }, []);
 
-  const { data: professionals = [], isLoading } = useQuery({
-    queryKey: ["map-professionals", center, filters],
+  const { data: locations = [], isLoading } = useQuery<ProfessionalMapLocation[]>({
+    queryKey: ["map-locations", filters, filters.provinceId ? null : center],
     queryFn: async () => {
-      const query: any = {
-        lat: center.lat,
-        lng: center.lng,
-        radius: 20,
-        public_trade: "true",
-        has_promotions: true,
-      };
-
-      if (filters.name) query.name = filters.name;
-      if (filters.categoryId) query.categoryId = filters.categoryId;
-      if (filters.provinceId) query.province_id = filters.provinceId;
-      if (filters.departmentId) query.department_id = filters.departmentId;
-
-      const result = await getProfessionalsAction(query);
-      const raw = (result?.data as any) ?? result;
-      if (raw && Array.isArray(raw.items)) return raw.items;
-      if (Array.isArray(raw)) return raw;
-      return [];
+      const result = await getProfessionalMapLocationsAction({
+        ...(!filters.provinceId ? { lat: center.lat, lng: center.lng, radius: 20 } : {}),
+        name: filters.name || undefined,
+        categoryId: filters.categoryId,
+        provinceId: filters.provinceId,
+        departmentId: filters.departmentId,
+      });
+      return Array.isArray(result?.data) ? result.data as ProfessionalMapLocation[] : [];
     },
     enabled: !!center.lat,
     staleTime: 1000 * 60 * 2, // 2 minutos
     gcTime: 1000 * 60 * 10,
   });
 
-  const mappedProfessionals = useMemo(() => {
-    return professionals
-      .map((p: any) => {
-        const addresses =
-          p.address ||
-          p.Address ||
-          p.addresses ||
-          p.Addresses ||
-          p.Company?.Address
-            ? [
-                ...(p.address || []),
-                ...(p.Address || []),
-                ...(p.addresses || []),
-                ...(p.Addresses || []),
-                ...(p.Company?.Address ? [p.Company.Address] : []),
-              ]
-            : [];
-
-        const address =
-          addresses.find((a: any) => a?.is_main_address) || addresses[0];
-
-        const profile = p.profile || p.Profile;
-        const company = p.company || p.Company;
-        const isVerified = Boolean(
-          p.company_arca?.is_verified ??
-          p.companyArca?.is_verified ??
-          company?.company_arca?.is_verified ??
-          company?.companyArca?.is_verified,
-        );
-
-        const avatar =
-          profile?.avatar_url ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.display_name || company?.name || "P")}&background=random`;
-
-        const name =
-          p.company_name || profile?.display_name || p.name || "Profesional";
-
-        const seoPath = p.seo_path || p.seoPath || null;
-        const profileUrl = seoPath
-          ? `${ROUTES.profile}${seoPath.startsWith("/") ? seoPath : `/${seoPath}`}`
-          : `${ROUTES.profile}/${p.id}`;
-
-        const hasPromotions = Boolean(p.has_promotions || p.hasPromotions);
-
-        const streetName =
-          address?.street_name ||
-          address?.streetName ||
-          address?.street ||
-          address?.address ||
-          address?.name ||
-          "";
-        const streetNumber =
-          address?.street_number ||
-          address?.streetNumber ||
-          address?.number ||
-          "";
-        const streetLine = [streetName, streetNumber].filter(Boolean).join(" ");
-        const locationLine =
-          address?.Department?.name ||
-          address?.department?.name ||
-          address?.Province?.name ||
-          address?.province?.name ||
-          address?.city ||
-          "";
-
-        const fullAddress =
-          [streetLine, locationLine].filter(Boolean).join(", ") ||
-          "Dirección no especificada";
-
-        return {
-          id: p.user_id || p.id,
-          name,
-          companyName: p.company_name || "Sin nombre empresa",
-          specialty: p.specialty || p.bio || "Servicios",
-          rating: p.ratingAvg || p.rating_avg || 0,
-          isVerified,
-          avatar,
-          seoPath,
-          profileUrl,
-          hasPromotions,
-          addressText: fullAddress,
-          coordinates: {
-            lat: Number(address?.latitude || 0),
-            lng: Number(address?.longitude || 0),
-          },
-          icon: createCustomIcon(avatar, hasPromotions),
-        };
-      })
-      .filter((p: any) => p.coordinates.lat !== 0 && p.coordinates.lng !== 0);
-  }, [professionals]);
+  const mappedLocations = useMemo(() => locations.map((location) => {
+    const avatar = location.avatar_url ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(location.company_name)}&background=random`;
+    return {
+      id: location.id,
+      professionalId: location.professional_id,
+      name: location.name,
+      companyName: location.company_name,
+      specialty: location.specialty || "Servicios",
+      rating: location.rating_avg ?? 0,
+      isVerified: location.is_verified,
+      avatar,
+      profileUrl: `${ROUTES.profile}/${location.seo_path.replace(/^\//, "")}`,
+      hasPromotions: location.has_promotions,
+      addressText: [location.street_name, location.street_number].filter(Boolean).join(" ") || "Dirección no especificada",
+      coordinates: { lat: location.latitude, lng: location.longitude },
+      icon: createCustomIcon(avatar, location.has_promotions),
+    };
+  }), [locations]);
 
   return (
     <div className="map-page">
@@ -321,7 +257,7 @@ export default function MapPage() {
         <MapSidebar
           onFilterChange={handleFilterChange}
           onProvinceCoordinatesChange={handleProvinceCoordinatesChange}
-          specialistsCount={mappedProfessionals.length}
+          specialistsCount={mappedLocations.length}
           isLoading={isLoading}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={handleToggleCollapse}
@@ -346,9 +282,9 @@ export default function MapPage() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {mappedProfessionals.map((prof: any) => (
+            {mappedLocations.map((prof) => (
               <Marker
-                key={prof.id}
+                key={`${prof.professionalId}:${prof.id}`}
                 position={[prof.coordinates.lat, prof.coordinates.lng]}
                 icon={prof.icon}
               >
@@ -390,8 +326,8 @@ export default function MapPage() {
                           className="map-info-window__btn map-info-window__btn--promo"
                           onClick={(e) => {
                             e.preventDefault();
-                            incrementProfessionalViewsAction({ id: prof.id });
-                            setSelectedProfessionalForPromos(prof.id);
+                            incrementProfessionalViewsAction({ id: prof.professionalId });
+                            setSelectedProfessionalForPromos(prof.professionalId);
                           }}
                         >
                           Promociones
@@ -401,7 +337,7 @@ export default function MapPage() {
                         className="map-info-window__btn"
                         onClick={(e) => {
                           e.preventDefault();
-                          incrementProfessionalViewsAction({ id: prof.id });
+                          incrementProfessionalViewsAction({ id: prof.professionalId });
                           router.push(prof.profileUrl);
                         }}
                       >

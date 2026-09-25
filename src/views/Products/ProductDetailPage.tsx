@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -17,6 +17,9 @@ import {
   Maximize,
   CreditCard,
   Sparkles,
+  ShoppingCart,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { getProductDetailAction } from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
@@ -28,6 +31,9 @@ import {
   ProductVariant,
 } from "../../services/commerceService";
 import { useAuth } from "../../context/AuthContext";
+import { useAlert } from "../../context/AlertContext";
+import { addGuestCartItem } from "../../utils/guestCart";
+import { calculateProductPricing } from "../../utils/productPricing";
 import ProductPaymentModal from "./components/ProductPaymentModal";
 import ProductInstallmentsModal from "./components/ProductInstallmentsModal";
 import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
@@ -89,13 +95,13 @@ export default function ProductDetailPage({
   const id = queryId || extractIdFromSlug(seoPath);
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, isAgeVerified } = useAuth();
+  const { showSuccess, showError } = useAlert();
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const videoFrameRef = useRef<HTMLDivElement | null>(null);
 
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    null,
-  );
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isInstallmentsModalOpen, setIsInstallmentsModalOpen] = useState(false);
 
@@ -126,6 +132,59 @@ export default function ProductDetailPage({
         : Promise.resolve([]),
     enabled: !!professionalProductId,
     staleTime: 1000 * 60 * 5,
+  });
+
+  const addToCartMutation = useMutation({
+    mutationFn: (cartQuantity: number) => {
+      if (!user) {
+        return Promise.resolve(
+          addGuestCartItem(Number(professionalId) || null, {
+            id: `guest-product-${professionalProductId || item?.id || id}`,
+            product_id: String(item?.id || id),
+            professional_product_id: professionalProductId,
+            quantity: cartQuantity,
+            subtotal: calculateProductPricing(
+              {
+                ...professionalProduct,
+                price: Number(professionalProduct?.price || item?.price || 0),
+              },
+              cartQuantity,
+            ).subtotal,
+            product: {
+              id: String(item?.id || id),
+              name: productName,
+              image_url:
+                rawImages[0]?.image_url || rawImages[0]?.url || rawImages[0],
+              price: Number(professionalProduct?.price || item?.price || 0),
+              offer_price: professionalProduct?.offer_price,
+              wholesale: professionalProduct?.wholesale,
+              wholesale_price: professionalProduct?.wholesale_price,
+              wholesale_unit: professionalProduct?.wholesale_unit,
+              offer_2x1: professionalProduct?.offer_2x1,
+              offer_3x2: professionalProduct?.offer_3x2,
+              stock: availableStock,
+              installments_enabled: installmentsEnabled,
+              max_installments: maxInstallments,
+            },
+          }),
+        );
+      }
+
+      return commerceService.addCartItem({
+        product_id: String(item?.id || id),
+        ...(professionalProductId
+          ? { professional_product_id: professionalProductId }
+          : { product_id: String(item?.id || id) }),
+        quantity: cartQuantity,
+      });
+    },
+    onSuccess: (updatedCart) => {
+      queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
+      showSuccess(
+        `${quantity} ${quantity === 1 ? "producto agregado" : "productos agregados"} al carrito.`,
+      );
+    },
+    onError: () => showError("No se pudo agregar el producto al carrito."),
   });
 
   // URL Normalization disabled - using query params approach instead
@@ -182,6 +241,7 @@ export default function ProductDetailPage({
   const productEan = item.ean;
   const productCategoryId =
     item.category_id || itemAny.Category?.id || itemAny.category?.id;
+  const isInquiryOnlyCategory = [45, 46].includes(Number(productCategoryId));
   const productCategory = itemAny.Category?.name || itemAny.category?.name;
   const productSubcategoryId =
     item.subcategory_id ||
@@ -199,7 +259,9 @@ export default function ProductDetailPage({
       String(productSubcategoryId).toLowerCase(),
     ),
   );
-  const canPurchase = !isAgeRestricted || (Boolean(user) && isAgeVerified);
+  const canPurchase =
+    !isInquiryOnlyCategory &&
+    (!isAgeRestricted || (Boolean(user) && isAgeVerified));
 
   const productOrigin = item.is_foreign ? "Externo" : "Local";
   const rawImages: any[] = item.Images || itemAny.images || [];
@@ -254,38 +316,17 @@ export default function ProductDetailPage({
   const originalPrice = professionalProduct?.price || item.price;
   const offerPrice = professionalProduct?.offer_price;
 
-  const activeOriginalPrice =
-    selectedVariant &&
-    !selectedVariant.use_product_price &&
-    selectedVariant.price
-      ? Number(selectedVariant.price)
-      : Number(originalPrice || 0);
-
-  const activeOfferPrice =
-    selectedVariant && !selectedVariant.use_product_price
-      ? selectedVariant.offer_price
-        ? Number(selectedVariant.offer_price)
-        : null
-      : offerPrice
-        ? Number(offerPrice)
-        : null;
+  const activeOriginalPrice = Number(originalPrice || 0);
+  const activeOfferPrice = offerPrice ? Number(offerPrice) : null;
 
   const activeFinalPrice = activeOfferPrice || activeOriginalPrice;
 
-  const installmentsEnabled =
-    selectedVariant && selectedVariant.installments_enabled !== undefined
-      ? Boolean(selectedVariant.installments_enabled)
-      : Boolean(
-          professionalProduct?.installments_enabled ??
-          item.installments_enabled,
-        );
-
-  const maxInstallments =
-    selectedVariant && selectedVariant.max_installments
-      ? Number(selectedVariant.max_installments)
-      : Number(
-          professionalProduct?.max_installments || item.max_installments || 12,
-        );
+  const installmentsEnabled = Boolean(
+    professionalProduct?.installments_enabled ?? item.installments_enabled,
+  );
+  const maxInstallments = Number(
+    professionalProduct?.max_installments || item.max_installments || 12,
+  );
 
   const currencyCode =
     professionalProduct?.currency_code ||
@@ -307,23 +348,21 @@ export default function ProductDetailPage({
   const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
 
   const isWholesale =
-    selectedVariant &&
-    !selectedVariant.use_product_price &&
-    selectedVariant.wholesale_price
-      ? true
-      : professionalProduct?.wholesale === true || item.wholesale === true;
+    professionalProduct?.wholesale === true || item.wholesale === true;
   const wholesalePrice =
-    selectedVariant &&
-    !selectedVariant.use_product_price &&
-    selectedVariant.wholesale_price
-      ? selectedVariant.wholesale_price
-      : professionalProduct?.wholesale_price || item.wholesale_price;
+    professionalProduct?.wholesale_price || item.wholesale_price;
   const wholesaleUnit =
-    selectedVariant &&
-    !selectedVariant.use_product_price &&
-    selectedVariant.wholesale_unit
-      ? selectedVariant.wholesale_unit
-      : professionalProduct?.wholesale_unit || item.wholesale_unit;
+    professionalProduct?.wholesale_unit || item.wholesale_unit;
+
+  const availableStock = Math.max(
+    0,
+    Number(professionalProduct?.stock ?? item.stock ?? 99),
+  );
+
+  const handleAddToCart = () => {
+    if (!canPurchase) return;
+    addToCartMutation.mutate(Math.min(quantity, availableStock));
+  };
 
   const handleContact = () => {
     const productUrl = window.location.href;
@@ -397,6 +436,15 @@ export default function ProductDetailPage({
         <div className="product-detail__layout">
           {/* Left Column: Image + Details */}
           <div className="product-detail__left-column">
+            <div className="product-detail__favorite-wrapper">
+              <FavoriteButton
+                type="product"
+                targetId={item?.id || id}
+                variant="icon"
+                size={20}
+                className="product-detail__favorite-btn"
+              />
+            </div>
             {(productCategory || productSubcategory) && (
               <nav
                 className="product-detail__breadcrumbs"
@@ -529,6 +577,12 @@ export default function ProductDetailPage({
                 </span>
               </div>
               <h1 className="product-detail__title">{productName}</h1>
+              {(professionalProduct?.offer_2x1 ||
+                professionalProduct?.offer_3x2) && (
+                <span className="product-detail__quantity-offer">
+                  {professionalProduct?.offer_2x1 ? "2x1" : "3x2"}
+                </span>
+              )}
 
               <div className="product-detail__facts">
                 <div className="product-detail__fact-row">
@@ -554,6 +608,24 @@ export default function ProductDetailPage({
                     </span>
                   </div>
                 )}
+                {professionalProduct?.warranty !== undefined &&
+                  professionalProduct?.warranty !== null && (
+                    <div className="product-detail__fact-row">
+                      <span className="fact-label">Garantía</span>
+                      {Number(professionalProduct.warranty) > 0 ? (
+                        <span className="fact-value product-detail__warranty-badge">
+                          <ShieldCheck size={14} />
+                          {Number(professionalProduct.warranty) % 12 === 0 &&
+                          Number(professionalProduct.warranty) >= 12
+                            ? `${Number(professionalProduct.warranty) / 12} ${Number(professionalProduct.warranty) / 12 === 1 ? "año" : "años"}`
+                            : `${professionalProduct.warranty} ${Number(professionalProduct.warranty) === 1 ? "mes" : "meses"}`}{" "}
+                          de garantía
+                        </span>
+                      ) : (
+                        <span className="fact-value">Sin garantía</span>
+                      )}
+                    </div>
+                  )}
               </div>
             </div>
 
@@ -607,42 +679,55 @@ export default function ProductDetailPage({
                   </div>
 
                   {/* Variants selector (if product has variants) */}
-                  {variants.length > 0 && (
+                  {variants.length > 1 && (
                     <div className="product-detail__variants-section">
                       <span className="product-detail__variants-label">
                         Elegí tu variante:
                       </span>
                       <div className="product-detail__variants-options">
-                        {variants.map((v) => {
-                          const isSelected = selectedVariant?.id === v.id;
-                          return (
-                            <button
-                              key={v.id}
-                              type="button"
-                              className={`product-detail__variant-chip ${
-                                isSelected
-                                  ? "product-detail__variant-chip--active"
-                                  : ""
-                              }`}
-                              onClick={() =>
-                                setSelectedVariant(isSelected ? null : v)
-                              }
-                            >
-                              <span>
-                                {v.attribute_name}:{" "}
-                                <strong>{v.attribute_value}</strong>
-                              </span>
-                              {v.price && !v.use_product_price && (
-                                <span className="product-detail__variant-chip-price">
-                                  $
-                                  {Number(
-                                    v.offer_price || v.price,
-                                  ).toLocaleString("es-AR")}
+                        {variants
+                          .filter((v) => v.is_active !== false)
+                          .map((v) => {
+                            const isSelected = v.product_id === item.id;
+                            return (
+                              <button
+                                key={v.id}
+                                type="button"
+                                className={`product-detail__variant-chip ${
+                                  isSelected
+                                    ? "product-detail__variant-chip--active"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  !isSelected &&
+                                  router.push(
+                                    `/productos/producto-${v.product_id}`,
+                                  )
+                                }
+                              >
+                                <span>
+                                  <strong>
+                                    {v.attributes?.length
+                                      ? v.attributes
+                                          .map(
+                                            (attribute) =>
+                                              `${attribute.name}: ${attribute.value}`,
+                                          )
+                                          .join(" · ")
+                                      : v.name}
+                                  </strong>
                                 </span>
-                              )}
-                            </button>
-                          );
-                        })}
+                                {v.price != null && (
+                                  <span className="product-detail__variant-chip-price">
+                                    $
+                                    {Number(
+                                      v.offer_price || v.price,
+                                    ).toLocaleString("es-AR")}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
                       </div>
                     </div>
                   )}
@@ -737,7 +822,7 @@ export default function ProductDetailPage({
                   </div>
 
                   {/* Installments Information Box */}
-                  {activeFinalPrice > 1 && (
+                  {!isInquiryOnlyCategory && activeFinalPrice > 1 && (
                     <div className="seller-installments-box">
                       {installmentsEnabled ? (
                         <>
@@ -781,46 +866,118 @@ export default function ProductDetailPage({
                   )}
 
                   {/* Age restriction alert */}
-                  {isAgeRestricted && !canPurchase && (
-                    <div className="product-detail__age-warning">
-                      <ShieldAlert
-                        size={20}
-                        className="product-detail__age-warning-icon"
-                      />
-                      <div className="product-detail__age-warning-body">
-                        <strong className="product-detail__age-warning-title">
-                          Producto para mayores de 18 años
-                        </strong>
-                        <p className="product-detail__age-warning-text">
-                          Para comprar este producto tenés que tener tu edad
-                          verificada en tu cuenta.
-                        </p>
-                        {!user ? (
-                          <button
-                            type="button"
-                            className="product-detail__age-warning-btn"
-                            onClick={() =>
-                              router.push(
-                                `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
-                              )
-                            }
-                          >
-                            Iniciar sesión para verificar edad
-                          </button>
-                        ) : (
-                          <span className="product-detail__age-warning-badge">
-                            Edad no verificada · Actualizá tu cuenta para
-                            habilitar la compra
-                          </span>
-                        )}
+                  {isAgeRestricted &&
+                    !isInquiryOnlyCategory &&
+                    !canPurchase && (
+                      <div className="product-detail__age-warning">
+                        <ShieldAlert
+                          size={20}
+                          className="product-detail__age-warning-icon"
+                        />
+                        <div className="product-detail__age-warning-body">
+                          <strong className="product-detail__age-warning-title">
+                            Producto para mayores de 18 años
+                          </strong>
+                          <p className="product-detail__age-warning-text">
+                            Para comprar este producto tenés que tener tu edad
+                            verificada en tu cuenta.
+                          </p>
+                          {!user ? (
+                            <button
+                              type="button"
+                              className="product-detail__age-warning-btn"
+                              onClick={() =>
+                                router.push(
+                                  `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+                                )
+                              }
+                            >
+                              Iniciar sesión para verificar edad
+                            </button>
+                          ) : (
+                            <span className="product-detail__age-warning-badge">
+                              Edad no verificada · Actualizá tu cuenta para
+                              habilitar la compra
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Action buttons */}
                   <div className="seller-actions-group">
                     {activeFinalPrice > 1 && canPurchase && (
                       <>
+                        <div className="product-detail__cart-actions">
+                          <div
+                            className="product-detail__quantity-control"
+                            aria-label="Cantidad del producto"
+                          >
+                            <button
+                              type="button"
+                              className="product-detail__quantity-btn"
+                              onClick={() =>
+                                setQuantity((current) =>
+                                  Math.max(1, current - 1),
+                                )
+                              }
+                              disabled={
+                                quantity <= 1 || addToCartMutation.isPending
+                              }
+                              aria-label="Quitar una unidad"
+                            >
+                              <Minus size={16} aria-hidden="true" />
+                            </button>
+                            <span
+                              className="product-detail__quantity-value"
+                              aria-live="polite"
+                            >
+                              {quantity}
+                            </span>
+                            <button
+                              type="button"
+                              className="product-detail__quantity-btn"
+                              onClick={() =>
+                                setQuantity((current) =>
+                                  Math.min(availableStock, current + 1),
+                                )
+                              }
+                              disabled={
+                                quantity >= availableStock ||
+                                addToCartMutation.isPending
+                              }
+                              aria-label="Agregar una unidad"
+                              data-action-tone="add"
+                            >
+                              <Plus size={16} aria-hidden="true" />
+                            </button>
+                          </div>
+                          <button
+                            data-action-tone="add"
+                            type="button"
+                            className="product-detail__add-cart-btn"
+                            onClick={handleAddToCart}
+                            disabled={
+                              availableStock === 0 ||
+                              addToCartMutation.isPending
+                            }
+                          >
+                            {addToCartMutation.isPending ? (
+                              <Loader2
+                                className="animate-spin"
+                                size={18}
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <ShoppingCart size={18} aria-hidden="true" />
+                            )}
+                            <span>
+                              {availableStock === 0
+                                ? "Sin stock"
+                                : "Agregar al carrito"}
+                            </span>
+                          </button>
+                        </div>
                         <button
                           type="button"
                           className="seller-buy-btn"
@@ -839,42 +996,30 @@ export default function ProductDetailPage({
                             Compra protegida o te devolvemos el dinero
                           </span>
                         </div>
+
+                        {professionalProduct?.warranty != null && (
+                          <div className="seller-protected-badge seller-protected-badge--warranty">
+                            <ShieldCheck
+                              size={18}
+                              className="seller-protected-badge__icon"
+                            />
+                            <span className="seller-protected-badge__text">
+                              {Number(professionalProduct.warranty) > 0
+                                ? `Garantía del vendedor: ${
+                                    Number(professionalProduct.warranty) %
+                                      12 ===
+                                      0 &&
+                                    Number(professionalProduct.warranty) >= 12
+                                      ? `${Number(professionalProduct.warranty) / 12} ${Number(professionalProduct.warranty) / 12 === 1 ? "año" : "años"}`
+                                      : `${professionalProduct.warranty} ${Number(professionalProduct.warranty) === 1 ? "mes" : "meses"}`
+                                  }`
+                                : "Este producto no posee garantía"}
+                            </span>
+                          </div>
+                        )}
                       </>
                     )}
-
-                    <button
-                      type="button"
-                      className="seller-contact-btn"
-                      onClick={handleContact}
-                    >
-                      <MessageCircle size={16} />
-                      <span>Contactar al vendedor</span>
-                    </button>
-
-                    <FavoriteButton
-                      type="product"
-                      targetId={item?.id || id}
-                      variant="banner"
-                      showLabel
-                      className="product-detail-favorite-btn"
-                    />
                   </div>
-
-                  {productLink && (
-                    <a
-                      href={
-                        productLink.startsWith("http")
-                          ? productLink
-                          : `https://${productLink}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="seller-contact-btn seller-contact-btn--link"
-                    >
-                      <ExternalLink size={16} />
-                      Ver en sitio web
-                    </a>
-                  )}
                 </div>
               </div>
             </div>
@@ -890,14 +1035,11 @@ export default function ProductDetailPage({
 
       {/* Payment Checkout Modal (Getnet Cards + PayCloud QR) */}
       <ProductPaymentModal
-        isOpen={isPaymentModalOpen}
+        isOpen={isPaymentModalOpen && canPurchase}
         onClose={() => setIsPaymentModalOpen(false)}
-        product={item}
+        product={{ ...item, ...professionalProduct, name: item?.name }}
         professionalId={Number(professionalId || 0)}
         professionalProductId={professionalProductId}
-        variants={variants}
-        selectedVariant={selectedVariant}
-        onSelectVariant={setSelectedVariant}
         sellerName={sellerName}
         sellerProvince={sellerProvince}
         isAgeRestricted={isAgeRestricted}

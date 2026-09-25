@@ -48,7 +48,7 @@ import {
 } from "../../../app/actions/categories";
 import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
-import { commerceService } from "../../../services/commerceService";
+import { commerceService, type MarketplaceCommission } from "../../../services/commerceService";
 import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
 import CommissionsModal from "../../../components/CommissionsModal/CommissionsModal";
 import ShippingRatesModal from "../../../components/ShippingRatesModal/ShippingRatesModal";
@@ -190,6 +190,13 @@ export default function DashboardProducts({
     sessionStatus?.subscription?.professional_id ??
     sessionStatus?.professional_id;
 
+  const { data: commissionRates = [] } = useQuery<MarketplaceCommission[]>({
+    queryKey: ["marketplace-commissions"],
+    queryFn: commerceService.commissions,
+    staleTime: 1000 * 60 * 5,
+  });
+  const commissionBenefitPct = commissionRates[0]?.commission_benefit_pct ?? 0;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [eanSearchQuery, setEanSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -207,6 +214,7 @@ export default function DashboardProducts({
   const [bulkValue, setBulkValue] = useState("");
   const [bulkAction, setBulkAction] = useState("increase"); // "increase" | "decrease"
   const [bulkDeleteOffers, setBulkDeleteOffers] = useState(false);
+  const [bulkQuantityOffer, setBulkQuantityOffer] = useState("unchanged");
   const [bulkApplied, setBulkApplied] = useState(false);
   const [bulkScope, setBulkScope] = useState<"all" | "category" | "subcategory">("all");
   const [bulkSelectedCategories, setBulkSelectedCategories] = useState<number[]>([]);
@@ -246,6 +254,8 @@ export default function DashboardProducts({
     wholesale: false,
     wholesale_price: "",
     wholesale_unit: "",
+    offer_2x1: false,
+    offer_3x2: false,
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -286,6 +296,8 @@ export default function DashboardProducts({
     wholesale: boolean;
     wholesale_price: string;
     wholesale_unit: string;
+    offer_2x1: boolean;
+    offer_3x2: boolean;
   } | null>(null);
   const [editImageItems, setEditImageItems] = useState<EditImageItem[]>([]);
   const [editOriginalImageUrls, setEditOriginalImageUrls] = useState<string[]>(
@@ -431,6 +443,8 @@ export default function DashboardProducts({
             ? [item.Product.video_url]
             : [],
       id: item.product_id,
+      professional_product_id: item.id,
+      is_variant_child: Boolean(item.Product?.is_variant_child),
       name: item.Product?.name || "Sin nombre",
       price: item.price,
       offer_price: item.offer_price || 0,
@@ -482,6 +496,8 @@ export default function DashboardProducts({
       wholesale_price:
         item.wholesale_price || item.Product?.wholesale_price || 0,
       wholesale_unit: item.wholesale_unit || item.Product?.wholesale_unit || 0,
+      offer_2x1: Boolean(item.offer_2x1),
+      offer_3x2: Boolean(item.offer_3x2),
       free_shipping: item.free_shipping ?? item.Product?.free_shipping ?? false,
       free_shipping_radius_km: item.free_shipping_radius_km ?? item.Product?.free_shipping_radius_km ?? null,
       free_shipping_min_amount: item.free_shipping_min_amount ?? item.Product?.free_shipping_min_amount ?? null,
@@ -584,6 +600,7 @@ export default function DashboardProducts({
         setBulkOpen(false);
         setBulkValue("");
         setBulkDeleteOffers(false);
+        setBulkQuantityOffer("unchanged");
         setBulkScope("all");
         setBulkSelectedCategories([]);
         setBulkSelectedSubcategories([]);
@@ -764,7 +781,7 @@ export default function DashboardProducts({
   // Bulk price apply
   const handleBulkApply = () => {
     const val = parseFloat(bulkValue);
-    if ((isNaN(val) || val <= 0) && !bulkDeleteOffers) return;
+    if ((isNaN(val) || val <= 0) && !bulkDeleteOffers && bulkQuantityOffer === "unchanged") return;
 
     if (bulkScope === "category" && bulkSelectedCategories.length === 0) return;
     if (
@@ -779,6 +796,10 @@ export default function DashboardProducts({
       value: isNaN(val) ? 0 : val,
       operation: bulkAction === "increase" ? "add" : "subtract",
       delete_offer_price: bulkDeleteOffers,
+      ...(bulkQuantityOffer !== "unchanged" ? {
+        offer_2x1: bulkQuantityOffer === "2x1",
+        offer_3x2: bulkQuantityOffer === "3x2",
+      } : {}),
     };
 
     if (bulkScope === "category" && bulkSelectedCategories.length > 0) {
@@ -960,6 +981,8 @@ export default function DashboardProducts({
       wholesale: false,
       wholesale_price: "",
       wholesale_unit: "",
+      offer_2x1: false,
+      offer_3x2: false,
     });
     setNewProductErrors({});
     setFormPrice("");
@@ -1032,6 +1055,8 @@ export default function DashboardProducts({
       wholesale: newProduct.wholesale,
       wholesale_price: Number(newProduct.wholesale_price) || 0,
       wholesale_unit: Number(newProduct.wholesale_unit) || 0,
+      offer_2x1: newProduct.offer_2x1,
+      offer_3x2: newProduct.offer_3x2,
     });
   };
 
@@ -1066,6 +1091,8 @@ export default function DashboardProducts({
       wholesale: product.wholesale || false,
       wholesale_price: String(product.wholesale_price || ""),
       wholesale_unit: String(product.wholesale_unit || ""),
+      offer_2x1: Boolean(product.offer_2x1),
+      offer_3x2: Boolean(product.offer_3x2),
     });
     const initialImages: string[] = getOrderedProductImages(
       product.images,
@@ -1179,6 +1206,8 @@ export default function DashboardProducts({
         wholesale: editProduct.wholesale,
         wholesale_price: Number(editProduct.wholesale_price) || 0,
         wholesale_unit: Number(editProduct.wholesale_unit) || 0,
+        offer_2x1: editProduct.offer_2x1,
+        offer_3x2: editProduct.offer_3x2,
         sub_categories_products_id: editProduct.subcategoryId || undefined,
       },
     });
@@ -1246,7 +1275,7 @@ export default function DashboardProducts({
             <span>Refrescar</span>
           </button>
           {hasAddress ? (
-            <button
+            <button data-action-tone="add"
               className="dash-products__add-btn"
               onClick={() => router.push("?view=products-create")}
             >
@@ -1410,6 +1439,15 @@ export default function DashboardProducts({
         </button>
       </div>
 
+      {commissionBenefitPct > 0 && (
+        <div className="dash-products__commission-benefit" role="status">
+          <Percent size={18} aria-hidden="true" />
+          <span>
+            <strong>Beneficio de Comisiones:</strong> a las comisiones que ves restales {commissionBenefitPct.toLocaleString("es-AR")}%.
+          </span>
+        </div>
+      )}
+
       {/* Product list table */}
       <div className="dash-products__table-wrap">
         {loadingProducts ? (
@@ -1552,7 +1590,7 @@ export default function DashboardProducts({
                       >
                         <Share2 size={15} />
                       </button>
-                      <button
+                      {!product.is_variant_child && <button
                         className="dash-products__action-btn"
                         aria-label="Gestionar variantes"
                         title="Gestionar variantes"
@@ -1566,7 +1604,7 @@ export default function DashboardProducts({
                         }}
                       >
                         <Layers size={15} />
-                      </button>
+                      </button>}
                       <button
                         className="dash-products__action-btn"
                         aria-label="Editar"
@@ -1861,9 +1899,18 @@ export default function DashboardProducts({
                   <span>Eliminar precios de oferta</span>
                 </label>
               </div>
+              <div className="dash-products__modal-field">
+                <label htmlFor="bulk-quantity-offer">Promoción por cantidad</label>
+                <select id="bulk-quantity-offer" className="dash-products__modal-select" value={bulkQuantityOffer} onChange={(event) => setBulkQuantityOffer(event.target.value)}>
+                  <option value="unchanged">Sin cambios</option>
+                  <option value="none">Quitar promoción</option>
+                  <option value="2x1">2x1</option>
+                  <option value="3x2">3x2</option>
+                </select>
+              </div>
 
               {/* Preview */}
-              {(bulkDeleteOffers ||
+              {(bulkDeleteOffers || bulkQuantityOffer !== "unchanged" ||
                 (bulkValue && parseFloat(bulkValue) > 0)) && (
                 <div className="dash-products__modal-preview">
                   <AlertTriangle size={14} />
@@ -1871,7 +1918,7 @@ export default function DashboardProducts({
                     {bulkDeleteOffers &&
                     (!bulkValue || parseFloat(bulkValue) <= 0) ? (
                       <>
-                        Se eliminará el <strong>precio de oferta</strong> de{" "}
+                        Se actualizarán las ofertas de{" "}
                         {bulkScope === "all"
                           ? "todos los productos"
                           : bulkScope === "category"
@@ -1907,7 +1954,7 @@ export default function DashboardProducts({
                 className={`dash-products__modal-apply ${bulkApplied ? "dash-products__modal-apply--done" : ""}`}
                 onClick={handleBulkApply}
                 disabled={
-                  (!bulkDeleteOffers &&
+                  (!bulkDeleteOffers && bulkQuantityOffer === "unchanged" &&
                     (!bulkValue || parseFloat(bulkValue) <= 0)) ||
                   (bulkScope === "category" &&
                     bulkSelectedCategories.length === 0) ||
@@ -2392,6 +2439,14 @@ export default function DashboardProducts({
 
                 {/* Wholesale options Edit */}
                 <div className="dash-products__modal-field dash-products__field--full">
+                  <label htmlFor="edit-quantity-offer">Promoción por cantidad</label>
+                  <select id="edit-quantity-offer" className="dash-products__modal-select" value={editProduct.offer_2x1 ? "2x1" : editProduct.offer_3x2 ? "3x2" : "none"} onChange={(event) => setEditProduct({ ...editProduct, offer_2x1: event.target.value === "2x1", offer_3x2: event.target.value === "3x2" })}>
+                    <option value="none">Sin promoción</option>
+                    <option value="2x1">2x1</option>
+                    <option value="3x2">3x2</option>
+                  </select>
+                </div>
+                <div className="dash-products__modal-field dash-products__field--full">
                   <label className="dash-products__checkbox-label">
                     <input
                       type="checkbox"
@@ -2559,7 +2614,7 @@ export default function DashboardProducts({
                     </div>
                   )}
 
-                  <label className="dash-products__image-upload">
+                  <label data-action-tone="add" className="dash-products__image-upload">
                     <input
                       type="file"
                       accept="image/*"
@@ -2597,7 +2652,7 @@ export default function DashboardProducts({
               </div>
 
               <div className="dash-products__modal-footer">
-                <button
+                <button data-action-tone="cancel"
                   className="dash-products__modal-cancel"
                   onClick={resetEditModal}
                 >
@@ -2643,7 +2698,7 @@ export default function DashboardProducts({
               >
                 Terminar
               </button>
-              <button
+              <button data-action-tone="add"
                 className="dash-products__floating-btn dash-products__floating-btn--primary"
                 onClick={() => {
                   setShowSuccessModal(false);
@@ -2675,7 +2730,7 @@ export default function DashboardProducts({
               </p>
             </div>
             <div className="dash-products__floating-actions">
-              <button
+              <button data-action-tone="cancel"
                 className="dash-products__floating-btn dash-products__floating-btn--secondary"
                 onClick={() => setDeleteConfirmOpen(false)}
               >

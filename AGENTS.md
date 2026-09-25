@@ -296,6 +296,13 @@ export default function ComponentName({
 
 ## ═══════════════════════════════════════
 
+### Colores semánticos de acciones
+
+- Los botones o controles tipo botón para **Agregar/Añadir** y **Subir** usan fondo verde claro: `data-action-tone="add"` o `data-action-tone="upload"`.
+- Los botones para **Cancelar** usan fondo rojo claro: `data-action-tone="cancel"`.
+- Los tonos se definen una sola vez en `src/index.css` con `--action-add-*` y `--action-cancel-*`. Aplicar el atributo también a enlaces o `label` que actúen como botón de estas acciones.
+- Si el texto cambia de acción según el estado, actualizar `data-action-tone` con ese mismo estado.
+
 ### Boton primario (`.btn-primary`)
 
 - Fondo: `var(--accent-color)`, texto: white

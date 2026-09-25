@@ -177,7 +177,7 @@
   align-items: center;
 }
 
-label {
+.login-card label {
   font-size: 0.75rem;
   font-weight: var(--weight-semibold);
   color: var(--text-secondary);
@@ -208,23 +208,32 @@ label {
 
 .input-icon-btn {
   position: absolute;
-  right: 12px;
+  right: var(--space-2);
+  width: var(--space-8);
+  height: var(--space-8);
   background: transparent;
   border: none;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  transition: all 0.2s ease;
 }
 
-.input-icon-btn:focus {
-  outline: none;
+.input-icon-btn:hover {
+  color: var(--accent-color);
+  background: var(--accent-transparent);
 }
 
-input {
+.input-icon-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.login-card input {
   width: 100%;
   box-sizing: border-box;
   padding: 14px 44px 14px 16px;
@@ -237,7 +246,7 @@ input {
   outline: none;
 }
 
-input:focus {
+.login-card input:focus {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px var(--accent-transparent);
 }

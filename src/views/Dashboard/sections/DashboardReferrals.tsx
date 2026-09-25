@@ -259,7 +259,7 @@ export default function DashboardReferrals() {
               </div>
             )}
 
-            <button
+            <button data-action-tone="add"
               type="submit"
               className="dash-referrals__btn"
               disabled={referralMutation.isPending}

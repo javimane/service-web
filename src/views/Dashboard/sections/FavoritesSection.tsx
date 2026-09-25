@@ -57,6 +57,7 @@ export default function FavoritesSection() {
       }),
     onSuccess: () => {
       showSuccess("Producto agregado al carrito.");
+      queryClient.invalidateQueries({ queryKey: ["user-cart"] });
       router.push(`${ROUTES.dashboard}?view=cart`);
     },
     onError: () => showError("No se pudo agregar al carrito."),

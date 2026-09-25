@@ -135,6 +135,7 @@ export default function FavoriteButton({
 
   return (
     <button
+      data-action-tone={isFavorite ? undefined : "add"}
       type="button"
       className={`favorite-btn favorite-btn--${variant} ${
         isFavorite ? "favorite-btn--active" : ""

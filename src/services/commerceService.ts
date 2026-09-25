@@ -42,6 +42,8 @@ export type OrderSummary = {
   delivery_type: DeliveryType;
   total_amount: number | null;
   shipping_cost?: number | null;
+  delivery_eta_minutes?: number | null;
+  scheduled_delivery_date?: string | null;
   quantity: number | null;
   created_at: string;
   user_id?: string;
@@ -126,6 +128,7 @@ export type OrderSummary = {
     subtotal: number;
   }>;
   branch_id?: string | null;
+  origin_address_id?: number | null;
   branch?: Branch | null;
 };
 
@@ -141,6 +144,8 @@ export type OrderServiceAppointment = {
 };
 
 export type Liquidation = {
+  branch_id?: string | null;
+  origin_address_id?: number | null;
   id: string;
   status: 'available' | 'pending' | 'in_process' | 'settled' | 'withheld' | string;
   amount?: number;
@@ -159,14 +164,19 @@ export type Branch = {
   id: string;
   company_id: number;
   name: string;
-  street?: string | null;
-  number?: string | null;
-  floor?: string | null;
+  is_main?: boolean;
+  address_id?: number | null;
+  street_name?: string | null;
+  street_number?: string | null;
+  floor_apartment?: string | null;
   zip_code?: string | null;
   province_id?: number | null;
   department_id?: number | null;
-  lat?: number | null;
-  lng?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  delivery_radius_km?: number | null;
+  delivery_eta_minutes?: number | null;
+  own_riders_available?: boolean;
   phone?: string | null;
   opening_hours?: string | null;
   is_open?: boolean;
@@ -257,17 +267,26 @@ export type RiderVehicle = {
   is_active: boolean;
 };
 
+export type FleetVehicle = RiderVehicle & {
+  employer_id: string;
+  assigned_rider_id: string | null;
+  documents: RiderDocument[];
+};
+
 export type RiderDocument = {
   id: string;
-  document_type: 'driving_license' | 'vehicle_registration' | 'insurance' | 'vtv_rto' | 'criminal_record' | string;
+  rider_vehicle_id?: string | null;
+  document_type: 'driving_license' | 'vehicle_registration' | 'insurance' | 'criminal_record' | string;
   storage_path: string;
   file_name: string;
   mime_type?: string | null;
   expires_at?: string | null;
+  created_at?: string;
 };
 
 export type RiderEmployee = {
   id: string;
+  username?: string | null;
   first_name?: string;
   last_name?: string;
   email?: string;
@@ -275,9 +294,25 @@ export type RiderEmployee = {
   phone?: string;
   photo_url?: string;
   status?: 'active' | 'on_trip' | 'inactive';
+  is_blocked?: boolean;
+  blocked_reason?: string | null;
+  blocked_at?: string | null;
+  is_paused?: boolean;
+  paused_reason?: string | null;
+  paused_at?: string | null;
+  verification_status?: 'pending' | 'under_review' | 'verified' | 'rejected';
+  verification_note?: string | null;
   vehicle?: RiderVehicle | null;
   vehicles?: RiderVehicle[];
   documents?: RiderDocument[];
+  fleet_vehicle_id?: string | null;
+  own_vehicle_id?: string | null;
+  own_vehicle?: RiderVehicle | null;
+  activation?: {
+    has_vehicle: boolean;
+    missing_documents: string[];
+    is_active: boolean;
+  };
 };
 
 export type FleetTrackingItem = {
@@ -312,22 +347,25 @@ export type FleetMetrics = {
 };
 
 export type ProductVariant = {
-  id: number;
+  id: string;
   professional_product_id: string;
+  product_id: string;
+  parent_product_id: string;
+  is_main: boolean;
+  ean?: string | null;
+  is_active?: boolean;
   name: string;
-  attribute_name: string;
-  attribute_value: string;
-  use_product_price?: boolean;
+  attributes: Array<{ name: string; value: string }>;
   price?: number;
   offer_price?: number;
   wholesale_price?: number;
   wholesale_unit?: number;
+  offer_2x1?: boolean;
+  offer_3x2?: boolean;
   installments_enabled?: boolean;
   max_installments?: number;
   free_shipping?: boolean;
-  price_difference: number;
   stock: number;
-  sku?: string | null;
   image_url?: string | null;
   images?: string[];
   images_to_save?: string[];
@@ -343,6 +381,7 @@ export type ProductVariant = {
 export type ShippingPolicy = {
   professional_id?: number;
   has_own_riders: boolean;
+  free_shipping_enabled?: boolean;
   free_shipping_radius_km: number;
   free_shipping_min_amount: number;
   free_shipping_max_weight: number;
@@ -363,13 +402,18 @@ export type CartItem = {
   service_id?: string | null;
   quantity: number;
   subtotal: number;
-  variant_id?: number | null;
-  variant?: ProductVariant | null;
+  unit_price?: number;
   product?: {
     id: string;
     name: string;
     image_url?: string | null;
     price: number;
+    offer_price?: number | null;
+    wholesale?: boolean;
+    wholesale_price?: number | null;
+    wholesale_unit?: number | null;
+    offer_2x1?: boolean;
+    offer_3x2?: boolean;
     stock?: number | null;
     installments_enabled?: boolean;
     max_installments?: number;
@@ -395,12 +439,13 @@ export type Cart = {
 export type CalculateShippingDto = {
   merchant_id?: number;
   professional_product_id?: string;
-  variant_id?: string | number;
+  items?: Array<{ professional_product_id: string; quantity: number }>;
   quantity?: number;
   installments?: number;
   delivery_type?: DeliveryType;
   delivery_address_id?: string;
   branch_id?: string;
+  origin_address_id?: number;
   shipping_address?: {
     street?: string;
     number?: string;
@@ -430,6 +475,8 @@ export type MarketplaceCommission = {
   id: number;
   installments: number;
   commission_pct: number;
+  effective_commission_pct?: number;
+  commission_benefit_pct?: number;
   iva_pct: number;
   iva_commission_pct: number;
   total_commission_pct: number;
@@ -451,6 +498,11 @@ export type PlatformShippingRate = {
 
 export type CalculateShippingResponse = {
   shippingCost: number;
+  product_subtotal?: number;
+  paid_units?: number;
+  buyer_shipping_amount?: number;
+  carrier_shipping_cost?: number;
+  merchant_shipping_subsidy?: number;
   shipping_cost?: number;
   unitPrice: number;
   professionalProduct?: any;
@@ -474,6 +526,9 @@ export type CalculateShippingResponse = {
   free_shipping_reason?: string;
   requires_heavy_vehicle?: boolean;
   delivery_estimate?: string;
+  estimated_delivery_minutes?: number | null;
+  requires_scheduled_delivery?: boolean;
+  scheduled_delivery_date?: string | null;
 };
 
 export type TaxCondition = 'consumidor_final' | 'responsable_inscripto';
@@ -564,18 +619,19 @@ export type CreateUserAddressDto = {
 export type CheckoutDto = {
   professional_id: number;
   professional_product_id?: string;
-  variant_id?: number;
   service_id?: string;
   quantity?: number;
   items?: Array<{
     professional_product_id?: string;
-    variant_id?: number;
     service_id?: string;
     quantity: number;
     unit_price?: number;
   }>;
   delivery_type: DeliveryType;
   branch_id?: string;
+  origin_address_id?: number;
+  delivery_address_id?: string;
+  schedule_for_next_day?: boolean;
   shipping_address?: {
     street: string;
     number: string;
@@ -629,9 +685,16 @@ const query = (params: Record<string, string | number | undefined | null>) => {
 
 export const commerceService = {
   // Orders
-  merchantOrders: (page = 1, limit = 10, status?: string, branch_id?: string) =>
+  merchantOrders: (page = 1, limit = 10, status?: string, branch_id?: string, dates: {
+    sale_date_from?: string;
+    sale_date_to?: string;
+    paid_date_from?: string;
+    paid_date_to?: string;
+    delivered_date_from?: string;
+    delivered_date_to?: string;
+  } = {}) =>
     apiClient<PageResponse<OrderSummary>>(
-      `${API_ENDPOINTS.orders.merchant}${query({ page, limit, status, branch_id })}`
+      `${API_ENDPOINTS.orders.merchant}${query({ page, limit, status, branch_id, ...dates })}`
     ),
 
   buyerOrders: (page = 1, limit = 10, status?: string) =>
@@ -740,13 +803,27 @@ export const commerceService = {
       method: 'DELETE',
     }),
 
-  checkout: (data: CheckoutDto) =>
-    apiClient<{
-      order: OrderSummary;
-      qr?: PayCloudQrResponse;
-      payment_status: 'approved' | 'pending' | 'rejected';
-      redirect_url?: string;
-    }>(API_ENDPOINTS.orders.checkout, { method: 'POST', body: data }),
+  checkout: async (data: CheckoutDto) => {
+    const response = await apiClient<{
+      order_id: string;
+      payment_method: string;
+      total_amount: number;
+      qr_code?: string;
+      qr_image_url?: string;
+      qr_expires_at?: string;
+    }>(API_ENDPOINTS.orders.checkout, { method: 'POST', body: data });
+    return {
+      order: { id: response.order_id } as OrderSummary,
+      qr: response.qr_code ? {
+        order_id: response.order_id,
+        qr_data: response.qr_code,
+        qr_image_url: response.qr_image_url,
+        expires_at: response.qr_expires_at || '',
+        total_amount: response.total_amount,
+      } : undefined,
+      payment_status: response.qr_code ? 'pending' as const : 'approved' as const,
+    };
+  },
 
   // Shipments workflow
   orderShipment: (orderId: string) =>
@@ -783,7 +860,7 @@ export const commerceService = {
   // Branches
   branches: async (companyId?: number): Promise<Branch[]> => {
     const res = await apiClient<any>(
-      companyId ? API_ENDPOINTS.branches.byCompany(companyId) : API_ENDPOINTS.branches.base
+      companyId ? API_ENDPOINTS.branches.locations(companyId) : API_ENDPOINTS.branches.base
     );
     if (Array.isArray(res)) return res;
     if (res && Array.isArray(res.data)) return res.data;
@@ -791,12 +868,17 @@ export const commerceService = {
     return [];
   },
 
+  professionalLocations: (professionalId: number): Promise<Branch[]> =>
+    apiClient<Branch[]>(API_ENDPOINTS.branches.professionalLocations(professionalId)),
+
   createBranch: (data: Partial<Branch>) =>
     apiClient<Branch>(API_ENDPOINTS.branches.base, { method: 'POST', body: data }),
 
   updateBranch: (id: string, data: Partial<Branch>) =>
-    apiClient<Branch>(API_ENDPOINTS.branches.detail(id), {
-      method: 'PATCH',
+    apiClient<Branch>(id.startsWith('main:')
+      ? API_ENDPOINTS.branches.main(Number(id.slice(5)))
+      : API_ENDPOINTS.branches.detail(id), {
+      method: 'PUT',
       body: data,
     }),
 
@@ -806,9 +888,16 @@ export const commerceService = {
     }),
 
   // Liquidations
-  liquidations: (page = 1, limit = 10, status?: string) =>
+  liquidations: (page = 1, limit = 10, status?: string, branch_id?: string, dates: {
+    date_from?: string;
+    date_to?: string;
+    paid_from?: string;
+    paid_to?: string;
+    scheduled_from?: string;
+    scheduled_to?: string;
+  } = {}) =>
     apiClient<PageResponse<Liquidation>>(
-      `${API_ENDPOINTS.liquidations.base}${query({ page, limit, status })}`
+      `${API_ENDPOINTS.liquidations.base}${query({ page, limit, status, branch_id, ...dates })}`
     ),
 
   liquidationDetail: (id: string) =>
@@ -819,7 +908,7 @@ export const commerceService = {
     dateFrom: string;
     dateTo: string;
     includeTaxes: boolean;
-    branchId?: number;
+    branchId?: string;
     language: 'es' | 'en';
   }) =>
     apiClient<{ queued: boolean; message: string }>(
@@ -839,6 +928,45 @@ export const commerceService = {
 
   employees: () =>
     apiClient<RiderEmployee[]>(API_ENDPOINTS.logistics.employees),
+
+  fleetVehicles: () =>
+    apiClient<FleetVehicle[]>(API_ENDPOINTS.logistics.fleetVehicles),
+
+  createFleetVehicle: (data: Omit<RiderVehicle, 'id' | 'is_active'>) =>
+    apiClient<FleetVehicle>(API_ENDPOINTS.logistics.fleetVehicles, {
+      method: 'POST', body: data,
+    }),
+
+  updateFleetVehicle: (vehicleId: string, data: Omit<RiderVehicle, 'id' | 'is_active'>) =>
+    apiClient<FleetVehicle>(API_ENDPOINTS.logistics.fleetVehicle(vehicleId), {
+      method: 'PUT', body: data,
+    }),
+
+  deleteFleetVehicle: (vehicleId: string) =>
+    apiClient<void>(API_ENDPOINTS.logistics.fleetVehicle(vehicleId), {
+      method: 'DELETE',
+    }),
+
+  assignFleetVehicle: (employeeId: string, vehicleId: string | null) =>
+    apiClient<{ fleet_vehicle_id: string | null }>(API_ENDPOINTS.logistics.assignedVehicle(employeeId), {
+      method: 'PUT', body: { fleet_vehicle_id: vehicleId },
+    }),
+
+  setOwnVehicle: (employeeId: string, vehicle: Omit<RiderVehicle, 'id' | 'is_active'>) =>
+    apiClient<RiderVehicle>(API_ENDPOINTS.logistics.ownVehicle(employeeId), {
+      method: 'PUT', body: vehicle,
+    }),
+
+  createFleetDocumentUploadUrl: (vehicleId: string, fileName: string) =>
+    apiClient<{ signedUrl: string; token: string; storage_path: string }>(
+      API_ENDPOINTS.logistics.fleetVehicleDocumentUploadUrl(vehicleId),
+      { method: 'POST', body: { file_name: fileName } },
+    ),
+
+  createFleetDocument: (vehicleId: string, data: Omit<RiderDocument, 'id'>) =>
+    apiClient<RiderDocument>(API_ENDPOINTS.logistics.fleetVehicleDocuments(vehicleId), {
+      method: 'POST', body: data,
+    }),
 
   createEmployee: (data: Partial<RiderEmployee> & { password?: string }) =>
     apiClient<RiderEmployee>(API_ENDPOINTS.logistics.employees, {
@@ -875,6 +1003,12 @@ export const commerceService = {
   documents: (employeeId: string) =>
     apiClient<RiderDocument[]>(API_ENDPOINTS.logistics.documents(employeeId)),
 
+  riderDocumentUrl: (employeeId: string, documentId: string) =>
+    apiClient<{ url: string }>(API_ENDPOINTS.logistics.documentUrl(employeeId, documentId)),
+
+  fleetVehicleDocumentUrl: (vehicleId: string, documentId: string) =>
+    apiClient<{ url: string }>(API_ENDPOINTS.logistics.fleetVehicleDocumentUrl(vehicleId, documentId)),
+
   createDocumentUploadUrl: (employeeId: string, fileName: string) =>
     apiClient<{ signedUrl: string; token: string; storage_path: string }>(
       API_ENDPOINTS.logistics.documentUploadUrl(employeeId),
@@ -905,19 +1039,13 @@ export const commerceService = {
   variants: (professionalProductId: string) =>
     apiClient<ProductVariant[]>(API_ENDPOINTS.products.variants(professionalProductId)),
 
-  createVariant: (data: Omit<ProductVariant, 'id' | 'created_at'>) =>
-    apiClient<ProductVariant>(API_ENDPOINTS.products.variants(data.professional_product_id), {
+  linkVariant: (professionalProductId: string, productId: string) =>
+    apiClient<{ parent_product_id: string; child_product_id: string }>(API_ENDPOINTS.products.variants(professionalProductId), {
       method: 'POST',
-      body: data,
+      body: { product_id: productId },
     }),
 
-  updateVariant: (id: number, data: Partial<ProductVariant>) =>
-    apiClient<ProductVariant>(API_ENDPOINTS.products.variantDetail(id), {
-      method: 'PUT',
-      body: data,
-    }),
-
-  deleteVariant: (id: number) =>
+  deleteVariant: (id: string) =>
     apiClient<{ success: boolean }>(API_ENDPOINTS.products.variantDetail(id), {
       method: 'DELETE',
     }),
@@ -981,7 +1109,6 @@ export const commerceService = {
     professional_product_id?: string;
     service_id?: string;
     quantity: number;
-    variant_id?: number;
   }) =>
     apiClient<Cart>(API_ENDPOINTS.users.cartItems, { method: 'POST', body: data }),
 

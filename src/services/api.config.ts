@@ -86,6 +86,9 @@ export const API_ENDPOINTS = {
   branches: {
     base: `${API_BASE_URL}/api/branches`,
     byCompany: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}`,
+    locations: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}/locations`,
+    professionalLocations: (professionalId: number) => `${API_BASE_URL}/api/branches/professional/${professionalId}/locations`,
+    main: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}/main`,
     detail: (id: string) => `${API_BASE_URL}/api/branches/${id}`,
   },
   liquidations: {
@@ -101,10 +104,18 @@ export const API_ENDPOINTS = {
     history: `${API_BASE_URL}/api/logistics/dashboard/history`,
     fleetTracking: `${API_BASE_URL}/api/logistics/dashboard/fleet-tracking`,
     employees: `${API_BASE_URL}/api/logistics/employees`,
+    fleetVehicles: `${API_BASE_URL}/api/logistics/employees/fleet-vehicles`,
+    fleetVehicle: (vehicleId: string) => `${API_BASE_URL}/api/logistics/employees/fleet-vehicles/${vehicleId}`,
+    fleetVehicleDocuments: (vehicleId: string) => `${API_BASE_URL}/api/logistics/employees/fleet-vehicles/${vehicleId}/documents`,
+    fleetVehicleDocumentUrl: (vehicleId: string, documentId: string) => `${API_BASE_URL}/api/logistics/employees/fleet-vehicles/${vehicleId}/documents/${documentId}/view-url`,
+    fleetVehicleDocumentUploadUrl: (vehicleId: string) => `${API_BASE_URL}/api/logistics/employees/fleet-vehicles/${vehicleId}/documents/upload-url`,
+    assignedVehicle: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/assigned-vehicle`,
+    ownVehicle: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/own-vehicle`,
     employeeDetail: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}`,
     employeePassword: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/password`,
     vehicles: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/vehicles`,
     documents: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents`,
+    documentUrl: (employeeId: string, documentId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents/${documentId}/view-url`,
     documentUploadUrl: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents/upload-url`,
   },
   chats: {
@@ -170,7 +181,7 @@ export const API_ENDPOINTS = {
     byEan: (ean: string) => `${API_BASE_URL}/api/products/ean/${ean}`,
     variants: (professionalProductId: string) =>
       `${API_BASE_URL}/api/products/variants/${professionalProductId}`,
-    variantDetail: (id: number) =>
+    variantDetail: (id: string) =>
       `${API_BASE_URL}/api/products/variants/${id}`,
     freeShippingBulk: (professionalId: number) =>
       `${API_BASE_URL}/api/products/professional/${professionalId}/free-shipping-bulk`,

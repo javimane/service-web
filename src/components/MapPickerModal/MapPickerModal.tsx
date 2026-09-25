@@ -169,7 +169,7 @@ export default function MapPickerModal({
             Hacé click en el mapa para colocar el pin en la ubicación exacta.
           </p>
           <div className="map-picker-actions">
-            <button
+            <button data-action-tone="cancel"
               className="map-picker-btn map-picker-btn--secondary"
               onClick={onClose}
             >

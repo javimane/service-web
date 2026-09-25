@@ -174,7 +174,7 @@ export default function AvatarSection({ userId }: AvatarSectionProps) {
                   </>
                 )}
               </button>
-              <button
+              <button data-action-tone="cancel"
                 type="button"
                 className="avatar-confirm-btn avatar-confirm-btn--cancel"
                 onClick={handleCancel}

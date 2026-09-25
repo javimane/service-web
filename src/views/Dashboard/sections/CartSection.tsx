@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -25,13 +25,25 @@ import {
   CartItem,
   DeliveryType,
   Branch,
+  UserAddress,
+  UserPaymentMethod,
   PayCloudQrResponse,
+  CalculateShippingResponse,
 } from "@/services/commerceService";
 import { useAlert } from "@/context/AlertContext";
+import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 import Modal from "@/components/Modal/Modal";
+import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
 import { ROUTES } from "@/routes/paths";
 import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
+import {
+  clearGuestCart,
+  getGuestCart,
+  removeGuestCartItem,
+  updateGuestCartItem,
+} from "@/utils/guestCart";
 import "./CartSection.css";
 
 export default function CartSection() {
@@ -39,20 +51,25 @@ export default function CartSection() {
   setApiAccessToken(token);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user, loading: isAuthLoading } = useAuth();
+  const { openAuth } = useAuthModal();
   const { showSuccess, showError } = useAlert();
 
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("pickup");
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
-  const [destZip, setDestZip] = useState("");
-  const [streetAddress, setStreetAddress] = useState("");
-  const [cityAddress, setCityAddress] = useState("");
+  const [selectedAddressId, setSelectedAddressId] = useState("");
   const [shippingCost, setShippingCost] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState("");
+  const [shippingQuote, setShippingQuote] = useState<CalculateShippingResponse | null>(null);
+  const [scheduleForNextDay, setScheduleForNextDay] = useState(false);
+  const [quotedFor, setQuotedFor] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"getnet" | "paycloud_qr">("paycloud_qr");
+  const [selectedCardId, setSelectedCardId] = useState("");
   const [installments, setInstallments] = useState(1);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [activeQrData, setActiveQrData] = useState<PayCloudQrResponse | null>(null);
   const [qrTimerSeconds, setQrTimerSeconds] = useState(900); // 15 min
+  const isMigratingGuestCart = useRef(false);
 
   const {
     data: cart,
@@ -60,105 +77,217 @@ export default function CartSection() {
     isError,
     refetch: refetchCart,
   } = useQuery<Cart>({
-    queryKey: ["user-cart"],
-    queryFn: () => commerceService.cart(),
+    queryKey: ["user-cart", user?.id ?? "guest"],
+    queryFn: () => (user ? commerceService.cart() : getGuestCart()),
+    enabled: !isAuthLoading,
   });
 
   const items = cart?.items ?? [];
-  const merchantId = cart?.professional_id || 1;
+  const merchantId = cart?.professional_id;
+  const hasService = items.some((item) =>
+    Boolean(item.service_id || item.service),
+  );
+  const activeDeliveryType: DeliveryType = hasService
+    ? "coordinate_with_merchant"
+    : deliveryType;
 
   // Fetch branches for merchant if pickup selected
   const { data: rawBranches } = useQuery({
     queryKey: ["merchant-branches", merchantId],
-    queryFn: () => commerceService.branches(merchantId),
-    enabled: Boolean(merchantId),
+    queryFn: () => commerceService.professionalLocations(merchantId!),
+    enabled: Boolean(merchantId) && !hasService,
   });
 
-  const branches: Branch[] = Array.isArray(rawBranches)
-    ? rawBranches
-    : Array.isArray((rawBranches as any)?.data)
-    ? (rawBranches as any).data
-    : Array.isArray((rawBranches as any)?.items)
-    ? (rawBranches as any).items
-    : [];
+  const branches = useMemo<Branch[]>(() => {
+    if (Array.isArray(rawBranches)) return rawBranches;
+    if (Array.isArray((rawBranches as any)?.data)) {
+      return (rawBranches as any).data;
+    }
+    if (Array.isArray((rawBranches as any)?.items)) {
+      return (rawBranches as any).items;
+    }
+    return [];
+  }, [rawBranches]);
+
+  const { data: userAddresses = [] } = useQuery<UserAddress[]>({
+    queryKey: ["user-addresses", user?.id],
+    queryFn: () => commerceService.getUserAddresses(),
+    enabled: Boolean(user),
+  });
+  const { data: savedCards = [] } = useQuery<UserPaymentMethod[]>({
+    queryKey: ["user-payment-methods", user?.id],
+    queryFn: () => commerceService.getUserPaymentMethods(),
+    enabled: Boolean(user),
+  });
+  useEffect(() => {
+    if (!selectedCardId && savedCards.length) {
+      setSelectedCardId((savedCards.find((card) => card.is_default) || savedCards[0]).id);
+    }
+  }, [selectedCardId, savedCards]);
 
   useEffect(() => {
-    if (branches.length > 0 && !selectedBranchId) {
-      const firstPickup = branches.find((b) => b.is_pickup_point) || branches[0];
-      if (firstPickup?.id) {
-        setSelectedBranchId(firstPickup.id);
-      }
+    const available = userAddresses.filter((address) => address.latitude != null && address.longitude != null);
+    if (!available.some((address) => address.id === selectedAddressId)) {
+      setSelectedAddressId((available.find((address) => address.is_default) || available[0])?.id || "");
     }
-  }, [branches, selectedBranchId]);
+  }, [selectedAddressId, userAddresses]);
+
+  useEffect(() => {
+    if (!user?.id || isMigratingGuestCart.current) return;
+
+    const guestCart = getGuestCart();
+    if (guestCart.items.length === 0) return;
+
+    isMigratingGuestCart.current = true;
+
+    const migrateGuestCart = async () => {
+      try {
+        let updatedCart: Cart | null = null;
+
+        for (const item of guestCart.items) {
+          const productReference = {
+            product_id: item.product_id || undefined,
+            professional_product_id: item.professional_product_id || undefined,
+          };
+
+          updatedCart = await commerceService.addCartItem({
+            ...productReference,
+            service_id: item.service_id || undefined,
+            quantity: item.quantity,
+          });
+        }
+
+        clearGuestCart();
+        if (updatedCart) {
+          queryClient.setQueryData(["user-cart", user.id], updatedCart);
+        } else {
+          await queryClient.invalidateQueries({
+            queryKey: ["user-cart", user.id],
+          });
+        }
+      } catch {
+        showError(
+          "Iniciaste sesión, pero no pudimos transferir tu carrito. Intentá nuevamente.",
+        );
+      } finally {
+        isMigratingGuestCart.current = false;
+      }
+    };
+
+    void migrateGuestCart();
+  }, [queryClient, showError, user?.id]);
+
+  useEffect(() => {
+    const current = branches.find((branch) => branch.id === selectedBranchId);
+    const canUse = (branch: Branch) => deliveryType === "pickup"
+      ? branch.is_pickup_point
+      : branch.is_open !== false || branch.own_riders_available;
+    if ((!current || !canUse(current)) && branches.length) {
+      const available = branches.find(canUse);
+      setSelectedBranchId(available?.id || "");
+    }
+  }, [branches, selectedBranchId, deliveryType]);
+  useEffect(() => { setScheduleForNextDay(false); }, [selectedBranchId, deliveryType]);
+
+  const selectedBranch = branches.find((branch) => branch.id === selectedBranchId);
+  const originSelection = selectedBranch?.is_main
+    ? { origin_address_id: selectedBranch.address_id ?? undefined }
+    : { branch_id: selectedBranchId || undefined };
+  const quoteKey = JSON.stringify({
+    items: items.map((item) => [item.id, item.quantity]),
+    selectedAddressId,
+    selectedBranchId,
+  });
 
   // Mutations
   const updateQtyMutation = useMutation({
     mutationFn: ({ id, qty }: { id: string; qty: number }) =>
-      commerceService.updateCartItem(id, qty),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user-cart"] }),
+      user
+        ? commerceService.updateCartItem(id, qty)
+        : Promise.resolve(updateGuestCartItem(id, qty)),
+    onSuccess: (updatedCart) => {
+      queryClient.setQueryData(
+        ["user-cart", user?.id ?? "guest"],
+        updatedCart,
+      );
+    },
   });
 
   const removeMutation = useMutation({
-    mutationFn: (id: string) => commerceService.removeCartItem(id),
-    onSuccess: () => {
+    mutationFn: (id: string) =>
+      user
+        ? commerceService.removeCartItem(id)
+        : Promise.resolve(removeGuestCartItem(id)),
+    onSuccess: (updatedCart) => {
       showSuccess("Artículo eliminado del carrito.");
-      queryClient.invalidateQueries({ queryKey: ["user-cart"] });
+      queryClient.setQueryData(
+        ["user-cart", user?.id ?? "guest"],
+        updatedCart,
+      );
     },
   });
 
   const clearCartMutation = useMutation({
-    mutationFn: () => commerceService.clearCart(),
-    onSuccess: () => {
+    mutationFn: () =>
+      user ? commerceService.clearCart() : Promise.resolve(clearGuestCart()),
+    onSuccess: (updatedCart) => {
       showSuccess("Carrito vaciado.");
-      queryClient.invalidateQueries({ queryKey: ["user-cart"] });
+      queryClient.setQueryData(
+        ["user-cart", user?.id ?? "guest"],
+        updatedCart,
+      );
     },
   });
 
   const calculateShippingMutation = useMutation({
-    mutationFn: () =>
-      commerceService.calculateShipping({
-        merchant_id: merchantId,
-        destination_zip: destZip.trim(),
-        items_count: items.reduce((acc, i) => acc + i.quantity, 0),
-      }),
-    onSuccess: (res: any) => {
-      if (Array.isArray(res) && res.length > 0) {
-        setShippingCost(res[0].price);
-        setEstimatedTime(res[0].estimated_delivery);
-        showSuccess("Costo de envío calculado.");
-      } else if (res && typeof res.shippingCost === "number") {
-        setShippingCost(res.shippingCost);
-        setEstimatedTime(res.delivery_estimate || "24 - 48 hs hábiles");
-        showSuccess("Costo de envío calculado.");
-      } else {
-        setShippingCost(1800);
-        setEstimatedTime("24 - 48 hs hábiles");
+    mutationFn: () => {
+      const products = items.filter((item) => item.professional_product_id);
+      if (!products.length || !selectedAddressId || !selectedBranch) {
+        throw new Error("Seleccioná una sucursal y una dirección de entrega.");
       }
+      return commerceService.calculateShipping({
+        items: products.map((item) => ({
+          professional_product_id: item.professional_product_id!,
+          quantity: item.quantity,
+        })),
+        delivery_type: "shipment",
+        delivery_address_id: selectedAddressId,
+        ...originSelection,
+      });
+    },
+    onSuccess: (res) => {
+      setShippingCost(res.shippingCost);
+      setEstimatedTime(res.delivery_estimate || "");
+      setShippingQuote(res);
+      setQuotedFor(quoteKey);
+      showSuccess("Costo de envío calculado.");
     },
     onError: () => {
-      setShippingCost(1800);
-      setEstimatedTime("24 - 48 hs hábiles");
+      setQuotedFor("");
+      setShippingQuote(null);
+      showError("No se pudo calcular el envío para esta dirección.");
     },
   });
 
   const checkoutMutation = useMutation({
     mutationFn: () =>
       commerceService.checkout({
-        professional_id: merchantId,
-        delivery_type: deliveryType,
-        branch_id: deliveryType === "pickup" ? selectedBranchId : undefined,
-        shipping_address:
-          deliveryType === "shipment"
-            ? {
-                street: streetAddress,
-                number: "123",
-                city: cityAddress || "Buenos Aires",
-                state: "Buenos Aires",
-                zip_code: destZip,
-              }
-            : undefined,
-        shipping_cost: deliveryType === "shipment" ? shippingCost : 0,
+        professional_id: merchantId!,
+        items: items.map((item) => ({
+          professional_product_id: item.professional_product_id || undefined,
+          service_id: item.service_id || undefined,
+          quantity: item.quantity,
+        })),
+        delivery_type: activeDeliveryType,
+        ...(!hasService ? originSelection : {}),
+        delivery_address_id: activeDeliveryType === "shipment" ? selectedAddressId : undefined,
+        schedule_for_next_day: activeDeliveryType === "shipment" &&
+          quotedFor === quoteKey && shippingQuote?.requires_scheduled_delivery
+          ? scheduleForNextDay : undefined,
         payment_method: paymentMethod,
+        card_token: paymentMethod === "getnet"
+          ? savedCards.find((card) => card.id === selectedCardId)?.getnet_card_token
+          : undefined,
         installments: paymentMethod === "getnet" ? installments : 1,
       }),
     onSuccess: (res) => {
@@ -185,7 +314,35 @@ export default function CartSection() {
   }, [qrModalOpen, qrTimerSeconds]);
 
   const subtotal = items.reduce((acc, curr) => acc + (curr.subtotal || 0), 0);
-  const total = subtotal + (deliveryType === "shipment" ? shippingCost : 0);
+  const total =
+    subtotal + (activeDeliveryType === "shipment" && quotedFor === quoteKey ? shippingCost : 0);
+
+  const handleCheckout = () => {
+    if (!user) {
+      openAuth("login");
+      return;
+    }
+
+    if (!hasService && (!selectedBranch ||
+      (activeDeliveryType === "pickup" && !selectedBranch.is_pickup_point) ||
+      (activeDeliveryType === "shipment" && selectedBranch.is_open === false && !selectedBranch.own_riders_available))) {
+      showError("Seleccioná una sucursal disponible para el retiro o envío.");
+      return;
+    }
+    if (activeDeliveryType === "shipment" && quotedFor !== quoteKey) {
+      showError("Calculá el costo de envío con la sucursal y dirección elegidas.");
+      return;
+    }
+    if (activeDeliveryType === "shipment" && shippingQuote?.requires_scheduled_delivery && !scheduleForNextDay) {
+      showError("Confirmá el envío programado para mañana.");
+      return;
+    }
+    if (paymentMethod === "getnet" && !savedCards.find((card) => card.id === selectedCardId)?.getnet_card_token) {
+      showError("Seleccioná una tarjeta guardada para pagar");
+      return;
+    }
+    checkoutMutation.mutate();
+  };
 
   // Check if any product is perishable or has installment limits
   const hasPerishable = items.some((i) => i.product?.is_food_perishable);
@@ -249,8 +406,11 @@ export default function CartSection() {
             <div className="merchant-group-banner">
               <Store size={18} />
               <span>
-                Comprando en <strong>Comercio #{merchantId}</strong>. Cada pedido se
-                procesa individualmente por comercio para asegurar el despacho.
+                {hasService ? "Contratando a" : "Comprando en"}{" "}
+                <strong>Comercio #{merchantId}</strong>.{" "}
+                {hasService
+                  ? "El profesional se comunicará para acordar los detalles del servicio."
+                  : "Cada pedido se procesa individualmente por comercio para asegurar el despacho."}
               </span>
             </div>
 
@@ -258,7 +418,8 @@ export default function CartSection() {
               {items.map((item) => {
                 const name = item.product?.name || item.service?.name || "Artículo";
                 const img = item.product?.image_url;
-                const unitPrice = item.product?.price || item.service?.price || 0;
+                const unitPrice = item.unit_price ?? item.product?.price ?? item.service?.price ?? 0;
+                const isServiceItem = Boolean(item.service_id || item.service);
 
                 return (
                   <div key={item.id} className="cart-item-card">
@@ -273,47 +434,51 @@ export default function CartSection() {
 
                       <div className="cart-item-info">
                         <h4 className="cart-item-name">{name}</h4>
-                        {item.variant && (
-                          <span className="cart-item-variant">
-                            {item.variant.attribute_name}: {item.variant.attribute_value}
-                          </span>
-                        )}
                         <span className="cart-item-unit-price">
-                          ${unitPrice.toLocaleString("es-AR")} c/u
+                          ${unitPrice.toLocaleString("es-AR")}
+                          {isServiceItem ? " por servicio" : " c/u"}
                         </span>
                       </div>
                     </div>
 
                     <div className="cart-item-card__actions">
-                      <div className="cart-qty-control">
-                        <button
-                          type="button"
-                          className="qty-btn"
-                          disabled={item.quantity <= 1 || updateQtyMutation.isPending}
-                          onClick={() =>
-                            updateQtyMutation.mutate({
-                              id: item.id,
-                              qty: item.quantity - 1,
-                            })
-                          }
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span className="qty-value">{item.quantity}</span>
-                        <button
-                          type="button"
-                          className="qty-btn"
-                          disabled={updateQtyMutation.isPending}
-                          onClick={() =>
-                            updateQtyMutation.mutate({
-                              id: item.id,
-                              qty: item.quantity + 1,
-                            })
-                          }
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
+                      {isServiceItem ? (
+                        <span className="cart-item-card__service-label">
+                          Servicio
+                        </span>
+                      ) : (
+                        <div className="cart-qty-control">
+                          <button
+                            type="button"
+                            className="qty-btn"
+                            disabled={
+                              item.quantity <= 1 || updateQtyMutation.isPending
+                            }
+                            onClick={() =>
+                              updateQtyMutation.mutate({
+                                id: item.id,
+                                qty: item.quantity - 1,
+                              })
+                            }
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="qty-value">{item.quantity}</span>
+                          <button
+                            type="button"
+                            className="qty-btn"
+                            disabled={updateQtyMutation.isPending}
+                            onClick={() =>
+                              updateQtyMutation.mutate({
+                                id: item.id,
+                                qty: item.quantity + 1,
+                              })
+                            }
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      )}
 
                       <div className="cart-item-subtotal">
                         ${item.subtotal.toLocaleString("es-AR")}
@@ -337,56 +502,68 @@ export default function CartSection() {
             <div className="cart-delivery-box">
               <h3 className="cart-box-title">Método de Entrega</h3>
               <div className="delivery-options-grid">
-                <button
-                  type="button"
-                  className={`delivery-option ${
-                    deliveryType === "pickup" ? "delivery-option--active" : ""
-                  }`}
-                  onClick={() => setDeliveryType("pickup")}
-                >
-                  <Store size={20} />
-                  <div>
-                    <strong>Retiro en sucursal</strong>
-                    <p>Gratis • Retiro inmediato al estar listo</p>
-                  </div>
-                </button>
+                {!hasService ? (
+                  <>
+                    <button
+                      type="button"
+                      className={`delivery-option ${
+                        deliveryType === "pickup"
+                          ? "delivery-option--active"
+                          : ""
+                      }`}
+                      onClick={() => setDeliveryType("pickup")}
+                    >
+                      <Store size={20} />
+                      <div>
+                        <strong>Retiro en sucursal</strong>
+                        <p>Gratis • Retiro inmediato al estar listo</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`delivery-option ${
+                        deliveryType === "shipment"
+                          ? "delivery-option--active"
+                          : ""
+                      }`}
+                      onClick={() => setDeliveryType("shipment")}
+                    >
+                      <Truck size={20} />
+                      <div>
+                        <strong>Envío a domicilio</strong>
+                        <p>Por rider o transporte asignado</p>
+                      </div>
+                    </button>
+                  </>
+                ) : null}
 
                 <button
                   type="button"
                   className={`delivery-option ${
-                    deliveryType === "shipment" ? "delivery-option--active" : ""
-                  }`}
-                  onClick={() => setDeliveryType("shipment")}
-                >
-                  <Truck size={20} />
-                  <div>
-                    <strong>Envío a domicilio</strong>
-                    <p>Por rider o transporte asignado</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className={`delivery-option ${
-                    deliveryType === "coordinate_with_merchant"
+                    activeDeliveryType === "coordinate_with_merchant"
                       ? "delivery-option--active"
                       : ""
-                  }`}
+                  } ${hasService ? "delivery-option--service" : ""}`}
                   onClick={() => setDeliveryType("coordinate_with_merchant")}
                 >
                   <Clock size={20} />
                   <div>
                     <strong>Acordar con vendedor</strong>
-                    <p>Para coordinar logística particular</p>
+                    <p>
+                      {hasService
+                        ? "El profesional se comunicará para coordinar el servicio"
+                        : "Para coordinar logística particular"}
+                    </p>
                   </div>
                 </button>
               </div>
 
               {/* Pickup branch selection */}
-              {deliveryType === "pickup" && (
+              {!hasService && deliveryType === "pickup" && (
                 <div className="delivery-details-subbox">
                   <label className="commercial-label">Seleccionar sucursal de retiro:</label>
-                  {branches.length === 0 ? (
+                  {branches.filter((branch) => branch.is_pickup_point).length === 0 ? (
                     <p className="no-branches-warning">
                       El comercio no tiene sucursales cargadas aún. Se coordinará por mensajería.
                     </p>
@@ -396,56 +573,70 @@ export default function CartSection() {
                       value={selectedBranchId}
                       onChange={(e) => setSelectedBranchId(e.target.value)}
                     >
-                      {branches.map((b) => (
+                      {branches.filter((branch) => branch.is_pickup_point).map((b) => (
                         <option key={b.id} value={b.id}>
-                          {b.name} — {b.street} {b.number} ({b.opening_hours || "Horario comercial"})
+                          {b.name} — {b.street_name} {b.street_number} ({b.opening_hours || "Horario comercial"})
+                          {b.delivery_eta_minutes ? ` · Demora ${b.delivery_eta_minutes} min` : ""}
                         </option>
                       ))}
                     </select>
                   )}
+                  {selectedBranch?.is_open === false && <p>Podés comprar ahora y retirar el pedido cuando te convenga.</p>}
                 </div>
               )}
 
               {/* Shipping address & calculator */}
-              {deliveryType === "shipment" && (
+              {!hasService && deliveryType === "shipment" && (
                 <div className="delivery-details-subbox">
+                  <label className="commercial-label">Sucursal de origen</label>
+                  <select className="branch-select" value={selectedBranchId}
+                    onChange={(event) => setSelectedBranchId(event.target.value)}>
+                    {branches.filter((branch) => branch.is_open !== false || branch.own_riders_available).map((branch) => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.name}{branch.delivery_eta_minutes ? ` · Demora ${branch.delivery_eta_minutes} min` : ""}
+                        {branch.is_open === false ? " · Envío mañana" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedBranch?.delivery_eta_minutes != null &&
+                    <p>Demora estimada {selectedBranch.is_open === false ? "desde el despacho de mañana" : "de esta sucursal"}: {selectedBranch.delivery_eta_minutes} minutos.</p>}
+                  <label className="commercial-label">Dirección de entrega</label>
+                  <select className="branch-select" value={selectedAddressId}
+                    onChange={(event) => setSelectedAddressId(event.target.value)}>
+                    <option value="">Seleccionar dirección guardada</option>
+                    {userAddresses.filter((address) => address.latitude != null && address.longitude != null).map((address) => (
+                      <option key={address.id} value={address.id}>
+                        {address.name || address.street_name || address.street} {address.street_number || address.number}
+                      </option>
+                    ))}
+                  </select>
+                  {!userAddresses.some((address) => address.latitude != null && address.longitude != null) &&
+                    <p>Guardá una dirección con ubicación en el mapa para pedir el envío.</p>}
                   <div className="shipping-calc-row">
-                    <input
-                      type="text"
-                      placeholder="Código Postal (ej: 1425)"
-                      value={destZip}
-                      onChange={(e) => setDestZip(e.target.value)}
-                    />
                     <button
                       type="button"
                       className="btn-secondary"
-                      disabled={!destZip || calculateShippingMutation.isPending}
+                      disabled={!selectedAddressId || !selectedBranchId || calculateShippingMutation.isPending}
                       onClick={() => calculateShippingMutation.mutate()}
                     >
                       Calcular costo
                     </button>
                   </div>
 
-                  <div className="shipping-address-fields">
-                    <input
-                      type="text"
-                      placeholder="Calle y altura (ej: Av. Libertador 2200)"
-                      value={streetAddress}
-                      onChange={(e) => setStreetAddress(e.target.value)}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Localidad / Barrio"
-                      value={cityAddress}
-                      onChange={(e) => setCityAddress(e.target.value)}
-                    />
-                  </div>
-
-                  {shippingCost > 0 && (
+                  {quotedFor === quoteKey && (
                     <div className="shipping-result-badge">
                       <span>Costo estimado: <strong>${shippingCost.toLocaleString("es-AR")}</strong></span>
-                      <span>Plazo: <strong>{estimatedTime || "24 - 48 hs"}</strong></span>
+                      <span>{shippingQuote?.requires_scheduled_delivery ? "Demora desde el despacho" : "Plazo"}: <strong>{estimatedTime || "A confirmar"}</strong></span>
+                      {shippingQuote?.requires_scheduled_delivery &&
+                        <span>Entrega programable para mañana ({shippingQuote.scheduled_delivery_date?.split("-").reverse().join("/")}).</span>}
                     </div>
+                  )}
+                  {quotedFor === quoteKey && shippingQuote?.requires_scheduled_delivery && (
+                    <label className="cart-schedule-option">
+                      <input type="checkbox" checked={scheduleForNextDay}
+                        onChange={(event) => setScheduleForNextDay(event.target.checked)} />
+                      <span>El comercio está cerrado. Programar el envío con sus riders para mañana.</span>
+                    </label>
                   )}
                 </div>
               )}
@@ -458,18 +649,20 @@ export default function CartSection() {
               <h3 className="cart-box-title">Resumen de la Compra</h3>
 
               <div className="cart-summary-row">
-                <span>Subtotal productos:</span>
+                <span>{hasService ? "Subtotal servicios:" : "Subtotal productos:"}</span>
                 <span>${subtotal.toLocaleString("es-AR")}</span>
               </div>
 
               <div className="cart-summary-row">
                 <span>Envío:</span>
                 <span>
-                  {deliveryType === "pickup"
+                  {activeDeliveryType === "pickup"
                     ? "Gratis"
-                    : deliveryType === "coordinate_with_merchant"
+                    : activeDeliveryType === "coordinate_with_merchant"
                     ? "A convenir"
-                    : `$${shippingCost.toLocaleString("es-AR")}`}
+                    : quotedFor === quoteKey
+                    ? `$${shippingCost.toLocaleString("es-AR")}`
+                    : "Pendiente de cálculo"}
                 </span>
               </div>
 
@@ -492,8 +685,8 @@ export default function CartSection() {
                 >
                   <QrCode size={20} />
                   <div>
-                    <strong>QR Interoperable PayCloud</strong>
-                    <p>Pagá con cualquier billetera (Mercado Pago, MODO, Cuenta DNI)</p>
+                    <strong>QR Interoperable</strong>
+                    <p>Pagá con cualquier billetera (Mercado Pago, MODO, etc.)</p>
                   </div>
                 </div>
 
@@ -507,7 +700,7 @@ export default function CartSection() {
                 >
                   <CreditCard size={20} />
                   <div>
-                    <strong>Tarjeta de Crédito / Débito (Getnet)</strong>
+                    <strong>Tarjeta de Crédito / Débito</strong>
                     <p>Hasta 12 cuotas bancarias habilitadas</p>
                   </div>
                 </div>
@@ -516,6 +709,17 @@ export default function CartSection() {
               {/* Installments selector for Getnet */}
               {paymentMethod === "getnet" && (
                 <div className="installments-box">
+                  <label className="commercial-label">Tarjeta guardada</label>
+                  <select className="installments-select" value={selectedCardId}
+                    onChange={(event) => setSelectedCardId(event.target.value)}>
+                    <option value="">Seleccionar tarjeta</option>
+                    {savedCards.map((card) => (
+                      <option key={card.id} value={card.id}>
+                        {card.card_brand} terminada en {card.last_four}
+                      </option>
+                    ))}
+                  </select>
+                  {savedCards.length === 0 && <p>Guardá una tarjeta en tu perfil para usar este medio de pago.</p>}
                   <label className="commercial-label">Cuotas Disponibles</label>
                   {hasPerishable ? (
                     <div className="perishable-warning-pill">
@@ -551,11 +755,12 @@ export default function CartSection() {
                 </div>
               )}
 
+              <ReturnsPolicyLink />
               <button
                 type="button"
                 className="btn-primary cart-checkout-btn"
-                disabled={checkoutMutation.isPending}
-                onClick={() => checkoutMutation.mutate()}
+                disabled={checkoutMutation.isPending || isAuthLoading}
+                onClick={handleCheckout}
               >
                 <span>Pagar pedido</span>
                 <ArrowRight size={18} />
@@ -591,7 +796,7 @@ export default function CartSection() {
 
             <div className="qr-image-frame">
               {activeQrData.qr_image_url ? (
-                <img src={activeQrData.qr_image_url} alt="QR PayCloud" />
+                <img src={activeQrData.qr_image_url} alt="QR" />
               ) : (
                 <QrCode size={180} />
               )}
@@ -617,6 +822,7 @@ export default function CartSection() {
             >
               Ya realicé el pago
             </button>
+            <ReturnsPolicyLink />
           </div>
         </Modal>
       )}

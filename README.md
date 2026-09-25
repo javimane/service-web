@@ -24,6 +24,7 @@ npm run test
 ## Notas
 
 - Si ejecutas con Node 18, Vite no inicia y veras errores como `CustomEvent is not defined`.
+- Los botones de Agregar/Añadir y Subir usan verde claro (`data-action-tone="add"` / `"upload"`); los de Cancelar usan rojo claro (`data-action-tone="cancel"`). Los colores compartidos estan en `src/index.css` y la regla de uso en `AGENTS.md`.
 
 # React + Vite
 

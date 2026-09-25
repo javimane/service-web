@@ -248,7 +248,7 @@ export default function OrderReviewModal({
           </div>
 
           <div className="order-review-actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="order-review-cancel-btn"
               onClick={onClose}

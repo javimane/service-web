@@ -33,10 +33,12 @@ import Modal from "@/components/Modal/Modal";
 import { useAlert } from "@/context/AlertContext";
 import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
+import { getProfessionalMeAction } from "@/app/actions/professionals";
 import AssignServiceAppointmentModal from "./AssignServiceAppointmentModal";
 import PackageThermalLabelModal from "./PackageThermalLabelModal";
 import ServiceOrderVoucherModal from "./ServiceOrderVoucherModal";
 import BatchOrderTicketsModal from "./BatchOrderTicketsModal";
+import DateRangeFilter, { DateRangeValue, toUtcDateRange } from "./DateRangeFilter";
 import "./SalesSection.css";
 
 const STATUS_FILTERS: Array<{ label: string; value: string }> = [
@@ -57,11 +59,21 @@ export default function SalesSection() {
   const { sessionStatus } = useAuth();
   const { showSuccess, showError } = useAlert();
 
-  const companyId = sessionStatus?.company_id || 1;
+  const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
+  const { data: professional } = useQuery({
+    queryKey: ["professional-me", professionalId],
+    queryFn: async () => (await getProfessionalMeAction({ token: await getAccessToken() }))?.data ?? null,
+    enabled: Boolean(professionalId),
+    staleTime: 1000 * 60 * 5,
+  });
+  const companyData = professional?.companies ?? professional?.Company;
+  const company = Array.isArray(companyData) ? companyData[0] : companyData;
+  const companyId = Number(company?.id ?? sessionStatus?.company_id) || undefined;
 
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [dateRange, setDateRange] = useState<DateRangeValue>({ field: "sale", from: "", to: "" });
   const [isAutoPrintActive, setIsAutoPrintActive] = useState<boolean>(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [selectedOrdersForBatchPrint, setSelectedOrdersForBatchPrint] = useState<OrderSummary[]>([]);
@@ -81,18 +93,19 @@ export default function SalesSection() {
   const [selectedOrderForServiceVoucher, setSelectedOrderForServiceVoucher] = useState<OrderSummary | null>(null);
 
   // Fetch branches
-  const { data: rawBranches } = useQuery({
+  const { data: rawBranches, isError: branchesError } = useQuery({
     queryKey: ["merchant-branches", companyId],
-    queryFn: () => commerceService.branches(companyId),
+    queryFn: () => commerceService.branches(companyId!),
+    enabled: Boolean(companyId),
   });
 
-  const branches: Branch[] = Array.isArray(rawBranches)
+  const branches: Branch[] = React.useMemo(() => Array.isArray(rawBranches)
     ? rawBranches
     : Array.isArray((rawBranches as any)?.data)
       ? (rawBranches as any).data
       : Array.isArray((rawBranches as any)?.items)
         ? (rawBranches as any).items
-        : [];
+        : [], [rawBranches]);
 
   // Restore active branch and auto-print preference from localStorage
   useEffect(() => {
@@ -110,17 +123,37 @@ export default function SalesSection() {
     }
   }, []);
 
-  const { data: ordersData, isLoading, isError, refetch } = useQuery<PageResponse<OrderSummary>>({
-    queryKey: ["merchant-orders", page, statusFilter, selectedBranchId],
+  useEffect(() => {
+    if (rawBranches === undefined || !selectedBranchId) return;
+    if (branches.some((branch) => branch.id === selectedBranchId)) return;
+    setSelectedBranchId("");
+    setPage(1);
+    try {
+      localStorage.removeItem("sercio_sales_branch_id");
+    } catch {
+      // El filtro en memoria también se limpia si el almacenamiento no está disponible.
+    }
+  }, [rawBranches, branches, selectedBranchId]);
+
+  const { data: ordersData, isLoading, isError, error, refetch } = useQuery<PageResponse<OrderSummary>>({
+    queryKey: ["merchant-orders", page, statusFilter, selectedBranchId, dateRange],
     queryFn: () =>
       commerceService.merchantOrders(
         page,
         10,
         statusFilter || undefined,
-        selectedBranchId || undefined
+        selectedBranchId || undefined,
+        {
+          [`${dateRange.field}_date_from`]: toUtcDateRange(dateRange).from,
+          [`${dateRange.field}_date_to`]: toUtcDateRange(dateRange).to,
+        }
       ),
     refetchInterval: isAutoPrintActive ? 10000 : false,
+    enabled: (!dateRange.from || !dateRange.to || dateRange.from <= dateRange.to) &&
+      (!selectedBranchId || branchesError || (rawBranches !== undefined && branches.some((branch) => branch.id === selectedBranchId))),
   });
+  const ordersRouteMissing = (error as { response?: { status?: number } } | null)?.response?.status === 404;
+  const waitingForBranches = Boolean(selectedBranchId) && rawBranches === undefined && !branchesError;
 
   const orders = React.useMemo(
     () => ordersData?.items ?? ordersData?.data ?? [],
@@ -243,7 +276,11 @@ export default function SalesSection() {
 
     const unprinted = orders.filter((o) => {
       if (o.status === "cancelled") return false;
-      if (selectedBranchId && o.branch_id && o.branch_id !== selectedBranchId) return false;
+      if (selectedBranchId) {
+        const orderLocation = o.branch_id ||
+          (o.origin_address_id ? `main:${companyId}` : "");
+        if (orderLocation !== selectedBranchId) return false;
+      }
       try {
         return !localStorage.getItem(`sercio_printed_ticket_${o.id}`);
       } catch {
@@ -256,7 +293,7 @@ export default function SalesSection() {
       setBatchPrintModalOpen(true);
       showSuccess(`¡Venta entrante! Preparando ticket de ${unprinted.length} orden(es)...`);
     }
-  }, [orders, isAutoPrintActive, selectedBranchId, showSuccess]);
+  }, [orders, isAutoPrintActive, selectedBranchId, companyId, showSuccess]);
 
   // Mutations
   const confirmMutation = useMutation({
@@ -457,7 +494,7 @@ export default function SalesSection() {
             <option value="">Todas las sucursales</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.name} {b.street ? `(${b.street} ${b.number || ""})` : ""}
+                {b.name} {b.street_name ? `(${b.street_name} ${b.street_number || ""})` : ""}
               </option>
             ))}
           </select>
@@ -547,8 +584,19 @@ export default function SalesSection() {
         ))}
       </div>
 
+      <DateRangeFilter
+        label="Filtrar ventas por fecha"
+        options={[
+          { value: "sale", label: "venta" },
+          { value: "paid", label: "pago" },
+          { value: "delivered", label: "entrega" },
+        ]}
+        value={dateRange}
+        onChange={(value) => { setDateRange(value); setPage(1); }}
+      />
+
       {/* Content Table / States */}
-      {isLoading ? (
+      {dateRange.from && dateRange.to && dateRange.from > dateRange.to ? null : isLoading || waitingForBranches ? (
         <div className="sales-state sales-state--loading">
           <Clock className="sales-state__spinner" size={32} />
           <p>Cargando ventas...</p>
@@ -556,7 +604,9 @@ export default function SalesSection() {
       ) : isError ? (
         <div className="sales-state sales-state--error">
           <AlertCircle size={32} />
-          <p>Hubo un error al cargar las ventas.</p>
+          <p>{ordersRouteMissing
+            ? "La ruta de ventas no está disponible en la API. Es necesario actualizar o reiniciar la API."
+            : "Hubo un error al cargar las ventas."}</p>
           <button type="button" className="btn-primary" onClick={() => refetch()}>
             Reintentar
           </button>
@@ -564,8 +614,10 @@ export default function SalesSection() {
       ) : orders.length === 0 ? (
         <div className="sales-state sales-state--empty">
           <PackageCheck size={48} />
-          <h3>No se encontraron ventas</h3>
-          <p>Aún no hay pedidos registrados con el filtro seleccionado.</p>
+          <h3>{statusFilter || selectedBranchId || dateRange.from || dateRange.to ? "No hay ventas para este filtro" : "Todavía no tenés ventas"}</h3>
+          <p>{statusFilter || selectedBranchId || dateRange.from || dateRange.to
+            ? "Probá con otro estado, sucursal o período."
+            : "Cuando recibas un pedido, aparecerá acá."}</p>
         </div>
       ) : (
         <div className="sales-table-card">
@@ -652,10 +704,15 @@ export default function SalesSection() {
                       </td>
                       <td>
                         <span className="sales-table__branch-tag">
-                          {order.branch?.name || (order.branch_id ? "Sucursal asignada" : "Central")}
+                          {order.branch?.name || (order.branch_id ? "Sucursal asignada" : "Sucursal Principal")}
                         </span>
                       </td>
-                      <td>{getDeliveryLabel(order.delivery_type)}</td>
+                      <td>
+                        {getDeliveryLabel(order.delivery_type)}
+                        {order.scheduled_delivery_date && (
+                          <span className="sales-table__schedule">Programado: {order.scheduled_delivery_date.split("-").reverse().join("/")}</span>
+                        )}
+                      </td>
                       <td>{getStatusBadge(order.status)}</td>
                       <td className="sales-table__total">
                         ${Number(order.total_amount ?? 0).toLocaleString("es-AR")}
@@ -774,6 +831,12 @@ export default function SalesSection() {
                     {getDeliveryLabel(selectedOrder.delivery_type)}
                   </span>
                 </div>
+                {selectedOrder.scheduled_delivery_date && (
+                  <div>
+                    <span className="order-detail-label">Envío programado:</span>
+                    <span className="order-detail-value">{selectedOrder.scheduled_delivery_date.split("-").reverse().join("/")}</span>
+                  </div>
+                )}
               </div>
 
               {selectedOrder.shipping_address && (
@@ -895,7 +958,7 @@ export default function SalesSection() {
                   >
                     Confirmar pedido
                   </button>
-                  <button
+                  <button data-action-tone="cancel"
                     type="button"
                     className="btn-danger"
                     onClick={() => setCancelModalOpen(true)}
@@ -1071,7 +1134,7 @@ export default function SalesSection() {
                       value={packageImageUrl}
                       onChange={(e) => setPackageImageUrl(e.target.value)}
                     />
-                    <button
+                    <button data-action-tone="upload"
                       type="button"
                       className="btn-secondary"
                       disabled={!packageImageUrl}

@@ -19,12 +19,16 @@ interface StorageConfig {
   publicUrl: string;
 }
 
-async function convertToWebP(file: Blob, quality: number = 0.8): Promise<Blob> {
+async function convertToWebP(
+  file: Blob,
+  quality: number = 0.8,
+  recompressWebP = false,
+): Promise<Blob> {
   if (
     typeof window === "undefined" ||
     !file.type.startsWith("image/") ||
     file.type === "image/gif" ||
-    file.type === "image/webp"
+    (file.type === "image/webp" && !recompressWebP)
   ) {
     return file;
   }
@@ -63,6 +67,34 @@ async function convertToWebP(file: Blob, quality: number = 0.8): Promise<Blob> {
     };
     img.src = url;
   });
+}
+
+/** Reuse the existing WebP conversion for document photos without enlarging files. */
+export async function compressDocumentImage(file: File): Promise<File> {
+  const mimeByExtension: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+  };
+  const inferredType =
+    file.type || mimeByExtension[file.name.split(".").pop()?.toLowerCase() ?? ""];
+  if (!inferredType?.startsWith("image/")) return file;
+
+  const imageFile = file.type
+    ? file
+    : new File([file], file.name, {
+        type: inferredType,
+        lastModified: file.lastModified,
+      });
+  try {
+    const compressed = await convertToWebP(imageFile, 0.8, true);
+    return compressed instanceof File && compressed.size < file.size
+      ? compressed
+      : file;
+  } catch {
+    return file;
+  }
 }
 
 async function uploadFile(configEndpoint: string, input: UploadInput) {

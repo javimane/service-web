@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import LoginPage from "./LoginPage";
 import { supabase } from "../../services/supabaseClient";
+import { authService } from "../../services/authService";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -51,7 +52,7 @@ describe("LoginPage", () => {
     renderWithRouter(React.createElement(LoginPage));
     expect(screen.getByText("Bienvenido")).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText("arquitecto@obsidian.pro"),
+      screen.getByPlaceholderText("tu@email.com o juan_rider"),
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText("••••••••")).toBeInTheDocument();
   });
@@ -63,21 +64,21 @@ describe("LoginPage", () => {
     fireEvent.click(submitBtn);
 
     expect(
-      screen.getByText("El correo electrónico es requerido"),
+      screen.getByText("Ingresá tu email o nombre de usuario"),
     ).toBeInTheDocument();
     expect(screen.getByText("La contraseña es requerida")).toBeInTheDocument();
   });
 
   it("muestra error de formato de email", () => {
     renderWithRouter(React.createElement(LoginPage));
-    const emailInput = screen.getByPlaceholderText("arquitecto@obsidian.pro");
+    const emailInput = screen.getByPlaceholderText("tu@email.com o juan_rider");
     const submitBtn = screen.getByRole("button", { name: /ingresar/i });
 
-    fireEvent.change(emailInput, { target: { value: "emailinvalido" } });
+    fireEvent.change(emailInput, { target: { value: "1emailinvalido" } });
     fireEvent.click(submitBtn);
 
     expect(
-      screen.getByText("El formato del correo es inválido"),
+      screen.getByText("Ingresá un email o nombre de usuario válido"),
     ).toBeInTheDocument();
   });
 
@@ -90,7 +91,7 @@ describe("LoginPage", () => {
     } as any);
 
     renderWithRouter(React.createElement(LoginPage));
-    const emailInput = screen.getByPlaceholderText("arquitecto@obsidian.pro");
+    const emailInput = screen.getByPlaceholderText("tu@email.com o juan_rider");
     const passwordInput = screen.getByPlaceholderText("••••••••");
     const submitBtn = screen.getByRole("button", { name: /ingresar/i });
 
@@ -105,5 +106,24 @@ describe("LoginPage", () => {
         password: "1234567",
       });
     });
+  });
+
+  it("envía el nombre de usuario a la API sin intentar el login de chat", async () => {
+    signInWithPasswordMock.mockClear();
+    renderWithRouter(React.createElement(LoginPage));
+    fireEvent.change(screen.getByPlaceholderText("tu@email.com o juan_rider"), {
+      target: { value: "juan_rider" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("••••••••"), {
+      target: { value: "1234567" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /ingresar/i }));
+    await waitFor(() => {
+      expect(authService.login).toHaveBeenCalledWith({
+        username: "juan_rider",
+        password: "1234567",
+      });
+    });
+    expect(signInWithPasswordMock).not.toHaveBeenCalled();
   });
 });

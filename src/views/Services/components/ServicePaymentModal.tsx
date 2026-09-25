@@ -23,6 +23,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import Modal from "@/components/Modal/Modal";
 import OrderBillingDataCard from "@/components/OrderBillingDataCard/OrderBillingDataCard";
+import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
 import "./ServicePaymentModal.css";
 
 interface ServicePaymentModalProps {
@@ -98,7 +99,7 @@ export default function ServicePaymentModal({
 
   // Available installment plans
   const installmentOptions = [1, 3, 6, 9, 12, 18].filter(
-    (n) => n <= maxInstallments
+    (n) => n <= maxInstallments,
   );
 
   // Card input formatters
@@ -131,7 +132,7 @@ export default function ServicePaymentModal({
     if (!user) {
       showError("Debes iniciar sesión para contratar este servicio.");
       router.push(
-        `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+        `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
       );
       return;
     }
@@ -202,7 +203,7 @@ export default function ServicePaymentModal({
       }
     } catch (err: any) {
       showError(
-        err?.message || "No se pudo procesar el pago. Intenta nuevamente."
+        err?.message || "No se pudo procesar el pago. Intenta nuevamente.",
       );
     } finally {
       setIsSubmitting(false);
@@ -217,8 +218,8 @@ export default function ServicePaymentModal({
     onClose();
     router.push(
       `/mensajes?professionalId=${professionalId}&initialMessage=${encodeURIComponent(
-        msg
-      )}`
+        msg,
+      )}`,
     );
   };
 
@@ -251,7 +252,7 @@ export default function ServicePaymentModal({
               {activeQr.qr_image_url ? (
                 <img
                   src={activeQr.qr_image_url}
-                  alt="QR de Pago PayCloud"
+                  alt="QR de Pago"
                   className="service-payment-modal__qr-img"
                 />
               ) : (
@@ -295,6 +296,7 @@ export default function ServicePaymentModal({
                 <span>Ya realicé el pago</span>
               </button>
             </div>
+            <ReturnsPolicyLink />
           </div>
         ) : completedOrder ? (
           /* Payment Success View */
@@ -382,6 +384,7 @@ export default function ServicePaymentModal({
                 <span>Ver en Mis Compras</span>
               </button>
             </div>
+            <ReturnsPolicyLink />
           </div>
         ) : (
           /* Payment Form View (No Shipping) */
@@ -458,8 +461,8 @@ export default function ServicePaymentModal({
                     <strong>Tarjeta de Crédito / Débito</strong>
                     <span>
                       {installmentsEnabled
-                        ? `Hasta ${maxInstallments} cuotas sin interés (Getnet)`
-                        : "Débito o cuotas fijas (Getnet)"}
+                        ? `Hasta ${maxInstallments} cuotas sin interés`
+                        : "Débito o cuotas fijas"}
                     </span>
                   </div>
                 </button>
@@ -476,7 +479,7 @@ export default function ServicePaymentModal({
                   <QrCode size={20} />
                   <div className="service-payment-modal__method-info">
                     <strong>Código QR interoperable</strong>
-                    <span>PayCloud (MP, MODO, Cuenta DNI, bancos)</span>
+                    <span>MP, MODO, Cuenta DNI, bancos</span>
                   </div>
                 </button>
               </div>
@@ -499,10 +502,10 @@ export default function ServicePaymentModal({
                         {opt === 1
                           ? `1 pago de $${totalToPay.toLocaleString("es-AR")}`
                           : installmentsEnabled
-                          ? `${opt} cuotas sin interés de $${Math.round(
-                              totalToPay / opt
-                            ).toLocaleString("es-AR")}`
-                          : `${opt} cuotas fijas Getnet`}
+                            ? `${opt} cuotas sin interés de $${Math.round(
+                                totalToPay / opt,
+                              ).toLocaleString("es-AR")}`
+                            : `${opt} cuotas fijas`}
                       </option>
                     ))}
                   </select>
@@ -560,9 +563,7 @@ export default function ServicePaymentModal({
                   </div>
 
                   <div className="service-payment-modal__field">
-                    <label className="service-payment-modal__label">
-                      CVV:
-                    </label>
+                    <label className="service-payment-modal__label">CVV:</label>
                     <input
                       type="password"
                       className="service-payment-modal__input"
@@ -612,6 +613,7 @@ export default function ServicePaymentModal({
             </div>
 
             {/* Total Summary & Submit Button */}
+            <ReturnsPolicyLink />
             <div className="service-payment-modal__footer">
               <div className="service-payment-modal__footer-total">
                 <span className="service-payment-modal__total-label">

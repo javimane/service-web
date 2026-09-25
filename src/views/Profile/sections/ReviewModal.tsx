@@ -197,7 +197,7 @@ export default function ReviewModal({
               {/* Image Upload */}
               <div className="review-modal__field">
                 <label className="review-modal__label">Foto (opcional)</label>
-                <label
+                <label data-action-tone="upload"
                   htmlFor="review-image"
                   className="review-modal__image-upload"
                 >

@@ -162,7 +162,7 @@ export default function BillingDataSection({ userId }: BillingDataSectionProps) 
         </div>
 
         {canAddMore ? (
-          <button
+          <button data-action-tone="add"
             type="button"
             className="btn-primary billing-section__add-btn"
             onClick={handleOpenCreate}
@@ -400,7 +400,7 @@ export default function BillingDataSection({ userId }: BillingDataSectionProps) 
           </div>
 
           <div className="billing-section__form-actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="btn-secondary"
               onClick={() => setIsModalOpen(false)}

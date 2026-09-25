@@ -283,6 +283,12 @@ export default function ComponentName({
 
 ## Button Patterns
 
+### Semantic action colors
+
+- Add (`Agregar`/`Añadir`) and upload (`Subir`) buttons use light green via `data-action-tone="add"` or `data-action-tone="upload"`.
+- Cancel (`Cancelar`) buttons use light red via `data-action-tone="cancel"`.
+- Shared tokens and styles live in `src/index.css`. Apply the attribute to button-like links and upload labels too, and keep it in sync when a button changes action dynamically.
+
 ### Primary button (`.btn-primary`)
 
 - Background: `var(--accent-color)`, text: white

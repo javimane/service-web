@@ -532,7 +532,7 @@ export default function DashboardServices() {
             </div>
 
             <div className="dash-services__modal-footer">
-              <button
+              <button data-action-tone="cancel"
                 className="dash-services__modal-cancel"
                 onClick={closeModal}
               >
@@ -597,7 +597,7 @@ export default function DashboardServices() {
               </p>
             </div>
             <div className="dash-services__floating-actions">
-              <button
+              <button data-action-tone="cancel"
                 className="dash-services__floating-btn dash-services__floating-btn--secondary"
                 onClick={() => setDeleteConfirmOpen(false)}
               >

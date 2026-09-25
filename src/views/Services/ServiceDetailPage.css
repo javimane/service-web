@@ -247,6 +247,34 @@
   width: 100%;
 }
 
+.service-detail__add-cart-btn {
+  background: var(--input-bg);
+  color: var(--accent-color);
+  border: 1px solid var(--accent-color);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.service-detail__add-cart-btn:hover:not(:disabled) {
+  background: var(--accent-transparent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.service-detail__add-cart-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .service-detail__buy-btn:hover {
   background-color: var(--accent-hover);
   transform: translateY(-1px);

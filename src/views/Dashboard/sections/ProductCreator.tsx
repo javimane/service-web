@@ -21,6 +21,7 @@ import {
   Truck,
   Info,
   Percent,
+  Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
@@ -33,7 +34,10 @@ import { getAccessToken } from "../../../utils/auth";
 import { uploadProductImage } from "../../../services/storageUploads";
 import { getMultimediaUploadUrlAction } from "../../../app/actions/multimedia";
 import { multimediaService } from "../../../services/multimediaService";
-import { commerceService } from "../../../services/commerceService";
+import {
+  commerceService,
+  type MarketplaceCommission,
+} from "../../../services/commerceService";
 import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
 import { cropImageToSquare } from "../../../utils/imageUtils";
 import "./DashboardProducts.css";
@@ -48,17 +52,17 @@ import {
 } from "@/app/actions/products";
 
 const MAX_PRODUCT_VIDEOS = 2;
-
-const INSTALLMENT_COMMISSIONS: Record<number, number> = {
-  1: 11.0,
-  2: 13.5,
-  3: 15.0,
-  6: 19.5,
-  9: 23.0,
-  12: 27.0,
-  18: 35.0,
-};
-const IVA_RATE = 0.21;
+type ProductAttribute = { name: string; value: string };
+const emptyAttribute = (): ProductAttribute => ({ name: "", value: "" });
+const commonAttributes = [
+  "Color",
+  "Almacenamiento",
+  "Capacidad",
+  "Talle",
+  "Medida",
+  "Material",
+  "Modelo",
+];
 
 const moveArrayItem = <T,>(arr: T[], from: number, to: number) => {
   if (to < 0 || to >= arr.length || from === to) return arr;
@@ -71,11 +75,13 @@ const moveArrayItem = <T,>(arr: T[], from: number, to: number) => {
 interface ProductCreatorProps {
   onBack: () => void;
   productToEdit?: any;
+  variantParent?: any;
 }
 
 export default function ProductCreator({
   onBack,
   productToEdit,
+  variantParent,
 }: ProductCreatorProps) {
   const router = useRouter();
   const { showError } = useAlert();
@@ -105,6 +111,8 @@ export default function ProductCreator({
     wholesale: false,
     wholesale_price: "",
     wholesale_unit: "",
+    offer_2x1: false,
+    offer_3x2: false,
     image: "",
   });
 
@@ -120,6 +128,18 @@ export default function ProductCreator({
   const [videoFiles, setVideoFiles] = useState<(File | null)[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [attributes, setAttributes] = useState<ProductAttribute[]>([
+    emptyAttribute(),
+  ]);
+  const [inheritName, setInheritName] = useState(
+    Boolean(variantParent && !productToEdit),
+  );
+  const [inheritDescription, setInheritDescription] = useState(
+    Boolean(variantParent && !productToEdit),
+  );
+  const [inheritDimensions, setInheritDimensions] = useState(
+    Boolean(variantParent && !productToEdit),
+  );
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -135,6 +155,7 @@ export default function ProductCreator({
   const [eanWholesale, setEanWholesale] = useState(false);
   const [eanWholesalePrice, setEanWholesalePrice] = useState("");
   const [eanWholesaleUnit, setEanWholesaleUnit] = useState("");
+  const [eanOfferType, setEanOfferType] = useState("none");
 
   const [installmentsEnabled, setInstallmentsEnabled] = useState(
     Boolean(productToEdit?.installments_enabled),
@@ -164,6 +185,18 @@ export default function ProductCreator({
       : "",
   );
 
+  const [inheritWarranty, setInheritWarranty] = useState(
+    Boolean(variantParent && !productToEdit),
+  );
+  const [isCustomWarranty, setIsCustomWarranty] = useState(false);
+  const [eanWarranty, setEanWarranty] = useState<number>(0);
+
+  const [warranty, setWarranty] = useState<number>(
+    productToEdit?.warranty !== undefined && productToEdit?.warranty !== null
+      ? Number(productToEdit.warranty)
+      : 0,
+  );
+
   const { data: shippingPolicy } = useQuery({
     queryKey: ["shipping-policy", professionalId],
     queryFn: async () => {
@@ -171,6 +204,16 @@ export default function ProductCreator({
       return await commerceService.getShippingPolicy(Number(professionalId));
     },
     enabled: Boolean(professionalId),
+  });
+
+  const {
+    data: commissionRates = [],
+    isPending: commissionsLoading,
+    isError: commissionsError,
+  } = useQuery<MarketplaceCommission[]>({
+    queryKey: ["marketplace-commissions"],
+    queryFn: commerceService.commissions,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: categories = [] } = useQuery({
@@ -229,6 +272,12 @@ export default function ProductCreator({
         ...(token ? { token } : {}),
       });
       if (result?.serverError) throw new Error(result.serverError);
+      if (variantParent && result?.data) {
+        await commerceService.linkVariant(
+          variantParent.professional_product_id,
+          String(data.product_id),
+        );
+      }
       return result?.data;
     },
     onSuccess: () => {
@@ -273,6 +322,38 @@ export default function ProductCreator({
     assignMutation.isPending ||
     updateMutation.isPending ||
     updateBaseMutation.isPending;
+
+  useEffect(() => {
+    if (!variantParent || productToEdit) return;
+    setNewProduct((previous) => ({
+      ...previous,
+      name: variantParent.name || "",
+      brand: variantParent.brand || "",
+      categoryId: String(variantParent.categories_products_id || ""),
+      subcategoryId: String(variantParent.sub_categories_products_id || ""),
+      description: variantParent.description || "",
+      weight: variantParent.weight != null ? String(variantParent.weight) : "",
+      width: variantParent.width != null ? String(variantParent.width) : "",
+      height: variantParent.height != null ? String(variantParent.height) : "",
+      depth: variantParent.depth != null ? String(variantParent.depth) : "",
+    }));
+    setAttributes(
+      Array.isArray(variantParent.attributes) && variantParent.attributes.length
+        ? variantParent.attributes.map((attribute: ProductAttribute) => ({
+            ...attribute,
+          }))
+        : [emptyAttribute()],
+    );
+    setFormPrice(String(variantParent.price ?? ""));
+    setFormStock("0");
+    if (
+      variantParent.warranty !== undefined &&
+      variantParent.warranty !== null
+    ) {
+      setWarranty(Number(variantParent.warranty));
+      setInheritWarranty(true);
+    }
+  }, [variantParent, productToEdit]);
 
   useEffect(() => {
     if (!productToEdit) return;
@@ -329,6 +410,8 @@ export default function ProductCreator({
           : "",
         link_url: fullProduct.link_url || "",
         wholesale: fullProduct.wholesale || false,
+        offer_2x1: Boolean(fullProduct.offer_2x1),
+        offer_3x2: Boolean(fullProduct.offer_3x2),
         wholesale_price: fullProduct.wholesale_price
           ? String(fullProduct.wholesale_price)
           : "",
@@ -341,6 +424,19 @@ export default function ProductCreator({
       setFormPrice(
         fullProduct.price !== undefined ? String(fullProduct.price) : "",
       );
+      const savedAttributes = Array.isArray(fullProduct.attributes)
+        ? fullProduct.attributes
+        : [];
+      setAttributes(
+        savedAttributes.length
+          ? savedAttributes.map((attribute: ProductAttribute) => ({
+              ...attribute,
+            }))
+          : [emptyAttribute()],
+      );
+      setInheritName(Boolean(fullProduct.inherit_parent_name));
+      setInheritDescription(Boolean(fullProduct.inherit_parent_description));
+      setInheritDimensions(Boolean(fullProduct.inherit_parent_dimensions));
       setFormStock(
         fullProduct.stock !== undefined ? String(fullProduct.stock) : "",
       );
@@ -371,6 +467,16 @@ export default function ProductCreator({
         fullProduct.free_shipping_max_weight !== null
       ) {
         setFreeShippingMaxWeight(String(fullProduct.free_shipping_max_weight));
+      }
+      if (fullProduct.warranty !== undefined && fullProduct.warranty !== null) {
+        const wVal = Number(fullProduct.warranty);
+        setWarranty(wVal);
+        if (![0, 1, 2, 3, 6, 12, 18, 24, 36, 48, 60].includes(wVal)) {
+          setIsCustomWarranty(true);
+        }
+        if (variantParent && variantParent.warranty !== undefined) {
+          setInheritWarranty(wVal === Number(variantParent.warranty));
+        }
       }
 
       // Extract images
@@ -422,7 +528,7 @@ export default function ProductCreator({
     return () => {
       isMounted = false;
     };
-  }, [productToEdit, categories]);
+  }, [productToEdit, categories, variantParent]);
 
   /* ── Image handlers ── */
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -498,6 +604,7 @@ export default function ProductCreator({
     setEanLoading(true);
     setEanMatch(null);
     setEanCheckedAndFree(false);
+    setEanWarranty(0);
     try {
       const result = await getProductByEanAction({ ean, professionalId });
       const match = result?.data ?? null;
@@ -527,25 +634,45 @@ export default function ProductCreator({
     setEanLoading(false);
   };
 
-  const handleAddFromEan = () => {
+  const handleAddFromEan = async () => {
     if (!eanMatch) return;
-    assignMutation.mutate({
-      professional_id: professionalId,
-      product_id: String(eanMatch.id),
-      price: Number(eanCustomPrice) || 0,
-      sale_type: "unit",
-      is_active: true,
-      stock: Number(eanStock) || 0,
-      offer_price: Number(eanOfferPrice) || 0,
-      currency_code: eanCurrencyCode || "ARG",
-      link_url: eanLinkUrl.trim() || null,
-      percent_discount: Number(eanPercentDiscount) || 0,
-      wholesale: eanWholesale,
-      wholesale_unit: eanWholesale ? Number(eanWholesaleUnit) || 0 : undefined,
-      wholesale_price: eanWholesale
-        ? Number(eanWholesalePrice) || 0
-        : undefined,
-    });
+    try {
+      if (eanMatch.isAlreadyAssigned && variantParent) {
+        await commerceService.linkVariant(
+          variantParent.professional_product_id,
+          String(eanMatch.id),
+        );
+        queryClient.invalidateQueries({
+          queryKey: ["product-family", variantParent.professional_product_id],
+        });
+        setShowSuccessModal(true);
+        return;
+      }
+      await assignMutation.mutateAsync({
+        professional_id: professionalId,
+        product_id: String(eanMatch.id),
+        price: Number(eanCustomPrice) || 0,
+        sale_type: "unit",
+        is_active: true,
+        stock: Number(eanStock) || 0,
+        offer_price: Number(eanOfferPrice) || 0,
+        currency_code: eanCurrencyCode || "ARG",
+        link_url: eanLinkUrl.trim() || null,
+        percent_discount: Number(eanPercentDiscount) || 0,
+        wholesale: eanWholesale,
+        offer_2x1: eanOfferType === "2x1",
+        offer_3x2: eanOfferType === "3x2",
+        wholesale_unit: eanWholesale
+          ? Number(eanWholesaleUnit) || 0
+          : undefined,
+        wholesale_price: eanWholesale
+          ? Number(eanWholesalePrice) || 0
+          : undefined,
+        warranty: eanWarranty,
+      });
+    } catch (error: any) {
+      showError(error?.message || "No se pudo vincular el producto.");
+    }
   };
 
   /* ── Submit ── */
@@ -553,12 +680,39 @@ export default function ProductCreator({
     setIsSubmitting(true);
     try {
       const e: Record<string, string> = {};
-      if (!newProduct.name.trim()) e.name = "El nombre es obligatorio.";
+      if (
+        !(
+          variantParent && inheritName ? variantParent.name : newProduct.name
+        )?.trim()
+      )
+        e.name = "El nombre es obligatorio.";
+      const normalizedAttributes = attributes.map((attribute) => ({
+        name: attribute.name.trim(),
+        value: attribute.value.trim(),
+      }));
+      if (
+        normalizedAttributes.length === 0 ||
+        normalizedAttributes.some(
+          (attribute) => !attribute.name || !attribute.value,
+        )
+      ) {
+        e.attributes =
+          "Agregá al menos una característica y completá su valor.";
+      } else if (
+        new Set(
+          normalizedAttributes.map((attribute) =>
+            attribute.name.toLocaleLowerCase("es-AR"),
+          ),
+        ).size !== normalizedAttributes.length
+      ) {
+        e.attributes = "No repitas el nombre de una característica.";
+      }
       if (!newProduct.has_ean && !newProduct.ean.trim())
         e.ean =
           "El EAN es obligatorio si no marcas la opción 'No tiene código de barra'.";
       if (!formPrice) e.price = "El precio es obligatorio.";
-      if (!newProduct.categoryId) e.categoryId = "La categoría es obligatoria.";
+      if (!(variantParent?.categories_products_id || newProduct.categoryId))
+        e.categoryId = "La categoría es obligatoria.";
       if (!formStock) e.stock = "El stock es obligatorio.";
       if (!newProduct.weight.trim()) e.weight = "El peso es obligatorio.";
       if (!newProduct.width.trim()) e.width = "El ancho es obligatorio.";
@@ -624,24 +778,74 @@ export default function ProductCreator({
         }
       }
 
+      const attributeValue = (name: string) =>
+        normalizedAttributes.find(
+          (attribute) =>
+            attribute.name.toLocaleLowerCase("es-AR") ===
+            name.toLocaleLowerCase("es-AR"),
+        )?.value;
+      const sizeValue = attributeValue("Talle");
+      const numericSize = Boolean(
+        sizeValue && /^\d+(?:[.,]\d+)?$/.test(sizeValue),
+      );
+
       const payload = {
         ean: newProduct.has_ean ? undefined : newProduct.ean,
+        attributes: normalizedAttributes,
+        color: attributeValue("Color") || null,
+        size_letter: sizeValue && !numericSize ? sizeValue : null,
+        size_number:
+          sizeValue && numericSize ? Number(sizeValue.replace(",", ".")) : null,
+        inherit_parent_name: Boolean(variantParent && inheritName),
+        inherit_parent_description: Boolean(
+          variantParent && inheritDescription,
+        ),
+        inherit_parent_dimensions: Boolean(variantParent && inheritDimensions),
+        variant_parent_product_id:
+          variantParent && !productToEdit
+            ? variantParent.product_id
+            : undefined,
         has_ean: newProduct.has_ean,
-        weight: Number(newProduct.weight),
-        width: Number(newProduct.width),
-        height: Number(newProduct.height),
-        depth: Number(newProduct.depth),
-        name: newProduct.name,
-        description: newProduct.description,
+        weight: Number(
+          variantParent && inheritDimensions
+            ? variantParent.weight
+            : newProduct.weight,
+        ),
+        width: Number(
+          variantParent && inheritDimensions
+            ? variantParent.width
+            : newProduct.width,
+        ),
+        height: Number(
+          variantParent && inheritDimensions
+            ? variantParent.height
+            : newProduct.height,
+        ),
+        depth: Number(
+          variantParent && inheritDimensions
+            ? variantParent.depth
+            : newProduct.depth,
+        ),
+        name:
+          variantParent && inheritName ? variantParent.name : newProduct.name,
+        description:
+          variantParent && inheritDescription
+            ? variantParent.description || ""
+            : newProduct.description,
         brand: newProduct.brand,
         image_url: images,
         videos_url: videos_url,
         videos_to_save: videos_to_save,
         display_order: images.map((_, i) => i + 1),
-        categories_products_id: newProduct.categoryId
-          ? Number(newProduct.categoryId)
-          : undefined,
-        sub_categories_products_id: newProduct.subcategoryId || undefined,
+        categories_products_id:
+          variantParent?.categories_products_id || newProduct.categoryId
+            ? Number(
+                variantParent?.categories_products_id || newProduct.categoryId,
+              )
+            : undefined,
+        sub_categories_products_id: variantParent
+          ? variantParent.sub_categories_products_id || null
+          : newProduct.subcategoryId || undefined,
         professional_id: professionalId,
         price: Number(formPrice),
         sale_type: "unit",
@@ -651,6 +855,8 @@ export default function ProductCreator({
         currency_code: newProduct.currency_code || "ARG",
         percent_discount: Number(newProduct.percent_discount) || 0,
         wholesale: newProduct.wholesale,
+        offer_2x1: newProduct.offer_2x1,
+        offer_3x2: newProduct.offer_3x2,
         wholesale_price: Number(newProduct.wholesale_price) || 0,
         wholesale_unit: Number(newProduct.wholesale_unit) || 0,
         installments_enabled: !isFoodCategory && installmentsEnabled,
@@ -671,6 +877,12 @@ export default function ProductCreator({
             ? Number(freeShippingMaxWeight)
             : null
           : null,
+        warranty:
+          variantParent && inheritWarranty
+            ? variantParent.warranty != null
+              ? Number(variantParent.warranty)
+              : 0
+            : Number(warranty) || 0,
       };
 
       if (productToEdit) {
@@ -701,6 +913,13 @@ export default function ProductCreator({
         await updateBaseMutation.mutateAsync({
           id: productId,
           ean: payload.ean,
+          attributes: payload.attributes,
+          color: payload.color,
+          size_letter: payload.size_letter,
+          size_number: payload.size_number,
+          inherit_parent_name: payload.inherit_parent_name,
+          inherit_parent_description: payload.inherit_parent_description,
+          inherit_parent_dimensions: payload.inherit_parent_dimensions,
           name: payload.name,
           description: payload.description,
           brand: payload.brand,
@@ -721,7 +940,7 @@ export default function ProductCreator({
         });
 
         // 2. Update the professional product relationship
-        updateMutation.mutate({
+        await updateMutation.mutateAsync({
           professionalId,
           productId,
           updates: {
@@ -733,6 +952,8 @@ export default function ProductCreator({
             currency_code: payload.currency_code,
             percent_discount: payload.percent_discount,
             wholesale: payload.wholesale,
+            offer_2x1: payload.offer_2x1,
+            offer_3x2: payload.offer_3x2,
             wholesale_price: payload.wholesale_price,
             wholesale_unit: payload.wholesale_unit,
             installments_enabled: payload.installments_enabled,
@@ -741,10 +962,11 @@ export default function ProductCreator({
             free_shipping_radius_km: payload.free_shipping_radius_km,
             free_shipping_min_amount: payload.free_shipping_min_amount,
             free_shipping_max_weight: payload.free_shipping_max_weight,
+            warranty: payload.warranty,
           },
         });
       } else {
-        createMutation.mutate({
+        await createMutation.mutateAsync({
           ...payload,
           image_url: payload.image_url[0] || "",
           images_url: payload.image_url,
@@ -753,7 +975,9 @@ export default function ProductCreator({
       }
     } catch (err) {
       console.error("Error submitting product:", err);
-      // Wait, is there a visual way to alert? We'll just rethrow or set errors.
+      showError(
+        err instanceof Error ? err.message : "No se pudo guardar el producto.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -763,13 +987,22 @@ export default function ProductCreator({
     setNewProduct((p) => ({ ...p, [key]: val }));
 
   const currentPriceNumber = parseFloat(formPrice) || 0;
-  const activeInstallmentRate = installmentsEnabled
-    ? (INSTALLMENT_COMMISSIONS[maxInstallments] ?? 15.0)
-    : 11.0;
-  const commissionAmount = currentPriceNumber * (activeInstallmentRate / 100);
-  const ivaOnCommission = commissionAmount * IVA_RATE;
-  const totalDeduction = commissionAmount + ivaOnCommission;
-  const netEarnings = Math.max(0, currentPriceNumber - totalDeduction);
+  const selectedInstallments = installmentsEnabled ? maxInstallments : 1;
+  const commissionRate = commissionRates.find(
+    (rate) => rate.installments === selectedInstallments,
+  );
+  const activeInstallmentRate =
+    commissionRate?.effective_commission_pct ?? commissionRate?.commission_pct;
+  const commissionAmount =
+    activeInstallmentRate === undefined
+      ? 0
+      : Math.round(currentPriceNumber * activeInstallmentRate) / 100;
+  const ivaRate = (commissionRate?.iva_pct ?? 21) / 100;
+  const ivaOnCommission = Math.round(commissionAmount * ivaRate * 100) / 100;
+  const totalDeduction =
+    Math.round((commissionAmount + ivaOnCommission) * 100) / 100;
+  const netEarnings =
+    Math.round((currentPriceNumber - totalDeduction) * 100) / 100;
 
   return (
     <div className="product-creator">
@@ -784,7 +1017,13 @@ export default function ProductCreator({
         </button>
         <div>
           <h1 className="product-creator__title">
-            {productToEdit ? "Modificar Producto" : "Agregar Producto"}
+            {productToEdit
+              ? variantParent
+                ? "Modificar variante"
+                : "Modificar Producto"
+              : variantParent
+                ? "Agregar variante"
+                : "Agregar Producto"}
           </h1>
           <p className="product-creator__subtitle">
             {productToEdit
@@ -831,6 +1070,7 @@ export default function ProductCreator({
                   onChange={(e) => {
                     set("ean", e.target.value);
                     setEanCheckedAndFree(false);
+                    setEanWarranty(0);
                     setEanMatch(null);
                   }}
                   onKeyDown={(e) => {
@@ -1071,6 +1311,20 @@ export default function ProductCreator({
                       </div>
                     )}
                   </div>
+                  <div className="product-creator__field">
+                    <label htmlFor="ean-quantity-offer">
+                      Promoción por cantidad
+                    </label>
+                    <select
+                      id="ean-quantity-offer"
+                      value={eanOfferType}
+                      onChange={(event) => setEanOfferType(event.target.value)}
+                    >
+                      <option value="none">Sin promoción</option>
+                      <option value="2x1">2x1</option>
+                      <option value="3x2">3x2</option>
+                    </select>
+                  </div>
                 </>
               )}
 
@@ -1081,15 +1335,17 @@ export default function ProductCreator({
                 >
                   {eanMatch.isAlreadyAssigned ? "Cerrar" : "Crear uno nuevo"}
                 </button>
-                {!eanMatch.isAlreadyAssigned && (
+                {(!eanMatch.isAlreadyAssigned || variantParent) && (
                   <button
+                    data-action-tone="add"
                     className="product-creator__btn-save"
                     onClick={handleAddFromEan}
                     disabled={
-                      !eanCustomPrice ||
-                      parseInt(eanCustomPrice) <= 0 ||
-                      !eanStock ||
-                      isSaving
+                      isSaving ||
+                      (!eanMatch.isAlreadyAssigned &&
+                        (!eanCustomPrice ||
+                          parseInt(eanCustomPrice) <= 0 ||
+                          !eanStock))
                     }
                   >
                     {isSaving ? (
@@ -1097,7 +1353,11 @@ export default function ProductCreator({
                     ) : (
                       <Check size={16} />
                     )}
-                    {isSaving ? "Guardando..." : "Agregar a mi catálogo"}
+                    {isSaving
+                      ? "Guardando..."
+                      : eanMatch.isAlreadyAssigned
+                        ? "Vincular como variante"
+                        : "Agregar a mi catálogo"}
                   </button>
                 )}
               </div>
@@ -1133,11 +1393,20 @@ export default function ProductCreator({
 
               <div className="product-creator__grid">
                 <div className="product-creator__field product-creator__field--full">
-                  <label>Nombre del producto *</label>
+                  <label>
+                    {variantParent
+                      ? "Nombre de la variante *"
+                      : "Nombre del producto *"}
+                  </label>
                   <input
                     type="text"
                     placeholder="Ej: Taladro Bosch 550W"
-                    value={newProduct.name}
+                    value={
+                      variantParent && inheritName
+                        ? variantParent.name || ""
+                        : newProduct.name
+                    }
+                    disabled={Boolean(variantParent && inheritName)}
                     onChange={(e) => set("name", e.target.value)}
                   />
                   {errors.name && (
@@ -1146,6 +1415,20 @@ export default function ProductCreator({
                     </span>
                   )}
                 </div>
+                {variantParent && (
+                  <label className="product-creator__inherit-option product-creator__field--full">
+                    <input
+                      type="checkbox"
+                      checked={inheritName}
+                      onChange={(event) => {
+                        setInheritName(event.target.checked);
+                        if (event.target.checked)
+                          set("name", variantParent.name || "");
+                      }}
+                    />
+                    Usar el nombre del producto principal
+                  </label>
+                )}
 
                 <div className="product-creator__field">
                   <label>Marca</label>
@@ -1157,10 +1440,104 @@ export default function ProductCreator({
                   />
                 </div>
 
+                <div className="product-creator__field product-creator__field--full product-creator__attributes">
+                  <div className="product-creator__attributes-heading">
+                    <div>
+                      <label>Características *</label>
+                      <p>
+                        Combiná las que necesites, por ejemplo Color: Rojo y
+                        Almacenamiento: 256 GB.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      data-action-tone="add"
+                      className="product-creator__attribute-add"
+                      onClick={() =>
+                        setAttributes((current) => [
+                          ...current,
+                          emptyAttribute(),
+                        ])
+                      }
+                    >
+                      <Plus size={16} /> Agregar característica
+                    </button>
+                  </div>
+                  <datalist id="product-creator-attribute-options">
+                    {commonAttributes.map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                  </datalist>
+                  {attributes.map((attribute, index) => (
+                    <div className="product-creator__attribute-row" key={index}>
+                      <div className="product-creator__field">
+                        <label htmlFor={`product-attribute-name-${index}`}>
+                          Característica {index + 1}
+                        </label>
+                        <input
+                          id={`product-attribute-name-${index}`}
+                          list="product-creator-attribute-options"
+                          value={attribute.name}
+                          placeholder="Ej: Color"
+                          onChange={(event) =>
+                            setAttributes((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, name: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="product-creator__field">
+                        <label htmlFor={`product-attribute-value-${index}`}>
+                          Valor
+                        </label>
+                        <input
+                          id={`product-attribute-value-${index}`}
+                          value={attribute.value}
+                          placeholder="Ej: Rojo"
+                          onChange={(event) =>
+                            setAttributes((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, value: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="product-creator__attribute-remove"
+                        aria-label={`Quitar característica ${index + 1}`}
+                        disabled={attributes.length === 1}
+                        onClick={() =>
+                          setAttributes((current) =>
+                            current.filter(
+                              (_, itemIndex) => itemIndex !== index,
+                            ),
+                          )
+                        }
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  ))}
+                  {errors.attributes && (
+                    <span className="product-creator__error">
+                      {errors.attributes}
+                    </span>
+                  )}
+                </div>
+
                 <div className="product-creator__field">
                   <label>Categoría *</label>
                   <select
                     value={newProduct.categoryId}
+                    disabled={Boolean(variantParent)}
                     onChange={(e) => {
                       set("categoryId", e.target.value);
                       set("subcategoryId", "");
@@ -1185,6 +1562,7 @@ export default function ProductCreator({
                   <label>Subcategoría (Opcional)</label>
                   <select
                     value={newProduct.subcategoryId}
+                    disabled={Boolean(variantParent)}
                     onChange={(e) => set("subcategoryId", e.target.value)}
                     className="dash-products__modal-select"
                   >
@@ -1199,14 +1577,38 @@ export default function ProductCreator({
                       </option>
                     ))}
                   </select>
+                  {variantParent && (
+                    <span className="product-creator__inherit-hint">
+                      Se hereda del producto principal.
+                    </span>
+                  )}
                 </div>
 
+                {variantParent && (
+                  <label className="product-creator__inherit-description">
+                    <input
+                      type="checkbox"
+                      checked={inheritDescription}
+                      onChange={(e) => {
+                        setInheritDescription(e.target.checked);
+                        if (e.target.checked)
+                          set("description", variantParent.description || "");
+                      }}
+                    />
+                    Heredar la descripción del producto principal
+                  </label>
+                )}
                 <div className="product-creator__field product-creator__field--full">
                   <label>Descripción</label>
                   <textarea
                     rows={3}
                     placeholder="Describí las características del producto..."
-                    value={newProduct.description}
+                    value={
+                      variantParent && inheritDescription
+                        ? variantParent.description || ""
+                        : newProduct.description
+                    }
+                    disabled={Boolean(variantParent && inheritDescription)}
                     onChange={(e) => set("description", e.target.value)}
                   />
                 </div>
@@ -1236,6 +1638,38 @@ export default function ProductCreator({
                 />
                 Dimensiones (Obligatorio)
               </p>
+              {variantParent && (
+                <label className="product-creator__inherit-option">
+                  <input
+                    type="checkbox"
+                    checked={inheritDimensions}
+                    onChange={(event) => {
+                      setInheritDimensions(event.target.checked);
+                      if (event.target.checked)
+                        setNewProduct((current) => ({
+                          ...current,
+                          weight:
+                            variantParent.weight != null
+                              ? String(variantParent.weight)
+                              : "",
+                          width:
+                            variantParent.width != null
+                              ? String(variantParent.width)
+                              : "",
+                          height:
+                            variantParent.height != null
+                              ? String(variantParent.height)
+                              : "",
+                          depth:
+                            variantParent.depth != null
+                              ? String(variantParent.depth)
+                              : "",
+                        }));
+                    }}
+                  />
+                  Usar el peso y las dimensiones del producto principal
+                </label>
+              )}
 
               <div className="product-creator__grid">
                 <div className="product-creator__field">
@@ -1246,6 +1680,7 @@ export default function ProductCreator({
                     step="0.01"
                     placeholder="Ej: 1.5"
                     value={newProduct.weight}
+                    disabled={Boolean(variantParent && inheritDimensions)}
                     onChange={(e) => set("weight", e.target.value)}
                   />
                   {errors.weight && (
@@ -1262,6 +1697,7 @@ export default function ProductCreator({
                     step="0.1"
                     placeholder="Ej: 20"
                     value={newProduct.width}
+                    disabled={Boolean(variantParent && inheritDimensions)}
                     onChange={(e) => set("width", e.target.value)}
                   />
                   {errors.width && (
@@ -1278,6 +1714,7 @@ export default function ProductCreator({
                     step="0.1"
                     placeholder="Ej: 15"
                     value={newProduct.height}
+                    disabled={Boolean(variantParent && inheritDimensions)}
                     onChange={(e) => set("height", e.target.value)}
                   />
                   {errors.height && (
@@ -1294,6 +1731,7 @@ export default function ProductCreator({
                     step="0.1"
                     placeholder="Ej: 30"
                     value={newProduct.depth}
+                    disabled={Boolean(variantParent && inheritDimensions)}
                     onChange={(e) => set("depth", e.target.value)}
                   />
                   {errors.depth && (
@@ -1422,8 +1860,35 @@ export default function ProductCreator({
                   </>
                 )}
 
+                <div className="product-creator__field product-creator__field--full">
+                  <label htmlFor="product-quantity-offer">
+                    Promoción por cantidad
+                  </label>
+                  <select
+                    id="product-quantity-offer"
+                    value={
+                      newProduct.offer_2x1
+                        ? "2x1"
+                        : newProduct.offer_3x2
+                          ? "3x2"
+                          : "none"
+                    }
+                    onChange={(event) =>
+                      setNewProduct((current) => ({
+                        ...current,
+                        offer_2x1: event.target.value === "2x1",
+                        offer_3x2: event.target.value === "3x2",
+                      }))
+                    }
+                  >
+                    <option value="none">Sin promoción</option>
+                    <option value="2x1">2x1</option>
+                    <option value="3x2">3x2</option>
+                  </select>
+                </div>
+
                 {/* Cuotas sin interés */}
-                <div className="product-creator__field">
+                <div className="product-creator__field product-creator__field--full">
                   <label className="product-creator__wholesale-row">
                     <input
                       type="checkbox"
@@ -1463,86 +1928,111 @@ export default function ProductCreator({
                       )}
 
                       {/* Desglose de comisión de venta + 21% IVA */}
-                      {currentPriceNumber > 0 && (
-                        <div className="product-creator__commission-box">
-                          <div className="product-creator__commission-header">
-                            <span className="product-creator__commission-title">
-                              <Percent size={14} /> Desglose de retención y
-                              liquidación
-                            </span>
-                            <span className="product-creator__commission-badge">
-                              {installmentsEnabled
-                                ? `Hasta ${maxInstallments} cuotas (${activeInstallmentRate}% base)`
-                                : "1 pago contado (11% base)"}
-                            </span>
-                          </div>
+                      {currentPriceNumber > 0 &&
+                        (commissionRate &&
+                        activeInstallmentRate !== undefined ? (
+                          <div className="product-creator__commission-box">
+                            <div className="product-creator__commission-header">
+                              <span className="product-creator__commission-title">
+                                <Percent size={14} /> Desglose de retención y
+                                liquidación
+                              </span>
+                              <span className="product-creator__commission-badge">
+                                {installmentsEnabled
+                                  ? `Hasta ${maxInstallments} cuotas (${activeInstallmentRate}% comisión)`
+                                  : `1 pago (${activeInstallmentRate}% comisión)`}
+                              </span>
+                            </div>
 
-                          <div className="product-creator__commission-rows">
-                            <div className="product-creator__commission-row">
-                              <span>Precio de venta al público:</span>
-                              <strong>
-                                $
-                                {currentPriceNumber.toLocaleString("es-AR", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </strong>
-                            </div>
-                            <div className="product-creator__commission-row product-creator__commission-row--deduction">
-                              <span>
-                                Comisión de plataforma ({activeInstallmentRate}
-                                %):
-                              </span>
-                              <strong>
-                                -$
-                                {commissionAmount.toLocaleString("es-AR", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </strong>
-                            </div>
-                            <div className="product-creator__commission-row product-creator__commission-row--deduction">
-                              <span>IVA sobre comisión (21%):</span>
-                              <strong>
-                                -$
-                                {ivaOnCommission.toLocaleString("es-AR", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </strong>
-                            </div>
-                            <div className="product-creator__commission-row product-creator__commission-row--deduction">
-                              <span>
-                                Total retención (
-                                {(activeInstallmentRate * 1.21).toFixed(2)}%):
-                              </span>
-                              <strong>
-                                -$
-                                {totalDeduction.toLocaleString("es-AR", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </strong>
-                            </div>
-                            <div className="product-creator__commission-row product-creator__commission-row--total">
-                              <span>Cobras neto en tu cuenta:</span>
-                              <strong>
-                                $
-                                {netEarnings.toLocaleString("es-AR", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </strong>
+                            <div className="product-creator__commission-rows">
+                              <div className="product-creator__commission-row">
+                                <span>Precio de venta al público:</span>
+                                <strong>
+                                  $
+                                  {currentPriceNumber.toLocaleString("es-AR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </strong>
+                              </div>
+                              <div className="product-creator__commission-row product-creator__commission-row--deduction">
+                                <span>
+                                  Comisión de plataforma (
+                                  {activeInstallmentRate}
+                                  %):
+                                </span>
+                                <strong>
+                                  -$
+                                  {commissionAmount.toLocaleString("es-AR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </strong>
+                              </div>
+                              <div className="product-creator__commission-row product-creator__commission-row--deduction">
+                                <span>
+                                  IVA sobre comisión ({commissionRate.iva_pct}
+                                  %):
+                                </span>
+                                <strong>
+                                  -$
+                                  {ivaOnCommission.toLocaleString("es-AR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </strong>
+                              </div>
+                              <div className="product-creator__commission-row product-creator__commission-row--deduction">
+                                <span>
+                                  Total retención (
+                                  {(
+                                    activeInstallmentRate *
+                                    (1 + ivaRate)
+                                  ).toFixed(2)}
+                                  %):
+                                </span>
+                                <strong>
+                                  -$
+                                  {totalDeduction.toLocaleString("es-AR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </strong>
+                              </div>
+                              <div className="product-creator__commission-row product-creator__commission-row--total">
+                                <span>
+                                  {installmentsEnabled
+                                    ? `Cobrarías neto si el comprador elige ${maxInstallments} cuotas:`
+                                    : "Cobrarías neto en 1 pago:"}
+                                </span>
+                                <strong>
+                                  $
+                                  {netEarnings.toLocaleString("es-AR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </strong>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <p
+                            className="product-creator__commission-unavailable"
+                            role="status"
+                          >
+                            {commissionsLoading
+                              ? "Consultando las comisiones vigentes..."
+                              : commissionsError
+                                ? "No se pudieron consultar las comisiones. Intentá nuevamente más tarde."
+                                : "No hay una tasa vigente para la cantidad de cuotas seleccionada."}
+                          </p>
+                        ))}
                     </>
                   )}
                 </div>
 
                 {/* Envío gratis */}
-                <div className="product-creator__field">
+                <div className="product-creator__field product-creator__field--full">
                   <label className="product-creator__wholesale-row">
                     <input
                       type="checkbox"
@@ -1620,33 +2110,140 @@ export default function ProductCreator({
                   )}
                 </div>
 
-                {/* Variantes de producto */}
-                <div className="product-creator__field">
-                  <label className="product-creator__installments-label">
-                    Variantes y Atributos (Color, Talle, Precios y Stock)
+                {/* Garantía */}
+                <div className="product-creator__field product-creator__field--full">
+                  <label htmlFor="product-warranty">
+                    Garantía del producto
                   </label>
-                  <button
-                    type="button"
-                    className="btn-secondary product-creator__variants-trigger"
-                    onClick={() => {
-                      const productId =
-                        productToEdit?.professional_product_id ||
-                        productToEdit?.id;
-                      if (productId) {
-                        router.push(
-                          `/panel?view=products-variants&productId=${productId}`,
-                        );
+                  {variantParent && (
+                    <label
+                      className="product-creator__inherit-option"
+                      style={{
+                        marginBottom: "10px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={inheritWarranty}
+                        onChange={(e) => {
+                          setInheritWarranty(e.target.checked);
+                          if (
+                            e.target.checked &&
+                            variantParent.warranty !== undefined
+                          ) {
+                            const parentW = Number(variantParent.warranty || 0);
+                            setWarranty(parentW);
+                            setIsCustomWarranty(
+                              ![0, 1, 2, 3, 6, 12, 18, 24, 36, 48, 60].includes(
+                                parentW,
+                              ),
+                            );
+                          }
+                        }}
+                      />
+                      <span>
+                        Heredar la garantía del producto principal (
+                        {variantParent.warranty &&
+                        Number(variantParent.warranty) > 0
+                          ? Number(variantParent.warranty) % 12 === 0 &&
+                            Number(variantParent.warranty) >= 12
+                            ? `${Number(variantParent.warranty) / 12} ${Number(variantParent.warranty) / 12 === 1 ? "año" : "años"}`
+                            : `${variantParent.warranty} ${Number(variantParent.warranty) === 1 ? "mes" : "meses"}`
+                          : "Sin garantía"}
+                        )
+                      </span>
+                    </label>
+                  )}
+                  <select
+                    id="product-warranty"
+                    value={isCustomWarranty ? "custom" : warranty}
+                    disabled={Boolean(variantParent && inheritWarranty)}
+                    onChange={(e) => {
+                      if (e.target.value === "custom") {
+                        setIsCustomWarranty(true);
                       } else {
-                        showError(
-                          "Primero debes guardar el producto para poder gestionar sus variantes.",
-                        );
+                        setIsCustomWarranty(false);
+                        setWarranty(Number(e.target.value));
                       }
                     }}
+                    className="dash-products__modal-select"
                   >
-                    <Layers size={16} />
-                    <span>Gestionar variantes de producto</span>
-                  </button>
+                    <option value={0}>Sin garantía (0 meses)</option>
+                    {[1, 2, 3, 6, 12, 18, 24, 36, 48, 60].map((m) => (
+                      <option key={m} value={m}>
+                        {m === 1 ? "1 mes" : `${m} meses`}
+                        {m === 12
+                          ? " (1 año)"
+                          : m === 24
+                            ? " (2 años)"
+                            : m === 36
+                              ? " (3 años)"
+                              : ""}
+                      </option>
+                    ))}
+                    <option value="custom">
+                      Otro plazo (personalizado)...
+                    </option>
+                  </select>
+                  {isCustomWarranty && !(variantParent && inheritWarranty) && (
+                    <div style={{ marginTop: "10px" }}>
+                      <label
+                        style={{
+                          fontSize: "var(--text-sm)",
+                          color: "var(--text-secondary)",
+                          marginBottom: "4px",
+                          display: "block",
+                        }}
+                      >
+                        Cantidad de meses de garantía:
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej: 9"
+                        value={warranty}
+                        onChange={(e) =>
+                          setWarranty(
+                            Math.max(0, parseInt(e.target.value, 10) || 0),
+                          )
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
+
+                {/* Variantes de producto */}
+                {!variantParent && (
+                  <div className="product-creator__field product-creator__field--full">
+                    <label className="product-creator__installments-label">
+                      Variantes y Atributos (Color, Talle, Precios y Stock)
+                    </label>
+                    <button
+                      type="button"
+                      className="btn-secondary product-creator__variants-trigger"
+                      onClick={() => {
+                        const productId =
+                          productToEdit?.professional_product_id;
+                        if (productId) {
+                          router.push(
+                            `/panel?view=products-variants&productId=${productId}`,
+                          );
+                        } else {
+                          showError(
+                            "Primero debes guardar el producto para poder gestionar sus variantes.",
+                          );
+                        }
+                      }}
+                    >
+                      <Layers size={16} />
+                      <span>Gestionar variantes de producto</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1720,6 +2317,7 @@ export default function ProductCreator({
               </div>
 
               <label
+                data-action-tone="upload"
                 className="dash-products__image-upload"
                 style={{ marginTop: "32px" }}
               >
@@ -1786,6 +2384,7 @@ export default function ProductCreator({
 
               {videoPreviews.length < MAX_PRODUCT_VIDEOS && (
                 <label
+                  data-action-tone="upload"
                   className="dash-products__image-upload"
                   style={{ marginTop: "24px" }}
                 >
@@ -1809,6 +2408,7 @@ export default function ProductCreator({
             {/* ── Footer ── */}
             <div className="product-creator__footer">
               <button
+                data-action-tone="cancel"
                 type="button"
                 className="product-creator__btn-cancel"
                 onClick={onBack}
@@ -1828,7 +2428,8 @@ export default function ProductCreator({
                   </>
                 ) : (
                   <>
-                    <Check size={16} /> Guardar Producto
+                    <Check size={16} />{" "}
+                    {variantParent ? "Guardar variante" : "Guardar producto"}
                   </>
                 )}
               </button>
@@ -1845,8 +2446,14 @@ export default function ProductCreator({
             <div className="modal-success-icon">
               <Check size={32} />
             </div>
-            <h3>¡Producto guardado exitosamente!</h3>
-            <p>El producto se ha registrado correctamente en tu catálogo.</p>
+            <h3>
+              ¡{variantParent ? "Variante" : "Producto"} guardado exitosamente!
+            </h3>
+            <p>
+              {variantParent
+                ? "La variante quedó vinculada al producto principal."
+                : "El producto se ha registrado correctamente en tu catálogo."}
+            </p>
             <button
               type="button"
               className="dash-products__modal-apply"
@@ -1855,7 +2462,7 @@ export default function ProductCreator({
                 onBack();
               }}
             >
-              Volver al catálogo
+              {variantParent ? "Volver a variantes" : "Volver al catálogo"}
             </button>
           </div>
         </div>

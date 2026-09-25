@@ -292,7 +292,7 @@ export default function AddItemModal({
               ))}
             </div>
 
-            <button className="add-row-btn" onClick={addNewRow}>
+            <button data-action-tone="add" className="add-row-btn" onClick={addNewRow}>
               <Plus size={16} /> AGREGAR OTRA FILA
             </button>
           </>
@@ -384,7 +384,7 @@ export default function AddItemModal({
                         </span>
                       )}
                     </div>
-                    <button
+                    <button data-action-tone="add"
                       className={`add-items__product-add-btn ${isProductSelected(product.id) ? "added" : ""}`}
                       onClick={() => addProductToSelection(product)}
                       disabled={isProductSelected(product.id)}
@@ -435,10 +435,10 @@ export default function AddItemModal({
         )}
 
         <div className="modal-footer-actions">
-          <button className="btn-cancel" onClick={handleClose}>
+          <button data-action-tone="cancel" className="btn-cancel" onClick={handleClose}>
             Cancelar
           </button>
-          <button className="btn-submit" onClick={handleSubmit}>
+          <button data-action-tone="add" className="btn-submit" onClick={handleSubmit}>
             Agregar al presupuesto
           </button>
         </div>

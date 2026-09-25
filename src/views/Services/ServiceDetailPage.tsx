@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle,
   MapPin,
@@ -13,6 +13,7 @@ import {
   Share2,
   CreditCard,
   ShieldCheck,
+  ShoppingCart,
 } from "lucide-react";
 import { getServiceDetailAction } from "../../app/actions/services";
 import Navbar from "../../components/Navbar/Navbar";
@@ -23,6 +24,9 @@ import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 import CommentsCarousel from "../../components/CommentsCarousel/CommentsCarousel";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAlert } from "../../context/AlertContext";
+import { useAuth } from "../../context/AuthContext";
+import { commerceService } from "../../services/commerceService";
+import { addGuestCartItem } from "../../utils/guestCart";
 import "./ServiceDetailPage.css";
 
 export default function ServiceDetailPage({
@@ -36,7 +40,9 @@ export default function ServiceDetailPage({
   const queryId = searchParams?.get("id");
   const id = queryId || extractIdFromSlug(seoPath);
   const router = useRouter();
-  const { showSuccess: showSuccessAlert } = useAlert();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { showSuccess: showSuccessAlert, showError } = useAlert();
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isInstallmentsModalOpen, setIsInstallmentsModalOpen] = useState(false);
@@ -55,6 +61,40 @@ export default function ServiceDetailPage({
     enabled: !!id,
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
+  });
+
+  const addToCartMutation = useMutation({
+    mutationFn: (serviceId: string) => {
+      if (!user) {
+        return Promise.resolve(
+          addGuestCartItem(Number(professionalId) || null, {
+            id: `guest-service-${serviceId}`,
+            service_id: serviceId,
+            quantity: 1,
+            subtotal: basePrice,
+            service: {
+              id: serviceId,
+              name: service.name,
+              price: basePrice,
+              professional: {
+                id: Number(professionalId) || 0,
+                name: professionalName,
+              },
+            },
+          }),
+        );
+      }
+
+      return commerceService.addCartItem({
+        service_id: serviceId,
+        quantity: 1,
+      });
+    },
+    onSuccess: (updatedCart) => {
+      queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
+      showSuccessAlert("Servicio agregado al carrito.");
+    },
+    onError: () => showError("No se pudo agregar el servicio al carrito."),
   });
 
   const handleShare = async () => {
@@ -160,6 +200,10 @@ export default function ServiceDetailPage({
     );
   };
 
+  const handleAddToCart = () => {
+    addToCartMutation.mutate(String(service.id || id));
+  };
+
   return (
     <>
       <Navbar />
@@ -241,7 +285,7 @@ export default function ServiceDetailPage({
                           <span>
                             Hasta {maxInstallments} cuotas sin interés de $
                             {Math.round(
-                              basePrice / maxInstallments
+                              basePrice / maxInstallments,
                             ).toLocaleString("es-AR")}
                           </span>
                         </div>
@@ -258,7 +302,8 @@ export default function ServiceDetailPage({
                         <div className="service-detail__installments-pill">
                           <CreditCard size={16} />
                           <span>
-                            1 pago de ${basePrice.toLocaleString("es-AR")} (débito/crédito)
+                            1 pago de ${basePrice.toLocaleString("es-AR")}{" "}
+                            (débito/crédito)
                           </span>
                         </div>
                         <button
@@ -266,7 +311,7 @@ export default function ServiceDetailPage({
                           className="service-detail__installments-btn"
                           onClick={() => setIsInstallmentsModalOpen(true)}
                         >
-                          Ver opciones en cuotas fijas (Getnet)
+                          Ver opciones en cuotas fijas
                         </button>
                       </>
                     )}
@@ -277,6 +322,23 @@ export default function ServiceDetailPage({
               {/* Purchase Section & Protected Purchase Badge */}
               {basePrice > 1 && (
                 <div className="service-detail__purchase-section">
+                  <button data-action-tone="add"
+                    type="button"
+                    className="service-detail__add-cart-btn"
+                    onClick={handleAddToCart}
+                    disabled={addToCartMutation.isPending}
+                  >
+                    {addToCartMutation.isPending ? (
+                      <Loader2
+                        className="animate-spin"
+                        size={18}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <ShoppingCart size={18} aria-hidden="true" />
+                    )}
+                    <span>Agregar al carrito</span>
+                  </button>
                   <button
                     type="button"
                     className="service-detail__buy-btn"

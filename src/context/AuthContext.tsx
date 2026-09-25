@@ -96,6 +96,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [loading, setLoading] = useState(true);
 
+  const clearClientSession = async () => {
+    if (typeof window !== "undefined") {
+      const tokenKeys = [
+        "registered_device_token",
+        "firebase_token",
+        "fcm_token",
+        "firebaseMessagingToken",
+      ];
+      const deviceToken = tokenKeys
+        .map((key) => localStorage.getItem(key))
+        .find((value): value is string => Boolean(value));
+
+      if (deviceToken) {
+        try {
+          await userService.removeDeviceToken(deviceToken);
+        } catch (error) {}
+      }
+
+      await deleteFirebaseMessagingToken();
+    }
+
+    try {
+      await authService.logout();
+    } catch (error) {}
+
+    if (typeof window !== "undefined") {
+      try {
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie =
+          "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      } catch (e) {}
+      localStorage.removeItem("token");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("registered_device_token");
+      localStorage.removeItem("firebase_token");
+      localStorage.removeItem("firebaseMessagingToken");
+      localStorage.removeItem("was_logged_in");
+      sessionStorage.clear();
+    }
+
+    await clearSupabaseSession();
+    queryClient.clear();
+    setUser(null);
+    setSessionStatus(null);
+  };
+
+  const isRiderSession = (u: any, s: any) =>
+    u?.user_metadata?.role === "delivery" ||
+    u?.user_metadata?.role === "rider" ||
+    s?.logistics_role === "delivery";
+
   const hasActiveStatusFlag =
     sessionStatus?.status === true || sessionStatus?.status === "active";
 
@@ -159,6 +211,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
             const { nextUser, nextSessionStatus } =
               normalizeSessionPayload(syncResponse);
+
+            if (isRiderSession(nextUser, nextSessionStatus)) {
+              await clearClientSession();
+              if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+                window.location.href = "/login?error=rider_not_allowed";
+              }
+              setLoading(false);
+              return;
+            }
+
             if (nextUser) setUser(nextUser);
             if (nextSessionStatus !== null) {
               setSessionStatus(nextSessionStatus);
@@ -174,6 +236,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 2. Flujo principal: obtener la sesión desde la API de NestJS usando su cookie
       const session = await authService.getSession();
       const { nextUser, nextSessionStatus } = normalizeSessionPayload(session);
+
+      if (isRiderSession(nextUser, nextSessionStatus)) {
+        await clearClientSession();
+        if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+          window.location.href = "/login?error=rider_not_allowed";
+        }
+        setLoading(false);
+        return;
+      }
+
       if (nextUser) {
         setUser(nextUser);
       }
@@ -427,59 +499,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = async () => {
-    if (typeof window !== "undefined") {
-      const tokenKeys = [
-        "registered_device_token",
-        "firebase_token",
-        "fcm_token",
-        "firebaseMessagingToken",
-      ];
-      const deviceToken = tokenKeys
-        .map((key) => localStorage.getItem(key))
-        .find((value): value is string => Boolean(value));
-
-      if (deviceToken) {
-        try {
-          await userService.removeDeviceToken(deviceToken);
-        } catch (error) {
-          // Silent fail on logout API call.
-        }
-      }
-
-      // Eliminar el token del cliente SDK de Firebase para desvincular el ServiceWorker
-      await deleteFirebaseMessagingToken();
-    }
-
-    try {
-      await authService.logout();
-    } catch (error) {
-      // Ignore errors on logout
-    }
-
-    if (typeof window !== "undefined") {
-      try {
-        document.cookie =
-          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        document.cookie =
-          "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      } catch (e) {}
-      localStorage.removeItem("token");
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("registered_device_token");
-      localStorage.removeItem("firebase_token");
-      localStorage.removeItem("firebaseMessagingToken");
-      localStorage.removeItem("was_logged_in");
-      sessionStorage.clear();
-    }
-
-    // Clear Supabase Session for chat functionality
-    await clearSupabaseSession();
-
-    // Reset React Query Cache to avoid stale auth data in UI
-    queryClient.clear();
-
-    setUser(null);
-    setSessionStatus(null);
+    await clearClientSession();
   };
 
   return (
@@ -519,7 +539,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             alignItems: "center",
           }}
         >
-          <button
+          <button data-action-tone="cancel"
             className="btn-secondary"
             style={{
               margin: 0,

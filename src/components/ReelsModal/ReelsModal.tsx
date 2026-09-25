@@ -100,7 +100,7 @@ export default function ReelsModal({
                 rows={3}
               />
             </label>
-            <button
+            <button data-action-tone="upload"
               type="submit"
               className="reels-modal-content__submit"
               disabled={!newReelFile || !newReelTitle.trim()}

@@ -5,10 +5,35 @@
   flex-direction: column;
 }
 
+.cart-page__layout {
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
+
 .cart-page-main {
   flex: 1;
   max-width: var(--content-max-width);
   width: 100%;
   margin: 0 auto;
   padding: var(--section-padding-y) var(--section-padding-x);
+  transition: padding-left 0.25s ease;
+}
+
+.cart-page-main--with-sidebar {
+  max-width: none;
+  padding-left: calc(250px + var(--section-padding-x));
+}
+
+.cart-page-main--sidebar-collapsed {
+  padding-left: calc(64px + var(--section-padding-x));
+}
+
+@media (max-width: 768px) {
+  .cart-page-main,
+  .cart-page-main--with-sidebar,
+  .cart-page-main--sidebar-collapsed {
+    padding: var(--space-6) var(--space-4) var(--space-6)
+      calc(64px + var(--space-4));
+  }
 }

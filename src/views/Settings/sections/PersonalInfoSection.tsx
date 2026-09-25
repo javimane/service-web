@@ -544,7 +544,7 @@ export default function PersonalInfoSection({
                     >
                       <Check size={16} /> Guardar
                     </button>
-                    <button
+                    <button data-action-tone="cancel"
                       className="personal-action-btn personal-action-btn--cancel"
                       onClick={() => {
                         setIsEditingPassword(false);

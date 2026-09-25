@@ -52,6 +52,7 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
 
       <div className="nearby-product-card__body">
         <h3 className="nearby-product-card__title">{name}</h3>
+        {(product.offer_2x1 || product.offer_3x2) && <span className="nearby-product-card__quantity-offer">{product.offer_2x1 ? "2x1" : "3x2"}</span>}
 
         <div className="nearby-product-card__pricing" style={{ marginTop: 'auto' }}>
           {isConsultar ? (

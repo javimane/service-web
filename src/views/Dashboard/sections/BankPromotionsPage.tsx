@@ -876,7 +876,7 @@ export default function BankPromotionsPage() {
               </div>
             </div>
             <div className="bank-promo-modal__footer">
-              <button
+              <button data-action-tone="cancel"
                 type="button"
                 className="bank-promo-btn bank-promo-btn--danger"
                 onClick={handleCloseModal}
@@ -915,7 +915,7 @@ export default function BankPromotionsPage() {
               </p>
             </div>
             <div className="bank-promo-modal__footer">
-              <button
+              <button data-action-tone="cancel"
                 type="button"
                 className="bank-promo-btn"
                 onClick={closeDeleteModal}

@@ -211,7 +211,7 @@ export const updateProductAction = publicAction
         description: z.string().optional(),
         brand: z.string().optional(),
         categories_products_id: z.number().optional(),
-        sub_categories_products_id: z.string().optional(),
+        sub_categories_products_id: z.string().nullable().optional(),
         weight: z.number().optional(),
         width: z.number().optional(),
         has_ean: z.boolean().optional(),

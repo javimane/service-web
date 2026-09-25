@@ -67,6 +67,32 @@ export const getProfessionalsAction = publicAction
     }
   });
 
+const professionalMapLocationsSchema = z.object({
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+  radius: z.number().optional(),
+  categoryId: z.string().or(z.number()).optional(),
+  provinceId: z.string().or(z.number()).optional(),
+  departmentId: z.string().or(z.number()).optional(),
+  name: z.string().optional(),
+});
+
+export const getProfessionalMapLocationsAction = publicAction
+  .schema(professionalMapLocationsSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const params = new URLSearchParams();
+    Object.entries(parsedInput).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        params.set(key, String(value));
+      }
+    });
+    const response = await axios.get(
+      `${env.NEXT_PUBLIC_API_BASE_URL}/api/professionals/map/locations?${params.toString()}`,
+      { headers: { ...ctx.headers, "x-api-key": env.WEB_API_KEY } },
+    );
+    return response.data;
+  });
+
 const professionalDetailSchema = z.object({
   id: z.string().or(z.number()),
 });

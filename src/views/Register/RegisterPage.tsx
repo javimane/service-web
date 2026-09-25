@@ -11,8 +11,10 @@ import { supabase } from "../../services/supabaseClient";
 import { API_BASE_URL } from "../../services/api.config";
 import RegisterPlanSelection from "./RegisterPlanSelection";
 import { useAuth } from "../../context/AuthContext";
+import "../Login/LoginPage.css";
 import "./RegisterPage.css";
 import Footer from "@/components/Footer/Footer";
+import { Eye, EyeOff } from "lucide-react";
 
 type RegisterPageProps = {
   isModal?: boolean;
@@ -306,8 +308,9 @@ export default function RegisterPage({
                 aria-label={
                   showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
                 }
+                aria-pressed={showPassword}
               >
-                {showPassword ? "🔓" : "🔒"}
+                {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
               </button>
             </div>
             {errors.password && (
@@ -337,8 +340,9 @@ export default function RegisterPage({
                     ? "Ocultar contraseña"
                     : "Mostrar contraseña"
                 }
+                aria-pressed={showConfirmPassword}
               >
-                {showConfirmPassword ? "🔓" : "🔒"}
+                {showConfirmPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
               </button>
             </div>
             {errors.confirmPassword && (

@@ -29,6 +29,10 @@ import Pagination from "@/components/Pagination/Pagination";
 import Modal from "@/components/Modal/Modal";
 import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
+import { useAuth } from "@/context/AuthContext";
+import { getProfessionalMeAction } from "@/app/actions/professionals";
+import DateRangeFilter, { DateRangeValue, toUtcDateRange } from "./DateRangeFilter";
+import { localDateInputValue } from "@/utils/localDateRange";
 import "./LiquidationsSection.css";
 
 const STATUS_FILTERS: Array<{ label: string; value: string }> = [
@@ -40,14 +44,27 @@ const STATUS_FILTERS: Array<{ label: string; value: string }> = [
 ];
 
 export default function LiquidationsSection() {
+  const { sessionStatus } = useAuth();
+  const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
+  const { data: professional } = useQuery({
+    queryKey: ["professional-me", professionalId],
+    queryFn: async () => (await getProfessionalMeAction({ token: await getAccessToken() }))?.data ?? null,
+    enabled: Boolean(professionalId),
+    staleTime: 1000 * 60 * 5,
+  });
+  const companyData = professional?.companies ?? professional?.Company;
+  const company = Array.isArray(companyData) ? companyData[0] : companyData;
+  const companyId = Number(company?.id ?? sessionStatus?.company_id) || undefined;
   const token = getAccessToken();
   setApiAccessToken(token);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
+  const [listBranchId, setListBranchId] = useState("");
+  const [listDateRange, setListDateRange] = useState<DateRangeValue>({ field: "date", from: "", to: "" });
   const [selectedLiquidation, setSelectedLiquidation] = useState<Liquidation | null>(null);
   const [reportType, setReportType] = useState<LiquidationsReportType>("full");
   const [dateFrom, setDateFrom] = useState(() => `${new Date().getFullYear()}-01-01`);
-  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dateTo, setDateTo] = useState(() => localDateInputValue(new Date()));
   const [includeTaxes, setIncludeTaxes] = useState(true);
   const [branchId, setBranchId] = useState("");
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
@@ -59,8 +76,12 @@ export default function LiquidationsSection() {
     isError,
     refetch,
   } = useQuery<PageResponse<Liquidation>>({
-    queryKey: ["merchant-liquidations", page, statusFilter],
-    queryFn: () => commerceService.liquidations(page, 10, statusFilter || undefined),
+    queryKey: ["merchant-liquidations", page, statusFilter, listBranchId, listDateRange],
+    queryFn: () => commerceService.liquidations(page, 10, statusFilter || undefined, listBranchId || undefined, {
+      [`${listDateRange.field}_from`]: toUtcDateRange(listDateRange).from,
+      [`${listDateRange.field}_to`]: toUtcDateRange(listDateRange).to,
+    }),
+    enabled: !listDateRange.from || !listDateRange.to || listDateRange.from <= listDateRange.to,
   });
 
   const liquidations = liquidationsData?.items ?? liquidationsData?.data ?? [];
@@ -68,8 +89,9 @@ export default function LiquidationsSection() {
   const totalPages = liquidationsData?.totalPages ?? (Math.ceil(total / 10) || 1);
 
   const { data: branches = [] } = useQuery<Branch[]>({
-    queryKey: ["report-branches"],
-    queryFn: () => commerceService.branches(),
+    queryKey: ["report-branches", companyId],
+    queryFn: () => commerceService.branches(companyId!),
+    enabled: Boolean(companyId),
   });
 
   const {
@@ -92,7 +114,7 @@ export default function LiquidationsSection() {
       dateFrom,
       dateTo,
       includeTaxes,
-      branchId: branchId ? Number(branchId) : undefined,
+      branchId: branchId || undefined,
       language: "es",
     }),
     onSuccess: async (response) => {
@@ -268,6 +290,13 @@ export default function LiquidationsSection() {
 
       {/* Filter Tabs */}
       <div className="liquidations-filters">
+        <label className="liquidations-branch-filter">
+          <span>Sucursal</span>
+          <select value={listBranchId} onChange={(event) => { setListBranchId(event.target.value); setPage(1); }}>
+            <option value="">Todas las sucursales</option>
+            {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+          </select>
+        </label>
         {STATUS_FILTERS.map((f) => (
           <button
             key={f.value}
@@ -285,8 +314,19 @@ export default function LiquidationsSection() {
         ))}
       </div>
 
+      <DateRangeFilter
+        label="Filtrar liquidaciones por fecha"
+        options={[
+          { value: "date", label: "liquidación" },
+          { value: "paid", label: "acreditación" },
+          { value: "scheduled", label: "liberación prevista" },
+        ]}
+        value={listDateRange}
+        onChange={(value) => { setListDateRange(value); setPage(1); }}
+      />
+
       {/* Content / States */}
-      {isLoading ? (
+      {listDateRange.from && listDateRange.to && listDateRange.from > listDateRange.to ? null : isLoading ? (
         <div className="liquidations-state liquidations-state--loading">
           <Clock className="liquidations-state__spinner" size={32} />
           <p>Cargando liquidaciones...</p>
@@ -302,8 +342,8 @@ export default function LiquidationsSection() {
       ) : liquidations.length === 0 ? (
         <div className="liquidations-state liquidations-state--empty">
           <FileText size={48} />
-          <h3>No hay liquidaciones registradas</h3>
-          <p>Tus ventas aparecerán aquí a medida que se cumplan los plazos de liberación.</p>
+          <h3>{statusFilter || listBranchId || listDateRange.from || listDateRange.to ? "No hay liquidaciones para este filtro" : "No hay liquidaciones registradas"}</h3>
+          <p>{statusFilter || listBranchId || listDateRange.from || listDateRange.to ? "Probá con otro estado, sucursal o período." : "Tus ventas aparecerán aquí a medida que se cumplan los plazos de liberación."}</p>
         </div>
       ) : (
         <div className="liquidations-table-card">

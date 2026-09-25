@@ -144,7 +144,7 @@ export default function AssignServiceAppointmentModal({
           </div>
 
           <div className="assign-appointment-modal__actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="btn-secondary"
               onClick={onClose}

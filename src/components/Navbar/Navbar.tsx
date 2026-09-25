@@ -44,10 +44,12 @@ import {
   CreditCard,
   HelpCircle,
   MapPin,
+  ShoppingCart,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
 import BrandLogo from "../BrandLogo/BrandLogo";
+import { getGuestCart } from "../../utils/guestCart";
 
 import "./Navbar.css";
 
@@ -86,6 +88,12 @@ export default function Navbar() {
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const queryClient = useQueryClient();
+
+  const { data: cart } = useQuery({
+    queryKey: ["user-cart", user?.id ?? "guest"],
+    queryFn: () => (user?.id ? commerceService.cart() : getGuestCart()),
+  });
+  const cartCount = cart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0;
 
   // Traer las notificaciones reales
   const { data: notifications = [] } = useQuery({
@@ -476,6 +484,17 @@ export default function Navbar() {
           {/* Right side — authenticated */}
           {user ? (
             <div className="navbar__right">
+              <Link
+                href={ROUTES.cart}
+                className="navbar__icon-btn"
+                aria-label={`Carrito, ${cartCount} ${cartCount === 1 ? "artículo" : "artículos"}`}
+                title="Ir al carrito"
+              >
+                <ShoppingCart size={20} aria-hidden="true" />
+                <span className="navbar__cart-count" aria-live="polite" aria-atomic="true">
+                  {cartCount > 0 ? cartCount : null}
+                </span>
+              </Link>
               <Link
                 href={ROUTES.messages}
                 className="navbar__icon-btn"

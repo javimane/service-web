@@ -252,7 +252,7 @@ export default function OrderBillingDataCard({
           })}
 
           {billingProfiles.length < 2 && (
-            <button
+            <button data-action-tone="add"
               type="button"
               className="order-billing-card__add-inline-btn"
               onClick={handleOpenAdd}
@@ -384,7 +384,7 @@ export default function OrderBillingDataCard({
           )}
 
           <div className="order-billing-modal-form__actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="btn-secondary"
               onClick={() => setIsModalOpen(false)}

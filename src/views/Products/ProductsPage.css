@@ -774,3 +774,13 @@
   color: var(--text-secondary);
   font-weight: 600;
 }
+.product-card__quantity-offer {
+  display: inline-block;
+  align-self: flex-start;
+  background: var(--amber-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}

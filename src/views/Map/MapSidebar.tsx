@@ -213,7 +213,7 @@ export default function MapSidebar({
 
         <div className="map-sidebar__footer">
           <div className="map-sidebar__stats">
-            <span className="map-sidebar__stats-label">Encontrados:</span>
+            <span className="map-sidebar__stats-label">Ubicaciones:</span>
             <span className="map-sidebar__stats-count">
               {isLoading ? "..." : specialistsCount}
             </span>

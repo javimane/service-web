@@ -490,7 +490,7 @@ export default function JobRequestsSection() {
           </div>
 
           <div className="job-request-form__actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="btn-secondary"
               onClick={() => setIsCreateModalOpen(false)}

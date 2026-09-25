@@ -37,10 +37,40 @@
   margin: 0;
 }
 
+.riders-section__refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--brand-blue);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.riders-section__refresh:hover:not(:disabled) {
+  background: var(--brand-blue-soft);
+}
+
+.riders-section__refresh:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.riders-section__refresh:focus-visible {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
+}
+
 /* ── Two-column layout ───────────────────────────────────── */
 .riders-layout {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
   gap: var(--space-6);
   align-items: start;
 }
@@ -118,7 +148,7 @@
 
 .riders-form__row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
@@ -126,6 +156,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .riders-form__label {
@@ -164,6 +195,52 @@
   color: var(--text-primary);
   width: 100%;
   transition: all 0.2s ease;
+}
+
+.riders-form__group .riders-form__label--toggle input[type="checkbox"] {
+  width: var(--space-4);
+  height: var(--space-4);
+  flex: none;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--success-color);
+}
+
+.riders-form__password-field {
+  position: relative;
+}
+
+.riders-form__group .riders-form__password-input {
+  padding-right: var(--space-12);
+}
+
+.riders-form__password-toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--space-2);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.riders-form__password-toggle:hover {
+  color: var(--accent-color);
+  background: var(--accent-transparent);
+}
+
+.riders-form__password-toggle:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 .riders-form__group input:focus,
@@ -325,8 +402,33 @@
 
 .rider-table-no-vehicle {
   font-size: var(--text-sm);
-  color: var(--text-secondary);
-  font-style: italic;
+  color: var(--error-color);
+  font-weight: var(--weight-semibold);
+}
+
+.rider-table-vehicle-warning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.rider-table-vehicle-warning__message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  max-width: 230px;
+  margin-top: var(--space-1);
+  padding: var(--space-2);
+  background: var(--accent-transparent);
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-sm);
+  color: var(--error-color);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.rider-table-vehicle-warning__message svg {
+  flex-shrink: 0;
 }
 
 /* ── Status pills ────────────────────────────────────────── */
@@ -353,6 +455,44 @@
 .rider-status-pill--inactive {
   background: rgba(94, 107, 125, 0.12);
   color: var(--text-secondary);
+}
+
+.rider-status-pill--pending {
+  background: var(--accent-transparent);
+  color: var(--error-color);
+}
+
+.rider-status-pill--blocked {
+  background: var(--action-cancel-bg);
+  color: var(--error-color);
+}
+
+.rider-status-pill--paused {
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+}
+
+.rider-status-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  max-width: 240px;
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.rider-status-note svg {
+  flex-shrink: 0;
+}
+
+.rider-status-note--blocked {
+  color: var(--error-color);
+}
+
+.rider-status-note--paused {
+  color: var(--accent-color);
 }
 
 /* ── Action buttons ──────────────────────────────────────── */
@@ -405,6 +545,83 @@
   font-size: var(--text-base);
   color: var(--text-secondary);
   margin: 0;
+}
+
+.rider-docs-modal__verification {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+}
+
+.rider-docs-modal__files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rider-docs-modal__files h3 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.rider-docs-modal__file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.rider-docs-modal__file button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.rider-docs-modal__file button:hover {
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
+}
+
+.rider-verification-pill {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.rider-verification-pill--verified {
+  background: var(--action-add-bg);
+}
+
+.rider-verification-pill--rejected {
+  background: var(--action-cancel-bg);
+}
+
+.rider-verification-note {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
 }
 
 .rider-docs-modal__upload-btn {
@@ -491,6 +708,16 @@
 }
 
 /* ── Delete confirm modal ────────────────────────────────── */
+.riders-form__own-vehicle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
 .rider-delete-confirm {
   display: flex;
   flex-direction: column;

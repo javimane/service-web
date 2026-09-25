@@ -578,6 +578,12 @@
   gap: var(--space-3);
 }
 
+.product-creator__commission-unavailable {
+  margin: var(--space-3) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
 .product-creator__commission-header {
   display: flex;
   align-items: center;
@@ -693,4 +699,94 @@
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   margin-top: var(--space-2);
+}
+.product-creator__inherit-description {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+.product-creator__inherit-description input { margin: 0; }
+
+.product-creator__attributes {
+  padding: var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.product-creator__attributes-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.product-creator__attributes-heading p,
+.product-creator__inherit-hint {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.product-creator__attribute-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.product-creator__attribute-add,
+.product-creator__attribute-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.product-creator__attribute-add {
+  background: var(--success-color);
+  color: var(--text-primary);
+  border: 1px solid var(--success-color);
+}
+
+.product-creator__attribute-remove {
+  background: var(--surface-soft);
+  color: var(--error-color);
+  border: 1px solid var(--error-color);
+}
+
+.product-creator__attribute-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.product-creator__inherit-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+}
+
+.product-creator__inherit-option input {
+  margin: 0;
+  flex: none;
+}
+
+@media (max-width: 640px) {
+  .product-creator__attribute-row {
+    grid-template-columns: 1fr auto;
+  }
+  .product-creator__attribute-row .product-creator__field:first-child {
+    grid-column: 1 / -1;
+  }
 }

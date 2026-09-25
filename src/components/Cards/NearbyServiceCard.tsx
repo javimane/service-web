@@ -45,7 +45,6 @@ export default function NearbyServiceCard({ service, onClick }) {
           <span className="nearby-card__distance">
             <MapPin size={12} /> {distance}
           </span>
-          <FavoriteButton type="service" targetId={id} size={14} />
         </div>
       </div>
 

@@ -318,7 +318,7 @@ export default function DashboardPublications() {
           <h2>
             {publicationToEdit ? "Editar Publicación" : "Crear Publicación"}
           </h2>
-          <button
+          <button data-action-tone="cancel"
             className="dash-pubs__btn-cancel"
             onClick={handleCloseCreator}
             disabled={isSaving}
