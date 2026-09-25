@@ -278,8 +278,14 @@ export const updateProfessionalProductAction = publicAction
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${parsedInput.professionalId}/product/${parsedInput.productId}`;
 
+    const sanitizedUpdates = { ...parsedInput.updates };
+    delete sanitizedUpdates.variant_professional_product_id;
+    delete sanitizedUpdates.professional_product_id;
+    delete sanitizedUpdates.variant_parent_product_id;
+    delete sanitizedUpdates.variant_parent_id;
+
     try {
-      const response = await axios.put(url, parsedInput.updates, {
+      const response = await axios.put(url, sanitizedUpdates, {
         headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;

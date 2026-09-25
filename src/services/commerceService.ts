@@ -364,7 +364,10 @@ export type ProductVariant = {
   offer_3x2?: boolean;
   installments_enabled?: boolean;
   max_installments?: number;
+  warranty?: number | null;
   free_shipping?: boolean;
+  free_shipping_country?: boolean | null;
+  free_shipping_country_min_amount?: number | null;
   stock: number;
   image_url?: string | null;
   images?: string[];

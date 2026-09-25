@@ -218,17 +218,23 @@ export const productService = {
     professionalId: number,
     productId: string,
     updates: any,
-  ) =>
-    apiClient<ProfessionalProductRow>(
+  ) => {
+    const sanitized = { ...updates };
+    delete sanitized.variant_professional_product_id;
+    delete sanitized.professional_product_id;
+    delete sanitized.variant_parent_product_id;
+    delete sanitized.variant_parent_id;
+    return apiClient<ProfessionalProductRow>(
       API_ENDPOINTS.products.updateProfessionalProduct(
         professionalId,
         productId,
       ),
       {
         method: "PUT",
-        body: JSON.stringify(updates),
+        body: JSON.stringify(sanitized),
       },
-    ),
+    );
+  },
 
   /**
    * @route PUT /api/products/update-prices

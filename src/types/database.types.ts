@@ -232,6 +232,9 @@ export interface ProfessionalProductRow {
   readonly updated_at: string | null;
   readonly currency_code: string | null;
   readonly offer_price: number | null;
+  readonly free_shipping?: boolean | null;
+  readonly free_shipping_country?: boolean | null;
+  readonly free_shipping_country_min_amount?: number | null;
 
   // Relationships
   readonly Professional?: ProfessionalRow;

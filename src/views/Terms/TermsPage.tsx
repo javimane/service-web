@@ -3,8 +3,7 @@ import "./TermsPage.css";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 
-export default function TermsPage() {
-  const sections = [
+export const TERMS_SECTIONS = [
     {
       title: "1. Introducción y Naturaleza del Servicio",
       content: (
@@ -319,8 +318,9 @@ export default function TermsPage() {
         </p>
       ),
     },
-  ];
+];
 
+export default function TermsPage() {
   return (
     <>
       <Navbar />
@@ -333,7 +333,7 @@ export default function TermsPage() {
         </div>
 
         <div className="terms-content">
-          {sections.map((section, index) => (
+          {TERMS_SECTIONS.map((section, index) => (
             <div key={index} className="terms-section">
               <h2 className="terms-section__title">{section.title}</h2>
               <div className="terms-section__text">{section.content}</div>

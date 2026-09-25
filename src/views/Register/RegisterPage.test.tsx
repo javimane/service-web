@@ -48,14 +48,18 @@ describe("RegisterPage", () => {
     return render(ui);
   };
 
-  it("se renderiza correctamente", () => {
+  it("se renderiza correctamente con el checkbox de términos y condiciones", () => {
     renderWithRouter(React.createElement(RegisterPage));
     expect(screen.getByText("Crear Cuenta")).toBeInTheDocument();
     expect(screen.getByLabelText(/NOMBRE COMPLETO/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/CONFIRMAR/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /términos y condiciones/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
   });
 
-  it("muestra errores de validación si se envía vacío", () => {
+  it("muestra errores de validación si se envía vacío incluyendo los términos", () => {
     renderWithRouter(React.createElement(RegisterPage));
     const submitBtn = screen.getByRole("button", { name: /registrarse/i });
 
@@ -64,6 +68,11 @@ describe("RegisterPage", () => {
     expect(screen.getByText("El nombre es requerido")).toBeInTheDocument();
     expect(
       screen.getByText("El correo electrónico es requerido"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Debes aceptar los términos y condiciones para continuar",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -82,7 +91,63 @@ describe("RegisterPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("llama a authService al enviar datos válidos", async () => {
+  it("bloquea el registro con Google si no se aceptaron los términos", () => {
+    renderWithRouter(React.createElement(RegisterPage));
+    const googleBtn = screen.getByRole("button", {
+      name: /continuar con google/i,
+    });
+
+    fireEvent.click(googleBtn);
+
+    expect(
+      screen.getByText(
+        "Debes aceptar los términos y condiciones antes de registrarte con Google",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("permite abrir el modal de términos y condiciones y volver atrás al formulario", () => {
+    renderWithRouter(React.createElement(RegisterPage));
+    const termsLink = screen.getByRole("button", {
+      name: /términos y condiciones/i,
+    });
+
+    fireEvent.click(termsLink);
+
+    expect(
+      screen.getByRole("heading", { name: "Términos y Condiciones" }),
+    ).toBeInTheDocument();
+
+    const backBtn = screen.getByRole("button", {
+      name: /volver al registro/i,
+    });
+    fireEvent.click(backBtn);
+
+    expect(
+      screen.queryByRole("heading", { name: "Términos y Condiciones" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("permite aceptar los términos desde el modal y volver al formulario", () => {
+    renderWithRouter(React.createElement(RegisterPage));
+    const termsLink = screen.getByRole("button", {
+      name: /términos y condiciones/i,
+    });
+
+    fireEvent.click(termsLink);
+
+    const acceptBtn = screen.getByRole("button", {
+      name: /aceptar y volver/i,
+    });
+    fireEvent.click(acceptBtn);
+
+    expect(
+      screen.queryByRole("heading", { name: "Términos y Condiciones" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox")).toBeChecked();
+  });
+
+  it("llama a authService al enviar datos válidos con términos aceptados", async () => {
     registerMock.mockResolvedValueOnce({
       token: "mock-token",
     } as any);
@@ -92,12 +157,14 @@ describe("RegisterPage", () => {
     const emailInput = screen.getByPlaceholderText("arquitecto@obsidian.pro");
     const passwordInput = screen.getAllByPlaceholderText("••••••••")[0];
     const confirmInput = screen.getAllByPlaceholderText("••••••••")[1];
+    const checkbox = screen.getByRole("checkbox");
     const submitBtn = screen.getByRole("button", { name: /registrarse/i });
 
     fireEvent.change(nameInput, { target: { value: "Juan Lopez" } });
     fireEvent.change(emailInput, { target: { value: "juan@obsidian.pro" } });
     fireEvent.change(passwordInput, { target: { value: "Password1!" } });
     fireEvent.change(confirmInput, { target: { value: "Password1!" } });
+    fireEvent.click(checkbox);
 
     fireEvent.click(submitBtn);
 
@@ -107,10 +174,8 @@ describe("RegisterPage", () => {
         email: "juan@obsidian.pro",
         password: "Password1!",
         role: "professional",
+        acceptedTerms: true,
       });
-      expect(
-        screen.getByText("Registro exitoso"),
-      ).toBeInTheDocument();
     });
   });
 });

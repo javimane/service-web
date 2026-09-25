@@ -15,6 +15,7 @@ import "../Login/LoginPage.css";
 import "./RegisterPage.css";
 import Footer from "@/components/Footer/Footer";
 import { Eye, EyeOff } from "lucide-react";
+import { TERMS_SECTIONS } from "../Terms/TermsPage";
 
 type RegisterPageProps = {
   isModal?: boolean;
@@ -44,6 +45,8 @@ export default function RegisterPage({
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const { refreshSession } = useAuth();
 
   const validate = () => {
@@ -84,6 +87,10 @@ export default function RegisterPage({
       newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
 
+    if (!acceptedTerms) {
+      newErrors.terms = "Debes aceptar los términos y condiciones para continuar";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -110,6 +117,7 @@ export default function RegisterPage({
         email: formData.email,
         password: formData.password,
         role: role,
+        acceptedTerms: true,
       });
 
       if (role === "professional" && typeof window !== "undefined") {
@@ -148,10 +156,18 @@ export default function RegisterPage({
   };
 
   const handleGoogleRegister = () => {
+    if (!acceptedTerms) {
+      setErrors((prev) => ({
+        ...prev,
+        terms: "Debes aceptar los términos y condiciones antes de registrarte con Google",
+      }));
+      return;
+    }
+
     setIsLoading(true);
     setAuthError("");
     try {
-      window.location.href = `${API_BASE_URL}/api/auth/login/google?role=${role}`;
+      window.location.href = `${API_BASE_URL}/api/auth/login/google?role=${role}&acceptedTerms=true`;
     } catch (err: any) {
       setAuthError(err.message || "Error al registrarse con Google.");
       setIsLoading(false);
@@ -351,6 +367,34 @@ export default function RegisterPage({
           </div>
         </div>
 
+        <div className="register-terms">
+          <label className="register-terms__label" htmlFor="register-terms-checkbox">
+            <input
+              id="register-terms-checkbox"
+              type="checkbox"
+              className="register-terms__checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => {
+                setAcceptedTerms(e.target.checked);
+                if (errors.terms) {
+                  setErrors((prev) => ({ ...prev, terms: "" }));
+                }
+              }}
+            />
+            <span className="register-terms__text">
+              Acepto los{" "}
+              <button
+                type="button"
+                className="register-terms__link"
+                onClick={() => setShowTermsModal(true)}
+              >
+                términos y condiciones
+              </button>
+            </span>
+          </label>
+          {errors.terms && <span className="error-text">{errors.terms}</span>}
+        </div>
+
         {authError && <div className="auth-error-alert">{authError}</div>}
 
         <button type="submit" className="btn-primary" disabled={isLoading}>
@@ -418,6 +462,45 @@ export default function RegisterPage({
         message={modalMessage}
         onClose={handleModalClose}
       />
+
+      <Modal
+        isOpen={showTermsModal}
+        title="Términos y Condiciones"
+        onClose={() => setShowTermsModal(false)}
+        maxWidth="800px"
+      >
+        <div className="terms-modal-body">
+          {TERMS_SECTIONS.map((section, index) => (
+            <div key={index} className="terms-modal-section">
+              <h3 className="terms-modal-section__title">{section.title}</h3>
+              <div className="terms-modal-section__content">{section.content}</div>
+            </div>
+          ))}
+        </div>
+        <div className="terms-modal-actions">
+          <button
+            type="button"
+            data-action-tone="cancel"
+            className="btn-secondary"
+            onClick={() => setShowTermsModal(false)}
+          >
+            Volver al registro
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => {
+              setAcceptedTerms(true);
+              if (errors.terms) {
+                setErrors((prev) => ({ ...prev, terms: "" }));
+              }
+              setShowTermsModal(false);
+            }}
+          >
+            Aceptar y volver
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 

@@ -57,17 +57,24 @@ export default function ProductsPage() {
   const pathname = usePathname();
   const professionalIdParam = searchParams?.get("professionalId") ?? null;
 
-  const urlCategory = searchParams?.get("category") || searchParams?.get("categoryId");
-  const urlSubcategory = searchParams?.get("subcategory") || searchParams?.get("subcategoryId");
-  const urlProvince = searchParams?.get("provinceId") || searchParams?.get("province");
+  const urlCategory =
+    searchParams?.get("category") || searchParams?.get("categoryId");
+  const urlSubcategory =
+    searchParams?.get("subcategory") || searchParams?.get("subcategoryId");
+  const urlProvince =
+    searchParams?.get("provinceId") || searchParams?.get("province");
   const urlSearch = searchParams?.get("search") || searchParams?.get("q") || "";
   const urlWholesale = searchParams?.get("wholesale");
   const urlBrand = searchParams?.get("brand");
-  const urlIsOffer = searchParams?.get("is_offer") || searchParams?.get("has_offer");
+  const urlIsOffer =
+    searchParams?.get("is_offer") || searchParams?.get("has_offer");
 
   const [filters, setFilters] = useState(() => ({
     ...defaultFilters,
-    categoryId: urlCategory && !isNaN(Number(urlCategory)) ? String(urlCategory) : defaultFilters.categoryId,
+    categoryId:
+      urlCategory && !isNaN(Number(urlCategory))
+        ? String(urlCategory)
+        : defaultFilters.categoryId,
     subcategoryId: urlSubcategory || defaultFilters.subcategoryId,
     provinceId: urlProvince || defaultFilters.provinceId,
     search: urlSearch || defaultFilters.search,
@@ -137,7 +144,8 @@ export default function ProductsPage() {
   useEffect(() => {
     if (!searchParams) return;
     const cat = searchParams.get("category") || searchParams.get("categoryId");
-    const subcat = searchParams.get("subcategory") || searchParams.get("subcategoryId");
+    const subcat =
+      searchParams.get("subcategory") || searchParams.get("subcategoryId");
     const prov = searchParams.get("provinceId") || searchParams.get("province");
     const q = searchParams.get("search") || searchParams.get("q");
     const ws = searchParams.get("wholesale");
@@ -659,11 +667,6 @@ export default function ProductsPage() {
                           size={16}
                         />
                       </div>
-                      {product.is_foreign && (
-                        <span className="product-card__badge-foreign">
-                          <Globe size={10} /> EXTERNO
-                        </span>
-                      )}
                       {product.discount > 0 && (
                         <span className="product-card__badge-discount">
                           -{product.discount}%
@@ -676,7 +679,11 @@ export default function ProductsPage() {
                         {product.seller}
                       </span>
                       <h3 className="product-card__title">{product.title}</h3>
-                      {(product.offer_2x1 || product.offer_3x2) && <span className="product-card__quantity-offer">{product.offer_2x1 ? "2x1" : "3x2"}</span>}
+                      {(product.offer_2x1 || product.offer_3x2) && (
+                        <span className="product-card__quantity-offer">
+                          {product.offer_2x1 ? "Oferta 2x1" : "Oferta 3x2"}
+                        </span>
+                      )}
 
                       <div className="product-card__pricing">
                         {product.originalPrice > 1 && (

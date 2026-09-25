@@ -397,17 +397,6 @@
   transition: all 0.2s;
 }
 
-.seller-contact-btn--link {
-  margin-top: 12px;
-  width: 100%;
-  background-color: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  text-decoration: none;
-  justify-content: center;
-  display: flex;
-  gap: 8px;
-}
 
 .seller-contact-btn:hover {
   background: color-mix(in srgb, var(--accent-color) 80%, #000 20%);

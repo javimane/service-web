@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
   Play,
   Maximize,
   CreditCard,
@@ -20,6 +19,7 @@ import {
   ShoppingCart,
   Minus,
   Plus,
+  Car,
 } from "lucide-react";
 import { getProductDetailAction } from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
@@ -259,9 +259,6 @@ export default function ProductDetailPage({
       String(productSubcategoryId).toLowerCase(),
     ),
   );
-  const canPurchase =
-    !isInquiryOnlyCategory &&
-    (!isAgeRestricted || (Boolean(user) && isAgeVerified));
 
   const productOrigin = item.is_foreign ? "Externo" : "Local";
   const rawImages: any[] = item.Images || itemAny.images || [];
@@ -284,7 +281,6 @@ export default function ProductDetailPage({
 
   // Get seller info from the first ProfessionalProducts entry (Direct access without .map())
   const professionalProduct = item.ProfessionalProducts?.[0];
-  const productLink = professionalProduct?.link_url;
   const professional = professionalProduct?.Professional;
   const professionalAny = professional as any;
 
@@ -313,6 +309,36 @@ export default function ProductDetailPage({
   const userId = professional?.user_id ?? professionalId;
 
   // Price logic
+  const currentVariant = variants.find((v) => v.product_id === item.id) as
+    | (ProductVariant & {
+        free_shipping_country?: boolean | null;
+        free_shipping_country_min_amount?: number | null;
+      })
+    | undefined;
+  const isFreeShippingCountry = Boolean(
+    professionalProduct?.free_shipping_country ??
+    itemAny?.free_shipping_country ??
+    currentVariant?.free_shipping_country,
+  );
+  const countryShippingMinAmount = Number(
+    professionalProduct?.free_shipping_country_min_amount ??
+      itemAny?.free_shipping_country_min_amount ??
+      currentVariant?.free_shipping_country_min_amount ??
+      0,
+  );
+
+  const hasOffer2x1 = Boolean(
+    professionalProduct?.offer_2x1 ??
+    itemAny?.offer_2x1 ??
+    (currentVariant as ProductVariant | undefined)?.offer_2x1,
+  );
+
+  const hasOffer3x2 = Boolean(
+    professionalProduct?.offer_3x2 ??
+    itemAny?.offer_3x2 ??
+    (currentVariant as ProductVariant | undefined)?.offer_3x2,
+  );
+
   const originalPrice = professionalProduct?.price || item.price;
   const offerPrice = professionalProduct?.offer_price;
 
@@ -329,10 +355,12 @@ export default function ProductDetailPage({
   );
 
   const currencyCode =
+    (currentVariant as any)?.currency_code ||
     professionalProduct?.currency_code ||
     item.currency_code ||
     itemAny.Product?.currency_code ||
     "ARG";
+  const isUsd = (currencyCode || "").toUpperCase() === "USD";
   const percentDiscount =
     professionalProduct?.percent_discount ||
     item.percent_discount ||
@@ -345,7 +373,12 @@ export default function ProductDetailPage({
       : activeOfferPrice && activeOriginalPrice
         ? Math.round((1 - activeOfferPrice / activeOriginalPrice) * 100)
         : 0;
-  const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
+  const currencySymbol = isUsd ? "USD $" : "$";
+
+  const canPurchase =
+    !isInquiryOnlyCategory &&
+    !isUsd &&
+    (!isAgeRestricted || (Boolean(user) && isAgeVerified));
 
   const isWholesale =
     professionalProduct?.wholesale === true || item.wholesale === true;
@@ -575,14 +608,14 @@ export default function ProductDetailPage({
                 <span className="product-meta-pill product-meta-pill--soft">
                   Producto
                 </span>
+                {isFreeShippingCountry && (
+                  <span className="product-meta-pill product-meta-pill--free-shipping">
+                    <Car size={14} />
+                    Envío Gratis a todo el País
+                  </span>
+                )}
               </div>
               <h1 className="product-detail__title">{productName}</h1>
-              {(professionalProduct?.offer_2x1 ||
-                professionalProduct?.offer_3x2) && (
-                <span className="product-detail__quantity-offer">
-                  {professionalProduct?.offer_2x1 ? "2x1" : "3x2"}
-                </span>
-              )}
 
               <div className="product-detail__facts">
                 <div className="product-detail__fact-row">
@@ -743,6 +776,11 @@ export default function ProductDetailPage({
                           return (
                             <div className="seller-current-price-row">
                               <span className="seller-price">Consultar</span>
+                              {(hasOffer2x1 || hasOffer3x2) && (
+                                <span className="product-detail__quantity-offer">
+                                  {hasOffer2x1 ? "Oferta 2x1" : "Oferta 3x2"}
+                                </span>
+                              )}
                             </div>
                           );
                         }
@@ -763,6 +801,11 @@ export default function ProductDetailPage({
                               {discountVal > 0 && activeOriginalPrice > 1 && (
                                 <span className="seller-discount">
                                   {discountVal}% OFF
+                                </span>
+                              )}
+                              {(hasOffer2x1 || hasOffer3x2) && (
+                                <span className="product-detail__quantity-offer">
+                                  {hasOffer2x1 ? "Oferta 2x1" : "Oferta 3x2"}
                                 </span>
                               )}
                             </div>
@@ -821,8 +864,20 @@ export default function ProductDetailPage({
                     </div>
                   </div>
 
+                  {isFreeShippingCountry && (
+                    <div className="product-detail__shipping-country-banner">
+                      <Car
+                        size={20}
+                        className="product-detail__shipping-country-icon"
+                      />
+                      <span className="product-detail__shipping-country-text">
+                        {`Envíos Gratis a todo el País: Mínimo de compra $${Math.max(0, countryShippingMinAmount || 0).toLocaleString("es-AR")}`}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Installments Information Box */}
-                  {!isInquiryOnlyCategory && activeFinalPrice > 1 && (
+                  {!isInquiryOnlyCategory && !isUsd && activeFinalPrice > 1 && (
                     <div className="seller-installments-box">
                       {installmentsEnabled ? (
                         <>
@@ -868,6 +923,7 @@ export default function ProductDetailPage({
                   {/* Age restriction alert */}
                   {isAgeRestricted &&
                     !isInquiryOnlyCategory &&
+                    !isUsd &&
                     !canPurchase && (
                       <div className="product-detail__age-warning">
                         <ShieldAlert
@@ -906,96 +962,16 @@ export default function ProductDetailPage({
 
                   {/* Action buttons */}
                   <div className="seller-actions-group">
-                    {activeFinalPrice > 1 && canPurchase && (
+                    {isUsd || isInquiryOnlyCategory || activeFinalPrice <= 1 ? (
                       <>
-                        <div className="product-detail__cart-actions">
-                          <div
-                            className="product-detail__quantity-control"
-                            aria-label="Cantidad del producto"
-                          >
-                            <button
-                              type="button"
-                              className="product-detail__quantity-btn"
-                              onClick={() =>
-                                setQuantity((current) =>
-                                  Math.max(1, current - 1),
-                                )
-                              }
-                              disabled={
-                                quantity <= 1 || addToCartMutation.isPending
-                              }
-                              aria-label="Quitar una unidad"
-                            >
-                              <Minus size={16} aria-hidden="true" />
-                            </button>
-                            <span
-                              className="product-detail__quantity-value"
-                              aria-live="polite"
-                            >
-                              {quantity}
-                            </span>
-                            <button
-                              type="button"
-                              className="product-detail__quantity-btn"
-                              onClick={() =>
-                                setQuantity((current) =>
-                                  Math.min(availableStock, current + 1),
-                                )
-                              }
-                              disabled={
-                                quantity >= availableStock ||
-                                addToCartMutation.isPending
-                              }
-                              aria-label="Agregar una unidad"
-                              data-action-tone="add"
-                            >
-                              <Plus size={16} aria-hidden="true" />
-                            </button>
-                          </div>
-                          <button
-                            data-action-tone="add"
-                            type="button"
-                            className="product-detail__add-cart-btn"
-                            onClick={handleAddToCart}
-                            disabled={
-                              availableStock === 0 ||
-                              addToCartMutation.isPending
-                            }
-                          >
-                            {addToCartMutation.isPending ? (
-                              <Loader2
-                                className="animate-spin"
-                                size={18}
-                                aria-hidden="true"
-                              />
-                            ) : (
-                              <ShoppingCart size={18} aria-hidden="true" />
-                            )}
-                            <span>
-                              {availableStock === 0
-                                ? "Sin stock"
-                                : "Agregar al carrito"}
-                            </span>
-                          </button>
-                        </div>
                         <button
                           type="button"
-                          className="seller-buy-btn"
-                          onClick={() => setIsPaymentModalOpen(true)}
+                          className="product-detail__contact-btn"
+                          onClick={handleContact}
                         >
-                          <CreditCard size={18} />
-                          <span>Comprar ahora</span>
+                          <MessageCircle size={18} />
+                          <span>Contactar al comercio</span>
                         </button>
-
-                        <div className="seller-protected-badge">
-                          <ShieldCheck
-                            size={18}
-                            className="seller-protected-badge__icon"
-                          />
-                          <span className="seller-protected-badge__text">
-                            Compra protegida o te devolvemos el dinero
-                          </span>
-                        </div>
 
                         {professionalProduct?.warranty != null && (
                           <div className="seller-protected-badge seller-protected-badge--warranty">
@@ -1018,6 +994,120 @@ export default function ProductDetailPage({
                           </div>
                         )}
                       </>
+                    ) : (
+                      canPurchase && (
+                        <>
+                          <div className="product-detail__cart-actions">
+                            <div
+                              className="product-detail__quantity-control"
+                              aria-label="Cantidad del producto"
+                            >
+                              <button
+                                type="button"
+                                className="product-detail__quantity-btn"
+                                onClick={() =>
+                                  setQuantity((current) =>
+                                    Math.max(1, current - 1),
+                                  )
+                                }
+                                disabled={
+                                  quantity <= 1 || addToCartMutation.isPending
+                                }
+                                aria-label="Quitar una unidad"
+                              >
+                                <Minus size={16} aria-hidden="true" />
+                              </button>
+                              <span
+                                className="product-detail__quantity-value"
+                                aria-live="polite"
+                              >
+                                {quantity}
+                              </span>
+                              <button
+                                type="button"
+                                className="product-detail__quantity-btn"
+                                onClick={() =>
+                                  setQuantity((current) =>
+                                    Math.min(availableStock, current + 1),
+                                  )
+                                }
+                                disabled={
+                                  quantity >= availableStock ||
+                                  addToCartMutation.isPending
+                                }
+                                aria-label="Agregar una unidad"
+                                data-action-tone="add"
+                              >
+                                <Plus size={16} aria-hidden="true" />
+                              </button>
+                            </div>
+                            <button
+                              data-action-tone="add"
+                              type="button"
+                              className="product-detail__add-cart-btn"
+                              onClick={handleAddToCart}
+                              disabled={
+                                availableStock === 0 ||
+                                addToCartMutation.isPending
+                              }
+                            >
+                              {addToCartMutation.isPending ? (
+                                <Loader2
+                                  className="animate-spin"
+                                  size={18}
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <ShoppingCart size={18} aria-hidden="true" />
+                              )}
+                              <span>
+                                {availableStock === 0
+                                  ? "Sin stock"
+                                  : "Agregar al carrito"}
+                              </span>
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className="seller-buy-btn"
+                            onClick={() => setIsPaymentModalOpen(true)}
+                          >
+                            <CreditCard size={18} />
+                            <span>Comprar ahora</span>
+                          </button>
+
+                          <div className="seller-protected-badge">
+                            <ShieldCheck
+                              size={18}
+                              className="seller-protected-badge__icon"
+                            />
+                            <span className="seller-protected-badge__text">
+                              Compra protegida o te devolvemos el dinero
+                            </span>
+                          </div>
+
+                          {professionalProduct?.warranty != null && (
+                            <div className="seller-protected-badge seller-protected-badge--warranty">
+                              <ShieldCheck
+                                size={18}
+                                className="seller-protected-badge__icon"
+                              />
+                              <span className="seller-protected-badge__text">
+                                {Number(professionalProduct.warranty) > 0
+                                  ? `Garantía del vendedor: ${
+                                      Number(professionalProduct.warranty) %
+                                        12 ===
+                                        0 &&
+                                      Number(professionalProduct.warranty) >= 12
+                                        ? `${Number(professionalProduct.warranty) / 12} ${Number(professionalProduct.warranty) / 12 === 1 ? "año" : "años"}`
+                                        : `${professionalProduct.warranty} ${Number(professionalProduct.warranty) === 1 ? "mes" : "meses"}`
+                                    }`
+                                  : "Este producto no posee garantía"}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )
                     )}
                   </div>
                 </div>

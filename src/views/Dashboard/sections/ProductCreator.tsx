@@ -19,6 +19,7 @@ import {
   Trash2,
   Layers,
   Truck,
+  Car,
   Info,
   Percent,
   Plus,
@@ -52,6 +53,11 @@ import {
 } from "@/app/actions/products";
 
 const MAX_PRODUCT_VIDEOS = 2;
+const installmentOptions: readonly number[] = [3, 6, 9, 12, 18];
+const normalizeMaxInstallments = (value: unknown): number => {
+  const count = Number(value);
+  return installmentOptions.includes(count) ? count : 3;
+};
 type ProductAttribute = { name: string; value: string };
 const emptyAttribute = (): ProductAttribute => ({ name: "", value: "" });
 const commonAttributes = [
@@ -107,7 +113,6 @@ export default function ProductCreator({
     offerPrice: "",
     currency_code: "ARG",
     percent_discount: "",
-    link_url: "",
     wholesale: false,
     wholesale_price: "",
     wholesale_unit: "",
@@ -150,7 +155,6 @@ export default function ProductCreator({
   const [eanStock, setEanStock] = useState("");
   const [eanOfferPrice, setEanOfferPrice] = useState("");
   const [eanCurrencyCode, setEanCurrencyCode] = useState("ARG");
-  const [eanLinkUrl, setEanLinkUrl] = useState("");
   const [eanPercentDiscount, setEanPercentDiscount] = useState("");
   const [eanWholesale, setEanWholesale] = useState(false);
   const [eanWholesalePrice, setEanWholesalePrice] = useState("");
@@ -161,7 +165,7 @@ export default function ProductCreator({
     Boolean(productToEdit?.installments_enabled),
   );
   const [maxInstallments, setMaxInstallments] = useState(
-    productToEdit?.max_installments || 3,
+    normalizeMaxInstallments(productToEdit?.max_installments),
   );
   const [freeShipping, setFreeShipping] = useState(
     Boolean(productToEdit?.free_shipping),
@@ -183,6 +187,25 @@ export default function ProductCreator({
       productToEdit?.free_shipping_max_weight !== null
       ? String(productToEdit.free_shipping_max_weight)
       : "",
+  );
+  const [freeShippingCountry, setFreeShippingCountry] = useState(
+    Boolean(
+      productToEdit?.free_shipping_country ??
+      (variantParent && !productToEdit
+        ? variantParent.free_shipping_country
+        : false),
+    ),
+  );
+  const [freeShippingCountryMinAmount, setFreeShippingCountryMinAmount] = useState(
+    String(
+      productToEdit?.free_shipping_country_min_amount ??
+        (variantParent && !productToEdit
+          ? variantParent.free_shipping_country_min_amount
+          : null) ??
+        (productToEdit?.free_shipping_country || variantParent?.free_shipping_country
+          ? 0
+          : ""),
+    ),
   );
 
   const [inheritWarranty, setInheritWarranty] = useState(
@@ -337,13 +360,7 @@ export default function ProductCreator({
       height: variantParent.height != null ? String(variantParent.height) : "",
       depth: variantParent.depth != null ? String(variantParent.depth) : "",
     }));
-    setAttributes(
-      Array.isArray(variantParent.attributes) && variantParent.attributes.length
-        ? variantParent.attributes.map((attribute: ProductAttribute) => ({
-            ...attribute,
-          }))
-        : [emptyAttribute()],
-    );
+    setAttributes([emptyAttribute()]);
     setFormPrice(String(variantParent.price ?? ""));
     setFormStock("0");
     if (
@@ -351,6 +368,11 @@ export default function ProductCreator({
       variantParent.warranty !== null
     ) {
       setWarranty(Number(variantParent.warranty));
+      setIsCustomWarranty(
+        ![0, 1, 2, 3, 6, 12, 18, 24, 36, 48, 60].includes(
+          Number(variantParent.warranty),
+        ),
+      );
       setInheritWarranty(true);
     }
   }, [variantParent, productToEdit]);
@@ -368,7 +390,26 @@ export default function ProductCreator({
         try {
           const detailRes = await getProductDetailAction({ id: productId });
           if (detailRes?.data) {
-            fullProduct = { ...productToEdit, ...detailRes.data };
+            const merchantListing = Array.isArray(detailRes.data.ProfessionalProducts)
+              ? detailRes.data.ProfessionalProducts.find(
+                  (listing: any) =>
+                    Number(listing.professional_id) === Number(professionalId),
+                )
+              : null;
+            fullProduct = {
+              ...productToEdit,
+              ...detailRes.data,
+              ...(merchantListing
+                ? {
+                    warranty: merchantListing.warranty,
+                    installments_enabled: merchantListing.installments_enabled,
+                    max_installments: merchantListing.max_installments,
+                    free_shipping_country: merchantListing.free_shipping_country,
+                    free_shipping_country_min_amount:
+                      merchantListing.free_shipping_country_min_amount,
+                  }
+                : {}),
+            };
           }
         } catch (err) {
           console.error("Error fetching product detail for edit:", err);
@@ -408,7 +449,6 @@ export default function ProductCreator({
         percent_discount: fullProduct.percent_discount
           ? String(fullProduct.percent_discount)
           : "",
-        link_url: fullProduct.link_url || "",
         wholesale: fullProduct.wholesale || false,
         offer_2x1: Boolean(fullProduct.offer_2x1),
         offer_3x2: Boolean(fullProduct.offer_3x2),
@@ -441,12 +481,8 @@ export default function ProductCreator({
         fullProduct.stock !== undefined ? String(fullProduct.stock) : "",
       );
 
-      if (fullProduct.installments_enabled !== undefined) {
-        setInstallmentsEnabled(Boolean(fullProduct.installments_enabled));
-      }
-      if (fullProduct.max_installments) {
-        setMaxInstallments(Number(fullProduct.max_installments));
-      }
+      setInstallmentsEnabled(Boolean(fullProduct.installments_enabled));
+      setMaxInstallments(normalizeMaxInstallments(fullProduct.max_installments));
       if (fullProduct.free_shipping !== undefined) {
         setFreeShipping(Boolean(fullProduct.free_shipping));
       }
@@ -468,15 +504,24 @@ export default function ProductCreator({
       ) {
         setFreeShippingMaxWeight(String(fullProduct.free_shipping_max_weight));
       }
-      if (fullProduct.warranty !== undefined && fullProduct.warranty !== null) {
-        const wVal = Number(fullProduct.warranty);
-        setWarranty(wVal);
-        if (![0, 1, 2, 3, 6, 12, 18, 24, 36, 48, 60].includes(wVal)) {
-          setIsCustomWarranty(true);
-        }
-        if (variantParent && variantParent.warranty !== undefined) {
-          setInheritWarranty(wVal === Number(variantParent.warranty));
-        }
+      if (fullProduct.free_shipping_country !== undefined) {
+        setFreeShippingCountry(Boolean(fullProduct.free_shipping_country));
+      }
+      setFreeShippingCountryMinAmount(
+        String(
+          fullProduct.free_shipping_country_min_amount ??
+            (fullProduct.free_shipping_country ? 0 : ""),
+        ),
+      );
+      const warrantyMonths = Number(fullProduct.warranty) || 0;
+      setWarranty(warrantyMonths);
+      setIsCustomWarranty(
+        ![0, 1, 2, 3, 6, 12, 18, 24, 36, 48, 60].includes(warrantyMonths),
+      );
+      if (variantParent) {
+        setInheritWarranty(
+          warrantyMonths === Number(variantParent.warranty ?? 0),
+        );
       }
 
       // Extract images
@@ -528,7 +573,7 @@ export default function ProductCreator({
     return () => {
       isMounted = false;
     };
-  }, [productToEdit, categories, variantParent]);
+  }, [productToEdit, categories, variantParent, professionalId]);
 
   /* ── Image handlers ── */
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -620,7 +665,6 @@ export default function ProductCreator({
         setEanStock("");
         setEanOfferPrice("");
         setEanCurrencyCode("ARG");
-        setEanLinkUrl("");
         setEanPercentDiscount("");
         setEanWholesale(false);
         setEanWholesalePrice("");
@@ -636,6 +680,15 @@ export default function ProductCreator({
 
   const handleAddFromEan = async () => {
     if (!eanMatch) return;
+    if (
+      freeShippingCountry &&
+      (freeShippingCountryMinAmount.trim() === "" ||
+        !Number.isFinite(Number(freeShippingCountryMinAmount)) ||
+        Number(freeShippingCountryMinAmount) < 0)
+    ) {
+      showError("Ingresá un importe mínimo válido para el envío gratis nacional.");
+      return;
+    }
     try {
       if (eanMatch.isAlreadyAssigned && variantParent) {
         await commerceService.linkVariant(
@@ -657,7 +710,6 @@ export default function ProductCreator({
         stock: Number(eanStock) || 0,
         offer_price: Number(eanOfferPrice) || 0,
         currency_code: eanCurrencyCode || "ARG",
-        link_url: eanLinkUrl.trim() || null,
         percent_discount: Number(eanPercentDiscount) || 0,
         wholesale: eanWholesale,
         offer_2x1: eanOfferType === "2x1",
@@ -668,6 +720,10 @@ export default function ProductCreator({
         wholesale_price: eanWholesale
           ? Number(eanWholesalePrice) || 0
           : undefined,
+        free_shipping_country: freeShippingCountry,
+        free_shipping_country_min_amount: freeShippingCountry
+          ? Number(freeShippingCountryMinAmount) || 0
+          : null,
         warranty: eanWarranty,
       });
     } catch (error: any) {
@@ -711,6 +767,15 @@ export default function ProductCreator({
         e.ean =
           "El EAN es obligatorio si no marcas la opción 'No tiene código de barra'.";
       if (!formPrice) e.price = "El precio es obligatorio.";
+      if (
+        freeShippingCountry &&
+        (freeShippingCountryMinAmount.trim() === "" ||
+          !Number.isFinite(Number(freeShippingCountryMinAmount)) ||
+          Number(freeShippingCountryMinAmount) < 0)
+      ) {
+        e.freeShippingCountryMinAmount =
+          "Ingresá un importe mínimo válido para el envío gratis nacional.";
+      }
       if (!(variantParent?.categories_products_id || newProduct.categoryId))
         e.categoryId = "La categoría es obligatoria.";
       if (!formStock) e.stock = "El stock es obligatorio.";
@@ -860,8 +925,15 @@ export default function ProductCreator({
         wholesale_price: Number(newProduct.wholesale_price) || 0,
         wholesale_unit: Number(newProduct.wholesale_unit) || 0,
         installments_enabled: !isFoodCategory && installmentsEnabled,
-        max_installments: installmentsEnabled ? maxInstallments : null,
+        max_installments:
+          !isFoodCategory && installmentsEnabled
+            ? normalizeMaxInstallments(maxInstallments)
+            : 1,
         free_shipping: freeShipping,
+        free_shipping_country: freeShippingCountry,
+        free_shipping_country_min_amount: freeShippingCountry
+          ? Number(freeShippingCountryMinAmount)
+          : null,
         free_shipping_radius_km: freeShipping
           ? freeShippingRadiusKm
             ? Number(freeShippingRadiusKm)
@@ -962,6 +1034,9 @@ export default function ProductCreator({
             free_shipping_radius_km: payload.free_shipping_radius_km,
             free_shipping_min_amount: payload.free_shipping_min_amount,
             free_shipping_max_weight: payload.free_shipping_max_weight,
+            free_shipping_country: payload.free_shipping_country,
+            free_shipping_country_min_amount:
+              payload.free_shipping_country_min_amount,
             warranty: payload.warranty,
           },
         });
@@ -1325,6 +1400,36 @@ export default function ProductCreator({
                       <option value="3x2">3x2</option>
                     </select>
                   </div>
+                  <div className="product-creator__field product-creator__field--full">
+                    <label className="product-creator__wholesale-row">
+                      <input
+                        type="checkbox"
+                        checked={freeShippingCountry}
+                        onChange={(event) =>
+                          setFreeShippingCountry(event.target.checked)
+                        }
+                      />
+                      <span>Envíos gratis a todo el país</span>
+                    </label>
+                    {freeShippingCountry && (
+                      <div className="product-creator__country-shipping-minimum">
+                        <label htmlFor="ean-country-shipping-minimum">
+                          Compra mínima fuera de la provincia ($)
+                        </label>
+                        <input
+                          id="ean-country-shipping-minimum"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={freeShippingCountryMinAmount}
+                          onChange={(event) =>
+                            setFreeShippingCountryMinAmount(event.target.value)
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
 
@@ -1610,16 +1715,6 @@ export default function ProductCreator({
                     }
                     disabled={Boolean(variantParent && inheritDescription)}
                     onChange={(e) => set("description", e.target.value)}
-                  />
-                </div>
-
-                <div className="product-creator__field product-creator__field--full">
-                  <label>Enlace del producto (Opcional)</label>
-                  <input
-                    type="url"
-                    placeholder="Ej: https://mi-sitio.com/producto"
-                    value={newProduct.link_url}
-                    onChange={(e) => set("link_url", e.target.value)}
                   />
                 </div>
               </div>
@@ -2110,22 +2205,55 @@ export default function ProductCreator({
                   )}
                 </div>
 
+                {/* Envío gratis a todo el país */}
+                <div className="product-creator__field product-creator__field--full">
+                  <button
+                    type="button"
+                    className={`product-creator__country-shipping-btn ${
+                      freeShippingCountry
+                        ? "product-creator__country-shipping-btn--active"
+                        : ""
+                    }`}
+                    onClick={() => setFreeShippingCountry((prev) => !prev)}
+                  >
+                    <Car size={18} />
+                    <span>Envíos Gratis a todo el País</span>
+                    <span className="product-creator__country-shipping-status">
+                      {freeShippingCountry ? "Habilitado" : "Deshabilitado"}
+                    </span>
+                  </button>
+                  {freeShippingCountry && (
+                    <div className="product-creator__country-shipping-minimum">
+                      <label htmlFor="product-country-shipping-minimum">
+                        Compra mínima para envíos gratis fuera de la provincia ($)
+                      </label>
+                      <input
+                        id="product-country-shipping-minimum"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={freeShippingCountryMinAmount}
+                        onChange={(event) =>
+                          setFreeShippingCountryMinAmount(event.target.value)
+                        }
+                      />
+                      {errors.freeShippingCountryMinAmount && (
+                        <span className="product-creator__error">
+                          {errors.freeShippingCountryMinAmount}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Garantía */}
                 <div className="product-creator__field product-creator__field--full">
                   <label htmlFor="product-warranty">
                     Garantía del producto
                   </label>
                   {variantParent && (
-                    <label
-                      className="product-creator__inherit-option"
-                      style={{
-                        marginBottom: "10px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                      }}
-                    >
+                    <label className="product-creator__inherit-option product-creator__inherit-option--warranty">
                       <input
                         type="checkbox"
                         checked={inheritWarranty}

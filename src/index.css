@@ -27,9 +27,21 @@
   --success-color: #40c057;
   --success-accent: #22c55e;
   --action-add-bg: color-mix(in srgb, var(--success-color) 30%, var(--bg-card));
-  --action-add-hover: color-mix(in srgb, var(--success-color) 44%, var(--bg-card));
-  --action-cancel-bg: color-mix(in srgb, var(--error-color) 25%, var(--bg-card));
-  --action-cancel-hover: color-mix(in srgb, var(--error-color) 38%, var(--bg-card));
+  --action-add-hover: color-mix(
+    in srgb,
+    var(--success-color) 44%,
+    var(--bg-card)
+  );
+  --action-cancel-bg: color-mix(
+    in srgb,
+    var(--error-color) 25%,
+    var(--bg-card)
+  );
+  --action-cancel-hover: color-mix(
+    in srgb,
+    var(--error-color) 38%,
+    var(--bg-card)
+  );
 
   /* ═══════════════════════════════════════
      EXTENDED COLOR PALETTE
@@ -39,6 +51,7 @@
   --coral: #ff7f50;
   --amber-color: #fbbf24;
   --amber-dark: #f59e0b;
+  --yellow-color: #facc15;
   --red-accent: #ef4444;
   --green-accent: #22c55e;
   --green-dark: #16a34a;

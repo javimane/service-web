@@ -20,7 +20,14 @@ vi.mock("../../context/AuthContext", () => ({
     hasProfessionalSubscription: false,
     subscriptionPlan: null,
     refreshUser: vi.fn(),
+    refreshSession: vi.fn(),
     logout: vi.fn(),
+    setUser: vi.fn(),
+    setSessionStatus: vi.fn(),
+  }),
+  normalizeSessionPayload: (payload: any) => ({
+    nextUser: payload?.data?.user ?? payload?.user ?? null,
+    nextSessionStatus: payload?.sessionStatus ?? null,
   }),
 }));
 
@@ -30,6 +37,7 @@ vi.mock("../../services/authService", () => ({
       token: "mock-token",
       sessionStatus: { is_professional: false },
     }),
+    logout: vi.fn().mockResolvedValue({}),
     resetPassword: vi.fn().mockResolvedValue({}),
   },
 }));
@@ -51,9 +59,7 @@ describe("LoginPage", () => {
   it("se renderiza correctamente", () => {
     renderWithRouter(React.createElement(LoginPage));
     expect(screen.getByText("Bienvenido")).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText("tu@email.com o juan_rider"),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("tu@email.com")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("••••••••")).toBeInTheDocument();
   });
 
@@ -63,35 +69,30 @@ describe("LoginPage", () => {
 
     fireEvent.click(submitBtn);
 
-    expect(
-      screen.getByText("Ingresá tu email o nombre de usuario"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Ingresá tu email")).toBeInTheDocument();
     expect(screen.getByText("La contraseña es requerida")).toBeInTheDocument();
   });
 
   it("muestra error de formato de email", () => {
     renderWithRouter(React.createElement(LoginPage));
-    const emailInput = screen.getByPlaceholderText("tu@email.com o juan_rider");
+    const emailInput = screen.getByPlaceholderText("tu@email.com");
     const submitBtn = screen.getByRole("button", { name: /ingresar/i });
 
     fireEvent.change(emailInput, { target: { value: "1emailinvalido" } });
     fireEvent.click(submitBtn);
 
-    expect(
-      screen.getByText("Ingresá un email o nombre de usuario válido"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Ingresá un email válido")).toBeInTheDocument();
   });
 
   it("llama a Supabase al enviar datos válidos", async () => {
     vi.spyOn(window, "alert").mockImplementation(() => {});
-    // Configurar respuesta del mock
     signInWithPasswordMock.mockResolvedValueOnce({
       data: { user: { id: "1" } },
       error: null,
     } as any);
 
     renderWithRouter(React.createElement(LoginPage));
-    const emailInput = screen.getByPlaceholderText("tu@email.com o juan_rider");
+    const emailInput = screen.getByPlaceholderText("tu@email.com");
     const passwordInput = screen.getByPlaceholderText("••••••••");
     const submitBtn = screen.getByRole("button", { name: /ingresar/i });
 
@@ -108,22 +109,34 @@ describe("LoginPage", () => {
     });
   });
 
-  it("envía el nombre de usuario a la API sin intentar el login de chat", async () => {
-    signInWithPasswordMock.mockClear();
+  it("bloquea el inicio de sesión si la cuenta pertenece a un repartidor", async () => {
+    vi.mocked(authService.login).mockResolvedValueOnce({
+      data: {
+        user: {
+          id: "rider-1",
+          user_metadata: { role: "delivery" },
+        },
+      },
+      sessionStatus: { logistics_role: "delivery" },
+    } as any);
+
     renderWithRouter(React.createElement(LoginPage));
-    fireEvent.change(screen.getByPlaceholderText("tu@email.com o juan_rider"), {
-      target: { value: "juan_rider" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("••••••••"), {
-      target: { value: "1234567" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /ingresar/i }));
+    const emailInput = screen.getByPlaceholderText("tu@email.com");
+    const passwordInput = screen.getByPlaceholderText("••••••••");
+    const submitBtn = screen.getByRole("button", { name: /ingresar/i });
+
+    fireEvent.change(emailInput, { target: { value: "rider@empresa.com" } });
+    fireEvent.change(passwordInput, { target: { value: "1234567" } });
+    fireEvent.click(submitBtn);
+
     await waitFor(() => {
-      expect(authService.login).toHaveBeenCalledWith({
-        username: "juan_rider",
-        password: "1234567",
-      });
+      expect(
+        screen.getByText(
+          "Los repartidores no tienen acceso a la plataforma web. Por favor, utilizá la aplicación móvil.",
+        ),
+      ).toBeInTheDocument();
     });
-    expect(signInWithPasswordMock).not.toHaveBeenCalled();
+
+    expect(authService.logout).toHaveBeenCalled();
   });
 });
