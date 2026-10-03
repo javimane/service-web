@@ -58,41 +58,49 @@
 
 /* ── Buttons ── */
 .cal-btn {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   font-weight: var(--weight-semibold);
   font-size: 0.8rem;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
-  padding: 10px 16px;
+  padding: 0 16px;
+  min-height: 42px;
+  height: 42px;
   cursor: pointer;
   transition: all 0.2s ease;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  line-height: 1;
 }
 
 .cal-btn--primary {
   background: var(--accent-color);
   color: var(--white);
+  border-color: var(--accent-color);
   box-shadow: 0 4px 12px var(--accent-transparent);
 }
 
 .cal-btn--primary:hover {
   background: var(--accent-hover);
+  border-color: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 6px 20px var(--accent-transparent);
 }
 
 .cal-btn--secondary {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background: var(--brand-blue);
+  color: var(--white);
+  border: 1px solid var(--brand-blue);
 }
 
 .cal-btn--secondary:hover {
-  border-color: var(--accent-color);
-  background: var(--accent-transparent);
+  background: #154ca0;
+  border-color: #154ca0;
+  color: var(--white);
 }
 
 .cal-btn--google {
@@ -588,8 +596,9 @@
 
 .cal-modal__footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-3);
   padding: 4px 28px 24px;
 }
 

@@ -86,6 +86,7 @@
 
 .assign-appointment-modal__actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-2);

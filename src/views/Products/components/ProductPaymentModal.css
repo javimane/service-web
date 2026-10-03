@@ -189,6 +189,9 @@
 }
 
 .product-payment-modal__delivery-card {
+  width: 100%;
+  text-align: left;
+  font: inherit;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -202,6 +205,25 @@
 
 .product-payment-modal__delivery-card:hover {
   border-color: var(--accent-color);
+}
+
+.product-payment-modal__delivery-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.product-payment-modal__delivery-card:disabled:hover {
+  border-color: var(--border-color);
+}
+
+.product-payment-modal__coverage-notice {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
 }
 
 .product-payment-modal__delivery-card--active {
@@ -502,6 +524,11 @@
   color: var(--text-secondary);
 }
 
+.product-payment-modal__summary-row--free-delivery {
+  color: var(--success-color);
+  font-weight: var(--weight-bold);
+}
+
 .product-payment-modal__summary-row--total {
   border-top: 1px solid var(--border-color);
   padding-top: var(--space-2);
@@ -530,6 +557,7 @@
 /* Actions */
 .product-payment-modal__actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-2);

@@ -61,7 +61,7 @@ type AuthContextValue = {
   subscriptionPlan: string | null;
   hasAddress: boolean;
   loading: boolean;
-  refreshSession: () => Promise<void>;
+  refreshSession: () => Promise<SessionStatus | null>;
   logout: () => Promise<void>;
   setUser: (value: any) => void;
   setSessionStatus: (value: SessionStatus | null) => void;
@@ -188,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const subscriptionPlan = sessionStatus?.subscription?.plan ?? null;
 
-  const refreshSession = async () => {
+  const refreshSession = async (): Promise<SessionStatus | null> => {
     try {
       // 1. Si venimos de un redirect de Google OAuth (y solo en ese caso), sincronizar con NestJS
       const isOAuthRedirect =
@@ -218,7 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 window.location.href = "/login?error=rider_not_allowed";
               }
               setLoading(false);
-              return;
+              return null;
             }
 
             if (nextUser) setUser(nextUser);
@@ -226,7 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setSessionStatus(nextSessionStatus);
             }
             setLoading(false);
-            return;
+            return nextSessionStatus;
           }
         } catch (syncErr) {
           console.error("Failed to sync Supabase OAuth session:", syncErr);
@@ -243,7 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           window.location.href = "/login?error=rider_not_allowed";
         }
         setLoading(false);
-        return;
+        return null;
       }
 
       if (nextUser) {
@@ -252,6 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (nextSessionStatus !== null) {
         setSessionStatus(nextSessionStatus);
       }
+      return nextSessionStatus;
     } catch (err) {
       // Solo resetear a null si no hay ninguna cookie ni token activo
       const hasCookie = typeof document !== "undefined" && (document.cookie.includes("token=") || document.cookie.includes("access_token="));
@@ -260,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setSessionStatus(null);
       }
+      return null;
     } finally {
       setLoading(false);
     }

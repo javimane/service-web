@@ -9,6 +9,42 @@
   box-sizing: border-box;
 }
 
+.commercial-shipping-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.commercial-shipping-settings__check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.commercial-shipping-settings__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+.commercial-shipping-settings__grid label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.commercial-shipping-settings__grid input {
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
 .commercial-card,
 .commercial-edit-container,
 .commercial-edit-header,

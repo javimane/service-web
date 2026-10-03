@@ -6,6 +6,7 @@ import Modal from "../../components/Modal/Modal";
 import "./ServiceDetailModal.css";
 import { ROUTES } from "../../routes/paths";
 import { incrementProfessionalViewsAction } from "../../app/actions/professionals";
+import WhatsAppContactButton from "../../components/WhatsAppContactButton/WhatsAppContactButton";
 
 export default function ServiceDetailModal({ service, isOpen, onClose }) {
   const router = useRouter();
@@ -95,6 +96,21 @@ export default function ServiceDetailModal({ service, isOpen, onClose }) {
 
         {/* Action buttons */}
         <div className="service-detail-modal__footer">
+          <WhatsAppContactButton
+            professionalId={professionalId}
+            professional={professional}
+            profile={profile}
+            phone={
+              profile?.phone ||
+              profile?.phone_number ||
+              professional?.phone ||
+              professional?.phone_number ||
+              company?.phone ||
+              company?.phone_number
+            }
+            message={`Hola, qué tal, te contacto por el servicio: ${service.name}`}
+            className="service-detail-modal__button"
+          />
           <button
             className="service-detail-modal__button service-detail-modal__button--primary"
             onClick={handleContact}

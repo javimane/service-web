@@ -11,7 +11,9 @@ import {
   Calendar,
   Eye,
   MessageCircle,
+  MessageSquare,
   Printer,
+  QrCode,
   AlertTriangle,
   CheckCircle2,
   Store,
@@ -36,14 +38,17 @@ import { setApiAccessToken } from "@/services/apiClient";
 import { getProfessionalMeAction } from "@/app/actions/professionals";
 import AssignServiceAppointmentModal from "./AssignServiceAppointmentModal";
 import PackageThermalLabelModal from "./PackageThermalLabelModal";
-import ServiceOrderVoucherModal from "./ServiceOrderVoucherModal";
 import BatchOrderTicketsModal from "./BatchOrderTicketsModal";
+import ReturnReceiptModal from "./ReturnReceiptModal";
+import OrderChatModal from "./OrderChatModal";
+import { getBuyerEmail, getBuyerName, getBuyerPhone, getDeliveryAddress, getOrderLines, getProductImage, isPrintableOrder } from "./orderTicketData";
 import DateRangeFilter, { DateRangeValue, toUtcDateRange } from "./DateRangeFilter";
 import "./SalesSection.css";
 
 const STATUS_FILTERS: Array<{ label: string; value: string }> = [
   { label: "Todas", value: "" },
   { label: "Pendientes", value: "pending" },
+  { label: "Pendiente de Pago", value: "pending_payment" },
   { label: "Confirmadas", value: "confirmed" },
   { label: "En preparación", value: "preparing" },
   { label: "Listas para retiro", value: "ready_for_pickup" },
@@ -56,7 +61,7 @@ export default function SalesSection() {
   const token = getAccessToken();
   setApiAccessToken(token);
   const queryClient = useQueryClient();
-  const { sessionStatus } = useAuth();
+  const { sessionStatus, user } = useAuth();
   const { showSuccess, showError } = useAlert();
 
   const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
@@ -78,6 +83,7 @@ export default function SalesSection() {
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [selectedOrdersForBatchPrint, setSelectedOrdersForBatchPrint] = useState<OrderSummary[]>([]);
   const [batchPrintModalOpen, setBatchPrintModalOpen] = useState(false);
+  const [returnReceiptOpen, setReturnReceiptOpen] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -91,6 +97,8 @@ export default function SalesSection() {
   const [selectedOrderForAppointment, setSelectedOrderForAppointment] = useState<OrderSummary | null>(null);
   const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<OrderSummary | null>(null);
   const [selectedOrderForServiceVoucher, setSelectedOrderForServiceVoucher] = useState<OrderSummary | null>(null);
+  const [isOrderChatOpen, setIsOrderChatOpen] = useState(false);
+  const [whatsAppWarningOpen, setWhatsAppWarningOpen] = useState(false);
 
   // Fetch branches
   const { data: rawBranches, isError: branchesError } = useQuery({
@@ -244,12 +252,13 @@ export default function SalesSection() {
   };
 
   const toggleSelectAll = () => {
-    if (orders.length === 0) return;
-    const allVisibleSelected = orders.every((o) => selectedOrderIds.includes(o.id));
+    const printableOrders = orders.filter(isPrintableOrder);
+    if (printableOrders.length === 0) return;
+    const allVisibleSelected = printableOrders.every((o) => selectedOrderIds.includes(o.id));
     if (allVisibleSelected) {
       setSelectedOrderIds((prev) => prev.filter((id) => !orders.some((o) => o.id === id)));
     } else {
-      const newIds = new Set([...selectedOrderIds, ...orders.map((o) => o.id)]);
+      const newIds = new Set([...selectedOrderIds, ...printableOrders.map((o) => o.id)]);
       setSelectedOrderIds(Array.from(newIds));
     }
   };
@@ -261,7 +270,7 @@ export default function SalesSection() {
   };
 
   const handleOpenBatchPrint = () => {
-    const selectedList = orders.filter((o) => selectedOrderIds.includes(o.id));
+    const selectedList = orders.filter((o) => selectedOrderIds.includes(o.id) && isPrintableOrder(o));
     if (selectedList.length === 0) {
       showError("Selecciona al menos una venta para imprimir.");
       return;
@@ -275,7 +284,7 @@ export default function SalesSection() {
     if (!isAutoPrintActive || orders.length === 0) return;
 
     const unprinted = orders.filter((o) => {
-      if (o.status === "cancelled") return false;
+      if (!isPrintableOrder(o)) return false;
       if (selectedBranchId) {
         const orderLocation = o.branch_id ||
           (o.origin_address_id ? `main:${companyId}` : "");
@@ -316,6 +325,12 @@ export default function SalesSection() {
       setSelectedOrder(null);
     },
     onError: () => showError("No se pudo cancelar el pedido."),
+  });
+
+  const returnReceiptMutation = useMutation({
+    mutationFn: (code: string) => commerceService.receiveReturn(code),
+    onSuccess: () => showSuccess("Producto devuelto registrado como recibido. El reclamo sigue pendiente de resolución."),
+    onError: (error: Error) => showError(error.message || "No se pudo registrar la devolución."),
   });
 
   const preparingMutation = useMutation({
@@ -389,6 +404,8 @@ export default function SalesSection() {
     switch (status) {
       case "pending":
         return <span className="sales-badge sales-badge--pending">Pendiente</span>;
+      case "pending_payment":
+        return <span className="sales-badge sales-badge--pending-payment">Pendiente de Pago</span>;
       case "confirmed":
         return <span className="sales-badge sales-badge--confirmed">Confirmado</span>;
       case "preparing":
@@ -407,6 +424,40 @@ export default function SalesSection() {
       default:
         return <span className="sales-badge">{status}</span>;
     }
+  };
+
+  const formatPaymentMethod = (order: OrderSummary) => {
+    const method = (order.payment_method || order.payment_provider || "").toLowerCase();
+    const cardType = (
+      (order as any).card_type ||
+      (order as any).card_details?.card_type ||
+      (order as any).payment_data?.card_type ||
+      ""
+    ).toLowerCase();
+
+    if (method.includes("qr") || method.includes("paycloud")) {
+      return "QR";
+    }
+
+    if (cardType.includes("deb") || method.includes("deb")) {
+      return "Débito";
+    }
+
+    if (cardType.includes("cred") || method.includes("cred")) {
+      return "Crédito";
+    }
+
+    if (
+      method.includes("getnet") ||
+      method.includes("card") ||
+      method.includes("tarjeta") ||
+      method.includes("cart")
+    ) {
+      return "Crédito";
+    }
+
+    if (!method) return "No informado";
+    return order.payment_method || order.payment_provider || "No informado";
   };
 
   const getDeliveryLabel = (type: string) => {
@@ -478,6 +529,7 @@ export default function SalesSection() {
 
       {/* Branch & Auto-print Toolbar */}
       <div className="sales-branch-toolbar">
+        <button type="button" className="btn-secondary sales-return-receipt-button" onClick={() => setReturnReceiptOpen(true)}><QrCode size={17} />Registrar devolución recibida</button>
         <div className="sales-branch-control">
           <div className="sales-branch-control__icon">
             <Store size={20} />
@@ -630,8 +682,8 @@ export default function SalesSection() {
                       type="checkbox"
                       className="sales-checkbox"
                       checked={
-                        orders.length > 0 &&
-                        orders.every((o) => selectedOrderIds.includes(o.id))
+                        orders.some(isPrintableOrder) &&
+                        orders.filter(isPrintableOrder).every((o) => selectedOrderIds.includes(o.id))
                       }
                       onChange={toggleSelectAll}
                       aria-label="Seleccionar todas las ventas visibles"
@@ -655,11 +707,7 @@ export default function SalesSection() {
                     order.service?.name ||
                     (order.items && order.items[0]?.product_name) ||
                     "Producto";
-                  const buyerName =
-                    order.buyer?.full_name ||
-                    order.user?.full_name ||
-                    order.buyer?.email ||
-                    "Cliente";
+                  const buyerName = getBuyerName(order);
 
                   return (
                     <tr key={order.id}>
@@ -669,6 +717,7 @@ export default function SalesSection() {
                           className="sales-checkbox"
                           checked={selectedOrderIds.includes(order.id)}
                           onChange={() => toggleSelectOrder(order.id)}
+                          disabled={!isPrintableOrder(order)}
                           aria-label={`Seleccionar orden ${order.id}`}
                         />
                       </td>
@@ -679,9 +728,9 @@ export default function SalesSection() {
                       <td>{buyerName}</td>
                       <td>
                         <div className="sales-table__product-cell">
-                          {order.professional_product?.product?.image_url && (
+                          {getProductImage(order.items?.[0]?.product || order.professional_product?.product) && (
                             <img
-                              src={order.professional_product.product.image_url}
+                              src={getProductImage(order.items?.[0]?.product || order.professional_product?.product) || ""}
                               alt={article}
                               className="sales-table__thumb"
                             />
@@ -741,7 +790,7 @@ export default function SalesSection() {
                               </button>
                             )}
 
-                          {!order.service_id && !order.service && (
+                          {isPrintableOrder(order) && !order.service_id && !order.service && (
                             <button
                               type="button"
                               className="sales-action-btn sales-action-btn--label"
@@ -753,7 +802,7 @@ export default function SalesSection() {
                             </button>
                           )}
 
-                          {(order.service_id || order.service) && (
+                          {isPrintableOrder(order) && (order.service_id || order.service) && (
                             <button
                               type="button"
                               className="sales-action-btn sales-action-btn--label"
@@ -800,29 +849,29 @@ export default function SalesSection() {
               <h4 className="order-detail-section__title">Datos del Comprador</h4>
               <div className="order-detail-grid">
                 <div>
+                  <span className="order-detail-label">Estado de la venta:</span>
+                  <span className="order-detail-value">{getStatusBadge(selectedOrder.status)}</span>
+                </div>
+                <div>
+                  <span className="order-detail-label">Fecha de compra:</span>
+                  <span className="order-detail-value">{new Date(selectedOrder.created_at).toLocaleString("es-AR")}</span>
+                </div>
+                <div>
                   <span className="order-detail-label">Nombre:</span>
                   <span className="order-detail-value">
-                    {selectedOrder.buyer?.full_name ||
-                      selectedOrder.user?.full_name ||
-                      "No disponible"}
+                    {getBuyerName(selectedOrder)}
                   </span>
                 </div>
                 <div>
                   <span className="order-detail-label">Email:</span>
                   <span className="order-detail-value">
-                    {selectedOrder.buyer?.email ||
-                      selectedOrder.user?.email ||
-                      "No disponible"}
+                    {getBuyerEmail(selectedOrder)}
                   </span>
                 </div>
                 <div>
                   <span className="order-detail-label">Teléfono:</span>
                   <span className="order-detail-value">
-                    {selectedOrder.buyer?.phone ||
-                      selectedOrder.buyer?.phone_number ||
-                      selectedOrder.user?.phone ||
-                      selectedOrder.user?.phone_number ||
-                      "No informado"}
+                    {getBuyerPhone(selectedOrder)}
                   </span>
                 </div>
                 <div>
@@ -837,18 +886,31 @@ export default function SalesSection() {
                     <span className="order-detail-value">{selectedOrder.scheduled_delivery_date.split("-").reverse().join("/")}</span>
                   </div>
                 )}
+                <div>
+                  <span className="order-detail-label">Medio de pago:</span>
+                  <span className="order-detail-value">{formatPaymentMethod(selectedOrder)}</span>
+                </div>
+                {selectedOrder.installments && <div>
+                  <span className="order-detail-label">Cuotas:</span>
+                  <span className="order-detail-value">{selectedOrder.installments}</span>
+                </div>}
+                {selectedOrder.paid_at && <div>
+                  <span className="order-detail-label">Fecha de pago:</span>
+                  <span className="order-detail-value">{new Date(selectedOrder.paid_at).toLocaleString("es-AR")}</span>
+                </div>}
+                {selectedOrder.cancel_reason && <div>
+                  <span className="order-detail-label">Motivo de cancelación:</span>
+                  <span className="order-detail-value">{selectedOrder.cancel_reason}</span>
+                </div>}
               </div>
 
-              {selectedOrder.shipping_address && (
+              {(selectedOrder.delivery_address || selectedOrder.shipping_address) && (
                 <div className="order-detail-address">
                   <span className="order-detail-label">Dirección de entrega:</span>
                   <p className="order-detail-address__text">
-                    {selectedOrder.shipping_address.street}{" "}
-                    {selectedOrder.shipping_address.number},{" "}
-                    {selectedOrder.shipping_address.city},{" "}
-                    {selectedOrder.shipping_address.state} (CP{" "}
-                    {selectedOrder.shipping_address.zip_code})
+                    {getDeliveryAddress(selectedOrder)}
                   </p>
+                  {selectedOrder.delivery_address?.notes && <p className="order-detail-address__text">Indicaciones: {selectedOrder.delivery_address.notes}</p>}
                 </div>
               )}
             </div>
@@ -907,14 +969,28 @@ export default function SalesSection() {
                     El comprador no registró CUIT específico. Emitir como{" "}
                     <strong>Consumidor Final (Factura B)</strong> a nombre de:{" "}
                     <strong>
-                      {selectedOrder.buyer?.full_name ||
-                        selectedOrder.user?.full_name ||
-                        "Consumidor Final"}
+                      {getBuyerName(selectedOrder)}
                     </strong>
                     .
                   </p>
                 </div>
               )}
+            </div>
+
+            <div className="order-detail-section">
+              <h4 className="order-detail-section__title">Productos y servicios</h4>
+              <div className="sales-order-items">
+                {getOrderLines(selectedOrder).map((item) => <div key={item.id} className="sales-order-items__item">
+                  {item.imageUrl && <img className="sales-order-items__image" src={item.imageUrl} alt={item.name} />}
+                  <div className="sales-order-items__content">
+                    <strong>{item.name}</strong>
+                    {item.brand && <span>Marca: {item.brand}</span>}
+                    {item.attributes && <span>Características: {item.attributes}</span>}
+                    {item.ean && <span>Código de barras (EAN): {item.ean}</span>}
+                    <span>Cantidad: {item.quantity} · Precio unitario: ${item.unitPrice.toLocaleString("es-AR")} · Subtotal: ${item.subtotal.toLocaleString("es-AR")}</span>
+                  </div>
+                </div>)}
+              </div>
             </div>
 
             {/* Financial Summary */}
@@ -1025,7 +1101,7 @@ export default function SalesSection() {
               )}
 
               {/* Thermal Label Print button for product orders */}
-              {!selectedOrder.service_id && !selectedOrder.service && (
+              {isPrintableOrder(selectedOrder) && !selectedOrder.service_id && !selectedOrder.service && (
                 <div className="order-print-label-row">
                   <button
                     type="button"
@@ -1039,7 +1115,7 @@ export default function SalesSection() {
               )}
 
               {/* Service Voucher Print button for service orders */}
-              {(selectedOrder.service_id || selectedOrder.service) && (
+              {isPrintableOrder(selectedOrder) && (selectedOrder.service_id || selectedOrder.service) && (
                 <div className="order-print-label-row">
                   <button
                     type="button"
@@ -1151,23 +1227,31 @@ export default function SalesSection() {
                 </div>
               )}
 
-              {/* WhatsApp direct contact if buyer has phone */}
-              {(selectedOrder.buyer?.phone ||
-                selectedOrder.buyer?.phone_number ||
-                selectedOrder.user?.phone ||
-                selectedOrder.user?.phone_number) && (
-                <div className="whatsapp-contact-box">
-                  <a
-                    href={`https://wa.me/${(selectedOrder.buyer?.phone || selectedOrder.buyer?.phone_number || selectedOrder.user?.phone || selectedOrder.user?.phone_number)?.replace(/\D/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
+              {/* Customer contact actions */}
+              <div className="order-contact-actions">
+                <button
+                  type="button"
+                  className="order-chat-btn"
+                  onClick={() => setIsOrderChatOpen(true)}
+                >
+                  <MessageSquare size={18} />
+                  <span>Contactar al cliente por Chat</span>
+                </button>
+
+                {(selectedOrder.buyer?.phone ||
+                  selectedOrder.buyer?.phone_number ||
+                  selectedOrder.user?.phone ||
+                  selectedOrder.user?.phone_number) && (
+                  <button
+                    type="button"
+                    onClick={() => setWhatsAppWarningOpen(true)}
                     className="whatsapp-btn"
                   >
                     <MessageCircle size={18} />
                     <span>Contactar al cliente por WhatsApp</span>
-                  </a>
-                </div>
-              )}
+                  </button>
+                )}
+              </div>
 
               {/* Long distance transport guide */}
               <div className="transport-guide-box">
@@ -1332,15 +1416,17 @@ export default function SalesSection() {
           order={selectedOrderForLabel}
           isOpen={Boolean(selectedOrderForLabel)}
           onClose={() => setSelectedOrderForLabel(null)}
+          storeName={company?.name || company?.business_name || professional?.name || "SERCIO COMERCIO"}
         />
       )}
 
-      {/* Service Order Voucher Modal */}
+      {/* La ficha de servicio usa el mismo diseño térmico que la impresión automática. */}
       {selectedOrderForServiceVoucher && (
-        <ServiceOrderVoucherModal
+        <PackageThermalLabelModal
           order={selectedOrderForServiceVoucher}
           isOpen={Boolean(selectedOrderForServiceVoucher)}
           onClose={() => setSelectedOrderForServiceVoucher(null)}
+          storeName={company?.name || company?.business_name || professional?.name || "SERCIO COMERCIO"}
         />
       )}
 
@@ -1353,6 +1439,7 @@ export default function SalesSection() {
             setSelectedOrdersForBatchPrint([]);
           }}
           orders={selectedOrdersForBatchPrint}
+          storeName={company?.name || company?.business_name || professional?.name || "SERCIO COMERCIO"}
           branchName={
             branches.find((b) => b.id === selectedBranchId)?.name ||
             "Sucursal Principal"
@@ -1362,6 +1449,70 @@ export default function SalesSection() {
               prev.filter((id) => !printedIds.includes(id))
             );
           }}
+        />
+      )}
+      {returnReceiptOpen && <ReturnReceiptModal onClose={() => setReturnReceiptOpen(false)} onReceive={(code) => returnReceiptMutation.mutateAsync(code).then(() => undefined)} />}
+
+      {/* WhatsApp Warning Modal */}
+      {whatsAppWarningOpen && selectedOrder && (
+        <Modal
+          isOpen={whatsAppWarningOpen}
+          onClose={() => setWhatsAppWarningOpen(false)}
+          title="Aviso de Comunicación"
+        >
+          <div className="whatsapp-warning-modal">
+            <div className="whatsapp-warning-alert" role="alert">
+              <AlertTriangle size={32} className="whatsapp-warning-alert__icon" />
+              <div className="whatsapp-warning-alert__content">
+                <strong className="whatsapp-warning-alert__title">Aviso de Seguridad</strong>
+                <p className="whatsapp-warning-alert__text">
+                  Sercio no se hace responsable de los acuerdos por fuera de la plataforma, mejor contactar por chat para poder tener evidencia de los reclamos ante cualquier improvisto.
+                </p>
+              </div>
+            </div>
+
+            <div className="whatsapp-warning-modal__actions">
+              <button
+                type="button"
+                className="btn-primary whatsapp-warning-modal__btn-chat"
+                onClick={() => {
+                  setWhatsAppWarningOpen(false);
+                  setIsOrderChatOpen(true);
+                }}
+              >
+                <MessageSquare size={16} />
+                <span>Contactar por Chat</span>
+              </button>
+              <a
+                href={`https://wa.me/${(selectedOrder.buyer?.phone || selectedOrder.buyer?.phone_number || selectedOrder.user?.phone || selectedOrder.user?.phone_number)?.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="whatsapp-continue-btn"
+                onClick={() => setWhatsAppWarningOpen(false)}
+              >
+                <MessageCircle size={16} />
+                <span>Continuar a WhatsApp</span>
+              </a>
+              <button
+                data-action-tone="cancel"
+                type="button"
+                className="btn-secondary"
+                onClick={() => setWhatsAppWarningOpen(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Order-scoped Chat Modal */}
+      {isOrderChatOpen && selectedOrder && (
+        <OrderChatModal
+          isOpen={isOrderChatOpen}
+          onClose={() => setIsOrderChatOpen(false)}
+          order={selectedOrder}
+          currentUserId={String(user?.id || sessionStatus?.user_id || "")}
         />
       )}
     </div>

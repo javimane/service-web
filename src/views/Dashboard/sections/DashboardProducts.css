@@ -1510,70 +1510,110 @@
   margin-top: var(--space-2);
 }
 
+.dash-products__modal--bulk-shipping {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 520px;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-content {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-field,
+.dash-products__modal--bulk-shipping .dash-products__bulk-shipping-params {
+  min-width: 0;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-header,
+.dash-products__modal--bulk-shipping .dash-products__modal-field-header {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-header h2,
+.dash-products__modal--bulk-shipping .product-creator__shipping-notice > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-toggle {
+  flex-wrap: wrap;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-toggle button {
+  flex: 1 1 120px;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__chip {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__chip span:last-child {
+  overflow-wrap: anywhere;
+}
+
 .dash-products__bulk-shipping-inputs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
+}
+
+.dash-products__bulk-shipping-inputs input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.dash-products__shipping-explanation {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  color: var(--text-primary);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.dash-products__shipping-explanation svg {
+  flex: 0 0 auto;
+}
+
+.dash-products__distant-minimum {
+  padding: var(--space-3);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.dash-products__distant-minimum-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dash-products__distant-minimum-controls input {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.dash-products__distant-minimum-controls button {
+  flex: 1 1 auto;
 }
 
 @media (max-width: 640px) {
   .dash-products__bulk-shipping-inputs {
     grid-template-columns: 1fr;
   }
-}
-
-/* Envío Gratis a todo el País (modal edit) */
-.dash-products__country-shipping-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--input-bg);
-  color: var(--text-primary);
-  font-size: var(--text-base);
-  font-weight: var(--weight-semibold);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: 100%;
-  justify-content: flex-start;
-}
-
-.dash-products__country-shipping-btn:hover {
-  border-color: var(--success-color);
-  background: var(--surface-soft);
-}
-
-.dash-products__country-shipping-btn--active {
-  background: var(--action-add-bg);
-  border-color: var(--success-color);
-  color: var(--green-dark);
-}
-
-.dash-products__country-shipping-btn--active:hover {
-  background: var(--action-add-hover);
-}
-
-.dash-products__country-shipping-status {
-  margin-left: auto;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-full);
-  background: var(--surface-soft);
-  color: var(--text-secondary);
-}
-
-.dash-products__country-shipping-btn--active .dash-products__country-shipping-status {
-  background: var(--success-color);
-  color: var(--white);
-}
-
-.dash-products__country-shipping-minimum {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  max-width: 24rem;
-  margin-top: var(--space-3);
 }

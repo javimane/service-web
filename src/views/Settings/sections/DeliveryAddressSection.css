@@ -356,6 +356,60 @@
   color: var(--text-secondary);
 }
 
+/* Quick actions for Google Maps & Geolocation */
+.delivery-address-form__quick-actions {
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.delivery-address-form__quick-actions-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.delivery-address-form__quick-actions-icon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.delivery-address-form__quick-actions-info strong {
+  display: block;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.delivery-address-form__quick-actions-info p {
+  margin: var(--space-1) 0 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.delivery-address-form__quick-actions-btns {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.delivery-address-form__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  padding: var(--space-2) var(--space-3);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 /* Map selector box */
 .delivery-address-form__map-box {
   background: var(--surface-soft);
@@ -451,6 +505,15 @@
   }
 
   .delivery-address-form__map-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .delivery-address-form__quick-actions-btns {
+    flex-direction: column;
+  }
+
+  .delivery-address-form__action-btn {
     width: 100%;
     justify-content: center;
   }

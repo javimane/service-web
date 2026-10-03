@@ -126,6 +126,9 @@ export default function RidersSection() {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useAlert();
 
+  /* ── tabs state ── */
+  const [activeTab, setActiveTab] = useState<"personal" | "vehicles" | "create">("personal");
+
   /* ── form state ── */
   const [mode, setMode] = useState<FormMode>("create");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -235,6 +238,7 @@ export default function RidersSection() {
       queryClient.invalidateQueries({ queryKey: ["logistics-employees"] });
       queryClient.invalidateQueries({ queryKey: ["fleet-vehicles"] });
       resetForm();
+      setActiveTab("personal");
     },
     onError: (e: any) =>
       showError(e?.message || "Error al dar de alta al rider."),
@@ -326,10 +330,7 @@ export default function RidersSection() {
       phone: r.phone ?? "",
       dni: r.dni ?? "",
     });
-    // Scroll to form
-    document
-      .getElementById("riders-form-panel")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveTab("create");
   };
 
   const setField = <K extends keyof RiderForm>(key: K, val: RiderForm[K]) =>
@@ -443,11 +444,302 @@ export default function RidersSection() {
         </button>
       </header>
 
-      <FleetVehiclesPanel />
+            {/* ── Top 3 Action Buttons ───────────────────────── */}
+      <div className="riders-top-actions" role="tablist" aria-label="Secciones de choferes">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "personal"}
+          className={`riders-nav-btn ${activeTab === "personal" ? "riders-nav-btn--active" : ""}`}
+          onClick={() => setActiveTab("personal")}
+        >
+          <User size={18} />
+          <span>Personal</span>
+          {riders.length > 0 && (
+            <span className="riders-nav-btn__badge">{riders.length}</span>
+          )}
+        </button>
 
-      <div className="riders-layout">
-        {/* ── LEFT: Form ─────────────────────────────────── */}
-        <aside className="riders-form-panel" id="riders-form-panel">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "vehicles"}
+          className={`riders-nav-btn ${activeTab === "vehicles" ? "riders-nav-btn--active" : ""}`}
+          onClick={() => setActiveTab("vehicles")}
+        >
+          <Car size={18} />
+          <span>Vehículos de la empresa</span>
+          {fleetVehicles.length > 0 && (
+            <span className="riders-nav-btn__badge">{fleetVehicles.length}</span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "create"}
+          className={`riders-nav-btn ${activeTab === "create" ? "riders-nav-btn--active" : ""}`}
+          onClick={() => {
+            resetForm();
+            setActiveTab("create");
+          }}
+        >
+          <Plus size={18} />
+          <span>{mode === "edit" && activeTab === "create" ? "Editar Rider" : "Dar de alta Rider"}</span>
+        </button>
+      </div>
+
+      {/* ── VIEW 1: Personal (Tabla de choferes) ──────────── */}
+      {activeTab === "personal" && (
+        <div className="riders-list-panel">
+          <div className="riders-list-panel__header">
+            <div>
+              <h2 className="riders-list-panel__title">
+                Personal de logística ({riders.length})
+              </h2>
+              <p className="riders-list-panel__subtitle">
+                Conductores y fleteros activos para las entregas de tu comercio.
+              </p>
+            </div>
+            <button
+              data-action-tone="add"
+              type="button"
+              className="btn-primary"
+              onClick={() => {
+                resetForm();
+                setActiveTab("create");
+              }}
+            >
+              <Plus size={16} />
+              Dar de alta Rider
+            </button>
+          </div>
+
+          {isLoading ? (
+            <div className="riders-state riders-state--loading">
+              <Clock className="riders-state__spinner" size={32} />
+              <p>Cargando flota de choferes...</p>
+            </div>
+          ) : isError ? (
+            <div className="riders-state riders-state--error">
+              <AlertTriangle size={32} />
+              <p>Error al cargar los conductores.</p>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => refetch()}
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : riders.length === 0 ? (
+            <div className="riders-state riders-state--empty">
+              <Truck size={48} />
+              <h3>No hay conductores registrados</h3>
+              <p>
+                Todavía no diste de alta a ningún chofer. Hacé clic para registrar al primero.
+              </p>
+              <button
+                data-action-tone="add"
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  resetForm();
+                  setActiveTab("create");
+                }}
+              >
+                <Plus size={16} />
+                Dar de alta Rider
+              </button>
+            </div>
+          ) : (
+            <div className="riders-table-wrap">
+              <table className="riders-table">
+                <thead>
+                  <tr>
+                    <th>Chofer</th>
+                    <th>Contacto</th>
+                    <th>Vehículo</th>
+                    <th>Verificación</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {riders.map((r) => {
+                    const v = r.vehicle;
+                    const missingDocs = r.activation?.missing_documents ?? [];
+                    const needsSetup = !v || missingDocs.length > 0;
+                    const verification = r.verification_status ?? "pending";
+                    let status: keyof typeof RIDER_STATUS_LABELS;
+                    if (r.is_blocked) status = "blocked";
+                    else if (r.is_paused) status = "paused";
+                    else if (r.status === "inactive") status = "inactive";
+                    else if (needsSetup || verification !== "verified")
+                      status = "pending";
+                    else if (!r.activation?.is_active) status = "inactive";
+                    else status = r.status === "on_trip" ? "on_trip" : "active";
+                    return (
+                      <tr
+                        key={r.id}
+                        className={
+                          editingId === r.id ? "riders-table__row--editing" : ""
+                        }
+                      >
+                        <td>
+                          <div className="rider-table-name">
+                            <div className="rider-table-avatar">
+                              <User size={16} />
+                            </div>
+                            <div>
+                              <span className="rider-table-fullname">
+                                {r.first_name} {r.last_name}
+                              </span>
+                              {r.dni && (
+                                <span className="rider-table-dni">
+                                  DNI: {r.dni}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="rider-table-contact">
+                            {(r.username || r.email) && (
+                              <span>
+                                {r.username ? (
+                                  <User size={12} />
+                                ) : (
+                                  <Mail size={12} />
+                                )}
+                                {r.username || r.email}
+                              </span>
+                            )}
+                            {r.phone && (
+                              <span>
+                                <Phone size={12} />
+                                {r.phone}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          {v ? (
+                            <div className="rider-table-vehicle">
+                              <Car size={13} />
+                              <span>
+                                {VEHICLE_LABELS[v.vehicle_type] ??
+                                  v.vehicle_type}
+                                {v.license_plate ? ` — ${v.license_plate}` : ""}
+                                {r.own_vehicle_id ? " · propio" : " · flota"}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="rider-table-vehicle-warning">
+                              <span className="rider-table-no-vehicle">
+                                Sin vehículo
+                              </span>
+                              <span
+                                className="rider-table-vehicle-warning__message"
+                                role="alert"
+                              >
+                                <AlertTriangle size={14} aria-hidden="true" />
+                                Para estar activo, asigná un vehículo y subí la
+                                documentación obligatoria.
+                              </span>
+                            </div>
+                          )}
+                          {v && missingDocs.length > 0 && (
+                            <span
+                              className="rider-table-vehicle-warning__message"
+                              role="alert"
+                            >
+                              <AlertTriangle size={14} aria-hidden="true" />
+                              Subí la documentación pendiente para enviar al
+                              rider a revisión.
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <span
+                            className={`rider-verification-pill rider-verification-pill--${verification}`}
+                          >
+                            {VERIFICATION_LABELS[verification] ?? verification}
+                          </span>
+                          {r.verification_note && (
+                            <span className="rider-verification-note">
+                              {r.verification_note}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <span
+                            className={`rider-status-pill rider-status-pill--${status}`}
+                          >
+                            {RIDER_STATUS_LABELS[status]}
+                          </span>
+                          {r.is_blocked && r.blocked_reason && (
+                            <span className="rider-status-note rider-status-note--blocked">
+                              <AlertTriangle size={14} aria-hidden="true" />
+                              <span>
+                                Motivo del bloqueo: {r.blocked_reason}
+                              </span>
+                            </span>
+                          )}
+                          {r.is_paused && r.paused_reason && (
+                            <span className="rider-status-note rider-status-note--paused">
+                              <AlertTriangle size={14} aria-hidden="true" />
+                              <span>Motivo de la pausa: {r.paused_reason}</span>
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="rider-table-actions">
+                            <button
+                              type="button"
+                              className="rider-action-btn rider-action-btn--edit"
+                              title="Editar"
+                              onClick={() => startEdit(r)}
+                            >
+                              <Pencil size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="rider-action-btn rider-action-btn--docs"
+                              title="Documentación"
+                              onClick={() => setDocsRider(r)}
+                            >
+                              <FileText size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="rider-action-btn rider-action-btn--delete"
+                              title="Eliminar rider"
+                              aria-label={`Eliminar a ${r.first_name} ${r.last_name}`}
+                              onClick={() => setDeleteTarget(r)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── VIEW 2: Vehículos de la empresa ───────────────── */}
+      {activeTab === "vehicles" && (
+        <FleetVehiclesPanel />
+      )}
+
+      {/* ── VIEW 3: Dar de alta / Editar Rider ────────────── */}
+      {activeTab === "create" && (
+        <div className="riders-form-container">
           <div className="riders-form-card">
             <div className="riders-form-card__header">
               <h2 className="riders-form-card__title">
@@ -463,17 +755,18 @@ export default function RidersSection() {
                   </>
                 )}
               </h2>
-              {mode === "edit" && (
-                <button
-                  data-action-tone="cancel"
-                  type="button"
-                  className="riders-form-card__cancel"
-                  onClick={resetForm}
-                >
-                  <X size={16} />
-                  Cancelar edición
-                </button>
-              )}
+              <button
+                data-action-tone="cancel"
+                type="button"
+                className="riders-form-card__cancel"
+                onClick={() => {
+                  resetForm();
+                  setActiveTab("personal");
+                }}
+              >
+                <X size={16} />
+                {mode === "edit" ? "Cancelar edición" : "Volver al personal"}
+              </button>
             </div>
 
             <form
@@ -489,8 +782,11 @@ export default function RidersSection() {
 
               <div className="riders-form__row">
                 <div className="riders-form__group">
-                  <label className="riders-form__label">Nombre *</label>
+                  <label className="riders-form__label" htmlFor="rider-first-name">
+                    Nombre *
+                  </label>
                   <input
+                    id="rider-first-name"
                     required
                     type="text"
                     placeholder="Juan"
@@ -499,8 +795,11 @@ export default function RidersSection() {
                   />
                 </div>
                 <div className="riders-form__group">
-                  <label className="riders-form__label">Apellido *</label>
+                  <label className="riders-form__label" htmlFor="rider-last-name">
+                    Apellido *
+                  </label>
                   <input
+                    id="rider-last-name"
                     required
                     type="text"
                     placeholder="Pérez"
@@ -512,8 +811,11 @@ export default function RidersSection() {
 
               <div className="riders-form__row">
                 <div className="riders-form__group">
-                  <label className="riders-form__label">DNI</label>
+                  <label className="riders-form__label" htmlFor="rider-dni">
+                    DNI
+                  </label>
                   <input
+                    id="rider-dni"
                     type="text"
                     placeholder="38123456"
                     value={form.dni}
@@ -521,8 +823,11 @@ export default function RidersSection() {
                   />
                 </div>
                 <div className="riders-form__group">
-                  <label className="riders-form__label">Teléfono Móvil</label>
+                  <label className="riders-form__label" htmlFor="rider-phone">
+                    Teléfono Móvil
+                  </label>
                   <input
+                    id="rider-phone"
                     type="tel"
                     placeholder="+54 9 11 1234-5678"
                     value={form.phone}
@@ -535,10 +840,11 @@ export default function RidersSection() {
               <h4 className="riders-form__subtitle">Acceso a la App</h4>
 
               <div className="riders-form__group">
-                <label className="riders-form__label">
+                <label className="riders-form__label" htmlFor="rider-username">
                   Nombre de usuario {mode === "create" ? "*" : ""}
                 </label>
                 <input
+                  id="rider-username"
                   type="text"
                   required={mode === "create"}
                   disabled={mode === "edit"}
@@ -826,226 +1132,32 @@ export default function RidersSection() {
                 </div>
               )}
 
-              <button
-                data-action-tone="add"
-                type="submit"
-                className="btn-primary riders-form__submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                <Save size={16} />
-                {mode === "create" ? "Dar de alta" : "Guardar cambios"}
-              </button>
+              <div className="riders-form__actions">
+                <button
+                  data-action-tone="cancel"
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    resetForm();
+                    setActiveTab("personal");
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  data-action-tone="add"
+                  type="submit"
+                  className="btn-primary riders-form__submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
+                  <Save size={16} />
+                  {mode === "create" ? "Dar de alta" : "Guardar cambios"}
+                </button>
+              </div>
             </form>
           </div>
-        </aside>
-
-        {/* ── RIGHT: Riders list ──────────────────────────── */}
-        <div className="riders-list-panel">
-          {isLoading ? (
-            <div className="riders-state riders-state--loading">
-              <Clock className="riders-state__spinner" size={32} />
-              <p>Cargando flota de choferes...</p>
-            </div>
-          ) : isError ? (
-            <div className="riders-state riders-state--error">
-              <AlertTriangle size={32} />
-              <p>Error al cargar los conductores.</p>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => refetch()}
-              >
-                Reintentar
-              </button>
-            </div>
-          ) : riders.length === 0 ? (
-            <div className="riders-state riders-state--empty">
-              <Truck size={48} />
-              <h3>No hay conductores registrados</h3>
-              <p>
-                Usá el formulario de la izquierda para dar de alta a tu primer
-                chofer.
-              </p>
-            </div>
-          ) : (
-            <div className="riders-table-wrap">
-              <table className="riders-table">
-                <thead>
-                  <tr>
-                    <th>Chofer</th>
-                    <th>Contacto</th>
-                    <th>Vehículo</th>
-                    <th>Verificación</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {riders.map((r) => {
-                    const v = r.vehicle;
-                    const missingDocs = r.activation?.missing_documents ?? [];
-                    const needsSetup = !v || missingDocs.length > 0;
-                    const verification = r.verification_status ?? "pending";
-                    let status: keyof typeof RIDER_STATUS_LABELS;
-                    if (r.is_blocked) status = "blocked";
-                    else if (r.is_paused) status = "paused";
-                    else if (r.status === "inactive") status = "inactive";
-                    else if (needsSetup || verification !== "verified")
-                      status = "pending";
-                    else if (!r.activation?.is_active) status = "inactive";
-                    else status = r.status === "on_trip" ? "on_trip" : "active";
-                    return (
-                      <tr
-                        key={r.id}
-                        className={
-                          editingId === r.id ? "riders-table__row--editing" : ""
-                        }
-                      >
-                        <td>
-                          <div className="rider-table-name">
-                            <div className="rider-table-avatar">
-                              <User size={16} />
-                            </div>
-                            <div>
-                              <span className="rider-table-fullname">
-                                {r.first_name} {r.last_name}
-                              </span>
-                              {r.dni && (
-                                <span className="rider-table-dni">
-                                  DNI: {r.dni}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="rider-table-contact">
-                            {(r.username || r.email) && (
-                              <span>
-                                {r.username ? (
-                                  <User size={12} />
-                                ) : (
-                                  <Mail size={12} />
-                                )}
-                                {r.username || r.email}
-                              </span>
-                            )}
-                            {r.phone && (
-                              <span>
-                                <Phone size={12} />
-                                {r.phone}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          {v ? (
-                            <div className="rider-table-vehicle">
-                              <Car size={13} />
-                              <span>
-                                {VEHICLE_LABELS[v.vehicle_type] ??
-                                  v.vehicle_type}
-                                {v.license_plate ? ` — ${v.license_plate}` : ""}
-                                {r.own_vehicle_id ? " · propio" : " · flota"}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="rider-table-vehicle-warning">
-                              <span className="rider-table-no-vehicle">
-                                Sin vehículo
-                              </span>
-                              <span
-                                className="rider-table-vehicle-warning__message"
-                                role="alert"
-                              >
-                                <AlertTriangle size={14} aria-hidden="true" />
-                                Para estar activo, asigná un vehículo y subí la
-                                documentación obligatoria.
-                              </span>
-                            </div>
-                          )}
-                          {v && missingDocs.length > 0 && (
-                            <span
-                              className="rider-table-vehicle-warning__message"
-                              role="alert"
-                            >
-                              <AlertTriangle size={14} aria-hidden="true" />
-                              Subí la documentación pendiente para enviar al
-                              rider a revisión.
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <span
-                            className={`rider-verification-pill rider-verification-pill--${verification}`}
-                          >
-                            {VERIFICATION_LABELS[verification] ?? verification}
-                          </span>
-                          {r.verification_note && (
-                            <span className="rider-verification-note">
-                              {r.verification_note}
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <span
-                            className={`rider-status-pill rider-status-pill--${status}`}
-                          >
-                            {RIDER_STATUS_LABELS[status]}
-                          </span>
-                          {r.is_blocked && r.blocked_reason && (
-                            <span className="rider-status-note rider-status-note--blocked">
-                              <AlertTriangle size={14} aria-hidden="true" />
-                              <span>
-                                Motivo del bloqueo: {r.blocked_reason}
-                              </span>
-                            </span>
-                          )}
-                          {r.is_paused && r.paused_reason && (
-                            <span className="rider-status-note rider-status-note--paused">
-                              <AlertTriangle size={14} aria-hidden="true" />
-                              <span>Motivo de la pausa: {r.paused_reason}</span>
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <div className="rider-table-actions">
-                            <button
-                              type="button"
-                              className="rider-action-btn rider-action-btn--edit"
-                              title="Editar"
-                              onClick={() => startEdit(r)}
-                            >
-                              <Pencil size={15} />
-                            </button>
-                            <button
-                              type="button"
-                              className="rider-action-btn rider-action-btn--docs"
-                              title="Documentación"
-                              onClick={() => setDocsRider(r)}
-                            >
-                              <FileText size={15} />
-                            </button>
-                            <button
-                              type="button"
-                              className="rider-action-btn rider-action-btn--delete"
-                              title="Eliminar rider"
-                              aria-label={`Eliminar a ${r.first_name} ${r.last_name}`}
-                              onClick={() => setDeleteTarget(r)}
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
-      </div>
+      )}
 
       {/* ── Documents Modal ──────────────────────────────── */}
       {docsRider && (

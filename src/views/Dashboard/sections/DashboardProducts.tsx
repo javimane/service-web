@@ -31,6 +31,11 @@ import {
   Layers,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import { useAlert } from "../../../context/AlertContext";
+import {
+  getCompanyByProfessionalAction,
+  updateCompanyAction,
+} from "../../../app/actions/companies";
 import {
   assignProductToProfessionalAction,
   createProductAction,
@@ -188,6 +193,7 @@ export default function DashboardProducts({
   const router = useRouter();
   const queryClient = useQueryClient();
   const { sessionStatus, hasAddress } = useAuth();
+  const { showSuccess, showError } = useAlert();
 
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
@@ -231,9 +237,10 @@ export default function DashboardProducts({
 
   // Bulk free shipping modal
   const [bulkShippingOpen, setBulkShippingOpen] = useState(false);
+  const [shippingMode, setShippingMode] = useState<"product" | "country" | "delivery">("product");
   const [bulkShippingScope, setBulkShippingScope] = useState<
-    "all" | "category" | "subcategory"
-  >("all");
+    "all" | "category" | "subcategory" | null
+  >(null);
   const [bulkShippingSelectedCategories, setBulkShippingSelectedCategories] =
     useState<number[]>([]);
   const [
@@ -241,6 +248,8 @@ export default function DashboardProducts({
     setBulkShippingSelectedSubcategories,
   ] = useState<string[]>([]);
   const [bulkShippingEnable, setBulkShippingEnable] = useState<boolean>(true);
+  const [distantShippingMinAmount, setDistantShippingMinAmount] = useState("");
+  const [deliveryShippingEnabled, setDeliveryShippingEnabled] = useState(false);
   const [bulkShippingRadiusKm, setBulkShippingRadiusKm] = useState<string>("");
   const [bulkShippingMinAmount, setBulkShippingMinAmount] =
     useState<string>("");
@@ -313,8 +322,6 @@ export default function DashboardProducts({
     wholesale_unit: string;
     offer_2x1: boolean;
     offer_3x2: boolean;
-    free_shipping_country: boolean;
-    free_shipping_country_min_amount: string;
   } | null>(null);
   const [editImageItems, setEditImageItems] = useState<EditImageItem[]>([]);
   const [editOriginalImageUrls, setEditOriginalImageUrls] = useState<string[]>(
@@ -421,6 +428,29 @@ export default function DashboardProducts({
     },
     enabled: !!professionalId,
   });
+
+  const { data: deliveryCompany, isLoading: loadingDeliveryCompany, error: deliveryCompanyError } = useQuery({
+    queryKey: ["company-shipping-settings", professionalId],
+    queryFn: async () => {
+      const result = await getCompanyByProfessionalAction({
+        professionalId: Number(professionalId),
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      const companies = result?.data;
+      return Array.isArray(companies) ? (companies[0] ?? null) : (companies ?? null);
+    },
+    enabled: Boolean(professionalId) && bulkShippingOpen,
+  });
+
+  useEffect(() => {
+    if (!bulkShippingOpen || !deliveryCompany) return;
+    setDistantShippingMinAmount(String(deliveryCompany.free_shipping_country_min_amount ?? ""));
+    if (shippingMode !== "delivery") return;
+    setDeliveryShippingEnabled(Boolean(deliveryCompany.free_shipping));
+    setBulkShippingRadiusKm(String(deliveryCompany.free_shipping_radius_km ?? ""));
+    setBulkShippingMinAmount(String(deliveryCompany.free_shipping_min_amount ?? ""));
+    setBulkShippingMaxWeight(String(deliveryCompany.free_shipping_max_weight ?? ""));
+  }, [bulkShippingOpen, shippingMode, deliveryCompany]);
 
   const profCategoriesList = useMemo(() => {
     return (profCategoriesData?.categories || []).map((cat: any) => ({
@@ -649,19 +679,10 @@ export default function DashboardProducts({
 
   const bulkShippingMutation = useMutation({
     mutationFn: async () => {
-      if (!professionalId) return;
-      const common = {
-        free_shipping: bulkShippingEnable,
-        free_shipping_radius_km: bulkShippingRadiusKm
-          ? Number(bulkShippingRadiusKm)
-          : undefined,
-        free_shipping_min_amount: bulkShippingMinAmount
-          ? Number(bulkShippingMinAmount)
-          : undefined,
-        free_shipping_max_weight: bulkShippingMaxWeight
-          ? Number(bulkShippingMaxWeight)
-          : undefined,
-      };
+      if (!professionalId || !bulkShippingScope) {
+        throw new Error("Elegí a qué productos aplicar el envío gratis.");
+      }
+      const common = { free_shipping: bulkShippingEnable };
 
       if (bulkShippingScope === "category") {
         for (const catId of bulkShippingSelectedCategories) {
@@ -686,18 +707,93 @@ export default function DashboardProducts({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["professional-products"] });
+      queryClient.invalidateQueries({ queryKey: ["product"] });
+      showSuccess("La configuración de envío gratis de los productos se actualizó.");
       setBulkShippingApplied(true);
       setTimeout(() => {
         setBulkShippingApplied(false);
         setBulkShippingOpen(false);
-        setBulkShippingScope("all");
+        setBulkShippingScope(null);
         setBulkShippingSelectedCategories([]);
         setBulkShippingSelectedSubcategories([]);
-        setBulkShippingRadiusKm("");
-        setBulkShippingMinAmount("");
-        setBulkShippingMaxWeight("");
       }, 1200);
     },
+    onError: (error: Error) => showError(error.message),
+  });
+
+  const deliveryShippingMutation = useMutation({
+    mutationFn: async () => {
+      if (!deliveryCompany?.id) {
+        throw new Error("Primero configurá los datos comerciales de la empresa.");
+      }
+      const deliverySettings: Record<string, boolean | number | null> = {
+        free_shipping: deliveryShippingEnabled,
+      };
+      if (deliveryShippingEnabled) {
+        const radius = Number(bulkShippingRadiusKm);
+        if (!bulkShippingRadiusKm.trim() || !Number.isFinite(radius) || radius <= 0) {
+          throw new Error("Ingresá un radio de delivery válido, mayor a 0 km.");
+        }
+        for (const [label, value] of [
+          ["compra mínima", bulkShippingMinAmount],
+          ["peso máximo", bulkShippingMaxWeight],
+        ]) {
+          if (value && (!Number.isFinite(Number(value)) || Number(value) < 0)) {
+            throw new Error(`Ingresá un valor válido para ${label}.`);
+          }
+        }
+        deliverySettings.free_shipping_radius_km = radius;
+        deliverySettings.free_shipping_min_amount = bulkShippingMinAmount.trim()
+          ? Number(bulkShippingMinAmount)
+          : null;
+        deliverySettings.free_shipping_max_weight = bulkShippingMaxWeight.trim()
+          ? Number(bulkShippingMaxWeight)
+          : null;
+      }
+      const token = await getAccessToken();
+      const result = await updateCompanyAction({
+        id: deliveryCompany.id,
+        data: deliverySettings,
+        token,
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["company-shipping-settings", professionalId] });
+      queryClient.invalidateQueries({ queryKey: ["professional-me"] });
+      showSuccess("La configuración de envío gratis por delivery se actualizó.");
+      setBulkShippingOpen(false);
+    },
+    onError: (error: Error) => showError(error.message),
+  });
+
+  const distantShippingMinimumMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      if (!deliveryCompany?.id) {
+        throw new Error("Primero configurá los datos comerciales de la empresa.");
+      }
+      const minimum = distantShippingMinAmount.trim();
+      if (enabled && (!minimum || !Number.isFinite(Number(minimum)) || Number(minimum) <= 0)) {
+        throw new Error("Ingresá una compra mínima mayor a cero para los envíos lejanos.");
+      }
+      const result = await updateCompanyAction({
+        id: deliveryCompany.id,
+        data: {
+          free_shipping_country: enabled,
+          free_shipping_country_min_amount: enabled ? Number(minimum) : null,
+        },
+        token: await getAccessToken(),
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
+    onSuccess: (_data, enabled) => {
+      queryClient.invalidateQueries({ queryKey: ["company-shipping-settings", professionalId] });
+      queryClient.invalidateQueries({ queryKey: ["professional-me"] });
+      showSuccess(enabled ? "El envío gratis por compra mínima se activó." : "El envío gratis por compra mínima se desactivó.");
+    },
+    onError: (error: Error) => showError(error.message),
   });
 
   // Modal helper states for values not in the "newProduct" object
@@ -1146,10 +1242,6 @@ export default function DashboardProducts({
       wholesale_unit: String(product.wholesale_unit || ""),
       offer_2x1: Boolean(product.offer_2x1),
       offer_3x2: Boolean(product.offer_3x2),
-      free_shipping_country: Boolean(product.free_shipping_country),
-      free_shipping_country_min_amount: String(
-        product.free_shipping_country_min_amount ?? 0,
-      ),
     });
     const initialImages: string[] = getOrderedProductImages(
       product.images,
@@ -1264,10 +1356,6 @@ export default function DashboardProducts({
         wholesale_unit: Number(editProduct.wholesale_unit) || 0,
         offer_2x1: editProduct.offer_2x1,
         offer_3x2: editProduct.offer_3x2,
-        free_shipping_country: editProduct.free_shipping_country,
-        free_shipping_country_min_amount: editProduct.free_shipping_country
-          ? Number(editProduct.free_shipping_country_min_amount) || 0
-          : null,
         sub_categories_products_id: editProduct.subcategoryId || undefined,
       },
     });
@@ -1476,11 +1564,38 @@ export default function DashboardProducts({
           <span>Modificar Precios</span>
         </button>
         <button
+          type="button"
           className="dash-products__bulk-btn"
-          onClick={() => setBulkShippingOpen(true)}
+          onClick={() => {
+            setShippingMode("product");
+            setBulkShippingScope("all");
+            setBulkShippingOpen(true);
+          }}
         >
           <Truck size={16} />
-          <span>Envío Gratis</span>
+          <span>Envío gratis individual</span>
+        </button>
+        <button
+          type="button"
+          className="dash-products__bulk-btn"
+          onClick={() => {
+            setShippingMode("country");
+            setBulkShippingOpen(true);
+          }}
+        >
+          <Truck size={16} />
+          <span>Envío gratis por compra mínima</span>
+        </button>
+        <button
+          type="button"
+          className="dash-products__bulk-btn"
+          onClick={() => {
+            setShippingMode("delivery");
+            setBulkShippingOpen(true);
+          }}
+        >
+          <Car size={16} />
+          <span>Envío gratis por delivery</span>
         </button>
         <button
           type="button"
@@ -2079,12 +2194,12 @@ export default function DashboardProducts({
           onClick={() => setBulkShippingOpen(false)}
         >
           <div
-            className="dash-products__modal"
+            className="dash-products__modal dash-products__modal--bulk-shipping"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="dash-products__modal-content">
               <div className="dash-products__modal-header">
-                <h2>Configurar Envío Gratis</h2>
+                <h2>{shippingMode === "product" ? "Envío gratis individual" : shippingMode === "country" ? "Envío gratis por compra mínima" : "Envío gratis por delivery"}</h2>
                 <button
                   className="dash-products__modal-close"
                   onClick={() => setBulkShippingOpen(false)}
@@ -2094,9 +2209,15 @@ export default function DashboardProducts({
               </div>
 
               <p className="dash-products__modal-desc">
-                Habilita o deshabilita el envío gratis de forma masiva en tus
-                productos o segmentando por categorías y subcategorías.
+                {shippingMode === "product"
+                  ? "Activá o quitá el envío gratis individual para todos los productos, una categoría o una subcategoría. Esta acción no modifica la compra mínima de la empresa."
+                  : shippingMode === "country"
+                    ? "La compra mínima se aplica a toda la empresa para envíos fuera de la provincia. Los productos no se marcan individualmente como envío gratis."
+                    : "El envío gratis por delivery se configura para la empresa. El radio, la compra mínima y el peso máximo no modifican los productos."}
               </p>
+
+              {shippingMode === "product" ? (
+                <>
 
               {/* Scope select */}
               <div className="dash-products__modal-field">
@@ -2249,74 +2370,24 @@ export default function DashboardProducts({
                 </div>
               </div>
 
-              {/* Additional shipping params if enabling */}
               {bulkShippingEnable && (
-                <div className="dash-products__bulk-shipping-params">
-                  {shippingPolicy?.has_own_riders ? (
-                    <div className="product-creator__shipping-notice product-creator__shipping-notice--own-riders">
-                      <Truck size={18} />
-                      <div>
-                        <strong>Flota propia activa:</strong> Al tener
-                        habilitada tu logística de repartidores propios, no se
-                        deducirán costos de envío de la plataforma.
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="product-creator__shipping-notice product-creator__shipping-notice--platform">
-                        <Truck size={18} />
-                        <div>
-                          <strong>Logística de la plataforma:</strong> Define
-                          los parámetros de cobertura de envío gratis que
-                          absorberás:
-                        </div>
-                      </div>
-
-                      <div className="dash-products__bulk-shipping-inputs">
-                        <div className="dash-products__modal-field">
-                          <label>Radio máx. (km)</label>
-                          <input
-                            type="number"
-                            min="1"
-                            placeholder="Ej: 5 (opcional)"
-                            value={bulkShippingRadiusKm}
-                            onChange={(e) =>
-                              setBulkShippingRadiusKm(e.target.value)
-                            }
-                            className="dash-products__modal-input"
-                          />
-                        </div>
-                        <div className="dash-products__modal-field">
-                          <label>Compra mín. ($)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="Ej: 15000 (opcional)"
-                            value={bulkShippingMinAmount}
-                            onChange={(e) =>
-                              setBulkShippingMinAmount(e.target.value)
-                            }
-                            className="dash-products__modal-input"
-                          />
-                        </div>
-                        <div className="dash-products__modal-field">
-                          <label>Peso máx. (kg)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            placeholder="Ej: 5 (opcional)"
-                            value={bulkShippingMaxWeight}
-                            onChange={(e) =>
-                              setBulkShippingMaxWeight(e.target.value)
-                            }
-                            className="dash-products__modal-input"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <p className="dash-products__shipping-explanation">
+                  <Info size={18} aria-hidden="true" />
+                  <span>
+                    Los productos elegidos mostrarán “Envío gratis” y no necesitarán alcanzar la compra mínima de la empresa.
+                    {shippingPolicy?.has_own_riders
+                      ? " Con riders propios de la empresa también aplica al delivery local."
+                      : " El delivery local se configura por separado para la empresa."}
+                  </span>
+                </p>
+              )}
+              {!bulkShippingEnable && (
+                <p className="dash-products__shipping-explanation">
+                  <Info size={18} aria-hidden="true" />
+                  <span>
+                    Se quitará el envío gratis individual de los productos elegidos. La compra mínima de la empresa y el delivery no cambian.
+                  </span>
+                </p>
               )}
 
               <button
@@ -2324,6 +2395,7 @@ export default function DashboardProducts({
                 className={`dash-products__modal-apply ${bulkShippingApplied ? "dash-products__modal-apply--done" : ""}`}
                 onClick={() => bulkShippingMutation.mutate()}
                 disabled={
+                  !bulkShippingScope ||
                   (bulkShippingScope === "category" &&
                     bulkShippingSelectedCategories.length === 0) ||
                   (bulkShippingScope === "subcategory" &&
@@ -2345,6 +2417,112 @@ export default function DashboardProducts({
                   "Aplicar a los productos"
                 )}
               </button>
+                </>
+              ) : shippingMode === "country" ? (
+                <>
+                  {loadingDeliveryCompany ? (
+                    <p className="dash-products__modal-hint">Cargando configuración de la empresa...</p>
+                  ) : deliveryCompanyError ? (
+                    <p className="dash-products__shipping-explanation" role="alert">{deliveryCompanyError.message}</p>
+                  ) : !deliveryCompany ? (
+                    <p className="dash-products__shipping-explanation">Primero completá los datos comerciales de la empresa.</p>
+                  ) : (
+                    <>
+                      <p className="dash-products__modal-hint">
+                        Estado: {deliveryCompany.free_shipping_country ? "Activo" : "Inactivo"}
+                      </p>
+                      <div className="dash-products__modal-field dash-products__distant-minimum">
+                        <label htmlFor="distant-shipping-minimum">Compra mínima para envíos fuera de la provincia ($)</label>
+                        <input
+                          id="distant-shipping-minimum"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={distantShippingMinAmount}
+                          onChange={(event) => setDistantShippingMinAmount(event.target.value)}
+                        />
+                      </div>
+                      <div className="dash-products__distant-minimum-controls">
+                        <button
+                          type="button"
+                          className="dash-products__modal-apply"
+                          data-action-tone="add"
+                          onClick={() => distantShippingMinimumMutation.mutate(true)}
+                          disabled={distantShippingMinimumMutation.isPending}
+                        >
+                          Activar envío gratis por mínimo
+                        </button>
+                        <button
+                          type="button"
+                          className="dash-products__modal-apply"
+                          data-action-tone="cancel"
+                          onClick={() => distantShippingMinimumMutation.mutate(false)}
+                          disabled={distantShippingMinimumMutation.isPending || !deliveryCompany.free_shipping_country}
+                        >
+                          Quitar envío gratis por mínimo
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  {loadingDeliveryCompany ? (
+                    <p className="dash-products__modal-hint">Cargando configuración de la empresa...</p>
+                  ) : deliveryCompanyError ? (
+                    <p className="dash-products__shipping-explanation" role="alert">
+                      {deliveryCompanyError.message}
+                    </p>
+                  ) : !deliveryCompany ? (
+                    <p className="dash-products__shipping-explanation">
+                      Primero completá los datos comerciales de la empresa para configurar el delivery.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="dash-products__modal-field">
+                        <label>Delivery gratis</label>
+                        <div className="dash-products__modal-toggle">
+                          <button type="button" className={deliveryShippingEnabled ? "active" : ""}
+                            onClick={() => setDeliveryShippingEnabled(true)}>
+                            Activar delivery gratis
+                          </button>
+                          <button type="button" className={!deliveryShippingEnabled ? "active" : ""}
+                            onClick={() => setDeliveryShippingEnabled(false)}>
+                            Desactivar
+                          </button>
+                        </div>
+                      </div>
+                      {deliveryShippingEnabled && (
+                        <div className="dash-products__bulk-shipping-inputs">
+                          <div className="dash-products__modal-field">
+                            <label htmlFor="delivery-free-radius">Radio máximo de delivery gratis (km)</label>
+                            <input id="delivery-free-radius" type="number" min="0.1" step="0.1" required
+                              value={bulkShippingRadiusKm} onChange={(event) => setBulkShippingRadiusKm(event.target.value)} />
+                          </div>
+                          <div className="dash-products__modal-field">
+                            <label htmlFor="delivery-free-minimum">Compra mínima ($)</label>
+                            <input id="delivery-free-minimum" type="number" min="0" step="0.01"
+                              value={bulkShippingMinAmount} onChange={(event) => setBulkShippingMinAmount(event.target.value)} />
+                          </div>
+                          <div className="dash-products__modal-field">
+                            <label htmlFor="delivery-free-weight">Peso máximo (kg)</label>
+                            <input id="delivery-free-weight" type="number" min="0" step="0.1"
+                              value={bulkShippingMaxWeight} onChange={(event) => setBulkShippingMaxWeight(event.target.value)} />
+                          </div>
+                        </div>
+                      )}
+                      <p className="dash-products__modal-hint">
+                        El radio de entrega de cada sucursal también debe cubrir la dirección del comprador.
+                      </p>
+                      <button type="button" className="dash-products__modal-apply"
+                        onClick={() => deliveryShippingMutation.mutate()}
+                        disabled={deliveryShippingMutation.isPending}>
+                        {deliveryShippingMutation.isPending ? "Guardando delivery..." : "Guardar configuración de delivery"}
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -2594,53 +2772,6 @@ export default function DashboardProducts({
                     />
                     <span>Venta por mayor</span>
                   </label>
-                </div>
-
-                <div className="dash-products__modal-field dash-products__field--full">
-                  <button
-                    type="button"
-                    className={`dash-products__country-shipping-btn ${
-                      editProduct.free_shipping_country
-                        ? "dash-products__country-shipping-btn--active"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      setEditProduct({
-                        ...editProduct,
-                        free_shipping_country:
-                          !editProduct.free_shipping_country,
-                      })
-                    }
-                  >
-                    <Car size={18} />
-                    <span>Envíos Gratis a todo el País</span>
-                    <span className="dash-products__country-shipping-status">
-                      {editProduct.free_shipping_country
-                        ? "Habilitado"
-                        : "Deshabilitado"}
-                    </span>
-                  </button>
-                  {editProduct.free_shipping_country && (
-                    <div className="dash-products__country-shipping-minimum">
-                      <label htmlFor="edit-country-shipping-minimum">
-                        Compra mínima para envíos gratis fuera de la provincia ($)
-                      </label>
-                      <input
-                        id="edit-country-shipping-minimum"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        inputMode="decimal"
-                        value={editProduct.free_shipping_country_min_amount}
-                        onChange={(event) =>
-                          setEditProduct({
-                            ...editProduct,
-                            free_shipping_country_min_amount: event.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {editProduct.wholesale && (

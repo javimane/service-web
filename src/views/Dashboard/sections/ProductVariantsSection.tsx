@@ -13,7 +13,10 @@ interface ProductVariantsSectionProps {
   onBack: () => void;
 }
 
-export default function ProductVariantsSection({ productId, onBack }: ProductVariantsSectionProps) {
+export default function ProductVariantsSection({
+  productId,
+  onBack,
+}: ProductVariantsSectionProps) {
   const queryClient = useQueryClient();
   const { showError, showSuccess } = useAlert();
   const [mode, setMode] = useState<"list" | "create" | "edit">("list");
@@ -32,7 +35,9 @@ export default function ProductVariantsSection({ productId, onBack }: ProductVar
         onBack={() => {
           setMode("list");
           setEditing(null);
-          queryClient.invalidateQueries({ queryKey: ["product-family", productId] });
+          queryClient.invalidateQueries({
+            queryKey: ["product-family", productId],
+          });
         }}
         productToEdit={mode === "edit" ? editing : undefined}
         variantParent={parent}
@@ -41,10 +46,17 @@ export default function ProductVariantsSection({ productId, onBack }: ProductVar
   }
 
   const unlink = async (product: ProductVariant) => {
-    if (!window.confirm(`¿Desvincular ${product.name} del producto principal? Seguirá publicado como producto independiente.`)) return;
+    if (
+      !window.confirm(
+        `¿Desvincular ${product.name} del producto principal? Seguirá publicado como producto independiente.`,
+      )
+    )
+      return;
     try {
       await commerceService.deleteVariant(product.id);
-      await queryClient.invalidateQueries({ queryKey: ["product-family", productId] });
+      await queryClient.invalidateQueries({
+        queryKey: ["product-family", productId],
+      });
       showSuccess("La variante quedó como producto independiente.");
     } catch (error: any) {
       showError(error?.message || "No se pudo desvincular la variante.");
@@ -58,29 +70,73 @@ export default function ProductVariantsSection({ productId, onBack }: ProductVar
           <ArrowLeft size={18} /> Volver a productos
         </button>
         <div>
-          <h1 className="product-family__title"><Layers size={23} /> Variantes de {parent?.name || "producto"}</h1>
-          <p className="product-family__description">Cada opción es un producto con código de barras, precio y stock propios.</p>
+          <h1 className="product-family__title">
+            <Layers size={23} /> Variantes de {parent?.name || "producto"}
+          </h1>
+          <p className="product-family__description">
+            Cada opción es un producto con código de barras, precio y stock
+            propios.
+          </p>
         </div>
-        <button type="button" data-action-tone="add" className="product-family__add" disabled={!parent} onClick={() => setMode("create") }>
+        <button
+          type="button"
+          data-action-tone="add"
+          className="product-family__add"
+          disabled={!parent}
+          onClick={() => setMode("create")}
+        >
           <Plus size={18} /> Agregar variante
         </button>
       </header>
 
-      {isLoading ? <p className="product-family__empty">Cargando variantes…</p> : children.length === 0 ? (
-        <p className="product-family__empty">Todavía no hay variantes. Agregá una con el mismo formulario que usás para un producto.</p>
+      {isLoading ? (
+        <p className="product-family__empty">Cargando variantes…</p>
+      ) : children.length === 0 ? (
+        <p className="product-family__empty">
+          Todavía no hay variantes, crealas ahora.
+        </p>
       ) : (
         <div className="product-family__list">
           {children.map((child) => (
             <article className="product-family__item" key={child.id}>
-              {child.image_url && <img className="product-family__image" src={child.image_url} alt="" />}
+              {child.image_url && (
+                <img
+                  className="product-family__image"
+                  src={child.image_url}
+                  alt=""
+                />
+              )}
               <div className="product-family__details">
                 <h2>{child.name}</h2>
-                <p>{child.attributes?.map((attribute) => `${attribute.name}: ${attribute.value}`).join(" · ") || "Sin características"}</p>
-                <p>EAN: {child.ean || "Sin código"} · Stock: {child.stock} · ${Number(child.price || 0).toLocaleString("es-AR")}</p>
+                <p>
+                  {child.attributes
+                    ?.map(
+                      (attribute) => `${attribute.name}: ${attribute.value}`,
+                    )
+                    .join(" · ") || "Sin características"}
+                </p>
+                <p>
+                  EAN: {child.ean || "Sin código"} · Stock: {child.stock} · $
+                  {Number(child.price || 0).toLocaleString("es-AR")}
+                </p>
               </div>
               <div className="product-family__actions">
-                <button type="button" onClick={() => { setEditing(child); setMode("edit"); }}><Pencil size={16} /> Editar</button>
-                <button type="button" data-action-tone="cancel" onClick={() => unlink(child)}><Trash2 size={16} /> Desvincular</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(child);
+                    setMode("edit");
+                  }}
+                >
+                  <Pencil size={16} /> Editar
+                </button>
+                <button
+                  type="button"
+                  data-action-tone="cancel"
+                  onClick={() => unlink(child)}
+                >
+                  <Trash2 size={16} /> Desvincular
+                </button>
               </div>
             </article>
           ))}

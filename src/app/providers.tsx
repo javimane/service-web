@@ -8,6 +8,7 @@ import { AuthModalProvider } from "@/context/AuthModalContext";
 import { AlertProvider } from "@/context/AlertContext";
 import AuthModal from "@/components/AuthModal/AuthModal";
 import SessionTimeoutOverlay from "@/components/SessionTimeoutOverlay/SessionTimeoutOverlay";
+import PurchaseVerificationPrompt from "@/components/PurchaseVerificationPrompt/PurchaseVerificationPrompt";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "sileo";
 import "sileo/styles.css";
@@ -36,6 +37,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 {children}
                 <AuthModal />
                 <SessionTimeoutOverlay />
+                <PurchaseVerificationPrompt />
                 <Toaster />
               </AlertProvider>
             </AuthModalProvider>

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import WhatsAppContactButton from "@/components/WhatsAppContactButton/WhatsAppContactButton";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAuth } from "../../context/AuthContext";
 import { useAlert } from "../../context/AlertContext";
@@ -952,7 +953,9 @@ export default function ProfilePage({
             </div>
           )}
 
-          {professionalId && <ProfileBranches professionalId={Number(professionalId)} />}
+          {professionalId && (
+            <ProfileBranches professionalId={Number(professionalId)} />
+          )}
 
           <div
             className="profile-sidebar__availability-wrapper"
@@ -1041,6 +1044,22 @@ export default function ProfilePage({
             </button>
           )}
 
+          <WhatsAppContactButton
+            professionalId={id}
+            professional={professional}
+            profile={profile}
+            phone={
+              profile?.phone ||
+              profile?.phone_number ||
+              professional?.phone ||
+              professional?.phone_number ||
+              company?.phone ||
+              company?.phone_number
+            }
+            message="Hola, te contacto desde tu perfil profesional."
+            className="cta-button"
+          />
+
           <button
             className="cta-button message-btn"
             onClick={() => {
@@ -1075,15 +1094,6 @@ export default function ProfilePage({
               onClick={() => setIsReviewModalOpen(true)}
             >
               DEJAR UNA OPINIÓN <Star size={18} />
-            </button>
-          )}
-
-          {professional.web_url && professional?.web_url && (
-            <button
-              className="cta-button store-btn"
-              onClick={() => window.open(professional.web_url, "_blank")}
-            >
-              VISITAR PÁGINA WEB <ArrowUpRight size={18} />
             </button>
           )}
         </aside>
@@ -1786,6 +1796,21 @@ export default function ProfilePage({
                     "Sin descripción disponible."}
                 </p>
               </div>
+              <WhatsAppContactButton
+                professionalId={id}
+                professional={professional}
+                profile={profile}
+                phone={
+                  profile?.phone ||
+                  profile?.phone_number ||
+                  professional?.phone ||
+                  professional?.phone_number ||
+                  company?.phone ||
+                  company?.phone_number
+                }
+                message={`Hola, te contacto por el producto: ${selectedProductForDetail.name || "Producto"}`}
+                className="contact-professional-btn"
+              />
               <button
                 className="contact-professional-btn"
                 onClick={() => {

@@ -72,6 +72,12 @@ export default function CommercialDataSection() {
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [addressId, setAddressId] = useState<number | null>(null);
+  const [freeShipping, setFreeShipping] = useState(false);
+  const [freeShippingMinAmount, setFreeShippingMinAmount] = useState("");
+  const [freeShippingRadiusKm, setFreeShippingRadiusKm] = useState("");
+  const [freeShippingMaxWeight, setFreeShippingMaxWeight] = useState("");
+  const [freeShippingCountry, setFreeShippingCountry] = useState(false);
+  const [freeShippingCountryMinAmount, setFreeShippingCountryMinAmount] = useState("");
 
   // Store address fields
   const [storeStreet, setStoreStreet] = useState("");
@@ -193,6 +199,12 @@ export default function CommercialDataSection() {
       setTradeName(actualCompany.name || "");
       setCuit(actualCompany.tax_code || "");
       setHasStorefront(actualCompany.public_trade ? "si" : "no");
+      setFreeShipping(Boolean(actualCompany.free_shipping));
+      setFreeShippingMinAmount(String(actualCompany.free_shipping_min_amount ?? ""));
+      setFreeShippingRadiusKm(String(actualCompany.free_shipping_radius_km ?? ""));
+      setFreeShippingMaxWeight(String(actualCompany.free_shipping_max_weight ?? ""));
+      setFreeShippingCountry(Boolean(actualCompany.free_shipping_country));
+      setFreeShippingCountryMinAmount(String(actualCompany.free_shipping_country_min_amount ?? ""));
 
       // Payments
       const payments: string[] = [];
@@ -283,6 +295,12 @@ export default function CommercialDataSection() {
         credit: selectedPayments.includes("Crédito"),
         debit: selectedPayments.includes("Débito"),
         cheque: selectedPayments.includes("Cheque"),
+        free_shipping: freeShipping,
+        free_shipping_min_amount: freeShippingMinAmount === "" ? null : Number(freeShippingMinAmount),
+        free_shipping_radius_km: freeShippingRadiusKm === "" ? null : Number(freeShippingRadiusKm),
+        free_shipping_max_weight: freeShippingMaxWeight === "" ? null : Number(freeShippingMaxWeight),
+        free_shipping_country: freeShippingCountry,
+        free_shipping_country_min_amount: freeShippingCountryMinAmount === "" ? null : Number(freeShippingCountryMinAmount),
         province_ids: provinceList
           .filter((p: any) => selectedProvinces.includes(p.name))
           .map((p: any) => p.id),
@@ -335,7 +353,8 @@ export default function CommercialDataSection() {
       queryClient.invalidateQueries({ queryKey: ["user-bank-data"] });
       setEditBankModalOpen(false);
     },
-    onError: () => showError("No se pudo guardar la información bancaria."),
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo guardar la información bancaria."),
   });
 
   // Handlers
@@ -367,6 +386,21 @@ export default function CommercialDataSection() {
 
   const handleSaveCompany = (e: React.FormEvent) => {
     e.preventDefault();
+    if (freeShippingCountry && freeShippingCountryMinAmount === "") {
+      showError("Ingresá la compra mínima para el envío gratis fuera de la provincia. Podés indicar 0 si no exigís mínimo.");
+      return;
+    }
+    for (const [label, value] of [
+      ["compra mínima", freeShippingMinAmount],
+      ["radio de envío gratis", freeShippingRadiusKm],
+      ["peso máximo", freeShippingMaxWeight],
+      ["compra mínima fuera de la provincia", freeShippingCountryMinAmount],
+    ]) {
+      if (value !== "" && (!Number.isFinite(Number(value)) || Number(value) < 0)) {
+        showError(`Ingresá un valor válido para ${label}.`);
+        return;
+      }
+    }
     if (!tradeName || tradeName.trim() === "") {
       showError(
         "Por favor, ingresá el nombre de la empresa o comercio (Campo obligatorio).",
@@ -419,11 +453,17 @@ export default function CommercialDataSection() {
 
   const handleSaveBank = (e: React.FormEvent) => {
     e.preventDefault();
+    const bankCompanyId = companyId ?? actualCompany?.id;
+    if (!bankCompanyId) {
+      showError("No se encontró el comercio para validar la cuenta bancaria.");
+      return;
+    }
     if (!cbuInput || cbuInput.length < 22) {
       showError("El CBU/CVU debe tener 22 dígitos numéricos.");
       return;
     }
     saveBankMutation.mutate({
+      company_id: bankCompanyId,
       cbu_cvu: cbuInput.trim(),
       alias: aliasInput.trim() || undefined,
       bank_name: bankNameInput.trim() || undefined,
@@ -586,6 +626,31 @@ export default function CommercialDataSection() {
                   storeLng={storeLng}
                   setStoreLng={setStoreLng}
                 />
+
+                <section className="commercial-shipping-settings">
+                  <h3>Envíos gratis de la empresa</h3>
+                  <p>Estas reglas generales se aplican a las compras. Un producto marcado con envío gratis no exige compra mínima.</p>
+                  <label className="commercial-shipping-settings__check">
+                    <input type="checkbox" checked={freeShipping} onChange={(event) => setFreeShipping(event.target.checked)} />
+                    <span>Ofrecer envío gratis en la zona</span>
+                  </label>
+                  {freeShipping && (
+                    <div className="commercial-shipping-settings__grid">
+                      <label>Compra mínima ($)<input type="number" min="0" step="0.01" value={freeShippingMinAmount} onChange={(event) => setFreeShippingMinAmount(event.target.value)} /></label>
+                      <label>Radio de envío gratis (km)<input type="number" min="0" step="0.1" value={freeShippingRadiusKm} onChange={(event) => setFreeShippingRadiusKm(event.target.value)} /></label>
+                      <label>Peso máximo (kg)<input type="number" min="0" step="0.1" value={freeShippingMaxWeight} onChange={(event) => setFreeShippingMaxWeight(event.target.value)} /></label>
+                    </div>
+                  )}
+                  <label className="commercial-shipping-settings__check">
+                    <input type="checkbox" checked={freeShippingCountry} onChange={(event) => setFreeShippingCountry(event.target.checked)} />
+                    <span>Ofrecer envíos gratis fuera de la provincia</span>
+                  </label>
+                  {freeShippingCountry && (
+                    <div className="commercial-shipping-settings__grid">
+                      <label>Compra mínima fuera de la provincia ($)<input type="number" min="0" step="0.01" value={freeShippingCountryMinAmount} onChange={(event) => setFreeShippingCountryMinAmount(event.target.value)} /></label>
+                    </div>
+                  )}
+                </section>
 
                 {/* 5. Payment Methods accepted in store */}
                 <PaymentMethodsSection

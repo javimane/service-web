@@ -237,7 +237,13 @@ axiosInstance.interceptors.response.use(
     const message = Array.isArray(responseMessage)
       ? responseMessage.join(". ")
       : responseMessage || error.message || "Error de red";
-    return Promise.reject(new Error(message));
+    const customError: any = new Error(message);
+    if (error.response) {
+      customError.response = error.response;
+      customError.statusCode = error.response.status ?? error.response.data?.statusCode;
+      customError.data = error.response.data;
+    }
+    return Promise.reject(customError);
   },
 );
 

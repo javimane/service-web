@@ -281,6 +281,13 @@
   margin-top: var(--space-2);
 }
 
+.service-payment-modal__financing-breakdown {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
 .service-payment-modal__footer-total {
   display: flex;
   flex-direction: column;
@@ -298,10 +305,13 @@
 }
 
 .service-payment-modal__btn-primary {
+  box-sizing: border-box;
+  height: 42px;
+  min-height: 42px;
   background: var(--accent-color);
   color: #ffffff;
-  border: none;
-  padding: 14px 24px;
+  border: 1px solid var(--accent-color);
+  padding: 0 24px;
   border-radius: var(--radius-md);
   font-size: var(--text-base);
   font-weight: var(--weight-bold);
@@ -310,11 +320,13 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  line-height: 1;
   transition: all 0.2s ease;
 }
 
 .service-payment-modal__btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
+  border-color: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px var(--accent-transparent);
 }
@@ -325,10 +337,13 @@
 }
 
 .service-payment-modal__btn-secondary {
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 14px 20px;
+  box-sizing: border-box;
+  height: 42px;
+  min-height: 42px;
+  background: var(--brand-blue);
+  border: 1px solid var(--brand-blue);
+  color: var(--white);
+  padding: 0 20px;
   border-radius: var(--radius-md);
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
@@ -337,13 +352,14 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  line-height: 1;
   transition: all 0.2s ease;
 }
 
 .service-payment-modal__btn-secondary:hover {
-  background: var(--surface-soft);
-  border-color: var(--accent-color);
-  color: var(--accent-color);
+  background: #154ca0;
+  border-color: #154ca0;
+  color: var(--white);
 }
 
 /* Success View */

@@ -26,6 +26,9 @@
   --error-hover: #dc2626;
   --success-color: #40c057;
   --success-accent: #22c55e;
+  --whatsapp-color: #25d366;
+  --whatsapp-hover: #1ebd5b;
+  --whatsapp-bg-soft: rgba(37, 211, 102, 0.12);
   --action-add-bg: color-mix(in srgb, var(--success-color) 30%, var(--bg-card));
   --action-add-hover: color-mix(
     in srgb,
@@ -206,9 +209,128 @@ body {
 
 button {
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
   font-family: inherit;
   transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* ═══════════════════════════════════════
+   GLOBAL BUTTON STANDARDS & VARIANTS
+   ═══════════════════════════════════════ */
+.btn-primary,
+.btn-secondary,
+.btn-blue,
+.btn-cancel,
+.btn-submit {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 42px;
+  height: 42px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+/* Primary Button (Accent Orange) */
+.btn-primary,
+.btn-submit {
+  background: var(--accent-color);
+  color: var(--white);
+  border-color: var(--accent-color);
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-transparent);
+}
+
+.btn-primary:disabled,
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Secondary & Blue Action Buttons (Brand Blue with White Text) */
+.btn-secondary,
+.btn-blue {
+  background: var(--brand-blue);
+  color: var(--white);
+  border-color: var(--brand-blue);
+}
+
+.btn-secondary:hover:not(:disabled),
+.btn-blue:hover:not(:disabled) {
+  background: #154ca0;
+  border-color: #154ca0;
+  color: var(--white);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(29, 95, 191, 0.2);
+}
+
+.btn-secondary:disabled,
+.btn-blue:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Cancel Button standard */
+.btn-cancel {
+  background: var(--action-cancel-bg);
+  border-color: var(--error-color);
+  color: var(--text-primary);
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: var(--action-cancel-hover);
+}
+
+.btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════
+   MODAL ACTIONS CONTAINER STANDARDS
+   ═══════════════════════════════════════ */
+.modal-actions-row,
+.modal-footer-actions,
+.modal-actions,
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* Ensure child buttons in modal footers and actions have identical height and center alignment */
+:is(.modal-actions-row, .modal-footer-actions, .modal-actions, .modal-footer) > :is(button, a, label) {
+  box-sizing: border-box;
+  min-height: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 a {

@@ -22,19 +22,89 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import Modal from "@/components/Modal/Modal";
-import MapPickerModal from "@/components/MapPickerModal/MapPickerModal";
+import GoogleMapPickerModal, {
+  GoogleAddressResult,
+  extractAddressFromGeocoder,
+} from "@/components/GoogleMapPickerModal/GoogleMapPickerModal";
+import { useJsApiLoader } from "@react-google-maps/api";
 import { getProvincesAction } from "@/app/actions/provinces";
 import { getDepartmentsAction } from "@/app/actions/locations";
 import "./DeliveryAddressSection.css";
+
+const GOOGLE_MAPS_LIBRARIES: ("places" | "geometry")[] = ["places", "geometry"];
+const GOOGLE_MAPS_API_KEY =
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+  process.env.NEXT_PUBLIC_GOOGLE_API_KEY ||
+  "";
+
+const normalizeText = (value: string) =>
+  value
+    .toLocaleLowerCase("es")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^(provincia de |province of )/, "")
+    .replace(/^(ciudad autonoma de |ciudad de )/, "")
+    .trim();
+
+function matchProvince(
+  provinceList: Array<{ id: number; name: string }>,
+  targetName: string,
+): { id: number; name: string } | undefined {
+  if (!targetName) return undefined;
+  const targetNorm = normalizeText(targetName);
+
+  return provinceList.find((p) => {
+    const pNorm = normalizeText(p.name);
+    if (pNorm === targetNorm) return true;
+    if (pNorm.length > 3 && targetNorm.includes(pNorm)) return true;
+    if (targetNorm.length > 3 && pNorm.includes(targetNorm)) return true;
+
+    const isCabaP =
+      pNorm.includes("caba") ||
+      pNorm.includes("capital") ||
+      pNorm.includes("buenos aires");
+    const isCabaT =
+      targetNorm.includes("caba") ||
+      targetNorm.includes("capital") ||
+      targetNorm.includes("ciudad autonoma");
+
+    if (isCabaP && isCabaT) return true;
+    return false;
+  });
+}
+
+function matchDepartment(
+  deptList: Array<{ id: number; name: string }>,
+  targetName: string,
+): { id: number; name: string } | undefined {
+  if (!targetName) return undefined;
+  const targetNorm = normalizeText(targetName);
+
+  return deptList.find((d) => {
+    const dNorm = normalizeText(d.name);
+    return (
+      dNorm === targetNorm ||
+      (dNorm.length > 3 && targetNorm.includes(dNorm)) ||
+      (targetNorm.length > 3 && dNorm.includes(targetNorm))
+    );
+  });
+}
 
 interface DeliveryAddressSectionProps {
   userId?: string;
 }
 
-export default function DeliveryAddressSection({ userId }: DeliveryAddressSectionProps) {
+export default function DeliveryAddressSection({
+  userId,
+}: DeliveryAddressSectionProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { showSuccess, showError } = useAlert();
+
+  useJsApiLoader({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: GOOGLE_MAPS_LIBRARIES,
+  });
 
   // Modal & form state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,14 +122,22 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
   const [provinceId, setProvinceId] = useState<number | string>("");
   const [departmentId, setDepartmentId] = useState<number | string>("");
   const [departmentName, setDepartmentName] = useState("");
+  const [pendingProvinceName, setPendingProvinceName] = useState<string | null>(
+    null,
+  );
   const [postalCode, setPostalCode] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isDefault, setIsDefault] = useState(false);
+  const [isLocatingCurrent, setIsLocatingCurrent] = useState(false);
 
   // Location dropdown lists
-  const [provinces, setProvinces] = useState<Array<{ id: number; name: string }>>([]);
-  const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([]);
+  const [provinces, setProvinces] = useState<
+    Array<{ id: number; name: string }>
+  >([]);
+  const [departments, setDepartments] = useState<
+    Array<{ id: number; name: string }>
+  >([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
 
   // Fetch provinces
@@ -71,7 +149,9 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
         const list = res?.data || (Array.isArray(res) ? res : []);
         setProvinces(list);
       })
-      .catch((err) => console.error("Error loading provinces for addresses:", err));
+      .catch((err) =>
+        console.error("Error loading provinces for addresses:", err),
+      );
     return () => {
       isMounted = false;
     };
@@ -91,11 +171,117 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
         const list = res?.data || (Array.isArray(res) ? res : []);
         setDepartments(list);
       })
-      .catch((err) => console.error("Error loading departments for address:", err))
+      .catch((err) =>
+        console.error("Error loading departments for address:", err),
+      )
       .finally(() => {
         if (isMounted) setLoadingDepartments(false);
       });
   }, [provinceId]);
+
+  // Match province when provinces list loads
+  useEffect(() => {
+    if (pendingProvinceName && provinces.length > 0 && !provinceId) {
+      const matched = matchProvince(provinces, pendingProvinceName);
+      if (matched) {
+        setProvinceId(matched.id);
+        setPendingProvinceName(null);
+      }
+    }
+  }, [provinces, pendingProvinceName, provinceId]);
+
+  // Match department when departments list loads
+  useEffect(() => {
+    if (departmentName && departments.length > 0 && !departmentId) {
+      const matched = matchDepartment(departments, departmentName);
+      if (matched) {
+        setDepartmentId(matched.id);
+      }
+    }
+  }, [departments, departmentName, departmentId]);
+
+  // Handler for address data resolved from Google Maps
+  const handleAddressResolved = (res: GoogleAddressResult) => {
+    if (res.street) setStreet(res.street);
+    if (res.number) setNumber(res.number);
+    if (res.postalCode) setPostalCode(res.postalCode);
+    if (res.lat) setLatitude(res.lat);
+    if (res.lng) setLongitude(res.lng);
+
+    if (res.department) {
+      setDepartmentName(res.department);
+      if (departments.length > 0) {
+        const matchedDept = matchDepartment(departments, res.department);
+        if (matchedDept) setDepartmentId(matchedDept.id);
+      }
+    }
+
+    if (res.province) {
+      setPendingProvinceName(res.province);
+      const matched = matchProvince(provinces, res.province);
+      if (matched) {
+        setProvinceId(matched.id);
+      }
+    }
+
+    showSuccess(
+      "Datos completados desde Google Maps. Podés verificarlos o modificarlos si es necesario.",
+    );
+  };
+
+  // Direct geolocation from form
+  const handleUseCurrentLocationDirectly = () => {
+    if (!navigator.geolocation) {
+      showError("Tu navegador no soporta geolocalización.");
+      return;
+    }
+
+    setIsLocatingCurrent(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        const roundedLat = Number(lat.toFixed(6));
+        const roundedLng = Number(lng.toFixed(6));
+        setLatitude(roundedLat);
+        setLongitude(roundedLng);
+
+        if (typeof window !== "undefined" && window.google?.maps?.Geocoder) {
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode(
+            { location: { lat: roundedLat, lng: roundedLng } },
+            (results, status) => {
+              setIsLocatingCurrent(false);
+              if (status === "OK" && results && results.length > 0) {
+                const parsed = extractAddressFromGeocoder(
+                  results,
+                  roundedLat,
+                  roundedLng,
+                );
+                handleAddressResolved(parsed);
+              } else {
+                showSuccess(
+                  "Coordenadas GPS fijadas. Completá calle y número en el formulario.",
+                );
+              }
+            },
+          );
+        } else {
+          setIsLocatingCurrent(false);
+          showSuccess(
+            "Coordenadas GPS fijadas. Podés abrir Google Maps o completar los datos.",
+          );
+        }
+      },
+      (error) => {
+        setIsLocatingCurrent(false);
+        console.error("Geolocation error:", error);
+        showError(
+          "No se pudo obtener tu ubicación. Verificá los permisos del navegador.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   // Fetch user addresses
   const {
@@ -120,6 +306,7 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
     setProvinceId("");
     setDepartmentId("");
     setDepartmentName("");
+    setPendingProvinceName(null);
     setPostalCode("");
     setLatitude(null);
     setLongitude(null);
@@ -139,6 +326,7 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
     setProvinceId(item.province_id || "");
     setDepartmentId(item.department_id || "");
     setDepartmentName(item.department || item.city || "");
+    setPendingProvinceName(item.province || null);
     setPostalCode(item.postal_code || item.zip_code || "");
     setLatitude(item.latitude ?? null);
     setLongitude(item.longitude ?? null);
@@ -156,8 +344,12 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
         throw new Error("El número de calle es obligatorio.");
       }
 
-      const selectedProvince = provinces.find((p) => String(p.id) === String(provinceId));
-      const selectedDept = departments.find((d) => String(d.id) === String(departmentId));
+      const selectedProvince = provinces.find(
+        (p) => String(p.id) === String(provinceId),
+      );
+      const selectedDept = departments.find(
+        (d) => String(d.id) === String(departmentId),
+      );
 
       const payload: CreateUserAddressDto = {
         name: `${street.trim()} ${number.trim()}`,
@@ -192,7 +384,7 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
       showSuccess(
         editingItem
           ? "Dirección de entrega actualizada exitosamente."
-          : "Dirección de entrega guardada exitosamente."
+          : "Dirección de entrega guardada exitosamente.",
       );
       setIsModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ["user-addresses"] });
@@ -256,7 +448,8 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
           </div>
         </div>
 
-        <button data-action-tone="add"
+        <button
+          data-action-tone="add"
           type="button"
           className="btn-primary delivery-address-section__add-btn"
           onClick={handleOpenCreate}
@@ -281,7 +474,8 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
             Agrega tu domicilio de entrega para que los envíos de tus compras
             lleguen de forma rápida y precisa.
           </p>
-          <button data-action-tone="add"
+          <button
+            data-action-tone="add"
             type="button"
             className="btn-primary"
             onClick={handleOpenCreate}
@@ -293,7 +487,8 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
       ) : (
         <div className="delivery-address-section__grid">
           {addressList.map((addr) => {
-            const streetLine = `${addr.street || addr.street_name || ""} ${addr.number || addr.street_number || ""}`.trim();
+            const streetLine =
+              `${addr.street || addr.street_name || ""} ${addr.number || addr.street_number || ""}`.trim();
             const deptoLine = [
               addr.floor ? `Piso ${addr.floor}` : "",
               addr.apartment_number ? `Dpto ${addr.apartment_number}` : "",
@@ -305,7 +500,9 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
             const locationLine = [
               addr.department || addr.city,
               addr.province,
-              addr.postal_code || addr.zip_code ? `CP ${addr.postal_code || addr.zip_code}` : "",
+              addr.postal_code || addr.zip_code
+                ? `CP ${addr.postal_code || addr.zip_code}`
+                : "",
             ]
               .filter(Boolean)
               .join(", ");
@@ -402,7 +599,7 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
                       onClick={() => {
                         if (
                           confirm(
-                            "¿Estás seguro de que deseas eliminar esta dirección de entrega?"
+                            "¿Estás seguro de que deseas eliminar esta dirección de entrega?",
                           )
                         ) {
                           deleteMutation.mutate(addr.id);
@@ -424,10 +621,58 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={
-          editingItem ? "Modificar Dirección de Entrega" : "Nueva Dirección de Entrega"
+          editingItem
+            ? "Modificar Dirección de Entrega"
+            : "Nueva Dirección de Entrega"
         }
       >
         <form onSubmit={handleSubmit} className="delivery-address-form">
+          {/* Carga con Google Maps & Ubicación Actual */}
+          <div className="delivery-address-form__quick-actions">
+            <div className="delivery-address-form__quick-actions-info">
+              <MapPin
+                size={18}
+                className="delivery-address-form__quick-actions-icon"
+              />
+              <div>
+                <strong>Autocompletar con Google Maps</strong>
+                <p>
+                  Elegí en el mapa o usá tu GPS para cargar automáticamente
+                  calle, número y localidad.
+                </p>
+              </div>
+            </div>
+            <div className="delivery-address-form__quick-actions-btns">
+              <button
+                type="button"
+                className="btn-secondary delivery-address-form__action-btn"
+                onClick={() => setIsMapOpen(true)}
+              >
+                <MapPin size={16} />
+                <span>Elegir en Google Maps</span>
+              </button>
+              <button
+                type="button"
+                className="btn-secondary delivery-address-form__action-btn"
+                onClick={handleUseCurrentLocationDirectly}
+                disabled={isLocatingCurrent}
+              >
+                {isLocatingCurrent ? (
+                  <Loader2
+                    className="delivery-address-section__spinner"
+                    size={16}
+                  />
+                ) : (
+                  <Navigation size={16} />
+                )}
+                <span>
+                  {isLocatingCurrent
+                    ? "Obteniendo GPS..."
+                    : "Usar mi ubicación"}
+                </span>
+              </button>
+            </div>
+          </div>
 
           {/* Calle y Número */}
           <div className="delivery-address-form__row">
@@ -472,7 +717,9 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
             </div>
 
             <div className="delivery-address-form__field">
-              <label className="delivery-address-form__label">Departamento N°</label>
+              <label className="delivery-address-form__label">
+                Departamento N°
+              </label>
               <input
                 type="text"
                 className="delivery-address-form__input"
@@ -551,7 +798,9 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
             </div>
 
             <div className="delivery-address-form__field">
-              <label className="delivery-address-form__label">Código Postal</label>
+              <label className="delivery-address-form__label">
+                Código Postal
+              </label>
               <input
                 type="text"
                 className="delivery-address-form__input"
@@ -580,9 +829,12 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
           <div className="delivery-address-form__map-box">
             <div className="delivery-address-form__map-header">
               <div className="delivery-address-form__map-info">
-                <Navigation size={18} className="delivery-address-form__map-icon" />
+                <Navigation
+                  size={18}
+                  className="delivery-address-form__map-icon"
+                />
                 <div>
-                  <strong>Ubicación exacta en el mapa</strong>
+                  <strong>Ubicación exacta en Google Maps</strong>
                   <p>
                     {latitude && longitude
                       ? `Coordenadas fijadas: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
@@ -598,7 +850,9 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
               >
                 <MapPin size={16} />
                 <span>
-                  {latitude && longitude ? "Cambiar ubicación" : "Abrir Mapa"}
+                  {latitude && longitude
+                    ? "Cambiar en Google Maps"
+                    : "Abrir Google Maps"}
                 </span>
               </button>
             </div>
@@ -618,7 +872,8 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
 
           {/* Botones de acción */}
           <div className="delivery-address-form__actions">
-            <button data-action-tone="cancel"
+            <button
+              data-action-tone="cancel"
               type="button"
               className="btn-secondary"
               onClick={() => setIsModalOpen(false)}
@@ -635,7 +890,10 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
             >
               {saveMutation.isPending ? (
                 <>
-                  <Loader2 className="delivery-address-section__spinner" size={16} />
+                  <Loader2
+                    className="delivery-address-section__spinner"
+                    size={16}
+                  />
                   <span>Guardando...</span>
                 </>
               ) : (
@@ -649,18 +907,15 @@ export default function DeliveryAddressSection({ userId }: DeliveryAddressSectio
         </form>
       </Modal>
 
-      {/* Modal Picker de Mapa */}
+      {/* Modal Picker de Google Maps */}
       {isMapOpen && (
-        <MapPickerModal
+        <GoogleMapPickerModal
           isOpen={isMapOpen}
           onClose={() => setIsMapOpen(false)}
           initialLat={latitude}
           initialLng={longitude}
-          onSelect={(lat, lng) => {
-            setLatitude(lat);
-            setLongitude(lng);
-            setIsMapOpen(false);
-            showSuccess("Ubicación fijada en el mapa.");
+          onSelectAddress={(data) => {
+            handleAddressResolved(data);
           }}
         />
       )}

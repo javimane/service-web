@@ -56,7 +56,9 @@ export function addGuestCartItem(
     professionalId &&
     cart.professional_id !== professionalId
   ) {
-    throw new Error("El carrito solo puede contener artículos de un comercio.");
+    throw new Error(
+      "Solo podes agregar productos del mismo comercio al carrito. Vacia el carrito primero para agregar productos de otro comercio.",
+    );
   }
 
   const existingIndex = cart.items.findIndex(

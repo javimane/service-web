@@ -296,25 +296,45 @@ export default function ComponentName({
 
 ## ═══════════════════════════════════════
 
+### Alineación e Igualdad de Altura (Regla Crítica)
+
+- **Altura estándar obligatoria:** Todos los botones en filas de acciones y modales deben tener `height: 42px; min-height: 42px; box-sizing: border-box; line-height: 1;`.
+- **Línea base de borde (1px):** Todos los botones deben tener `border: 1px solid transparent;` como base para que al aplicar un color de borde (como en Cancelar con `var(--error-color)` o secundario con `var(--brand-blue)`) **no aumente 2px la altura** del botón respecto a los botones sin borde visible.
+- **Alineación de contenedores:** Los contenedores de acciones (`.modal-actions-row`, `.modal-footer-actions`, `.modal-actions`, etc.) SIEMPRE deben declarar:
+  ```css
+  display: flex;
+  align-items: center; /* NUNCA omitir: evita que stretch o padding desalineen botones */
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  ```
+- **Grupos mixtos (button, a, label):** Cuando un grupo incluye enlaces (ej. WhatsApp `<a>`), inputs de archivo `<label>` o botones `<button>`, todos deben tener `display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 42px; min-height: 42px;`.
+- **Skill de referencia:** Ver `.agents/skills/button-alignment-and-styling/SKILL.md` para detalles completos.
+
 ### Colores semánticos de acciones
 
 - Los botones o controles tipo botón para **Agregar/Añadir** y **Subir** usan fondo verde claro: `data-action-tone="add"` o `data-action-tone="upload"`.
-- Los botones para **Cancelar** usan fondo rojo claro: `data-action-tone="cancel"`.
+- Los botones para **Cancelar** usan fondo rojo claro: `data-action-tone="cancel"` o clase `.btn-cancel`.
 - Los tonos se definen una sola vez en `src/index.css` con `--action-add-*` y `--action-cancel-*`. Aplicar el atributo también a enlaces o `label` que actúen como botón de estas acciones.
 - Si el texto cambia de acción según el estado, actualizar `data-action-tone` con ese mismo estado.
 
-### Boton primario (`.btn-primary`)
+### Boton primario (`.btn-primary` / `.btn-submit`)
 
-- Fondo: `var(--accent-color)`, texto: white
-- Padding: `14px` (o `var(--space-3)` vertical)
+- Fondo: `var(--accent-color)`, texto: `var(--white)`
+- Borde: `1px solid var(--accent-color)`
+- Altura: `42px` (o padding horizontal con `height: 42px; min-height: 42px; box-sizing: border-box;`)
 - Border-radius: `var(--radius-md)`
 - Hover: `var(--accent-hover)`, `translateY(-1px)`, sombra `var(--accent-transparent)`
-- Disabled: `opacity: 0.7`, `cursor: not-allowed`
+- Disabled: `opacity: 0.6`, `cursor: not-allowed`
 
-### Boton secundario / social (`.btn-secondary` / `.btn-social`)
+### Boton secundario / acción alternativa (`.btn-secondary` / `.btn-blue`)
 
-- Fondo: `var(--input-bg)`, borde: `var(--border-color)`
-- Hover: `var(--border-color)` de fondo
+- **Color azul con letras blancas:** Reemplaza botones grises apagados.
+- Fondo: `var(--brand-blue)` (`#1d5fbf`), texto: `var(--white)`
+- Borde: `1px solid var(--brand-blue)`
+- Altura: `42px`, border-radius: `var(--radius-md)`
+- Hover: `background: #154ca0; border-color: #154ca0; color: var(--white); translateY(-1px);`
+- Disabled: `opacity: 0.6`, `cursor: not-allowed`
 
 ### Link Button (`.link-btn`)
 

@@ -35,9 +35,11 @@ import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import Modal from "@/components/Modal/Modal";
 import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
+import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
 import { ROUTES } from "@/routes/paths";
 import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
+import { requestIdentityVerification } from "@/utils/identityVerification";
 import {
   clearGuestCart,
   getGuestCart,
@@ -51,7 +53,7 @@ export default function CartSection() {
   setApiAccessToken(token);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, loading: isAuthLoading } = useAuth();
+  const { user, isAgeVerified, loading: isAuthLoading } = useAuth();
   const { openAuth } = useAuthModal();
   const { showSuccess, showError } = useAlert();
 
@@ -70,6 +72,7 @@ export default function CartSection() {
   const [activeQrData, setActiveQrData] = useState<PayCloudQrResponse | null>(null);
   const [qrTimerSeconds, setQrTimerSeconds] = useState(900); // 15 min
   const isMigratingGuestCart = useRef(false);
+  const checkoutStartedRef = useRef(false);
 
   const {
     data: cart,
@@ -82,11 +85,19 @@ export default function CartSection() {
     enabled: !isAuthLoading,
   });
 
-  const items = cart?.items ?? [];
+  const items = useMemo(() => cart?.items ?? [], [cart?.items]);
   const merchantId = cart?.professional_id;
   const hasService = items.some((item) =>
     Boolean(item.service_id || item.service),
   );
+  const hasFinancedService = items.some((item) => item.service &&
+    !item.service.installments_enabled && !item.service.category?.no_installments);
+  const { data: commissionRates = [] } = useQuery({
+    queryKey: ["public-marketplace-commissions"],
+    queryFn: commerceService.publicCommissions,
+    enabled: hasService,
+    staleTime: 1000 * 60 * 5,
+  });
   const activeDeliveryType: DeliveryType = hasService
     ? "coordinate_with_merchant"
     : deliveryType;
@@ -165,10 +176,16 @@ export default function CartSection() {
             queryKey: ["user-cart", user.id],
           });
         }
-      } catch {
-        showError(
-          "Iniciaste sesión, pero no pudimos transferir tu carrito. Intentá nuevamente.",
-        );
+      } catch (err: any) {
+        const rawMsg =
+          err?.response?.data?.message ||
+          err?.data?.message ||
+          err?.message;
+        const msg = Array.isArray(rawMsg)
+          ? rawMsg.join(". ")
+          : rawMsg ||
+            "Iniciaste sesión, pero no pudimos transferir tu carrito. Intentá nuevamente.";
+        showError(msg);
       } finally {
         isMigratingGuestCart.current = false;
       }
@@ -198,6 +215,8 @@ export default function CartSection() {
     selectedAddressId,
     selectedBranchId,
   });
+  const latestQuoteKey = useRef(quoteKey);
+  latestQuoteKey.current = quoteKey;
 
   // Mutations
   const updateQtyMutation = useMutation({
@@ -240,7 +259,7 @@ export default function CartSection() {
   });
 
   const calculateShippingMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: (_requestedKey: string) => {
       const products = items.filter((item) => item.professional_product_id);
       if (!products.length || !selectedAddressId || !selectedBranch) {
         throw new Error("Seleccioná una sucursal y una dirección de entrega.");
@@ -255,19 +274,65 @@ export default function CartSection() {
         ...originSelection,
       });
     },
-    onSuccess: (res) => {
+    onSuccess: (res, requestedKey) => {
+      if (requestedKey !== latestQuoteKey.current) return;
       setShippingCost(res.shippingCost);
       setEstimatedTime(res.delivery_estimate || "");
       setShippingQuote(res);
-      setQuotedFor(quoteKey);
+      setQuotedFor(requestedKey);
       showSuccess("Costo de envío calculado.");
     },
-    onError: () => {
+    onError: (_error, requestedKey) => {
+      if (requestedKey !== latestQuoteKey.current) return;
       setQuotedFor("");
       setShippingQuote(null);
       showError("No se pudo calcular el envío para esta dirección.");
     },
   });
+
+  // Keep the quote current as quantities change, including while pickup is selected.
+  // This lets buyers see when their cart reaches the free home-delivery minimum.
+  useEffect(() => {
+    if (hasService || deliveryType === "coordinate_with_merchant" ||
+        !merchantId || !selectedBranch || !selectedAddressId ||
+        !items.some((item) => item.professional_product_id)) {
+      setQuotedFor("");
+      setShippingQuote(null);
+      return;
+    }
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      try {
+        const quote = await commerceService.calculateShipping({
+          items: items.filter((item) => item.professional_product_id).map((item) => ({
+            professional_product_id: item.professional_product_id!,
+            quantity: item.quantity,
+          })),
+          delivery_type: "shipment",
+          delivery_address_id: selectedAddressId,
+          ...(selectedBranch.is_main
+            ? { origin_address_id: selectedBranch.address_id ?? undefined }
+            : { branch_id: selectedBranchId }),
+        });
+        if (!active) return;
+        setShippingCost(quote.shippingCost);
+        setEstimatedTime(quote.delivery_estimate || "");
+        setShippingQuote(quote);
+        setQuotedFor(quoteKey);
+      } catch {
+        if (!active) return;
+        setQuotedFor("");
+        setShippingQuote(null);
+      }
+    }, 400);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [hasService, deliveryType, merchantId, selectedBranch, selectedBranchId,
+    selectedAddressId, items, quoteKey]);
 
   const checkoutMutation = useMutation({
     mutationFn: () =>
@@ -289,6 +354,7 @@ export default function CartSection() {
           ? savedCards.find((card) => card.id === selectedCardId)?.getnet_card_token
           : undefined,
         installments: paymentMethod === "getnet" ? installments : 1,
+        expected_total_amount: hasService ? total : undefined,
       }),
     onSuccess: (res) => {
       if (paymentMethod === "paycloud_qr" && res.qr) {
@@ -301,7 +367,10 @@ export default function CartSection() {
         router.push(`${ROUTES.dashboard}?view=purchases`);
       }
     },
-    onError: () => showError("No se pudo procesar el pago."),
+    onError: (error) => {
+      checkoutStartedRef.current = false;
+      showError(error.message || "No se pudo procesar el pago.");
+    },
   });
 
   // QR Timer countdown
@@ -313,13 +382,48 @@ export default function CartSection() {
     return () => clearInterval(interval);
   }, [qrModalOpen, qrTimerSeconds]);
 
+  // Match the installment limits and financing rates enforced by checkout.
+  const hasPerishable = items.some((i) => i.product?.is_food_perishable);
+  const maxInstallments = hasPerishable
+    ? 1
+    : items.length > 0
+    ? Math.min(...items.map((item) => item.service
+        ? (item.service.category?.no_installments ? 1 :
+            item.service.installments_enabled ? Number(item.service.max_installments || 1) : 18)
+        : (item.professional_product?.installments_enabled
+            ? Number(item.professional_product.max_installments || 1)
+            : 1)))
+    : 12;
+  const availableInstallments = [1, 2, 3, 6, 9, 12, 18].filter((count) =>
+    count <= maxInstallments && (count === 1 || !hasFinancedService ||
+      commissionRates.some((rate) => Number(rate.installments) === count)));
+  const financingSurcharge = paymentMethod === "getnet" && installments > 1
+    ? items.reduce((sum, item) => {
+        if (!item.service || item.service.installments_enabled) return sum;
+        const quote = calculateInstallmentFinancing(item.subtotal || 0, installments, commissionRates);
+        return sum + (quote ? quote.totalAmount - (item.subtotal || 0) : 0);
+      }, 0)
+    : 0;
+  useEffect(() => {
+    if (installments > maxInstallments ||
+        (installments > 1 && hasFinancedService &&
+          !commissionRates.some((rate) => Number(rate.installments) === installments))) {
+      setInstallments(1);
+    }
+  }, [installments, maxInstallments, hasFinancedService, commissionRates]);
+
   const subtotal = items.reduce((acc, curr) => acc + (curr.subtotal || 0), 0);
-  const total =
-    subtotal + (activeDeliveryType === "shipment" && quotedFor === quoteKey ? shippingCost : 0);
+  const total = subtotal + financingSurcharge +
+    (activeDeliveryType === "shipment" && quotedFor === quoteKey ? shippingCost : 0);
 
   const handleCheckout = () => {
+    if (checkoutStartedRef.current || checkoutMutation.isPending) return;
     if (!user) {
       openAuth("login");
+      return;
+    }
+    if (!isAgeVerified) {
+      requestIdentityVerification();
       return;
     }
 
@@ -341,16 +445,13 @@ export default function CartSection() {
       showError("Seleccioná una tarjeta guardada para pagar");
       return;
     }
+    if (paymentMethod === "getnet" && !availableInstallments.includes(installments)) {
+      showError("No hay una tasa vigente para las cuotas seleccionadas.");
+      return;
+    }
+    checkoutStartedRef.current = true;
     checkoutMutation.mutate();
   };
-
-  // Check if any product is perishable or has installment limits
-  const hasPerishable = items.some((i) => i.product?.is_food_perishable);
-  const maxInstallments = hasPerishable
-    ? 1
-    : items.length > 0
-    ? Math.min(...items.map((i) => i.product?.max_installments || 12))
-    : 12;
 
   return (
     <div className="cart-section">
@@ -617,7 +718,7 @@ export default function CartSection() {
                       type="button"
                       className="btn-secondary"
                       disabled={!selectedAddressId || !selectedBranchId || calculateShippingMutation.isPending}
-                      onClick={() => calculateShippingMutation.mutate()}
+                      onClick={() => calculateShippingMutation.mutate(quoteKey)}
                     >
                       Calcular costo
                     </button>
@@ -665,6 +766,21 @@ export default function CartSection() {
                     : "Pendiente de cálculo"}
                 </span>
               </div>
+
+              {financingSurcharge > 0 && (
+                <div className="cart-summary-row">
+                  <span>Recargo por {installments} cuotas:</span>
+                  <span>${financingSurcharge.toLocaleString("es-AR")}</span>
+                </div>
+              )}
+
+              {activeDeliveryType !== "coordinate_with_merchant" &&
+                quotedFor === quoteKey &&
+                shippingQuote?.is_free_shipping && (
+                  <div className="cart-summary-row cart-summary-row--free-delivery">
+                    Envío gratis a domicilio
+                  </div>
+                )}
 
               <div className="cart-summary-row cart-summary-row--total">
                 <span>Total a pagar:</span>
@@ -734,22 +850,24 @@ export default function CartSection() {
                       value={installments}
                       onChange={(e) => setInstallments(parseInt(e.target.value, 10))}
                     >
-                      <option value={1}>1 cuota de ${total.toLocaleString("es-AR")}</option>
-                      {maxInstallments >= 3 && (
-                        <option value={3}>
-                          3 cuotas fijas de ${Math.round(total / 3).toLocaleString("es-AR")}
-                        </option>
-                      )}
-                      {maxInstallments >= 6 && (
-                        <option value={6}>
-                          6 cuotas fijas de ${Math.round(total / 6).toLocaleString("es-AR")}
-                        </option>
-                      )}
-                      {maxInstallments >= 12 && (
-                        <option value={12}>
-                          12 cuotas de ${Math.round(total / 12).toLocaleString("es-AR")}
-                        </option>
-                      )}
+                      {availableInstallments.map((count) => {
+                        const surcharge = count > 1 && hasFinancedService
+                          ? items.reduce((sum, item) => {
+                              if (!item.service || item.service.installments_enabled) return sum;
+                              const quote = calculateInstallmentFinancing(item.subtotal || 0, count, commissionRates);
+                              return sum + (quote ? quote.totalAmount - (item.subtotal || 0) : 0);
+                            }, 0)
+                          : 0;
+                        const installmentTotal = subtotal + surcharge +
+                          (activeDeliveryType === "shipment" && quotedFor === quoteKey ? shippingCost : 0);
+                        return (
+                          <option key={count} value={count}>
+                            {count === 1 ? "1 pago" : `${count} cuotas`} de ${
+                              Math.round(installmentTotal / count).toLocaleString("es-AR")
+                            }{surcharge > 0 ? " con recargo" : " sin interés"}
+                          </option>
+                        );
+                      })}
                     </select>
                   )}
                 </div>

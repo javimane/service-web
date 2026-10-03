@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   CreditCard,
   QrCode,
@@ -24,6 +25,9 @@ import { useAlert } from "@/context/AlertContext";
 import Modal from "@/components/Modal/Modal";
 import OrderBillingDataCard from "@/components/OrderBillingDataCard/OrderBillingDataCard";
 import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
+import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
+import WhatsAppContactButton from "@/components/WhatsAppContactButton/WhatsAppContactButton";
+import { requestIdentityVerification } from "@/utils/identityVerification";
 import "./ServicePaymentModal.css";
 
 interface ServicePaymentModalProps {
@@ -41,9 +45,10 @@ export default function ServicePaymentModal({
   service,
   professionalId,
   professionalName = "Comercio o Profesional",
+  professionalPhone,
 }: ServicePaymentModalProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAgeVerified } = useAuth();
   const { showSuccess, showError } = useAlert();
 
   // Quantity
@@ -64,9 +69,27 @@ export default function ServicePaymentModal({
 
   // Submission & Results
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [activeQr, setActiveQr] = useState<PayCloudQrResponse | null>(null);
   const [qrSecondsLeft, setQrSecondsLeft] = useState<number>(900);
+  const { data: commissionRates = [] } = useQuery({
+    queryKey: ["public-marketplace-commissions"],
+    queryFn: commerceService.publicCommissions,
+    enabled: isOpen,
+    staleTime: 1000 * 60 * 5,
+  });
+  const {
+    data: serverQuote,
+    isLoading: quoteLoading,
+    isError: quoteError,
+  } = useQuery({
+    queryKey: ["service-checkout-quote", service?.id, quantity, installments],
+    queryFn: () => commerceService.calculateServiceCheckout(String(service.id), quantity, installments),
+    enabled: isOpen && Boolean(user) && Boolean(service?.id) &&
+      paymentMethod === "getnet_card" && installments > 1,
+    staleTime: 1000 * 30,
+  });
 
   // Reset states when modal is opened
   useEffect(() => {
@@ -91,16 +114,28 @@ export default function ServicePaymentModal({
 
   // Price calculations
   const unitPrice = Number(service.price ?? service.base_price ?? 0);
-  const totalToPay = unitPrice * quantity;
+  const baseTotal = unitPrice * quantity;
 
   // Installments configuration
-  const installmentsEnabled = service.installments_enabled !== false;
-  const maxInstallments = Math.max(1, Number(service.max_installments || 12));
+  const installmentsEnabled = Boolean(service.installments_enabled);
+  const maxInstallments = installmentsEnabled
+    ? Math.max(1, Number(service.max_installments || 1))
+    : 18;
 
   // Available installment plans
-  const installmentOptions = [1, 3, 6, 9, 12, 18].filter(
-    (n) => n <= maxInstallments,
-  );
+  const installmentOptions = service.category?.no_installments
+    ? [1]
+    : installmentsEnabled
+    ? [1, 2, 3, 6, 9, 12, 18].filter((n) => n <= maxInstallments)
+    : [1, ...commissionRates
+        .map((rate) => Number(rate.installments))
+        .filter((n) => n > 1 && [2, 3, 6, 9, 12, 18].includes(n))];
+  const financedQuote = !installmentsEnabled && installments > 1
+    ? calculateInstallmentFinancing(baseTotal, installments, commissionRates)
+    : null;
+  const totalToPay = paymentMethod === "getnet_card" && installments > 1
+    ? Number(serverQuote?.totalAmount ?? financedQuote?.totalAmount ?? baseTotal)
+    : baseTotal;
 
   // Card input formatters
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,6 +163,7 @@ export default function ServicePaymentModal({
 
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
 
     if (!user) {
       showError("Debes iniciar sesión para contratar este servicio.");
@@ -136,9 +172,18 @@ export default function ServicePaymentModal({
       );
       return;
     }
+    if (!isAgeVerified) {
+      requestIdentityVerification();
+      return;
+    }
 
     if (totalToPay <= 0) {
       showError("El monto del servicio debe ser mayor a $0.");
+      return;
+    }
+    if (paymentMethod === "getnet_card" && installments > 1 &&
+        (quoteLoading || quoteError || !serverQuote)) {
+      showError("No se pudo confirmar el importe vigente de las cuotas. Intentá nuevamente.");
       return;
     }
 
@@ -166,6 +211,7 @@ export default function ServicePaymentModal({
       }
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       const token = `gn_tok_${Date.now()}_${Math.random()
@@ -182,6 +228,7 @@ export default function ServicePaymentModal({
           paymentMethod === "getnet_card" ? "getnet_card" : "paycloud_qr",
         card_token: paymentMethod === "getnet_card" ? token : undefined,
         installments: paymentMethod === "getnet_card" ? installments : 1,
+        expected_total_amount: totalToPay,
         card_details:
           paymentMethod === "getnet_card"
             ? {
@@ -206,6 +253,7 @@ export default function ServicePaymentModal({
         err?.message || "No se pudo procesar el pago. Intenta nuevamente.",
       );
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -341,7 +389,7 @@ export default function ServicePaymentModal({
               <div className="service-payment-modal__summary-row">
                 <span>Monto abonado:</span>
                 <strong className="service-payment-modal__summary-total">
-                  ${totalToPay.toLocaleString("es-AR")}
+                  ${Number(completedOrder.total_amount ?? totalToPay).toLocaleString("es-AR")}
                 </strong>
               </div>
               {completedOrder.id && (
@@ -363,6 +411,11 @@ export default function ServicePaymentModal({
             )}
 
             <div className="service-payment-modal__success-actions">
+              <WhatsAppContactButton
+                professionalId={professionalId}
+                phone={professionalPhone}
+                message={`Hola, acabo de contratar el servicio ${service?.name || ""}.`}
+              />
               <button
                 type="button"
                 className="service-payment-modal__btn-primary"
@@ -408,7 +461,7 @@ export default function ServicePaymentModal({
                 </span>
                 {quantity > 1 && (
                   <span className="service-payment-modal__service-price-unit">
-                    x {quantity} unid. = ${totalToPay.toLocaleString("es-AR")}
+                    x {quantity} unid. = ${baseTotal.toLocaleString("es-AR")}
                   </span>
                 )}
               </div>
@@ -460,7 +513,9 @@ export default function ServicePaymentModal({
                   <div className="service-payment-modal__method-info">
                     <strong>Tarjeta de Crédito / Débito</strong>
                     <span>
-                      {installmentsEnabled
+                      {service.category?.no_installments
+                        ? "Solo 1 pago"
+                        : installmentsEnabled
                         ? `Hasta ${maxInstallments} cuotas sin interés`
                         : "Débito o cuotas fijas"}
                     </span>
@@ -505,7 +560,12 @@ export default function ServicePaymentModal({
                             ? `${opt} cuotas sin interés de $${Math.round(
                                 totalToPay / opt,
                               ).toLocaleString("es-AR")}`
-                            : `${opt} cuotas fijas`}
+                            : (() => {
+                                const quote = calculateInstallmentFinancing(baseTotal, opt, commissionRates);
+                                return quote
+                                  ? `${opt} cuotas de $${quote.installmentAmount.toLocaleString("es-AR")} (+${quote.surchargePct.toLocaleString("es-AR")}% recargo)`
+                                  : `${opt} cuotas con recargo`;
+                              })()}
                       </option>
                     ))}
                   </select>
@@ -615,6 +675,18 @@ export default function ServicePaymentModal({
             {/* Total Summary & Submit Button */}
             <ReturnsPolicyLink />
             <div className="service-payment-modal__footer">
+              {paymentMethod === "getnet_card" && financedQuote && (
+                <p className="service-payment-modal__financing-breakdown">
+                  Recargo por {installments} cuotas: ${Number(
+                    serverQuote?.financingSurchargeAmount ?? financedQuote.totalAmount - baseTotal,
+                  ).toLocaleString("es-AR")}
+                </p>
+              )}
+              {paymentMethod === "getnet_card" && installments > 1 && quoteError && (
+                <p className="service-payment-modal__financing-breakdown">
+                  No pudimos confirmar el importe de las cuotas. Intentá nuevamente.
+                </p>
+              )}
               <div className="service-payment-modal__footer-total">
                 <span className="service-payment-modal__total-label">
                   Total a abonar:
@@ -627,7 +699,9 @@ export default function ServicePaymentModal({
               <button
                 type="submit"
                 className="service-payment-modal__btn-primary"
-                disabled={isSubmitting || totalToPay <= 0}
+                disabled={isSubmitting || totalToPay <= 0 ||
+                  (paymentMethod === "getnet_card" && installments > 1 &&
+                    (quoteLoading || quoteError || !serverQuote))}
               >
                 {isSubmitting ? (
                   <>

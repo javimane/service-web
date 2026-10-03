@@ -17,6 +17,7 @@ interface ProductInstallmentsModalProps {
   installmentsEnabled: boolean;
   maxInstallments: number;
   productName: string;
+  itemType?: "producto" | "servicio";
 }
 
 // Tasas directas vigentes de Getnet (sin IVA) para calcular la diferencia si la API no estuviera disponible
@@ -37,13 +38,14 @@ export default function ProductInstallmentsModal({
   installmentsEnabled,
   maxInstallments,
   productName,
+  itemType = "producto",
 }: ProductInstallmentsModalProps) {
   const { data: commissions = [], isLoading } = useQuery<
     MarketplaceCommission[]
   >({
-    queryKey: ["marketplace-commissions"],
+    queryKey: ["public-marketplace-commissions"],
     queryFn: async () => {
-      const res = await commerceService.commissions();
+      const res = await commerceService.publicCommissions();
       return Array.isArray(res) ? res : [];
     },
     enabled: isOpen,
@@ -142,7 +144,7 @@ export default function ProductInstallmentsModal({
                   ¡Hasta {validMax} cuotas sin interés!
                 </strong>
                 <p className="product-installments-modal__highlight-text">
-                  El vendedor ofrece cuotas sin interés en este producto. Aplica
+                  El vendedor ofrece cuotas sin interés en este {itemType}. Aplica
                   con todas las tarjetas bancarias procesadas (Visa, Mastercard,
                   American Express, Cabal).
                 </p>
@@ -200,7 +202,7 @@ export default function ProductInstallmentsModal({
                   Pagá en 1 cuota o financiado en cuotas fijas
                 </strong>
                 <p className="product-installments-modal__info-text">
-                  Este producto no cuenta con promoción de cuotas sin interés
+                  Este {itemType} no cuenta con promoción de cuotas sin interés
                   del vendedor. Podés pagar en 1 pago sin recargo con tarjeta de
                   débito/crédito, o financiar tu compra en cuotas fijas con
                   tarjetas bancarias.

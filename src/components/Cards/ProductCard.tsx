@@ -2,24 +2,44 @@ import React from "react";
 import FavoriteButton from "../FavoriteButton/FavoriteButton";
 import "./ProductCard.css";
 
-const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
-  // Data is nested inside product.Product
-  const info = product.Product || {};
-  const images = info.Images || [];
-  const productId = product.product_id || info.id || product.id;
+interface ProductCardProps {
+  product: any;
+  onOpenDetail?: (product: any) => void;
+  variant?: "default" | "small";
+}
+
+const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  onOpenDetail,
+  variant = "default",
+}) => {
+  // Support both nested product.Product and flat product objects
+  const info = product?.Product || product || {};
+  const images = info.Images || product?.Images || product?.images || [];
+  const productId = product?.product_id || info.id || product?.id;
+
+  const sortedImages = Array.isArray(images)
+    ? [...images].sort((a: any, b: any) => (Number(a.display_order) || 0) - (Number(b.display_order) || 0))
+    : [];
 
   const primaryImage =
-    images.find((img) => img.display_order === 0)?.image_url ||
-    images[0]?.image_url ||
+    sortedImages.find((img: any) => img.display_order === 0)?.image_url ||
+    sortedImages[0]?.image_url ||
+    (typeof sortedImages[0] === "string" ? sortedImages[0] : null) ||
+    info.image_url ||
+    product?.image_url ||
     "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80";
 
-  const regularPrice: number = product.price || 0;
-  const offerPrice: number | null = product.offer_price ?? null;
+  const regularPrice: number = Number(product?.price ?? info.price ?? 0);
+  const offerPrice: number | null =
+    (product?.offer_price ?? info.offer_price) != null
+      ? Number(product?.offer_price ?? info.offer_price)
+      : null;
 
-  // Compute discount % from offer_price if percent_discount is null
+  const rawDiscount = product?.percent_discount ?? info.percent_discount;
   const computedDiscount: number =
-    product.percent_discount != null && product.percent_discount > 1
-      ? product.percent_discount
+    rawDiscount != null && Number(rawDiscount) > 1
+      ? Number(rawDiscount)
       : offerPrice !== null && offerPrice > 1 && regularPrice > 1
         ? Math.round((1 - offerPrice / regularPrice) * 100)
         : 0;
@@ -27,11 +47,18 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
   const hasOffer = offerPrice !== null && offerPrice > 1;
   const displayPrice = hasOffer ? offerPrice! : regularPrice;
 
-  const name = info.name || "Producto";
+  const name = info.name || product?.name || "Producto";
 
-  const isConsultar = product.wholesale
-    ? Number(product.wholesale_price || 0) <= 1
+  const isWholesale = Boolean(product?.wholesale ?? info.wholesale);
+  const wholesalePrice = Number(product?.wholesale_price ?? info.wholesale_price ?? 0);
+  const wholesaleUnit = product?.wholesale_unit ?? info.wholesale_unit ?? 1;
+
+  const isConsultar = isWholesale
+    ? wholesalePrice <= 1
     : displayPrice <= 1;
+
+  const has2x1 = Boolean(product?.offer_2x1 ?? info.offer_2x1);
+  const has3x2 = Boolean(product?.offer_3x2 ?? info.offer_3x2);
 
   return (
     <div
@@ -45,43 +72,39 @@ const ProductCard = ({ product, onOpenDetail, variant = "default" }) => {
         <div className="nearby-product-card__favorite-wrap">
           <FavoriteButton type="product" targetId={productId} size={16} />
         </div>
-        {hasOffer && !product.wholesale && !isConsultar && (
+        {hasOffer && !isWholesale && !isConsultar && (
           <span className="nearby-product-card__badge">OFERTA</span>
         )}
       </div>
 
       <div className="nearby-product-card__body">
         <h3 className="nearby-product-card__title">{name}</h3>
-        {(product.offer_2x1 || product.offer_3x2) && <span className="nearby-product-card__quantity-offer">{product.offer_2x1 ? "2x1" : "3x2"}</span>}
+        {(has2x1 || has3x2) && (
+          <span className="nearby-product-card__quantity-offer">
+            {has2x1 ? "2x1" : "3x2"}
+          </span>
+        )}
 
-        <div className="nearby-product-card__pricing" style={{ marginTop: 'auto' }}>
+        <div className="nearby-product-card__pricing">
           {isConsultar ? (
             <div className="nearby-product-card__price-row">
-              <span className="nearby-product-card__price" style={{ fontSize: "1.1rem" }}>
+              <span className="nearby-product-card__price">
                 Consultar
               </span>
             </div>
-          ) : product.wholesale ? (
+          ) : isWholesale ? (
             <>
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 'bold',
-                  color: 'var(--brand-blue)',
-                  textTransform: 'uppercase',
-                  marginBottom: '2px',
-                }}
-              >
+              <span className="nearby-product-card__wholesale-tag">
                 Por mayor
               </span>
               <div className="nearby-product-card__price-row">
                 <span className="nearby-product-card__price">
-                  ${Number(product.wholesale_price || 0).toLocaleString("es-AR", { minimumFractionDigits: 0 })}
-                  <span style={{ fontSize: "0.85rem", fontWeight: "normal", color: "var(--text-secondary)" }}> c/u</span>
+                  ${wholesalePrice.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+                  <span className="nearby-product-card__wholesale-unit-label"> c/u</span>
                 </span>
               </div>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: "var(--weight-medium)" }}>
-                Min. {product.wholesale_unit} un.
+              <span className="nearby-product-card__wholesale-min">
+                Min. {wholesaleUnit} un.
               </span>
             </>
           ) : hasOffer ? (

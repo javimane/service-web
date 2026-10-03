@@ -12,7 +12,7 @@ async function resolveProduct(seoPath: string[]) {
 
   if (id && isUuid(id)) {
     const res = await fetchWithApiKey(API_ENDPOINTS.products.detail(id), {
-      next: { revalidate: 3600 },
+      cache: "no-store",
     });
     if (res.ok) {
       const data = await res.json();

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   CreditCard,
@@ -36,6 +36,8 @@ import Modal from "@/components/Modal/Modal";
 import OrderBillingDataCard from "@/components/OrderBillingDataCard/OrderBillingDataCard";
 import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
 import { calculateProductPricing } from "@/utils/productPricing";
+import { getDeliveryCoverage } from "@/utils/deliveryCoverage";
+import { requestIdentityVerification } from "@/utils/identityVerification";
 import "./ProductPaymentModal.css";
 
 interface ProductPaymentModalProps {
@@ -46,6 +48,8 @@ interface ProductPaymentModalProps {
   professionalProductId?: string;
   sellerName?: string;
   sellerProvince?: string;
+  companyFreeShippingCountry?: boolean;
+  companyFreeShippingCountryMinAmount?: number;
   isAgeRestricted?: boolean;
   canPurchase?: boolean;
 }
@@ -57,11 +61,13 @@ export default function ProductPaymentModal({
   professionalId,
   professionalProductId,
   sellerName,
+  companyFreeShippingCountry = false,
+  companyFreeShippingCountryMinAmount = 0,
   isAgeRestricted = false,
   canPurchase = true,
 }: ProductPaymentModalProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAgeVerified } = useAuth();
   const { showSuccess, showError } = useAlert();
 
   // Step and flow states
@@ -71,34 +77,67 @@ export default function ProductPaymentModal({
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [scheduleForNextDay, setScheduleForNextDay] = useState(false);
 
-  const { data: branches = [] } = useQuery<Branch[]>({
-    queryKey: ["professional-locations", professionalId],
-    queryFn: () => commerceService.professionalLocations(professionalId),
-    enabled: isOpen && Boolean(professionalId),
-  });
   const { data: userAddresses = [] } = useQuery<UserAddress[]>({
     queryKey: ["user-addresses", user?.id],
     queryFn: () => commerceService.getUserAddresses(),
     enabled: isOpen && Boolean(user),
   });
   useEffect(() => {
+    setScheduleForNextDay(false);
+  }, [selectedBranchId, deliveryType]);
+  useEffect(() => {
+    const available = userAddresses.filter(
+      (address) => address.latitude != null && address.longitude != null,
+    );
+    if (!available.some((address) => address.id === selectedAddressId)) {
+      setSelectedAddressId(
+        (available.find((address) => address.is_default) || available[0])?.id ||
+          "",
+      );
+    }
+  }, [selectedAddressId, userAddresses]);
+  const selectedAddress = userAddresses.find(
+    (address) => address.id === selectedAddressId,
+  );
+  const { data: branches = [] } = useQuery<Branch[]>({
+    queryKey: ["professional-locations", professionalId,
+      selectedAddress?.province_id, selectedAddress?.department_id],
+    queryFn: () => commerceService.professionalLocations(
+      professionalId, selectedAddress?.province_id, selectedAddress?.department_id,
+    ),
+    enabled: isOpen && Boolean(professionalId),
+  });
+  const selectedBranch = branches.find(
+    (branch) => branch.id === selectedBranchId,
+  );
+  const shippingBranches = useMemo(
+    () => branches.filter((branch) =>
+      branch.delivery_available === true &&
+      (branch.is_open !== false || branch.own_riders_available === true) &&
+      getDeliveryCoverage(branch, selectedAddress).status !== "outside",
+    ),
+    [branches, selectedAddress],
+  );
+  const hasShippingBranch = shippingBranches.length > 0;
+  useEffect(() => {
     const current = branches.find((branch) => branch.id === selectedBranchId);
-    const canUse = (branch: Branch) => deliveryType === "pickup"
-      ? branch.is_pickup_point
-      : branch.is_open !== false || branch.own_riders_available;
+    const canUse = (branch: Branch) =>
+      deliveryType === "pickup"
+        ? branch.is_pickup_point
+        : shippingBranches.includes(branch);
     if ((!current || !canUse(current)) && branches.length) {
       const available = branches.find(canUse);
       setSelectedBranchId(available?.id || "");
     }
-  }, [branches, selectedBranchId, deliveryType]);
-  useEffect(() => { setScheduleForNextDay(false); }, [selectedBranchId, deliveryType]);
+  }, [branches, selectedBranchId, deliveryType, shippingBranches]);
+  const deliveryCoverage = getDeliveryCoverage(selectedBranch, selectedAddress);
+  const isOutsideDeliveryRange = deliveryCoverage.status === "outside";
+  const hasPickupBranch = branches.some((branch) => branch.is_pickup_point);
   useEffect(() => {
-    const available = userAddresses.filter((address) => address.latitude != null && address.longitude != null);
-    if (!available.some((address) => address.id === selectedAddressId)) {
-      setSelectedAddressId((available.find((address) => address.is_default) || available[0])?.id || "");
+    if (deliveryType === "shipment" && !hasShippingBranch) {
+      setDeliveryType(hasPickupBranch ? "pickup" : "coordinate_with_merchant");
     }
-  }, [selectedAddressId, userAddresses]);
-  const selectedBranch = branches.find((branch) => branch.id === selectedBranchId);
+  }, [deliveryType, hasShippingBranch, hasPickupBranch]);
   const originSelection = selectedBranch?.is_main
     ? { origin_address_id: selectedBranch.address_id ?? undefined }
     : { branch_id: selectedBranchId || undefined };
@@ -106,6 +145,13 @@ export default function ProductPaymentModal({
   // Automated shipping calculation states
   const [shippingCalc, setShippingCalc] =
     useState<CalculateShippingResponse | null>(null);
+  const [quotedFor, setQuotedFor] = useState("");
+  const shippingQuoteKey = JSON.stringify({
+    professionalProductId,
+    quantity,
+    selectedAddressId,
+    selectedBranchId,
+  });
   const [isCalculatingShipping, setIsCalculatingShipping] =
     useState<boolean>(false);
 
@@ -159,6 +205,7 @@ export default function ProductPaymentModal({
 
   // Results / loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [activeQr, setActiveQr] = useState<PayCloudQrResponse | null>(null);
   const [qrSecondsLeft, setQrSecondsLeft] = useState<number>(900);
@@ -183,16 +230,24 @@ export default function ProductPaymentModal({
 
   // Automated shipping calculation
   useEffect(() => {
-    if (!isOpen || deliveryType !== "shipment" || !professionalProductId || !selectedAddressId || !selectedBranchId) {
-      if (deliveryType !== "shipment") {
-        setShippingCalc(null);
-      }
+    if (
+      !isOpen ||
+      deliveryType === "coordinate_with_merchant" ||
+      !professionalProductId ||
+      !selectedAddressId ||
+      !selectedBranchId ||
+      isOutsideDeliveryRange
+    ) {
+      setShippingCalc(null);
+      setQuotedFor("");
+      setIsCalculatingShipping(false);
       return;
     }
 
     let isMounted = true;
     setIsCalculatingShipping(true);
     setShippingCalc(null);
+    setQuotedFor("");
 
     const timer = setTimeout(async () => {
       try {
@@ -208,6 +263,7 @@ export default function ProductPaymentModal({
 
         if (isMounted) {
           setShippingCalc(res);
+          setQuotedFor(shippingQuoteKey);
         }
       } catch (err) {
         if (isMounted) setShippingCalc(null);
@@ -232,6 +288,8 @@ export default function ProductPaymentModal({
     selectedBranchId,
     selectedBranch?.is_main,
     selectedBranch?.address_id,
+    isOutsideDeliveryRange,
+    shippingQuoteKey,
   ]);
 
   if (!isOpen) return null;
@@ -246,13 +304,24 @@ export default function ProductPaymentModal({
   const maxInstallments = Number(product?.max_installments || 12);
 
   const subtotal = pricing.subtotal;
+  const isOutsideProvince =
+    selectedBranch?.province_id != null &&
+    selectedAddress?.province_id != null &&
+    Number(selectedBranch.province_id) !== Number(selectedAddress.province_id);
+  const hasFreeShippingByParcel =
+    Boolean(product?.free_shipping) ||
+    (companyFreeShippingCountry &&
+      isOutsideProvince &&
+      subtotal >= companyFreeShippingCountryMinAmount);
 
   // Shipping cost from automated calculation
+  const currentShippingCalc =
+    quotedFor === shippingQuoteKey ? shippingCalc : null;
   const calculatedShippingFee =
-    deliveryType === "shipment" && shippingCalc
-      ? shippingCalc.is_free_shipping
+    deliveryType === "shipment" && currentShippingCalc
+      ? currentShippingCalc.is_free_shipping
         ? 0
-        : Number(shippingCalc.shippingCost || 0)
+        : Number(currentShippingCalc.shippingCost || 0)
       : 0;
 
   const fallbackGetnetDirectRates: Record<number, number> = {
@@ -268,14 +337,16 @@ export default function ProductPaymentModal({
   const baseRateObj = commissions.find((r) => r.installments === 1);
   const baseCommissionPct = baseRateObj
     ? Number(baseRateObj.commission_pct)
-    : 11.00;
+    : 11.0;
 
-  const currentPlanRate = commissions.find((r) => r.installments === installments);
+  const currentPlanRate = commissions.find(
+    (r) => r.installments === installments,
+  );
   const ivaPct = Number(currentPlanRate?.iva_pct ?? 21.0);
 
   const diffCommissionPct = currentPlanRate
     ? Math.max(0, Number(currentPlanRate.commission_pct) - baseCommissionPct)
-    : fallbackGetnetDirectRates[installments] ?? 0;
+    : (fallbackGetnetDirectRates[installments] ?? 0);
 
   const surchargePctWithIva = Number(
     (diffCommissionPct * (1 + ivaPct / 100)).toFixed(2),
@@ -348,6 +419,10 @@ export default function ProductPaymentModal({
       );
       return;
     }
+    if (!isAgeVerified) {
+      requestIdentityVerification();
+      return;
+    }
 
     if (isAgeRestricted && !canPurchase) {
       showError(
@@ -357,19 +432,38 @@ export default function ProductPaymentModal({
     }
 
     if (deliveryType === "shipment") {
-      if (!selectedAddressId || !shippingCalc) {
-        showError("Seleccioná una dirección guardada y esperá el cálculo del envío.");
+      if (!hasShippingBranch || !selectedBranch?.delivery_available) {
+        showError("No hay riders disponibles para delivery en esta zona. Elegí retiro o acordá el envío con el vendedor.");
         return;
       }
-      if (shippingCalc.requires_scheduled_delivery && !scheduleForNextDay) {
+      if (isOutsideDeliveryRange) {
+        showError(
+          "La dirección está fuera del rango de esta sucursal. Elegí retiro o acordá la entrega con el vendedor.",
+        );
+        return;
+      }
+      if (!selectedAddressId || !currentShippingCalc) {
+        showError(
+          "Seleccioná una dirección guardada y esperá el cálculo del envío.",
+        );
+        return;
+      }
+      if (
+        currentShippingCalc.requires_scheduled_delivery &&
+        !scheduleForNextDay
+      ) {
         showError("Confirmá el envío programado para mañana.");
         return;
       }
     }
-    if (deliveryType !== "coordinate_with_merchant" &&
+    if (
+      deliveryType !== "coordinate_with_merchant" &&
       (!selectedBranch ||
         (deliveryType === "pickup" && !selectedBranch.is_pickup_point) ||
-        (deliveryType === "shipment" && selectedBranch.is_open === false && !selectedBranch.own_riders_available))) {
+        (deliveryType === "shipment" &&
+          selectedBranch.is_open === false &&
+          !selectedBranch.own_riders_available))
+    ) {
       showError("Seleccioná una sucursal disponible.");
       return;
     }
@@ -407,6 +501,8 @@ export default function ProductPaymentModal({
       }
     }
 
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       let token: string;
@@ -436,9 +532,13 @@ export default function ProductPaymentModal({
         quantity: quantity,
         delivery_type: deliveryType,
         ...(deliveryType !== "coordinate_with_merchant" ? originSelection : {}),
-        delivery_address_id: deliveryType === "shipment" ? selectedAddressId : undefined,
-        schedule_for_next_day: deliveryType === "shipment" && shippingCalc?.requires_scheduled_delivery
-          ? scheduleForNextDay : undefined,
+        delivery_address_id:
+          deliveryType === "shipment" ? selectedAddressId : undefined,
+        schedule_for_next_day:
+          deliveryType === "shipment" &&
+          currentShippingCalc?.requires_scheduled_delivery
+            ? scheduleForNextDay
+            : undefined,
         payment_method:
           paymentMethod === "getnet_card" ? "getnet_card" : "paycloud_qr",
         card_token: paymentMethod === "getnet_card" ? token : undefined,
@@ -489,6 +589,7 @@ export default function ProductPaymentModal({
         err?.message || "No se pudo procesar el pago. Intenta nuevamente.",
       );
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -700,7 +801,8 @@ export default function ProductPaymentModal({
                 Forma de entrega
               </label>
               <div className="product-payment-modal__delivery-options">
-                <div
+                <button
+                  type="button"
                   className={`product-payment-modal__delivery-card ${
                     deliveryType === "pickup"
                       ? "product-payment-modal__delivery-card--active"
@@ -711,26 +813,37 @@ export default function ProductPaymentModal({
                   <Store size={18} />
                   <div>
                     <strong>Retiro en sucursal del comercio</strong>
-                    <p>Gratis • Coordiná el retiro con el vendedor</p>
+                    <p>Gratis</p>
                   </div>
-                </div>
+                </button>
 
-                <div
+                <button
+                  type="button"
+                  disabled={!hasShippingBranch}
                   className={`product-payment-modal__delivery-card ${
                     deliveryType === "shipment"
                       ? "product-payment-modal__delivery-card--active"
                       : ""
                   }`}
-                  onClick={() => setDeliveryType("shipment")}
+                  onClick={() => {
+                    if (hasShippingBranch) setDeliveryType("shipment");
+                  }}
                 >
                   <Truck size={18} />
                   <div>
                     <strong>Envío a domicilio</strong>
-                    <p>Recibí en tu dirección</p>
+                    <p>
+                      {!branches.some((branch) => branch.delivery_available)
+                        ? "No hay riders autónomos disponibles en esta zona"
+                        : isOutsideDeliveryRange
+                        ? "Fuera del rango de la sucursal seleccionada"
+                        : "Recibí en tu dirección"}
+                    </p>
                   </div>
-                </div>
+                </button>
 
-                <div
+                <button
+                  type="button"
                   className={`product-payment-modal__delivery-card ${
                     deliveryType === "coordinate_with_merchant"
                       ? "product-payment-modal__delivery-card--active"
@@ -741,126 +854,223 @@ export default function ProductPaymentModal({
                   <MessageCircle size={18} />
                   <div>
                     <strong>A convenir con el vendedor</strong>
-                    <p>Coordinar entrega directa</p>
+                    <p>
+                      {hasFreeShippingByParcel
+                        ? "Encomienda gratis; acordá el envío con el vendedor"
+                        : "Coordinar entrega directa"}
+                    </p>
                   </div>
-                </div>
+                </button>
               </div>
+
+              {isOutsideDeliveryRange && (
+                <p
+                  className="product-payment-modal__coverage-notice"
+                  role="status"
+                >
+                  {deliveryCoverage.distanceKm != null &&
+                  deliveryCoverage.radiusKm != null
+                    ? `Tu dirección está a ${deliveryCoverage.distanceKm} km y esta sucursal entrega hasta ${deliveryCoverage.radiusKm} km. `
+                    : "Esta sucursal no tiene un rango de entrega configurado. "}
+                  Elegí retiro en tienda o acordá la entrega con el vendedor.
+                  {hasFreeShippingByParcel &&
+                    " Si acordás una encomienda, el envío es gratis."}
+                </p>
+              )}
 
               {deliveryType !== "coordinate_with_merchant" && (
                 <div className="product-payment-modal__address-fields">
                   <label className="product-payment-modal__input-label">
-                    {deliveryType === "pickup" ? "Sucursal de retiro" : "Sucursal de origen"}
+                    {deliveryType === "pickup"
+                      ? "Sucursal de retiro"
+                      : "Sucursal de origen"}
                   </label>
-                  <select className="product-payment-modal__select" value={selectedBranchId} onChange={(event) => setSelectedBranchId(event.target.value)}>
+                  <select
+                    className="product-payment-modal__select"
+                    value={selectedBranchId}
+                    onChange={(event) =>
+                      setSelectedBranchId(event.target.value)
+                    }
+                  >
                     <option value="">Seleccionar sucursal</option>
-                    {branches.filter((branch) => deliveryType === "pickup"
-                      ? branch.is_pickup_point
-                      : branch.is_open !== false || branch.own_riders_available).map((branch) => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name} — {branch.street_name} {branch.street_number}
-                        {branch.delivery_eta_minutes ? ` · Demora ${branch.delivery_eta_minutes} min` : ""}
-                        {deliveryType === "shipment" && branch.is_open === false ? " · Envío mañana" : ""}
-                      </option>
-                    ))}
+                    {branches
+                      .filter((branch) =>
+                        deliveryType === "pickup"
+                          ? branch.is_pickup_point
+                          : shippingBranches.includes(branch),
+                      )
+                      .map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name} — {branch.street_name}{" "}
+                          {branch.street_number}
+                          {branch.delivery_eta_minutes
+                            ? ` · Demora ${branch.delivery_eta_minutes} min`
+                            : ""}
+                          {deliveryType === "shipment" &&
+                          branch.is_open === false
+                            ? " · Envío mañana"
+                            : ""}
+                        </option>
+                      ))}
                   </select>
                   {selectedBranch?.delivery_eta_minutes != null && (
-                    <p>Demora estimada {selectedBranch.is_open === false && deliveryType === "shipment" ? "desde el despacho de mañana" : "de esta sucursal"}: {selectedBranch.delivery_eta_minutes} minutos.</p>
+                    <p>
+                      Demora estimada{" "}
+                      {selectedBranch.is_open === false &&
+                      deliveryType === "shipment"
+                        ? "desde el despacho de mañana"
+                        : "de esta sucursal"}
+                      : {selectedBranch.delivery_eta_minutes} minutos.
+                    </p>
                   )}
-                  {deliveryType === "pickup" && selectedBranch?.is_open === false && (
-                    <p>Podés comprar ahora y retirar tu pedido cuando te convenga.</p>
-                  )}
+                  {deliveryType === "pickup" &&
+                    selectedBranch?.is_open === false && (
+                      <p>
+                        Podés comprar ahora y retirar tu pedido cuando te
+                        convenga.
+                      </p>
+                    )}
                 </div>
               )}
 
               {/* Dirección guardada para envío */}
-              {deliveryType === "shipment" && (
+              {(deliveryType === "shipment" || isOutsideDeliveryRange) && (
                 <div className="product-payment-modal__address-fields">
-                  <label className="product-payment-modal__input-label">Dirección de entrega</label>
-                  <select className="product-payment-modal__select" value={selectedAddressId} onChange={(event) => setSelectedAddressId(event.target.value)}>
+                  <label className="product-payment-modal__input-label">
+                    {isOutsideDeliveryRange
+                      ? "Cambiar dirección para comprobar cobertura"
+                      : "Dirección de entrega"}
+                  </label>
+                  <select
+                    className="product-payment-modal__select"
+                    value={selectedAddressId}
+                    onChange={(event) =>
+                      setSelectedAddressId(event.target.value)
+                    }
+                  >
                     <option value="">Seleccionar dirección guardada</option>
-                    {userAddresses.filter((address) => address.latitude != null && address.longitude != null).map((address) => (
-                      <option key={address.id} value={address.id}>
-                        {address.name || address.street_name || address.street} {address.street_number || address.number}
-                      </option>
-                    ))}
+                    {userAddresses
+                      .filter(
+                        (address) =>
+                          address.latitude != null && address.longitude != null,
+                      )
+                      .map((address) => (
+                        <option key={address.id} value={address.id}>
+                          {address.name ||
+                            address.street_name ||
+                            address.street}{" "}
+                          {address.street_number || address.number}
+                        </option>
+                      ))}
                   </select>
-                  {!userAddresses.some((address) => address.latitude != null && address.longitude != null) &&
-                    <p>Guardá una dirección con ubicación en el mapa para pedir el envío.</p>}
+                  {!userAddresses.some(
+                    (address) =>
+                      address.latitude != null && address.longitude != null,
+                  ) && (
+                    <p>
+                      Guardá una dirección con ubicación en el mapa para pedir
+                      el envío.
+                    </p>
+                  )}
 
                   {/* Automated Shipping Calculation & Vehicle Box */}
-                  <div className="product-payment-modal__shipping-calc-box">
-                    {isCalculatingShipping ? (
-                      <div className="product-payment-modal__shipping-calc-loading">
-                        <Loader2 size={16} className="animate-spin" />
-                        <span>Calculando costo y logística de envío...</span>
-                      </div>
-                    ) : shippingCalc ? (
-                      <div className="product-payment-modal__shipping-calc-content">
-                        <div className="product-payment-modal__shipping-calc-header">
-                          <div className="product-payment-modal__shipping-calc-meta">
-                            <span className="product-payment-modal__vehicle-badge">
-                              <Truck size={14} />
-                              {shippingCalc.vehicle?.name || "Rider / Repartidor"}
-                            </span>
-                            {shippingCalc.is_night && (
-                              <span className="product-payment-modal__night-badge">
-                                Tarifa Nocturna
-                              </span>
-                            )}
-                            {shippingCalc.requires_heavy_vehicle && (
-                              <span className="product-payment-modal__heavy-badge">
-                                Carga Pesada
-                              </span>
-                            )}
-                          </div>
-                          <div className="product-payment-modal__shipping-calc-price">
-                            {shippingCalc.is_free_shipping ? (
-                              <span className="product-payment-modal__free-shipping-text">
-                                ¡Envío Gratis!
-                              </span>
-                            ) : (
-                              <span>
-                                ${Number(shippingCalc.shippingCost).toLocaleString("es-AR")}
-                              </span>
-                            )}
-                          </div>
+                  {deliveryType === "shipment" && (
+                    <div className="product-payment-modal__shipping-calc-box">
+                      {isCalculatingShipping ? (
+                        <div className="product-payment-modal__shipping-calc-loading">
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>Calculando costo y logística de envío...</span>
                         </div>
+                      ) : currentShippingCalc ? (
+                        <div className="product-payment-modal__shipping-calc-content">
+                          <div className="product-payment-modal__shipping-calc-header">
+                            <div className="product-payment-modal__shipping-calc-meta">
+                              <span className="product-payment-modal__vehicle-badge">
+                                <Truck size={14} />
+                                {currentShippingCalc.vehicle?.name ||
+                                  "Rider / Repartidor"}
+                              </span>
+                              {currentShippingCalc.is_night && (
+                                <span className="product-payment-modal__night-badge">
+                                  Tarifa Nocturna
+                                </span>
+                              )}
+                              {currentShippingCalc.requires_heavy_vehicle && (
+                                <span className="product-payment-modal__heavy-badge">
+                                  Carga Pesada
+                                </span>
+                              )}
+                            </div>
+                            <div className="product-payment-modal__shipping-calc-price">
+                              {currentShippingCalc.is_free_shipping ? (
+                                <span className="product-payment-modal__free-shipping-text">
+                                  ¡Envío Gratis!
+                                </span>
+                              ) : (
+                                <span>
+                                  $
+                                  {Number(
+                                    currentShippingCalc.shippingCost,
+                                  ).toLocaleString("es-AR")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
 
-                        <div className="product-payment-modal__shipping-calc-details">
-                          <span>
-                            Distancia estimada:{" "}
-                            <strong>{shippingCalc.distance_km} km</strong>
-                          </span>
-                          <span>•</span>
-                          <span>
-                            Peso aprox:{" "}
-                            <strong>{shippingCalc.total_weight_kg} kg</strong>
-                          </span>
-                          {shippingCalc.is_free_shipping && shippingCalc.free_shipping_reason && (
-                            <p className="product-payment-modal__free-reason">
-                              {shippingCalc.free_shipping_reason}
-                            </p>
-                          )}
+                          <div className="product-payment-modal__shipping-calc-details">
+                            <span>
+                              Distancia estimada:{" "}
+                              <strong>
+                                {currentShippingCalc.distance_km} km
+                              </strong>
+                            </span>
+                            <span>•</span>
+                            <span>
+                              Peso aprox:{" "}
+                              <strong>
+                                {currentShippingCalc.total_weight_kg} kg
+                              </strong>
+                            </span>
+                            {currentShippingCalc.is_free_shipping &&
+                              currentShippingCalc.free_shipping_reason && (
+                                <p className="product-payment-modal__free-reason">
+                                  {currentShippingCalc.free_shipping_reason}
+                                </p>
+                              )}
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="product-payment-modal__shipping-calc-info">
-                        <MapPin size={16} />
-                        <span>
-                          Tarifa mínima de partida: $1.500 (primer km). El costo final se calcula según distancia y peso del paquete.
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  {shippingCalc?.requires_scheduled_delivery && (
-                    <label className="product-payment-modal__schedule-option">
-                      <input type="checkbox" checked={scheduleForNextDay}
-                        onChange={(event) => setScheduleForNextDay(event.target.checked)} />
-                      <span>El comercio está cerrado. Programar el envío con sus riders para mañana
-                        {shippingCalc.scheduled_delivery_date ? ` (${shippingCalc.scheduled_delivery_date.split("-").reverse().join("/")})` : ""}.
-                      </span>
-                    </label>
+                      ) : (
+                        <div className="product-payment-modal__shipping-calc-info">
+                          <MapPin size={16} />
+                          <span>
+                            Tarifa mínima de partida: $1.500 (primer km). El
+                            costo final se calcula según distancia y peso del
+                            paquete.
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   )}
+                  {deliveryType === "shipment" &&
+                    currentShippingCalc?.requires_scheduled_delivery && (
+                      <label className="product-payment-modal__schedule-option">
+                        <input
+                          type="checkbox"
+                          checked={scheduleForNextDay}
+                          onChange={(event) =>
+                            setScheduleForNextDay(event.target.checked)
+                          }
+                        />
+                        <span>
+                          El comercio está cerrado. Programar el envío con sus
+                          riders para mañana
+                          {currentShippingCalc.scheduled_delivery_date
+                            ? ` (${currentShippingCalc.scheduled_delivery_date.split("-").reverse().join("/")})`
+                            : ""}
+                          .
+                        </span>
+                      </label>
+                    )}
                 </div>
               )}
             </div>
@@ -931,12 +1141,20 @@ export default function ProductPaymentModal({
                             );
                           })
                         : standardChoices.map((c) => {
-                            const rateObj = commissions.find((r) => r.installments === c);
+                            const rateObj = commissions.find(
+                              (r) => r.installments === c,
+                            );
                             const iva = Number(rateObj?.iva_pct ?? 21.0);
                             const diffComm = rateObj
-                              ? Math.max(0, Number(rateObj.commission_pct) - baseCommissionPct)
-                              : fallbackGetnetDirectRates[c] ?? 0;
-                            const surchargePct = Number((diffComm * (1 + iva / 100)).toFixed(2));
+                              ? Math.max(
+                                  0,
+                                  Number(rateObj.commission_pct) -
+                                    baseCommissionPct,
+                                )
+                              : (fallbackGetnetDirectRates[c] ?? 0);
+                            const surchargePct = Number(
+                              (diffComm * (1 + iva / 100)).toFixed(2),
+                            );
                             const rate = surchargePct / 100;
                             const totalW = Math.round(subtotal * (1 + rate));
                             const instPrice = Math.round(totalW / c);
@@ -1008,13 +1226,18 @@ export default function ProductPaymentModal({
                         onChange={(e) => setSelectedSavedCardId(e.target.value)}
                       >
                         {savedCards.map((sc) => {
-                          const brand = (sc.card_brand || "Tarjeta").toUpperCase();
+                          const brand = (
+                            sc.card_brand || "Tarjeta"
+                          ).toUpperCase();
                           const bank = sc.bank_name || "Banco";
-                          const type = sc.card_type === "debit" ? "Débito" : "Crédito";
+                          const type =
+                            sc.card_type === "debit" ? "Débito" : "Crédito";
                           const def = sc.is_default ? " ★ Predeterminada" : "";
                           return (
                             <option key={sc.id} value={sc.id}>
-                              {bank} •••• {sc.last_four} ({brand} {type}) - {sc.card_holder_name || "Titular"}{def}
+                              {bank} •••• {sc.last_four} ({brand} {type}) -{" "}
+                              {sc.card_holder_name || "Titular"}
+                              {def}
                             </option>
                           );
                         })}
@@ -1097,7 +1320,9 @@ export default function ProductPaymentModal({
                             <option value="BBVA">BBVA</option>
                             <option value="Macro">Macro</option>
                             <option value="Banco Nación">Banco Nación</option>
-                            <option value="Banco Provincia">Banco Provincia</option>
+                            <option value="Banco Provincia">
+                              Banco Provincia
+                            </option>
                             <option value="Mercado Pago">Mercado Pago</option>
                             <option value="Brubank">Brubank</option>
                             <option value="Ualá">Ualá</option>
@@ -1168,9 +1393,12 @@ export default function ProductPaymentModal({
                         <input
                           type="checkbox"
                           checked={saveCardForFuture}
-                          onChange={(e) => setSaveCardForFuture(e.target.checked)}
+                          onChange={(e) =>
+                            setSaveCardForFuture(e.target.checked)
+                          }
                         />
-                        Guardar esta tarjeta de forma segura para compras futuras
+                        Guardar esta tarjeta de forma segura para compras
+                        futuras
                       </label>
                     </>
                   )}
@@ -1186,9 +1414,8 @@ export default function ProductPaymentModal({
                     <strong>Pago en 1 cuota con Código QR interoperable</strong>
                     <p>
                       Al presionar continuar, se generará tu código QR dinámico.
-                      Podrás escanearlo con Mercado Pago, MODO,
-                      Cuenta DNI, BNA+, Ualá y cualquier billetera bancaria de
-                      Argentina.
+                      Podrás escanearlo con Mercado Pago, MODO, Cuenta DNI,
+                      BNA+, Ualá y cualquier billetera bancaria de Argentina.
                     </p>
                   </div>
                 </div>
@@ -1201,14 +1428,28 @@ export default function ProductPaymentModal({
                 <span>Subtotal ({quantity} un.):</span>
                 <span>${subtotal.toLocaleString("es-AR")}</span>
               </div>
-              {pricing.promotion && <div className="product-payment-modal__summary-row"><span>Promoción {pricing.promotion}: pagás {pricing.paidUnits} de {quantity}</span></div>}
-              {pricing.wholesaleApplied && <div className="product-payment-modal__summary-row"><span>Precio mayorista aplicado desde {pricing.wholesaleMinimum} unidades</span></div>}
+              {pricing.promotion && (
+                <div className="product-payment-modal__summary-row">
+                  <span>
+                    Promoción {pricing.promotion}: pagás {pricing.paidUnits} de{" "}
+                    {quantity}
+                  </span>
+                </div>
+              )}
+              {pricing.wholesaleApplied && (
+                <div className="product-payment-modal__summary-row">
+                  <span>
+                    Precio mayorista aplicado desde {pricing.wholesaleMinimum}{" "}
+                    unidades
+                  </span>
+                </div>
+              )}
               {deliveryType === "shipment" && (
                 <div className="product-payment-modal__summary-row">
                   <span>Costo de Envío:</span>
                   <span>
                     {calculatedShippingFee === 0 &&
-                    shippingCalc?.is_free_shipping
+                    currentShippingCalc?.is_free_shipping
                       ? "¡Gratis!"
                       : `$${calculatedShippingFee.toLocaleString("es-AR")}`}
                   </span>
@@ -1220,6 +1461,18 @@ export default function ProductPaymentModal({
                   <span>+${financingAmount.toLocaleString("es-AR")}</span>
                 </div>
               )}
+              {deliveryType !== "coordinate_with_merchant" &&
+                currentShippingCalc?.is_free_shipping && (
+                  <div className="product-payment-modal__summary-row product-payment-modal__summary-row--free-delivery">
+                    Envío gratis a domicilio
+                  </div>
+                )}
+              {deliveryType === "coordinate_with_merchant" &&
+                hasFreeShippingByParcel && (
+                  <div className="product-payment-modal__summary-row product-payment-modal__summary-row--free-delivery">
+                    Envío gratis a convenir con el comercio
+                  </div>
+                )}
               <div className="product-payment-modal__summary-row product-payment-modal__summary-row--total">
                 <span>Total a pagar:</span>
                 <div className="product-payment-modal__total-price-wrap">
@@ -1237,7 +1490,8 @@ export default function ProductPaymentModal({
             {/* Submit button */}
             <ReturnsPolicyLink />
             <div className="product-payment-modal__actions">
-              <button data-action-tone="cancel"
+              <button
+                data-action-tone="cancel"
                 type="button"
                 className="btn-secondary"
                 onClick={onClose}

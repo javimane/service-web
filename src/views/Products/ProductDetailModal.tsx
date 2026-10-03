@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { getProfilePath } from "../../utils/utils";
+import WhatsAppContactButton from "../../components/WhatsAppContactButton/WhatsAppContactButton";
 import "./ProductDetailModal.css";
 
 function formatPrice(n) {
@@ -264,6 +265,21 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
                             </>
                           )}
                         </div>
+
+                        <WhatsAppContactButton
+                          size="sm"
+                          professionalId={professionalId}
+                          professional={professionalAny}
+                          phone={
+                            professionalAny?.phone ||
+                            professionalAny?.phone_number ||
+                            professionalAny?.Profile?.phone ||
+                            professionalAny?.Profile?.phone_number ||
+                            professionalAny?.profile?.phone ||
+                            professionalAny?.profile?.phone_number
+                          }
+                          message={`Hola, qué tal, te contacto por el producto: ${product?.name}`}
+                        />
 
                         <button
                           className="seller-contact-btn"

@@ -18,8 +18,6 @@ import {
   Film,
   Trash2,
   Layers,
-  Truck,
-  Car,
   Info,
   Percent,
   Plus,
@@ -170,43 +168,6 @@ export default function ProductCreator({
   const [freeShipping, setFreeShipping] = useState(
     Boolean(productToEdit?.free_shipping),
   );
-  const [freeShippingRadiusKm, setFreeShippingRadiusKm] = useState(
-    productToEdit?.free_shipping_radius_km !== undefined &&
-      productToEdit?.free_shipping_radius_km !== null
-      ? String(productToEdit.free_shipping_radius_km)
-      : "",
-  );
-  const [freeShippingMinAmount, setFreeShippingMinAmount] = useState(
-    productToEdit?.free_shipping_min_amount !== undefined &&
-      productToEdit?.free_shipping_min_amount !== null
-      ? String(productToEdit.free_shipping_min_amount)
-      : "",
-  );
-  const [freeShippingMaxWeight, setFreeShippingMaxWeight] = useState(
-    productToEdit?.free_shipping_max_weight !== undefined &&
-      productToEdit?.free_shipping_max_weight !== null
-      ? String(productToEdit.free_shipping_max_weight)
-      : "",
-  );
-  const [freeShippingCountry, setFreeShippingCountry] = useState(
-    Boolean(
-      productToEdit?.free_shipping_country ??
-      (variantParent && !productToEdit
-        ? variantParent.free_shipping_country
-        : false),
-    ),
-  );
-  const [freeShippingCountryMinAmount, setFreeShippingCountryMinAmount] = useState(
-    String(
-      productToEdit?.free_shipping_country_min_amount ??
-        (variantParent && !productToEdit
-          ? variantParent.free_shipping_country_min_amount
-          : null) ??
-        (productToEdit?.free_shipping_country || variantParent?.free_shipping_country
-          ? 0
-          : ""),
-    ),
-  );
 
   const [inheritWarranty, setInheritWarranty] = useState(
     Boolean(variantParent && !productToEdit),
@@ -219,15 +180,6 @@ export default function ProductCreator({
       ? Number(productToEdit.warranty)
       : 0,
   );
-
-  const { data: shippingPolicy } = useQuery({
-    queryKey: ["shipping-policy", professionalId],
-    queryFn: async () => {
-      if (!professionalId) return null;
-      return await commerceService.getShippingPolicy(Number(professionalId));
-    },
-    enabled: Boolean(professionalId),
-  });
 
   const {
     data: commissionRates = [],
@@ -404,9 +356,7 @@ export default function ProductCreator({
                     warranty: merchantListing.warranty,
                     installments_enabled: merchantListing.installments_enabled,
                     max_installments: merchantListing.max_installments,
-                    free_shipping_country: merchantListing.free_shipping_country,
-                    free_shipping_country_min_amount:
-                      merchantListing.free_shipping_country_min_amount,
+                    free_shipping: merchantListing.free_shipping,
                   }
                 : {}),
             };
@@ -486,33 +436,6 @@ export default function ProductCreator({
       if (fullProduct.free_shipping !== undefined) {
         setFreeShipping(Boolean(fullProduct.free_shipping));
       }
-      if (
-        fullProduct.free_shipping_radius_km !== undefined &&
-        fullProduct.free_shipping_radius_km !== null
-      ) {
-        setFreeShippingRadiusKm(String(fullProduct.free_shipping_radius_km));
-      }
-      if (
-        fullProduct.free_shipping_min_amount !== undefined &&
-        fullProduct.free_shipping_min_amount !== null
-      ) {
-        setFreeShippingMinAmount(String(fullProduct.free_shipping_min_amount));
-      }
-      if (
-        fullProduct.free_shipping_max_weight !== undefined &&
-        fullProduct.free_shipping_max_weight !== null
-      ) {
-        setFreeShippingMaxWeight(String(fullProduct.free_shipping_max_weight));
-      }
-      if (fullProduct.free_shipping_country !== undefined) {
-        setFreeShippingCountry(Boolean(fullProduct.free_shipping_country));
-      }
-      setFreeShippingCountryMinAmount(
-        String(
-          fullProduct.free_shipping_country_min_amount ??
-            (fullProduct.free_shipping_country ? 0 : ""),
-        ),
-      );
       const warrantyMonths = Number(fullProduct.warranty) || 0;
       setWarranty(warrantyMonths);
       setIsCustomWarranty(
@@ -680,15 +603,6 @@ export default function ProductCreator({
 
   const handleAddFromEan = async () => {
     if (!eanMatch) return;
-    if (
-      freeShippingCountry &&
-      (freeShippingCountryMinAmount.trim() === "" ||
-        !Number.isFinite(Number(freeShippingCountryMinAmount)) ||
-        Number(freeShippingCountryMinAmount) < 0)
-    ) {
-      showError("Ingresá un importe mínimo válido para el envío gratis nacional.");
-      return;
-    }
     try {
       if (eanMatch.isAlreadyAssigned && variantParent) {
         await commerceService.linkVariant(
@@ -720,10 +634,7 @@ export default function ProductCreator({
         wholesale_price: eanWholesale
           ? Number(eanWholesalePrice) || 0
           : undefined,
-        free_shipping_country: freeShippingCountry,
-        free_shipping_country_min_amount: freeShippingCountry
-          ? Number(freeShippingCountryMinAmount) || 0
-          : null,
+        free_shipping: freeShipping,
         warranty: eanWarranty,
       });
     } catch (error: any) {
@@ -767,15 +678,6 @@ export default function ProductCreator({
         e.ean =
           "El EAN es obligatorio si no marcas la opción 'No tiene código de barra'.";
       if (!formPrice) e.price = "El precio es obligatorio.";
-      if (
-        freeShippingCountry &&
-        (freeShippingCountryMinAmount.trim() === "" ||
-          !Number.isFinite(Number(freeShippingCountryMinAmount)) ||
-          Number(freeShippingCountryMinAmount) < 0)
-      ) {
-        e.freeShippingCountryMinAmount =
-          "Ingresá un importe mínimo válido para el envío gratis nacional.";
-      }
       if (!(variantParent?.categories_products_id || newProduct.categoryId))
         e.categoryId = "La categoría es obligatoria.";
       if (!formStock) e.stock = "El stock es obligatorio.";
@@ -930,25 +832,6 @@ export default function ProductCreator({
             ? normalizeMaxInstallments(maxInstallments)
             : 1,
         free_shipping: freeShipping,
-        free_shipping_country: freeShippingCountry,
-        free_shipping_country_min_amount: freeShippingCountry
-          ? Number(freeShippingCountryMinAmount)
-          : null,
-        free_shipping_radius_km: freeShipping
-          ? freeShippingRadiusKm
-            ? Number(freeShippingRadiusKm)
-            : null
-          : null,
-        free_shipping_min_amount: freeShipping
-          ? freeShippingMinAmount
-            ? Number(freeShippingMinAmount)
-            : null
-          : null,
-        free_shipping_max_weight: freeShipping
-          ? freeShippingMaxWeight
-            ? Number(freeShippingMaxWeight)
-            : null
-          : null,
         warranty:
           variantParent && inheritWarranty
             ? variantParent.warranty != null
@@ -1031,12 +914,6 @@ export default function ProductCreator({
             installments_enabled: payload.installments_enabled,
             max_installments: payload.max_installments,
             free_shipping: payload.free_shipping,
-            free_shipping_radius_km: payload.free_shipping_radius_km,
-            free_shipping_min_amount: payload.free_shipping_min_amount,
-            free_shipping_max_weight: payload.free_shipping_max_weight,
-            free_shipping_country: payload.free_shipping_country,
-            free_shipping_country_min_amount:
-              payload.free_shipping_country_min_amount,
             warranty: payload.warranty,
           },
         });
@@ -1404,31 +1281,12 @@ export default function ProductCreator({
                     <label className="product-creator__wholesale-row">
                       <input
                         type="checkbox"
-                        checked={freeShippingCountry}
-                        onChange={(event) =>
-                          setFreeShippingCountry(event.target.checked)
-                        }
+                        checked={freeShipping}
+                        onChange={(event) => setFreeShipping(event.target.checked)}
                       />
-                      <span>Envíos gratis a todo el país</span>
+                      <span>Envío gratis en este producto</span>
                     </label>
-                    {freeShippingCountry && (
-                      <div className="product-creator__country-shipping-minimum">
-                        <label htmlFor="ean-country-shipping-minimum">
-                          Compra mínima fuera de la provincia ($)
-                        </label>
-                        <input
-                          id="ean-country-shipping-minimum"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          inputMode="decimal"
-                          value={freeShippingCountryMinAmount}
-                          onChange={(event) =>
-                            setFreeShippingCountryMinAmount(event.target.value)
-                          }
-                        />
-                      </div>
-                    )}
+                    <p>Aplica a envíos de larga distancia al alcanzar el mínimo configurado y al delivery local si la empresa tiene riders propios. El mínimo del delivery se configura aparte.</p>
                   </div>
                 </>
               )}
@@ -2137,114 +1995,7 @@ export default function ProductCreator({
                     <span>Ofrecer envío gratis en este producto</span>
                   </label>
 
-                  {freeShipping && (
-                    <div className="product-creator__shipping-box">
-                      {shippingPolicy?.has_own_riders ? (
-                        <div className="product-creator__shipping-notice product-creator__shipping-notice--own-riders">
-                          <Truck size={18} />
-                          <div>
-                            <strong>Flota propia de riders:</strong> Al contar
-                            con logística independiente, la plataforma no
-                            descontará costo de envío por las ventas de este
-                            producto.
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="product-creator__shipping-notice product-creator__shipping-notice--platform">
-                            <Truck size={18} />
-                            <div>
-                              <strong>Envíos con la plataforma:</strong>{" "}
-                              Configura las condiciones bajo las cuales
-                              absorberás el costo del envío para el comprador:
-                            </div>
-                          </div>
-
-                          <div className="product-creator__shipping-grid">
-                            <div className="product-creator__field">
-                              <label>Radio cobertura (km)</label>
-                              <input
-                                type="number"
-                                min="1"
-                                placeholder="Ej: 5 (opcional)"
-                                value={freeShippingRadiusKm}
-                                onChange={(e) =>
-                                  setFreeShippingRadiusKm(e.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="product-creator__field">
-                              <label>Compra mínima ($)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                placeholder="Ej: 15000 (opcional)"
-                                value={freeShippingMinAmount}
-                                onChange={(e) =>
-                                  setFreeShippingMinAmount(e.target.value)
-                                }
-                              />
-                            </div>
-                            <div className="product-creator__field">
-                              <label>Peso máx. (kg)</label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                placeholder="Ej: 5 (opcional)"
-                                value={freeShippingMaxWeight}
-                                onChange={(e) =>
-                                  setFreeShippingMaxWeight(e.target.value)
-                                }
-                              />
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Envío gratis a todo el país */}
-                <div className="product-creator__field product-creator__field--full">
-                  <button
-                    type="button"
-                    className={`product-creator__country-shipping-btn ${
-                      freeShippingCountry
-                        ? "product-creator__country-shipping-btn--active"
-                        : ""
-                    }`}
-                    onClick={() => setFreeShippingCountry((prev) => !prev)}
-                  >
-                    <Car size={18} />
-                    <span>Envíos Gratis a todo el País</span>
-                    <span className="product-creator__country-shipping-status">
-                      {freeShippingCountry ? "Habilitado" : "Deshabilitado"}
-                    </span>
-                  </button>
-                  {freeShippingCountry && (
-                    <div className="product-creator__country-shipping-minimum">
-                      <label htmlFor="product-country-shipping-minimum">
-                        Compra mínima para envíos gratis fuera de la provincia ($)
-                      </label>
-                      <input
-                        id="product-country-shipping-minimum"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        inputMode="decimal"
-                        value={freeShippingCountryMinAmount}
-                        onChange={(event) =>
-                          setFreeShippingCountryMinAmount(event.target.value)
-                        }
-                      />
-                      {errors.freeShippingCountryMinAmount && (
-                        <span className="product-creator__error">
-                          {errors.freeShippingCountryMinAmount}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <p>Aplica a envíos de larga distancia al alcanzar el mínimo configurado y al delivery local si la empresa tiene riders propios. El mínimo del delivery se configura aparte.</p>
                 </div>
 
                 {/* Garantía */}

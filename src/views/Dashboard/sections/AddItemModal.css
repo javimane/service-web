@@ -105,6 +105,7 @@
 
 .modal-footer-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 1rem;
@@ -113,27 +114,48 @@
 }
 
 .btn-cancel {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  padding: 12px 24px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  min-height: 42px;
+  background: var(--action-cancel-bg);
+  border: 1px solid var(--error-color);
+  color: var(--text-primary);
+  padding: 0 24px;
   border-radius: var(--radius-md);
   font-weight: var(--weight-semibold);
   cursor: pointer;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: var(--action-cancel-hover);
 }
 
 .btn-submit {
-  background: var(--highlight);
-  color: var(--text-primary);
-  border: none;
-  padding: 12px 24px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  min-height: 42px;
+  background: var(--accent-color);
+  color: var(--white);
+  border: 1px solid var(--accent-color);
+  padding: 0 24px;
   border-radius: var(--radius-md);
   font-weight: var(--weight-bold);
   cursor: pointer;
+  line-height: 1;
+  transition: all 0.2s ease;
 }
 
-.btn-submit:hover {
-  filter: brightness(1.1);
+.btn-submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 @media (max-width: 768px) {

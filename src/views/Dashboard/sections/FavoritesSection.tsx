@@ -60,7 +60,16 @@ export default function FavoritesSection() {
       queryClient.invalidateQueries({ queryKey: ["user-cart"] });
       router.push(`${ROUTES.dashboard}?view=cart`);
     },
-    onError: () => showError("No se pudo agregar al carrito."),
+    onError: (err: any) => {
+      const rawMsg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message;
+      const msg = Array.isArray(rawMsg)
+        ? rawMsg.join(". ")
+        : rawMsg || "No se pudo agregar al carrito.";
+      showError(msg);
+    },
   });
 
   return (

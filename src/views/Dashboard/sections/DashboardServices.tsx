@@ -55,6 +55,8 @@ export default function DashboardServices() {
     description: "",
     categoryId: "",
     price: "",
+    installmentsEnabled: false,
+    maxInstallments: 3,
   });
 
   // Delete confirmation
@@ -219,6 +221,8 @@ export default function DashboardServices() {
       description: "",
       categoryId: "",
       price: "",
+      installmentsEnabled: false,
+      maxInstallments: 3,
     });
     setErrorMessage(null);
     setModalOpen(true);
@@ -232,6 +236,8 @@ export default function DashboardServices() {
       description: service.description || "",
       categoryId: String(service.category_services_id),
       price: String(service.base_price || ""),
+      installmentsEnabled: Boolean(service.installments_enabled),
+      maxInstallments: Math.max(1, Number(service.max_installments || 3)),
     });
     setErrorMessage(null);
     setModalOpen(true);
@@ -257,6 +263,10 @@ export default function DashboardServices() {
       name: currentService.name,
       description: currentService.description,
       base_price: Number(currentService.price),
+      installments_enabled: currentService.installmentsEnabled,
+      max_installments: currentService.installmentsEnabled
+        ? currentService.maxInstallments
+        : 1,
     };
 
     if (isEditing && currentService.id) {
@@ -498,7 +508,9 @@ export default function DashboardServices() {
               </div>
 
               <div className="dash-services__field">
-                <label>Precio base (ARS) *</label>
+                <label>
+                  Precio base (ARS) * Si Requiere Presupuesto coloque 0 o 1
+                </label>
                 <div className="dash-services__price-input">
                   <DollarSign size={16} />
                   <input
@@ -529,10 +541,52 @@ export default function DashboardServices() {
                   }
                 />
               </div>
+              <div className="dash-services__field">
+                <label className="dash-services__checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={currentService.installmentsEnabled}
+                    onChange={(e) =>
+                      setCurrentService({
+                        ...currentService,
+                        installmentsEnabled: e.target.checked,
+                        maxInstallments: e.target.checked
+                          ? Math.max(3, currentService.maxInstallments)
+                          : currentService.maxInstallments,
+                      })
+                    }
+                  />
+                  Habilitar cuotas sin interés
+                </label>
+              </div>
+              {currentService.installmentsEnabled && (
+                <div className="dash-services__field">
+                  <label htmlFor="service-max-installments">
+                    Máximo de cuotas sin interés
+                  </label>
+                  <select
+                    id="service-max-installments"
+                    value={currentService.maxInstallments}
+                    onChange={(e) =>
+                      setCurrentService({
+                        ...currentService,
+                        maxInstallments: Number(e.target.value),
+                      })
+                    }
+                  >
+                    {[3, 6, 9, 12, 18].map((count) => (
+                      <option key={count} value={count}>
+                        {count} cuotas
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="dash-services__modal-footer">
-              <button data-action-tone="cancel"
+              <button
+                data-action-tone="cancel"
                 className="dash-services__modal-cancel"
                 onClick={closeModal}
               >
@@ -597,7 +651,8 @@ export default function DashboardServices() {
               </p>
             </div>
             <div className="dash-services__floating-actions">
-              <button data-action-tone="cancel"
+              <button
+                data-action-tone="cancel"
                 className="dash-services__floating-btn dash-services__floating-btn--secondary"
                 onClick={() => setDeleteConfirmOpen(false)}
               >

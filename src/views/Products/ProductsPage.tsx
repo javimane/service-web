@@ -341,8 +341,15 @@ export default function ProductsPage() {
         product?.image_url ||
         "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80";
 
-      const sellers = product.ProfessionalProducts || [];
-      const firstSeller = sellers[0] || {};
+      const sellers = Array.isArray(product.ProfessionalProducts)
+        ? product.ProfessionalProducts
+        : [];
+      const visibleSellers = professionalId
+        ? sellers.filter(
+            (seller: any) => Number(seller?.professional_id) === professionalId,
+          )
+        : sellers;
+      const firstSeller = visibleSellers[0] || {};
 
       let displayPrice = product.price || firstSeller.price || 0;
       let displayDiscount =
@@ -352,7 +359,7 @@ export default function ProductsPage() {
         0;
       let displayOriginalPrice = firstSeller.original_price;
 
-      if (sellers.length === 1 && firstSeller.offer_price) {
+      if (visibleSellers.length === 1 && firstSeller.offer_price) {
         const originalP = firstSeller.price || product.price;
         const offerP = firstSeller.offer_price;
 
@@ -387,13 +394,15 @@ export default function ProductsPage() {
         discount: displayDiscount,
         currencyCode: currencyCode,
         seller:
-          sellers.length > 1
-            ? `Varios vendedores (${sellers.length})`
+          visibleSellers.length > 1
+            ? `Varios vendedores (${visibleSellers.length})`
             : sellerName,
         image: primaryImage,
         rating: firstSeller.Professional?.rating_avg || 5,
         reviews: 0,
-        freeShipping: false,
+        freeShipping: visibleSellers.some((seller: any) =>
+          Boolean(seller?.free_shipping),
+        ),
         description: product.description || "",
         is_foreign: product.is_foreign,
         wholesale: firstSeller.wholesale,
@@ -638,7 +647,7 @@ export default function ProductsPage() {
                 skeleton={
                   <>
                     {[...Array(8)].map((_, i) => (
-                      <Skeleton key={i} variant="card" height={360} />
+                      <Skeleton key={i} variant="card" height={300} />
                     ))}
                   </>
                 }
@@ -705,6 +714,11 @@ export default function ProductsPage() {
                               </span>
                             )}
                         </div>
+                        {product.freeShipping && (
+                          <span className="product-card__shipping">
+                            Envío Gratis
+                          </span>
+                        )}
                         {product.wholesale && (
                           <div className="product-card__wholesale">
                             <span className="product-card__wholesale-badge">

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,19 +14,28 @@ import {
   CreditCard,
   ShieldCheck,
   ShoppingCart,
+  Sparkles,
+  Briefcase,
 } from "lucide-react";
-import { getServiceDetailAction } from "../../app/actions/services";
+import {
+  getServiceDetailAction,
+  getServicesAction,
+  getServicesByProfessionalAction,
+} from "../../app/actions/services";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import ServicePaymentModal from "./components/ServicePaymentModal";
 import ProductInstallmentsModal from "../Products/components/ProductInstallmentsModal";
 import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 import CommentsCarousel from "../../components/CommentsCarousel/CommentsCarousel";
+import ServiceSlider from "../../components/ServiceSlider/ServiceSlider";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAlert } from "../../context/AlertContext";
 import { useAuth } from "../../context/AuthContext";
 import { commerceService } from "../../services/commerceService";
 import { addGuestCartItem } from "../../utils/guestCart";
+import { calculateInstallmentFinancing } from "../../utils/installmentFinancing";
+import WhatsAppContactButton from "../../components/WhatsAppContactButton/WhatsAppContactButton";
 import "./ServiceDetailPage.css";
 
 export default function ServiceDetailPage({
@@ -46,6 +55,11 @@ export default function ServiceDetailPage({
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isInstallmentsModalOpen, setIsInstallmentsModalOpen] = useState(false);
+  const { data: commissionRates = [] } = useQuery({
+    queryKey: ["public-marketplace-commissions"],
+    queryFn: commerceService.publicCommissions,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const {
     data: service,
@@ -62,6 +76,113 @@ export default function ServiceDetailPage({
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,
   });
+
+  // Safe extraction of service & professional data
+  const svc = service as any;
+  const professional = svc?.professional || svc?.Professional;
+  const profile = professional?.profile || professional?.Profile;
+  const company = professional?.companies?.[0] || professional?.Company;
+  const professionalName =
+    company?.name || profile?.display_name || "Profesional";
+  const professionalId = service?.professional_id || professional?.id || "";
+  const basePrice = Number(svc?.price ?? svc?.base_price ?? 0);
+
+  const categoryId =
+    service?.category_id ||
+    svc?.categoryId ||
+    svc?.category?.id ||
+    svc?.CategoryService?.id ||
+    svc?.Category?.id;
+  const categoryName =
+    svc?.CategoryService?.name ||
+    svc?.category?.name ||
+    (typeof svc?.category === "string" ? svc.category : undefined);
+
+  // Query: Servicios Similares (misma categoría o recomendados)
+  const { data: similarServicesData, isLoading: isLoadingSimilarServices } = useQuery({
+    queryKey: ["similar-services", categoryId],
+    queryFn: async () => {
+      let result = await getServicesAction({
+        categoryId: categoryId ? Number(categoryId) : undefined,
+        limit: 20,
+      });
+
+      let items = Array.isArray(result?.data?.items)
+        ? result.data.items
+        : Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray((result?.data as any)?.data)
+            ? (result?.data as any).data
+            : [];
+
+      // Fallback si la categoría tiene pocos resultados
+      if (items.length <= 1) {
+        result = await getServicesAction({
+          limit: 20,
+        });
+        items = Array.isArray(result?.data?.items)
+          ? result.data.items
+          : Array.isArray(result?.data)
+            ? result.data
+            : Array.isArray((result?.data as any)?.data)
+              ? (result?.data as any).data
+              : [];
+      }
+
+      return items;
+    },
+    enabled: Boolean(service?.id || id),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Query: Más Servicios del mismo Profesional
+  const { data: professionalServicesData, isLoading: isLoadingProfessionalServices } = useQuery({
+    queryKey: ["professional-services", professionalId],
+    queryFn: async () => {
+      if (!professionalId) return [];
+      const result = await getServicesByProfessionalAction({
+        professionalId: professionalId,
+        limit: 20,
+      });
+      const rawData = result?.data as any;
+      const list = Array.isArray(rawData?.data)
+        ? rawData.data
+        : Array.isArray(rawData?.items)
+          ? rawData.items
+          : Array.isArray(rawData)
+            ? rawData
+            : [];
+      return list;
+    },
+    enabled: Boolean(professionalId),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const similarServices = useMemo(() => {
+    if (!similarServicesData) return [];
+    const currentId = String(service?.id || id || "");
+    return similarServicesData.filter((s: any) => {
+      const sId = String(s.id || s.service_id || "");
+      return sId !== currentId;
+    });
+  }, [similarServicesData, service?.id, id]);
+
+  const professionalServices = useMemo(() => {
+    if (!professionalServicesData) return [];
+    const currentId = String(service?.id || id || "");
+    return professionalServicesData.filter((s: any) => {
+      const sId = String(s.id || s.service_id || "");
+      return sId !== currentId;
+    });
+  }, [professionalServicesData, service?.id, id]);
+
+  const similarServicesLink = categoryId
+    ? `/servicios?categoryId=${categoryId}`
+    : "/servicios";
+
+  const professionalProfileLink = professionalId
+    ? getProfilePath(professionalId, professional?.seo_path)
+    : undefined;
 
   const addToCartMutation = useMutation({
     mutationFn: (serviceId: string) => {
@@ -94,7 +215,16 @@ export default function ServiceDetailPage({
       queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
       showSuccessAlert("Servicio agregado al carrito.");
     },
-    onError: () => showError("No se pudo agregar el servicio al carrito."),
+    onError: (err: any) => {
+      const rawMsg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message;
+      const msg = Array.isArray(rawMsg)
+        ? rawMsg.join(". ")
+        : rawMsg || "No se pudo agregar el servicio al carrito.";
+      showError(msg);
+    },
   });
 
   const handleShare = async () => {
@@ -162,13 +292,6 @@ export default function ServiceDetailPage({
     );
   }
 
-  // API returns lowercase keys; type definitions use PascalCase — handle both
-  const svc = service as any;
-  const professional = svc.professional || svc.Professional;
-  const profile = professional?.profile || professional?.Profile;
-  const company = professional?.companies?.[0] || professional?.Company;
-  const professionalName =
-    company?.name || profile?.display_name || "Profesional";
   const avatar =
     profile?.avatar_url ||
     profile?.portfolio_image_url ||
@@ -180,16 +303,24 @@ export default function ServiceDetailPage({
     company?.companies_arca?.[0]?.is_verified ||
     company?.CompanyArca?.[0]?.is_verified ||
     false;
-  const basePrice = Number(svc.price ?? svc.base_price ?? 0);
   const price =
     Number.isFinite(basePrice) && basePrice > 1
-      ? `$${basePrice.toLocaleString("es-AR")}`
+      ? `${basePrice.toLocaleString("es-AR")}`
       : "Consultar";
 
-  const installmentsEnabled = svc.installments_enabled !== false;
-  const maxInstallments = Math.max(1, Number(svc.max_installments || 12));
-
-  const professionalId = service.professional_id || professional?.id || "";
+  const installmentsEnabled = Boolean(svc?.installments_enabled);
+  const installmentsRestricted = Boolean(svc?.category?.no_installments);
+  const maxInstallments = Math.max(1, Number(svc?.max_installments || 1));
+  const firstFinancedPlan =
+    commissionRates.find((rate) => Number(rate.installments) === 3) ??
+    commissionRates.find((rate) => Number(rate.installments) === 2);
+  const financedExample = firstFinancedPlan
+    ? calculateInstallmentFinancing(
+        basePrice,
+        Number(firstFinancedPlan.installments),
+        commissionRates,
+      )
+    : null;
 
   const handleContact = () => {
     const serviceUrl = window.location.href;
@@ -278,7 +409,14 @@ export default function ServiceDetailPage({
 
                 {basePrice > 1 && (
                   <div className="service-detail__installments-box">
-                    {installmentsEnabled ? (
+                    {installmentsRestricted ? (
+                      <div className="service-detail__installments-pill">
+                        <CreditCard size={16} />
+                        <span>
+                          1 pago de ${basePrice.toLocaleString("es-AR")}
+                        </span>
+                      </div>
+                    ) : installmentsEnabled ? (
                       <>
                         <div className="service-detail__installments-pill service-detail__installments-pill--free">
                           <CreditCard size={16} />
@@ -301,10 +439,7 @@ export default function ServiceDetailPage({
                       <>
                         <div className="service-detail__installments-pill">
                           <CreditCard size={16} />
-                          <span>
-                            1 pago de ${basePrice.toLocaleString("es-AR")}{" "}
-                            (débito/crédito)
-                          </span>
+                          <span>Hasta 18 cuotas con tarjeta</span>
                         </div>
                         <button
                           type="button"
@@ -322,7 +457,8 @@ export default function ServiceDetailPage({
               {/* Purchase Section & Protected Purchase Badge */}
               {basePrice > 1 && (
                 <div className="service-detail__purchase-section">
-                  <button data-action-tone="add"
+                  <button
+                    data-action-tone="add"
                     type="button"
                     className="service-detail__add-cart-btn"
                     onClick={handleAddToCart}
@@ -363,6 +499,20 @@ export default function ServiceDetailPage({
 
             {/* Action buttons */}
             <div className="service-detail__footer">
+              <WhatsAppContactButton
+                professionalId={professionalId}
+                professional={professional}
+                profile={profile}
+                phone={
+                  profile?.phone ||
+                  profile?.phone_number ||
+                  professional?.phone ||
+                  professional?.phone_number ||
+                  company?.phone ||
+                  company?.phone_number
+                }
+                message={`Hola, qué tal, te contacto por el servicio: ${service.name} - ${typeof window !== "undefined" ? window.location.href : ""}`}
+              />
               <button
                 className="service-detail__button service-detail__button--primary"
                 onClick={handleContact}
@@ -397,6 +547,40 @@ export default function ServiceDetailPage({
           targetId={String(service.id || id || "")}
           title="Opiniones sobre el Servicio"
         />
+
+        <ServiceSlider
+          title="Servicios Similares"
+          subtitle={
+            categoryName
+              ? `Opciones recomendadas en ${categoryName}`
+              : "Opciones similares que te pueden interesar"
+          }
+          badge={{
+            icon: <Sparkles size={13} />,
+            text: "Recomendados",
+          }}
+          services={similarServices}
+          isLoading={isLoadingSimilarServices}
+          viewAllLink={similarServicesLink}
+          viewAllText="Ver catálogo"
+        />
+
+        <ServiceSlider
+          title="Más Servicios del mismo Profesional"
+          subtitle={
+            professionalName
+              ? `Otros servicios ofrecidos por ${professionalName}`
+              : "Otros servicios de este profesional"
+          }
+          badge={{
+            icon: <Briefcase size={13} />,
+            text: "Profesional",
+          }}
+          services={professionalServices}
+          isLoading={isLoadingProfessionalServices}
+          viewAllLink={professionalProfileLink}
+          viewAllText="Ver perfil"
+        />
       </main>
 
       {/* Service Payment Modal (No shipping, with shift assignment notice) */}
@@ -406,6 +590,14 @@ export default function ServiceDetailPage({
         service={service}
         professionalId={professionalId}
         professionalName={professionalName}
+        professionalPhone={
+          profile?.phone ||
+          profile?.phone_number ||
+          professional?.phone ||
+          professional?.phone_number ||
+          company?.phone ||
+          company?.phone_number
+        }
       />
 
       {/* Installments Breakdown Modal */}
@@ -416,6 +608,7 @@ export default function ServiceDetailPage({
         installmentsEnabled={installmentsEnabled}
         maxInstallments={maxInstallments}
         productName={service.name}
+        itemType="servicio"
       />
 
       <Footer />

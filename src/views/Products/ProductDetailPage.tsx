@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,8 +20,13 @@ import {
   Minus,
   Plus,
   Car,
+  Store,
 } from "lucide-react";
-import { getProductDetailAction } from "../../app/actions/products";
+import {
+  getProductDetailAction,
+  getProductsAction,
+  getProductsByProfessionalAction,
+} from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
@@ -38,6 +43,8 @@ import ProductPaymentModal from "./components/ProductPaymentModal";
 import ProductInstallmentsModal from "./components/ProductInstallmentsModal";
 import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 import CommentsCarousel from "../../components/CommentsCarousel/CommentsCarousel";
+import ProductSlider from "../../components/ProductSlider/ProductSlider";
+import WhatsAppContactButton from "../../components/WhatsAppContactButton/WhatsAppContactButton";
 import "./ProductDetailPage.css";
 
 const AGE_RESTRICTED_SUBCATEGORIES = new Set([
@@ -117,12 +124,146 @@ export default function ProductDetailPage({
     },
     initialData: initialData ?? undefined,
     enabled: !!id,
-    staleTime: 1000 * 60 * 10, // 10 minutos
+    staleTime: 0, // Precio y promociones deben reflejar los cambios del comercio.
     gcTime: 1000 * 60 * 30,
   });
 
+  // Extracted product & professional data for queries and display
+  const itemAny = item as any;
+  const professionalProduct = item?.ProfessionalProducts?.[0];
+  const professional = professionalProduct?.Professional;
+  const professionalAny = professional as any;
+
+  const profile = professionalAny?.Profile || professionalAny?.profile;
+  const companyData =
+    professionalAny?.Company ||
+    professionalAny?.Companies ||
+    professionalAny?.company ||
+    professionalAny?.companies;
+  const company = Array.isArray(companyData) ? companyData[0] : companyData;
+  const sellerName =
+    company?.name || profile?.display_name || "Profesional independiente";
+
+  const professionalId =
+    professional?.id ??
+    professionalProduct?.professional_id ??
+    item?.ProfessionalProducts?.[0]?.professional_id;
+  const userId = professional?.user_id ?? professionalId;
+
+  const productCategoryId =
+    item?.category_id || itemAny?.Category?.id || itemAny?.category?.id;
+  const productCategory = itemAny?.Category?.name || itemAny?.category?.name;
+  const productSubcategoryId =
+    item?.subcategory_id ||
+    itemAny?.SubCategory?.id ||
+    itemAny?.subCategory?.id ||
+    itemAny?.sub_category?.id;
+  const productSubcategory =
+    itemAny?.SubCategory?.name ||
+    itemAny?.subCategory?.name ||
+    itemAny?.sub_category?.name;
+
   const professionalProductId =
     item?.ProfessionalProducts?.[0]?.id || undefined;
+
+  // Query: Más productos del vendedor
+  const { data: sellerProductsData, isLoading: isLoadingSellerProducts } =
+    useQuery({
+      queryKey: ["seller-products", professionalId],
+      queryFn: async () => {
+        if (!professionalId) return [];
+        const result = await getProductsByProfessionalAction({
+          professionalId: Number(professionalId),
+          limit: 20,
+        });
+        const raw = result?.data as any;
+        const list = Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw)
+            ? raw
+            : [];
+        return list;
+      },
+      enabled: Boolean(professionalId && !isNaN(Number(professionalId))),
+      staleTime: 1000 * 60 * 5,
+    });
+
+  // Query: Productos similares (misma subcategoría o categoría)
+  const { data: similarProductsData, isLoading: isLoadingSimilarProducts } =
+    useQuery({
+      queryKey: ["similar-products", productCategoryId, productSubcategoryId],
+      queryFn: async () => {
+        let result = await getProductsAction({
+          categoryId: productCategoryId ? Number(productCategoryId) : undefined,
+          subcategoryId: productSubcategoryId
+            ? String(productSubcategoryId)
+            : undefined,
+          limit: 20,
+        });
+
+        let raw = result?.data as any;
+        let list = Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw)
+            ? raw
+            : [];
+
+        if (list.length <= 1 && productSubcategoryId && productCategoryId) {
+          result = await getProductsAction({
+            categoryId: Number(productCategoryId),
+            limit: 20,
+          });
+          raw = result?.data as any;
+          list = Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+        }
+
+        if (list.length <= 1) {
+          result = await getProductsAction({
+            limit: 20,
+          });
+          raw = result?.data as any;
+          list = Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+        }
+
+        return list;
+      },
+      enabled: Boolean(item?.id || id),
+      staleTime: 1000 * 60 * 5,
+    });
+
+  const sellerProducts = useMemo(() => {
+    if (!sellerProductsData) return [];
+    const currentId = String(item?.id || id || "");
+    return sellerProductsData.filter((p: any) => {
+      const pId = String(p.id || p.product_id || p.Product?.id || "");
+      return pId !== currentId;
+    });
+  }, [sellerProductsData, item?.id, id]);
+
+  const similarProducts = useMemo(() => {
+    if (!similarProductsData) return [];
+    const currentId = String(item?.id || id || "");
+    return similarProductsData.filter((p: any) => {
+      const pId = String(p.id || p.product_id || p.Product?.id || "");
+      return pId !== currentId;
+    });
+  }, [similarProductsData, item?.id, id]);
+
+  const sellerStoreLink = professionalId
+    ? `${getProfilePath(professionalId, professional?.seo_path)}/tienda`
+    : undefined;
+
+  const similarProductsLink = productCategoryId
+    ? `/productos?category=${productCategoryId}`
+    : "/productos";
 
   const { data: variants = [] } = useQuery<ProductVariant[]>({
     queryKey: ["product-variants", professionalProductId],
@@ -184,7 +325,14 @@ export default function ProductDetailPage({
         `${quantity} ${quantity === 1 ? "producto agregado" : "productos agregados"} al carrito.`,
       );
     },
-    onError: () => showError("No se pudo agregar el producto al carrito."),
+    onError: (err: any) => {
+      const rawMsg =
+        err?.response?.data?.message || err?.data?.message || err?.message;
+      const msg = Array.isArray(rawMsg)
+        ? rawMsg.join(". ")
+        : rawMsg || "No se pudo agregar el producto al carrito.";
+      showError(msg);
+    },
   });
 
   // URL Normalization disabled - using query params approach instead
@@ -234,24 +382,11 @@ export default function ProductDetailPage({
   }
 
   // Data mapping based on API response provided by user
-  const itemAny = item as any;
   const productName = item.name ?? "Producto";
   const productDescription = item.description;
   const productBrand = item.brand;
   const productEan = item.ean;
-  const productCategoryId =
-    item.category_id || itemAny.Category?.id || itemAny.category?.id;
   const isInquiryOnlyCategory = [45, 46].includes(Number(productCategoryId));
-  const productCategory = itemAny.Category?.name || itemAny.category?.name;
-  const productSubcategoryId =
-    item.subcategory_id ||
-    itemAny.SubCategory?.id ||
-    itemAny.subCategory?.id ||
-    itemAny.sub_category?.id;
-  const productSubcategory =
-    itemAny.SubCategory?.name ||
-    itemAny.subCategory?.name ||
-    itemAny.sub_category?.name;
 
   const isAgeRestricted = Boolean(
     productSubcategoryId &&
@@ -261,8 +396,8 @@ export default function ProductDetailPage({
   );
 
   const productOrigin = item.is_foreign ? "Externo" : "Local";
-  const rawImages: any[] = item.Images || itemAny.images || [];
-  const rawVideos: any[] = item.Videos || itemAny.videos || [];
+  const rawImages: any[] = item.Images || itemAny?.images || [];
+  const rawVideos: any[] = item.Videos || itemAny?.videos || [];
 
   const mediaItems: Array<{ type: "image" | "video"; url: string; id?: any }> =
     [];
@@ -279,21 +414,7 @@ export default function ProductDetailPage({
     if (url) mediaItems.push({ type: "video", url, id: vid?.id || `vid-${i}` });
   }
 
-  // Get seller info from the first ProfessionalProducts entry (Direct access without .map())
-  const professionalProduct = item.ProfessionalProducts?.[0];
-  const professional = professionalProduct?.Professional;
-  const professionalAny = professional as any;
-
-  const profile = professionalAny?.Profile || professionalAny?.profile;
   const avatarUrl = profile?.avatar_url || null;
-  const companyData =
-    professionalAny?.Company ||
-    professionalAny?.Companies ||
-    professionalAny?.company ||
-    professionalAny?.companies;
-  const company = Array.isArray(companyData) ? companyData[0] : companyData;
-  const sellerName =
-    company?.name || profile?.display_name || "Profesional independiente";
 
   const addressData = professionalAny?.Address || professionalAny?.address;
   const address = Array.isArray(addressData) ? addressData[0] : addressData;
@@ -302,29 +423,17 @@ export default function ProductDetailPage({
     address?.province?.name ||
     "Ubicación no especificada";
 
-  const professionalId =
-    professional?.id ??
-    professionalProduct?.professional_id ??
-    item?.ProfessionalProducts?.[0]?.professional_id;
-  const userId = professional?.user_id ?? professionalId;
-
   // Price logic
-  const currentVariant = variants.find((v) => v.product_id === item.id) as
-    | (ProductVariant & {
-        free_shipping_country?: boolean | null;
-        free_shipping_country_min_amount?: number | null;
-      })
-    | undefined;
-  const isFreeShippingCountry = Boolean(
-    professionalProduct?.free_shipping_country ??
-    itemAny?.free_shipping_country ??
-    currentVariant?.free_shipping_country,
+  const currentVariant = variants.find((v) => v.product_id === item.id);
+  const productHasFreeShipping = Boolean(professionalProduct?.free_shipping);
+  const companyHasLocalFreeShipping = Boolean(company?.free_shipping);
+  const companyHasCountryFreeShipping = Boolean(company?.free_shipping_country);
+  const companyRadiusFreeShipping = Number(
+    company?.free_shipping_radius_km ?? 0,
   );
-  const countryShippingMinAmount = Number(
-    professionalProduct?.free_shipping_country_min_amount ??
-      itemAny?.free_shipping_country_min_amount ??
-      currentVariant?.free_shipping_country_min_amount ??
-      0,
+  const localShippingMinimum = Number(company?.free_shipping_min_amount ?? 0);
+  const countryShippingMinimum = Number(
+    company?.free_shipping_country_min_amount ?? 0,
   );
 
   const hasOffer2x1 = Boolean(
@@ -608,12 +717,6 @@ export default function ProductDetailPage({
                 <span className="product-meta-pill product-meta-pill--soft">
                   Producto
                 </span>
-                {isFreeShippingCountry && (
-                  <span className="product-meta-pill product-meta-pill--free-shipping">
-                    <Car size={14} />
-                    Envío Gratis a todo el País
-                  </span>
-                )}
               </div>
               <h1 className="product-detail__title">{productName}</h1>
 
@@ -641,24 +744,6 @@ export default function ProductDetailPage({
                     </span>
                   </div>
                 )}
-                {professionalProduct?.warranty !== undefined &&
-                  professionalProduct?.warranty !== null && (
-                    <div className="product-detail__fact-row">
-                      <span className="fact-label">Garantía</span>
-                      {Number(professionalProduct.warranty) > 0 ? (
-                        <span className="fact-value product-detail__warranty-badge">
-                          <ShieldCheck size={14} />
-                          {Number(professionalProduct.warranty) % 12 === 0 &&
-                          Number(professionalProduct.warranty) >= 12
-                            ? `${Number(professionalProduct.warranty) / 12} ${Number(professionalProduct.warranty) / 12 === 1 ? "año" : "años"}`
-                            : `${professionalProduct.warranty} ${Number(professionalProduct.warranty) === 1 ? "mes" : "meses"}`}{" "}
-                          de garantía
-                        </span>
-                      ) : (
-                        <span className="fact-value">Sin garantía</span>
-                      )}
-                    </div>
-                  )}
               </div>
             </div>
 
@@ -813,6 +898,36 @@ export default function ProductDetailPage({
                         );
                       })()}
 
+                      {(productHasFreeShipping ||
+                        companyHasLocalFreeShipping ||
+                        companyHasCountryFreeShipping) && (
+                        <div className="seller-card__shipping-note">
+                          <Car size={15} aria-hidden="true" />
+                          <div className="seller-card__shipping-note-text">
+                            {productHasFreeShipping ? (
+                              <span>Envío gratis a todo el país</span>
+                            ) : (
+                              <>
+                                {companyHasLocalFreeShipping && (
+                                  <span>
+                                    {localShippingMinimum > 0
+                                      ? `Envío gratis por delivery desde $${localShippingMinimum.toLocaleString("es-AR")} hasta ${companyRadiusFreeShipping} km de la sucursal`
+                                      : "Envío gratis por delivery en la zona de entrega"}
+                                  </span>
+                                )}
+                                {companyHasCountryFreeShipping && (
+                                  <span>
+                                    {countryShippingMinimum > 0
+                                      ? `Envío gratis a todo el país desde $${countryShippingMinimum.toLocaleString("es-AR")}`
+                                      : "Envío gratis a todo el país"}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {isWholesale && (
                         <div
                           className="seller-current-price-row"
@@ -863,18 +978,6 @@ export default function ProductDetailPage({
                       )}
                     </div>
                   </div>
-
-                  {isFreeShippingCountry && (
-                    <div className="product-detail__shipping-country-banner">
-                      <Car
-                        size={20}
-                        className="product-detail__shipping-country-icon"
-                      />
-                      <span className="product-detail__shipping-country-text">
-                        {`Envíos Gratis a todo el País: Mínimo de compra $${Math.max(0, countryShippingMinAmount || 0).toLocaleString("es-AR")}`}
-                      </span>
-                    </div>
-                  )}
 
                   {/* Installments Information Box */}
                   {!isInquiryOnlyCategory && !isUsd && activeFinalPrice > 1 && (
@@ -964,6 +1067,21 @@ export default function ProductDetailPage({
                   <div className="seller-actions-group">
                     {isUsd || isInquiryOnlyCategory || activeFinalPrice <= 1 ? (
                       <>
+                        <WhatsAppContactButton
+                          professionalId={professionalId}
+                          professional={professional}
+                          profile={profile}
+                          phone={
+                            profile?.phone ||
+                            profile?.phone_number ||
+                            professionalAny?.phone ||
+                            professionalAny?.phone_number ||
+                            company?.phone ||
+                            company?.phone_number
+                          }
+                          message={`Hola, qué tal, te contacto por el producto: ${productName} - ${typeof window !== "undefined" ? window.location.href : ""}`}
+                        />
+
                         <button
                           type="button"
                           className="product-detail__contact-btn"
@@ -1121,6 +1239,42 @@ export default function ProductDetailPage({
           targetId={String(item?.id || id || "")}
           title="Opiniones sobre el Producto"
         />
+
+        <ProductSlider
+          title="Más Productos del Vendedor"
+          subtitle={
+            sellerName
+              ? `Descubrí más artículos de ${sellerName}`
+              : "Otros productos disponibles de este comercio"
+          }
+          badge={{
+            icon: <Store size={13} />,
+            text: "Comercio",
+          }}
+          products={sellerProducts}
+          isLoading={isLoadingSellerProducts}
+          viewAllLink={sellerStoreLink}
+          viewAllText="Ver tienda"
+        />
+
+        <ProductSlider
+          title="Productos Similares"
+          subtitle={
+            productSubcategory
+              ? `Más opciones destacadas en ${productSubcategory}`
+              : productCategory
+                ? `Más opciones en ${productCategory}`
+                : "Opciones similares que te pueden interesar"
+          }
+          badge={{
+            icon: <Sparkles size={13} />,
+            text: "Recomendados",
+          }}
+          products={similarProducts}
+          isLoading={isLoadingSimilarProducts}
+          viewAllLink={similarProductsLink}
+          viewAllText="Ver catálogo"
+        />
       </main>
 
       {/* Payment Checkout Modal (Getnet Cards + PayCloud QR) */}
@@ -1131,6 +1285,8 @@ export default function ProductDetailPage({
         professionalId={Number(professionalId || 0)}
         professionalProductId={professionalProductId}
         sellerName={sellerName}
+        companyFreeShippingCountry={companyHasCountryFreeShipping}
+        companyFreeShippingCountryMinAmount={countryShippingMinimum}
         sellerProvince={sellerProvince}
         isAgeRestricted={isAgeRestricted}
         canPurchase={canPurchase}

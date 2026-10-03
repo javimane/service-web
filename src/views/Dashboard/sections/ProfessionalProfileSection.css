@@ -279,6 +279,7 @@
 .professional-profile__remove-btn,
 .professional-profile__upload-btn,
 .professional-profile__cancel-btn {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -287,10 +288,12 @@
   font-weight: var(--weight-bold);
   font-family: var(--font-primary);
   font-size: var(--text-base);
-  min-height: 40px;
-  padding: 10px 16px;
+  min-height: 42px;
+  height: 42px;
+  padding: 0 16px;
   border: 1px solid transparent;
   cursor: pointer;
+  line-height: 1;
   transition: all 0.2s ease;
 }
 
@@ -332,14 +335,13 @@
 }
 
 .professional-profile__cancel-btn {
-  background: var(--surface-soft);
-  border-color: var(--border-color);
-  color: var(--text-secondary);
+  background: var(--action-cancel-bg);
+  border-color: var(--error-color);
+  color: var(--text-primary);
 }
 
 .professional-profile__cancel-btn:hover {
-  background: var(--border-color);
-  color: var(--text-primary);
+  background: var(--action-cancel-hover);
 }
 
 .professional-profile__upload-btn {
@@ -801,6 +803,7 @@
 
 .professional-profile__modal-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-2);

@@ -366,6 +366,21 @@
   box-shadow: 0 0 0 4px var(--highlight-glow);
 }
 
+.dash-services__field .dash-services__checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  text-transform: none;
+}
+
+.dash-services__field .dash-services__checkbox-label input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent-color);
+}
+
 .dash-services__price-input svg {
   position: absolute;
   left: 16px;
