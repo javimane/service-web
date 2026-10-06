@@ -51,7 +51,8 @@ describe("RegisterPage", () => {
   it("se renderiza correctamente con el checkbox de términos y condiciones", () => {
     renderWithRouter(React.createElement(RegisterPage));
     expect(screen.getByText("Crear Cuenta")).toBeInTheDocument();
-    expect(screen.getByLabelText(/NOMBRE COMPLETO/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^NOMBRE$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^APELLIDO$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/CONFIRMAR/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /términos y condiciones/i }),
@@ -65,7 +66,8 @@ describe("RegisterPage", () => {
 
     fireEvent.click(submitBtn);
 
-    expect(screen.getByText("El nombre es requerido")).toBeInTheDocument();
+    expect(screen.getByText("Ingresá tu nombre")).toBeInTheDocument();
+    expect(screen.getByText("Ingresá tu apellido")).toBeInTheDocument();
     expect(
       screen.getByText("El correo electrónico es requerido"),
     ).toBeInTheDocument();
@@ -153,14 +155,16 @@ describe("RegisterPage", () => {
     } as any);
 
     renderWithRouter(React.createElement(RegisterPage));
-    const nameInput = screen.getByPlaceholderText("Ej. Juan Pérez");
+    const firstNameInput = screen.getByPlaceholderText("Ej. Juan");
+    const lastNameInput = screen.getByPlaceholderText("Ej. Pérez");
     const emailInput = screen.getByPlaceholderText("arquitecto@obsidian.pro");
     const passwordInput = screen.getAllByPlaceholderText("••••••••")[0];
     const confirmInput = screen.getAllByPlaceholderText("••••••••")[1];
     const checkbox = screen.getByRole("checkbox");
     const submitBtn = screen.getByRole("button", { name: /registrarse/i });
 
-    fireEvent.change(nameInput, { target: { value: "Juan Lopez" } });
+    fireEvent.change(firstNameInput, { target: { value: "Juan" } });
+    fireEvent.change(lastNameInput, { target: { value: "Lopez" } });
     fireEvent.change(emailInput, { target: { value: "juan@obsidian.pro" } });
     fireEvent.change(passwordInput, { target: { value: "Password1!" } });
     fireEvent.change(confirmInput, { target: { value: "Password1!" } });
@@ -171,6 +175,8 @@ describe("RegisterPage", () => {
     await waitFor(() => {
       expect(registerMock).toHaveBeenCalledWith({
         profileName: "Juan Lopez",
+        firstName: "Juan",
+        lastName: "Lopez",
         email: "juan@obsidian.pro",
         password: "Password1!",
         role: "professional",

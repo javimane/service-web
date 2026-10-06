@@ -105,6 +105,9 @@ export default function LoginPage({
       const hasCompany = Boolean(
         compName && typeof compName === "string" && compName.trim() !== "",
       );
+      const needsSetup =
+        localStorage.getItem("show_setup_on_login") === "true" ||
+        Boolean(user?.id && localStorage.getItem(`account_setup_step_${user.id}`));
 
       if (isProf) {
         if (!hasSubscription) {
@@ -115,7 +118,13 @@ export default function LoginPage({
 
         if (!hasCompany) {
           if (isModal) onClose?.();
-          router.push(`${ROUTES.settings}?missing_company=true`);
+          router.push(ROUTES.accountSetup);
+          return;
+        }
+
+        if (needsSetup) {
+          if (isModal) onClose?.();
+          router.push(ROUTES.accountSetup);
           return;
         }
 
@@ -291,6 +300,10 @@ export default function LoginPage({
       const needsPlan =
         typeof window !== "undefined" &&
         localStorage.getItem("show_plans_on_login") === "true";
+      const needsSetup =
+        typeof window !== "undefined" &&
+        (localStorage.getItem("show_setup_on_login") === "true" ||
+          Boolean(nextUser?.id && localStorage.getItem(`account_setup_step_${nextUser.id}`)));
       if (typeof window !== "undefined") {
         localStorage.removeItem("show_plans_on_login");
       }
@@ -312,7 +325,13 @@ export default function LoginPage({
         // 2. Tiene suscripción pero no completó los datos de empresa → settings
         if (!hasCompany) {
           if (isModal) onClose?.();
-          router.push(`${ROUTES.settings}?missing_company=true`);
+          router.push(ROUTES.accountSetup);
+          return;
+        }
+
+        if (needsSetup) {
+          if (isModal) onClose?.();
+          router.push(ROUTES.accountSetup);
           return;
         }
 
@@ -326,6 +345,11 @@ export default function LoginPage({
       }
 
       // Usuario normal: navegar a home
+      if (needsSetup) {
+        if (isModal) onClose?.();
+        router.push(ROUTES.accountSetup);
+        return;
+      }
       if (isModal) {
         onClose?.();
       } else {

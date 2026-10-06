@@ -1137,6 +1137,34 @@
   line-height: 1.4;
 }
 
+.product-detail__metrics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+}
+
+.product-detail__rating {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.product-detail__stars {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--amber-dark);
+}
+
+.product-detail__sales-count {
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
 .seller-card__shipping-note svg {
   flex-shrink: 0;
 }

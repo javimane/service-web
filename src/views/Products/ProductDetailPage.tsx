@@ -21,6 +21,7 @@ import {
   Plus,
   Car,
   Store,
+  Star,
 } from "lucide-react";
 import {
   getProductDetailAction,
@@ -719,6 +720,31 @@ export default function ProductDetailPage({
                 </span>
               </div>
               <h1 className="product-detail__title">{productName}</h1>
+              <div className="product-detail__metrics" aria-label="Ventas y calificaciones del producto">
+                <span className="product-detail__rating">
+                  <span className="product-detail__stars" aria-hidden="true">
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <Star
+                        key={index}
+                        size={16}
+                        fill={index < Math.round(Number(itemAny?.rating_average ?? 0)) ? "currentColor" : "none"}
+                      />
+                    ))}
+                  </span>
+                  <span>
+                    {itemAny?.rating_count == null
+                      ? "Calificación no disponible"
+                      : itemAny.rating_count > 0
+                        ? `${Number(itemAny.rating_average).toFixed(1)} (${itemAny.rating_count} ${itemAny.rating_count === 1 ? "opinión" : "opiniones"})`
+                        : "Sin calificaciones"}
+                  </span>
+                </span>
+                <span className="product-detail__sales-count">
+                  {itemAny?.sales_count == null
+                    ? "Ventas no disponibles"
+                    : `${Number(itemAny.sales_count).toLocaleString("es-AR")} ${itemAny.sales_count === 1 ? "venta" : "ventas"}`}
+                </span>
+              </div>
 
               <div className="product-detail__facts">
                 <div className="product-detail__fact-row">

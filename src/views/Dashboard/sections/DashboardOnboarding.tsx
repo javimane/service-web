@@ -53,8 +53,8 @@ export default function DashboardOnboarding() {
 
       <p className="dashboard-onboarding__desc">
         {type === "professional"
-          ? "Para sacar el máximo provecho a tu cuenta y empezar a atraer clientes, te sugerimos seguir estos dos sencillos pasos iniciales:"
-          : "Para aprovechar al máximo la plataforma y encontrar al profesional ideal, te sugerimos estos dos sencillos pasos:"}
+            ? "Completá tu cuenta paso por paso: datos personales, comerciales, perfil público y verificación de identidad."
+            : "Completá tu teléfono, dirección y datos de facturación paso por paso para comprar con más facilidad."}
       </p>
 
       <div className="dashboard-onboarding__steps">
@@ -62,16 +62,15 @@ export default function DashboardOnboarding() {
           <>
             <div
               className="dashboard-onboarding__step"
-              onClick={() => router.push(ROUTES.settings)}
+              onClick={() => router.push(ROUTES.accountSetup)}
             >
               <div className="dashboard-onboarding__step-icon">
                 <Settings size={24} />
               </div>
               <div className="dashboard-onboarding__step-content">
-                <h4>1. Configura tu Cuenta Empresa</h4>
+                <h4>Continuar configuración guiada</h4>
                 <p>
-                  Completa tus datos comerciales, métodos de contacto, ubicación
-                  y valida tu empresa en la sección de configuración.
+                  Guardá tus datos comerciales y prepará tu perfil para recibir clientes.
                 </p>
               </div>
               <ChevronRight
@@ -104,17 +103,15 @@ export default function DashboardOnboarding() {
           <>
             <div
               className="dashboard-onboarding__step"
-              onClick={() => router.push(ROUTES.settings)}
+              onClick={() => router.push(ROUTES.accountSetup)}
             >
               <div className="dashboard-onboarding__step-icon">
                 <Settings size={24} />
               </div>
               <div className="dashboard-onboarding__step-content">
-                <h4>1. Configura tu Cuenta</h4>
+                <h4>Continuar configuración guiada</h4>
                 <p>
-                  Sube tu foto de perfil y selecciona tu provincia en
-                  Configuración para que te aparezcan publicaciones relevantes
-                  de profesionales cerca tuyo.
+                  Agregá tu teléfono y una dirección de entrega para tus compras.
                 </p>
               </div>
               <ChevronRight

@@ -30,7 +30,8 @@ export default function RegisterPage({
 }: RegisterPageProps) {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -52,10 +53,11 @@ export default function RegisterPage({
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name) {
-      newErrors.name = "El nombre es requerido";
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = "El nombre es muy corto";
+    if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = "Ingresá tu nombre";
+    }
+    if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = "Ingresá tu apellido";
     }
 
     if (!formData.email) {
@@ -113,7 +115,9 @@ export default function RegisterPage({
 
     try {
       await authService.register({
-        profileName: formData.name,
+        profileName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         email: formData.email,
         password: formData.password,
         role: role,
@@ -122,6 +126,8 @@ export default function RegisterPage({
 
       if (role === "professional" && typeof window !== "undefined") {
         localStorage.setItem("show_plans_on_login", "true");
+      } else if (typeof window !== "undefined") {
+        localStorage.setItem("show_setup_on_login", "true");
       }
 
       // Attempt to auto-login to create session
@@ -136,6 +142,11 @@ export default function RegisterPage({
           await refreshSession();
           setShowPlanModal(true);
           return; // Skip the normal success modal
+        }
+        if (loginResp && role === "normal") {
+          await refreshSession();
+          router.push(ROUTES.accountSetup);
+          return;
         }
       } catch (e) {
         console.warn("Auto-login failed:", e);
@@ -167,6 +178,10 @@ export default function RegisterPage({
     setIsLoading(true);
     setAuthError("");
     try {
+      localStorage.setItem(
+        role === "professional" ? "show_plans_on_login" : "show_setup_on_login",
+        "true",
+      );
       window.location.href = `${API_BASE_URL}/api/auth/login/google?role=${role}&acceptedTerms=true`;
     } catch (err: any) {
       setAuthError(err.message || "Error al registrarse con Google.");
@@ -271,20 +286,23 @@ export default function RegisterPage({
           </label>
         </div>
 
-        <div className="input-group">
-          <label htmlFor="name">NOMBRE COMPLETO</label>
-          <div className={`input-wrapper ${errors.name ? "has-error" : ""}`}>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Ej. Juan Pérez"
-            />
-            <span className="input-icon">👤</span>
+        <div className="form-row">
+          <div className="input-group">
+            <label htmlFor="firstName">NOMBRE</label>
+            <div className={`input-wrapper ${errors.firstName ? "has-error" : ""}`}>
+              <input id="firstName" name="firstName" type="text" autoComplete="given-name" value={formData.firstName} onChange={handleChange} placeholder="Ej. Juan" />
+              <span className="input-icon">👤</span>
+            </div>
+            {errors.firstName && <span className="error-text">{errors.firstName}</span>}
           </div>
-          {errors.name && <span className="error-text">{errors.name}</span>}
+          <div className="input-group">
+            <label htmlFor="lastName">APELLIDO</label>
+            <div className={`input-wrapper ${errors.lastName ? "has-error" : ""}`}>
+              <input id="lastName" name="lastName" type="text" autoComplete="family-name" value={formData.lastName} onChange={handleChange} placeholder="Ej. Pérez" />
+              <span className="input-icon">👤</span>
+            </div>
+            {errors.lastName && <span className="error-text">{errors.lastName}</span>}
+          </div>
         </div>
 
         <div className="input-group">

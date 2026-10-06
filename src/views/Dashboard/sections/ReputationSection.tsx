@@ -402,7 +402,7 @@ export default function ReputationSection({
                   +10 pts
                 </span>
                 <span>
-                  Por cada venta o servicio completado y liquidado con éxito.
+                  Por cada venta liquidada.
                 </span>
               </li>
               <li className="reputation-rule-item">
@@ -410,18 +410,42 @@ export default function ReputationSection({
                   +5 pts
                 </span>
                 <span>
-                  Por cada valoración de 5 estrellas otorgada por tus clientes.
+                  Por cada opinión de 4 o 5 estrellas.
                 </span>
               </li>
               <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--pos">
+                  +1 pt
+                </span>
+                <span>Por cada opinión de 3 estrellas.</span>
+              </li>
+              <li className="reputation-rule-item">
                 <span className="reputation-rule-tag reputation-rule-tag--neg">
-                  -20 pts
+                  −5 pts
+                </span>
+                <span>Por cada opinión de 1 o 2 estrellas.</span>
+              </li>
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--neg">
+                  −10 pts
+                </span>
+                <span>Por un reclamo de venta que sigue abierto después de 7 días.</span>
+              </li>
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--neg">
+                  −20 pts
                 </span>
                 <span>
-                  Por cancelación voluntaria de un pedido o turno ya confirmado.
+                  Por un reclamo resuelto por Sercio con reembolso.
                 </span>
               </li>
             </ul>
+            <p>
+              Si resolvés el problema directamente con el comprador, este puede
+              confirmar la solución desde su compra. Un reclamo cerrado antes de
+              los 7 días no recibe la penalización por demora. Si más tarde
+              termina en reembolso, ambas deducciones pueden acumularse.
+            </p>
           </div>
 
           <div className="reputation-guide-block">

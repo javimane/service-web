@@ -1273,7 +1273,9 @@ export default function RidersSection() {
                         d.rider_vehicle_id === docsRider.own_vehicle_id),
                   );
                   const statusInfo = uploaded
-                    ? getDocStatus(uploaded.expires_at)
+                    ? req.type === "criminal_record"
+                      ? { label: "Presentado", color: "green" }
+                      : getDocStatus(uploaded.expires_at)
                     : { label: "Falta presentar", color: "red" };
 
                   return (
@@ -1282,7 +1284,7 @@ export default function RidersSection() {
                         <FileText size={18} className="doc-item__icon" />
                         <div>
                           <span className="doc-item__name">{req.label}</span>
-                          {uploaded?.expires_at && (
+                          {uploaded?.expires_at && req.type !== "criminal_record" && (
                             <span className="doc-item__expiry">
                               Vence:{" "}
                               {new Date(uploaded.expires_at).toLocaleDateString(

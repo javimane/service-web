@@ -60,6 +60,7 @@ export type OrderSummary = {
   withdrawal_eligible?: boolean;
   withdrawal_requested?: boolean;
   claim_requested?: boolean;
+  claim_resolution_confirmable?: boolean;
   return_ticket_available?: boolean;
   shipment_id?: string | null;
   shipment_status?: string | null;
@@ -341,9 +342,20 @@ export type CreatePaymentMethodDto = {
   card_type?: "credit" | "debit" | string;
   bank_name?: string;
   card_holder_name?: string;
+  card_holder_dni?: string;
   expiry_month?: number;
   expiry_year?: number;
   is_default?: boolean;
+};
+
+export type IdentityVerificationStatus = {
+  is_age_verified: boolean;
+  purchase_eligible: boolean;
+  session?: {
+    status?: string;
+    identity_verified?: boolean;
+    age_verified?: boolean;
+  } | null;
 };
 
 export type RiderVehicle = {
@@ -850,6 +862,12 @@ export const commerceService = {
       method: "POST",
       body: { reason },
     }),
+
+  confirmClaimResolved: (id: string) =>
+    apiClient<{ id: string; order_id: string; status: string; resolution: string }>(
+      API_ENDPOINTS.orders.confirmClaimResolved(id),
+      { method: "POST" },
+    ),
 
   returnTicket: (id: string) =>
     apiClient<ReturnTicket>(API_ENDPOINTS.orders.returnTicket(id)),
@@ -1519,6 +1537,9 @@ export const commerceService = {
     ),
 
   // User Payment Methods (Saved Cards)
+  getIdentityVerificationStatus: () =>
+    apiClient<IdentityVerificationStatus>(API_ENDPOINTS.identityVerification.me),
+
   getUserPaymentMethods: () =>
     apiClient<UserPaymentMethod[]>(API_ENDPOINTS.paymentMethods.base),
 

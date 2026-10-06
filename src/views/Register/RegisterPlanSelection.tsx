@@ -27,6 +27,7 @@ export default function RegisterPlanSelection() {
   const [plans, setPlans] = useState(staticPlans);
   const [mpPlans, setMpPlans] = useState<any>({});
   const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
+  const [planError, setPlanError] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -53,9 +54,7 @@ export default function RegisterPlanSelection() {
 
   const handleSelectPlan = async (planId: string) => {
     setSubmittingPlanId(planId);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("show_plans_on_login");
-    }
+    setPlanError("");
     try {
       if (planId === "free" || planId === "gratuito") {
         const token = getAccessToken();
@@ -69,8 +68,10 @@ export default function RegisterPlanSelection() {
 
         // Refresh the client session so AuthContext picks up the new professional status
         await refreshSession();
+        localStorage.removeItem("show_plans_on_login");
+        localStorage.setItem("show_setup_on_login", "true");
         router.refresh();
-        router.push(`${ROUTES.settings}?welcome=true`);
+        router.push(ROUTES.accountSetup);
         return;
       }
 
@@ -79,11 +80,8 @@ export default function RegisterPlanSelection() {
         mpPlans?.[isPremium ? "PROFESIONAL-PREMIUM" : "PROFESIONAL-BASICO"];
 
       if (!mpPlanId) {
-        console.error(
-          `ID de Mercado Pago no encontrado para el plan: ${planId}`,
-        );
+        setPlanError("No pudimos cargar este plan. Intentá nuevamente en unos segundos.");
         setSubmittingPlanId(null);
-        router.push(`${ROUTES.settings}?welcome=true`);
         return;
       }
 
@@ -93,17 +91,19 @@ export default function RegisterPlanSelection() {
       });
 
       if (response?.data?.link) {
+        localStorage.removeItem("show_plans_on_login");
+        localStorage.setItem("show_setup_on_login", "true");
         window.open(response.data.link, "_blank");
-        window.location.href = `${ROUTES.settings}?welcome=true`;
+        window.location.href = ROUTES.accountSetup;
       } else {
         console.error("No se recibió link de pago", response);
+        setPlanError("No se pudo iniciar el pago del plan. Volvé a intentarlo.");
         setSubmittingPlanId(null);
-        router.push(`${ROUTES.settings}?welcome=true`);
       }
     } catch (error) {
       console.error("Error al procesar suscripción:", error);
+      setPlanError("No se pudo seleccionar el plan. Volvé a intentarlo.");
       setSubmittingPlanId(null);
-      router.push(ROUTES.dashboard);
     }
   };
 
@@ -125,6 +125,7 @@ export default function RegisterPlanSelection() {
       >
         Elegí tu plan profesional
       </h2>
+      {planError && <p className="register-plan-selection__error" role="alert">{planError}</p>}
       <div className="subscription-plans__grid">
         {plans.map((plan) => (
           <div

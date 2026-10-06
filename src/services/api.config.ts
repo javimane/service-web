@@ -52,6 +52,7 @@ export const API_ENDPOINTS = {
     cancel: (id: string) => `${API_BASE_URL}/api/orders/${id}/cancel`,
     withdrawal: (id: string) => `${API_BASE_URL}/api/orders/${id}/withdrawal`,
     claim: (id: string) => `${API_BASE_URL}/api/orders/${id}/claim`,
+    confirmClaimResolved: (id: string) => `${API_BASE_URL}/api/orders/${id}/claim/confirm-resolution`,
     returnTicket: (id: string) => `${API_BASE_URL}/api/orders/${id}/return-ticket`,
     receiveReturn: (code: string) => `${API_BASE_URL}/api/orders/returns/${code}/receive`,
   },
@@ -69,6 +70,9 @@ export const API_ENDPOINTS = {
     base: `${API_BASE_URL}/api/payment-methods`,
     detail: (id: string) => `${API_BASE_URL}/api/payment-methods/${id}`,
     setDefault: (id: string) => `${API_BASE_URL}/api/payment-methods/${id}/set-default`,
+  },
+  identityVerification: {
+    me: `${API_BASE_URL}/api/identity-verification/me`,
   },
   shipments: {
     merchant: `${API_BASE_URL}/api/shipments/merchant`,

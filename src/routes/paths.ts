@@ -8,6 +8,7 @@ export const ROUTES = {
   map: "/mapa",
   dashboard: "/panel",
   settings: "/configuracion",
+  accountSetup: "/completar-perfil",
   messages: "/mensajes",
   products: "/productos",
   promotions: "/promociones",

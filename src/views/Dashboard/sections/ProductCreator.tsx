@@ -66,6 +66,9 @@ const commonAttributes = [
   "Medida",
   "Material",
   "Modelo",
+  "Sabor",
+  "Variedad",
+  "Tipo",
 ];
 
 const moveArrayItem = <T,>(arr: T[], from: number, to: number) => {
@@ -342,7 +345,9 @@ export default function ProductCreator({
         try {
           const detailRes = await getProductDetailAction({ id: productId });
           if (detailRes?.data) {
-            const merchantListing = Array.isArray(detailRes.data.ProfessionalProducts)
+            const merchantListing = Array.isArray(
+              detailRes.data.ProfessionalProducts,
+            )
               ? detailRes.data.ProfessionalProducts.find(
                   (listing: any) =>
                     Number(listing.professional_id) === Number(professionalId),
@@ -432,7 +437,9 @@ export default function ProductCreator({
       );
 
       setInstallmentsEnabled(Boolean(fullProduct.installments_enabled));
-      setMaxInstallments(normalizeMaxInstallments(fullProduct.max_installments));
+      setMaxInstallments(
+        normalizeMaxInstallments(fullProduct.max_installments),
+      );
       if (fullProduct.free_shipping !== undefined) {
         setFreeShipping(Boolean(fullProduct.free_shipping));
       }
@@ -1282,11 +1289,17 @@ export default function ProductCreator({
                       <input
                         type="checkbox"
                         checked={freeShipping}
-                        onChange={(event) => setFreeShipping(event.target.checked)}
+                        onChange={(event) =>
+                          setFreeShipping(event.target.checked)
+                        }
                       />
                       <span>Envío gratis en este producto</span>
                     </label>
-                    <p>Aplica a envíos de larga distancia al alcanzar el mínimo configurado y al delivery local si la empresa tiene riders propios. El mínimo del delivery se configura aparte.</p>
+                    <p>
+                      Aplica a envíos de larga distancia al alcanzar el mínimo
+                      configurado y al delivery local si la empresa tiene riders
+                      propios. El mínimo del delivery se configura aparte.
+                    </p>
                   </div>
                 </>
               )}
@@ -1995,7 +2008,11 @@ export default function ProductCreator({
                     <span>Ofrecer envío gratis en este producto</span>
                   </label>
 
-                  <p>Aplica a envíos de larga distancia al alcanzar el mínimo configurado y al delivery local si la empresa tiene riders propios. El mínimo del delivery se configura aparte.</p>
+                  <p>
+                    Aplica a envíos de larga distancia al alcanzar el mínimo
+                    configurado y al delivery local si la empresa tiene riders
+                    propios. El mínimo del delivery se configura aparte.
+                  </p>
                 </div>
 
                 {/* Garantía */}

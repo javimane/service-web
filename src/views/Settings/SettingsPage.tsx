@@ -505,6 +505,14 @@ export default function SettingsPage() {
               </div>
             </section>
 
+            <button
+              type="button"
+              className="settings-setup-link"
+              onClick={() => router.push(ROUTES.accountSetup)}
+            >
+              Completar cuenta paso a paso
+            </button>
+
             <section className="settings-grid">
               {/* Always show personal info */}
               <PersonalInfoSection

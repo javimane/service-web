@@ -1,0 +1,237 @@
+.account-setup {
+  width: min(100%, var(--content-max-width));
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-6) var(--space-16);
+  color: var(--text-primary);
+}
+
+.account-setup__header {
+  max-width: 960px;
+  margin: 0 auto var(--space-8);
+}
+
+.account-setup__eyebrow,
+.account-setup__step-heading > span {
+  color: var(--accent-color);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.08em;
+}
+
+.account-setup__header h1 {
+  margin: var(--space-2) 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-extrabold);
+}
+
+.account-setup__header p,
+.account-setup__embedded > p,
+.account-setup__form > p,
+.account-setup__identity p {
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  line-height: 1.6;
+}
+
+.account-setup__progress {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.account-setup__progress-step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+}
+
+.account-setup__progress-step--current {
+  border-color: var(--accent-color);
+  background: var(--accent-transparent);
+  color: var(--text-primary);
+}
+
+.account-setup__progress-step--complete {
+  border-color: var(--success-color);
+  color: var(--text-primary);
+}
+
+.account-setup__progress-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-6);
+  height: var(--space-6);
+  border-radius: var(--radius-full);
+  background: var(--surface-soft);
+  font-weight: var(--weight-bold);
+}
+
+.account-setup__progress-step--current .account-setup__progress-number {
+  background: var(--accent-color);
+  color: var(--white);
+}
+
+.account-setup__progress-step--complete .account-setup__progress-number {
+  background: var(--success-color);
+  color: var(--white);
+}
+
+.account-setup__panel {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-8);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.account-setup__step-heading {
+  margin-bottom: var(--space-6);
+}
+
+.account-setup__step-heading h2 {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xl);
+}
+
+.account-setup__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.account-setup__field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.account-setup__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.account-setup__field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.account-setup__field input:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.account-setup__embedded {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.account-setup__embedded > p {
+  margin: 0;
+}
+
+.account-setup__identity {
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.account-setup__identity > svg {
+  color: var(--success-color);
+}
+
+.account-setup__identity h3,
+.account-setup__identity p {
+  margin: 0;
+}
+
+.account-setup__error {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-md);
+  color: var(--error-color);
+}
+
+.account-setup__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+.account-setup__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0 var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.account-setup__button--back {
+  border-color: var(--brand-blue);
+  background: var(--brand-blue);
+  color: var(--white);
+}
+
+.account-setup__button--next {
+  border-color: var(--accent-color);
+  background: var(--accent-color);
+  color: var(--white);
+}
+
+.account-setup__button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.account-setup__button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+@media (max-width: 640px) {
+  .account-setup {
+    padding: var(--space-6) var(--space-4) var(--space-10);
+  }
+
+  .account-setup__panel {
+    padding: var(--space-5);
+  }
+
+  .account-setup__field-row {
+    grid-template-columns: 1fr;
+  }
+}

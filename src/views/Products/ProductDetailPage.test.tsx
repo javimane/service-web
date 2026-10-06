@@ -99,6 +99,29 @@ describe("ProductDetailPage - Envío Gratis y Promociones", () => {
     },
   });
 
+  it("muestra ventas y promedio real de opiniones en la ficha", async () => {
+    vi.mocked(getProductDetailAction).mockResolvedValueOnce({
+      data: {
+        id: "prod-123",
+        name: "Taladro Inalámbrico",
+        price: 25000,
+        sales_count: 27,
+        rating_average: 4.25,
+        rating_count: 4,
+        ProfessionalProducts: [{ id: 1, price: 25000, stock: 10 }],
+      },
+    } as any);
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <ProductDetailPage />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("27 ventas")).toBeInTheDocument();
+    expect(screen.getByText("4.3 (4 opiniones)")).toBeInTheDocument();
+  });
+
   it("muestra el mínimo de la empresa debajo del precio", async () => {
     render(
       <QueryClientProvider client={createQueryClient()}>
@@ -273,4 +296,3 @@ describe("ProductDetailPage - Envío Gratis y Promociones", () => {
     });
   });
 });
-

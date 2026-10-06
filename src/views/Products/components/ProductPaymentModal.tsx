@@ -563,7 +563,8 @@ export default function ProductPaymentModal({
         if (
           paymentMethod === "getnet_card" &&
           !useSavedCard &&
-          saveCardForFuture
+          saveCardForFuture &&
+          process.env.NODE_ENV === "development"
         ) {
           const [mmStr, yyStr] = cardExpiry.split("/");
           commerceService
@@ -574,6 +575,7 @@ export default function ProductPaymentModal({
               card_type: cardType,
               bank_name: cardBank,
               card_holder_name: cardholderName,
+              card_holder_dni: cardDni.trim(),
               expiry_month: parseInt(mmStr, 10) || 12,
               expiry_year: 2000 + (parseInt(yyStr, 10) || 28),
               is_default: savedCards.length === 0,
@@ -1389,17 +1391,16 @@ export default function ProductPaymentModal({
                       </div>
 
                       {/* Checkbox para guardar tarjeta */}
-                      <label className="product-payment-modal__save-card-label">
-                        <input
-                          type="checkbox"
-                          checked={saveCardForFuture}
-                          onChange={(e) =>
-                            setSaveCardForFuture(e.target.checked)
-                          }
-                        />
-                        Guardar esta tarjeta de forma segura para compras
-                        futuras
-                      </label>
+                      {process.env.NODE_ENV === "development" && (
+                        <label className="product-payment-modal__save-card-label">
+                          <input
+                            type="checkbox"
+                            checked={saveCardForFuture}
+                            onChange={(e) => setSaveCardForFuture(e.target.checked)}
+                          />
+                          Guardar tarjeta de prueba para compras futuras
+                        </label>
+                      )}
                     </>
                   )}
                 </div>

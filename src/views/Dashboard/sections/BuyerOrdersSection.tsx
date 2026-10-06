@@ -57,6 +57,7 @@ export default function BuyerOrdersSection() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [claimOpen, setClaimOpen] = useState(false);
+  const [confirmClaimResolutionOpen, setConfirmClaimResolutionOpen] = useState(false);
   const [claimReason, setClaimReason] = useState("");
   const [claimType, setClaimType] = useState("Reclamo");
   const [returnTicket, setReturnTicket] = useState<ReturnTicket | null>(null);
@@ -170,6 +171,18 @@ export default function BuyerOrdersSection() {
     },
     onError: (error: Error) =>
       showError(error.message || "No se pudo iniciar el reclamo."),
+  });
+
+  const confirmClaimResolutionMutation = useMutation({
+    mutationFn: () => commerceService.confirmClaimResolved(selectedOrder!.id),
+    onSuccess: async () => {
+      setConfirmClaimResolutionOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      await refetchDetail();
+      showSuccess("Confirmaste que el reclamo se resolvió.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo confirmar la solución del reclamo."),
   });
 
   const openReturnTicket = async (orderId: string) => {
@@ -1035,6 +1048,16 @@ export default function BuyerOrdersSection() {
                     Iniciar reclamo
                   </button>
                 )}
+                {selectedOrder.claim_resolution_confirmable && (
+                  <button
+                    type="button"
+                    className="btn-secondary buyer-order-action"
+                    onClick={() => setConfirmClaimResolutionOpen(true)}
+                  >
+                    <CheckCircle2 size={16} />
+                    Confirmar que se resolvió el reclamo
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1188,6 +1211,42 @@ export default function BuyerOrdersSection() {
                 onClick={() => claimMutation.mutate()}
               >
                 {claimMutation.isPending ? "Enviando..." : "Enviar reclamo"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {selectedOrder && confirmClaimResolutionOpen && (
+        <Modal
+          isOpen
+          onClose={() => setConfirmClaimResolutionOpen(false)}
+          title="Confirmar solución del reclamo"
+        >
+          <div className="buyer-order-modal__withdrawal-form">
+            <p>
+              Confirmá solo si el problema se resolvió con el vendedor. El reclamo
+              se cerrará sin intervención de Sercio y esta acción no solicita un
+              reembolso.
+            </p>
+            <div className="buyer-order-modal__withdrawal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setConfirmClaimResolutionOpen(false)}
+                disabled={confirmClaimResolutionMutation.isPending}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => confirmClaimResolutionMutation.mutate()}
+                disabled={confirmClaimResolutionMutation.isPending}
+              >
+                {confirmClaimResolutionMutation.isPending
+                  ? "Confirmando..."
+                  : "Sí, quedó resuelto"}
               </button>
             </div>
           </div>

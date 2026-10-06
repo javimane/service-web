@@ -8,6 +8,26 @@
   gap: 32px;
 }
 
+.settings-setup-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  box-sizing: border-box;
+  height: 42px;
+  min-height: 42px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+  background: var(--brand-blue);
+  color: var(--white);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 @media (max-width: 768px) {
   .settings-content {
     padding: 24px 20px;
