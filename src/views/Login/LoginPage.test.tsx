@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import LoginPage from "./LoginPage";
 import { supabase } from "../../services/supabaseClient";
+import { authService } from "../../services/authService";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -12,11 +13,33 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+vi.mock("../../context/AuthContext", () => ({
+  useAuth: () => ({
+    user: null,
+    sessionStatus: null,
+    hasProfessionalSubscription: false,
+    subscriptionPlan: null,
+    refreshSession: vi.fn(),
+    setUser: vi.fn(),
+  }),
+}));
+
+vi.mock("../../services/authService", () => ({
+  authService: {
+    login: vi.fn().mockResolvedValue({
+      token: "mock-token",
+      sessionStatus: { is_professional: false },
+    }),
+    logout: vi.fn().mockResolvedValue({}),
+    resetPassword: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 // Mock Supabase client
 vi.mock("../../services/supabaseClient", () => ({
   supabase: {
     auth: {
-      signInWithPassword: vi.fn(),
+      signInWithPassword: vi.fn().mockResolvedValue({ data: { user: { id: "1" } }, error: null }),
     },
   },
 }));
@@ -62,7 +85,6 @@ describe("LoginPage", () => {
 
   it("llama a Supabase al enviar datos válidos", async () => {
     vi.spyOn(window, "alert").mockImplementation(() => {});
-    // Configurar respuesta del mock
     signInWithPasswordMock.mockResolvedValueOnce({
       data: { user: { id: "1" } },
       error: null,

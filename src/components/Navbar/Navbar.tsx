@@ -42,6 +42,7 @@ import {
   Users,
   CreditCard,
   HelpCircle,
+  AlertTriangle,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
@@ -226,15 +227,14 @@ export default function Navbar() {
       path: `${ROUTES.dashboard}?view=profile`,
     },
     {
-      label: "Solicitudes",
-      icon: ClipboardList,
-      path: `${ROUTES.dashboard}?view=job-requests`,
-    },
-    { label: "Mensajes", icon: MessageSquare, path: ROUTES.messages },
-    {
       label: "Presupuestos",
       icon: FileText,
       path: `${ROUTES.dashboard}?view=proposals-view`,
+    },
+    {
+      label: "Solicitudes",
+      icon: ClipboardList,
+      path: `${ROUTES.dashboard}?view=job-requests`,
     },
     {
       label: "Promociones",
@@ -257,14 +257,14 @@ export default function Navbar() {
       path: `${ROUTES.dashboard}?view=services`,
     },
     {
-      label: "Publicaciones",
-      icon: UploadCloud,
-      path: `${ROUTES.dashboard}?view=publications`,
-    },
-    {
       label: "Empleos",
       icon: Briefcase,
       path: `${ROUTES.dashboard}?view=jobs`,
+    },
+    {
+      label: "Publicaciones",
+      icon: UploadCloud,
+      path: `${ROUTES.dashboard}?view=publications`,
     },
     {
       label: "Agenda",
@@ -281,12 +281,28 @@ export default function Navbar() {
       icon: Users,
       path: `${ROUTES.dashboard}?view=referrals`,
     },
+    { label: "Mensajes", icon: MessageSquare, path: ROUTES.messages },
+    {
+      label: "Notificaciones",
+      icon: Bell,
+      path: `${ROUTES.dashboard}?view=notifications`,
+    },
     {
       label: "Suscripción",
       icon: CreditCard,
       path: `${ROUTES.dashboard}?view=subscription`,
     },
     { label: "Configuración", icon: Settings, path: ROUTES.settings },
+    {
+      label: "Reportar Error",
+      icon: AlertTriangle,
+      path: `${ROUTES.dashboard}?view=report-errors`,
+    },
+    {
+      label: "Preguntas Frecuentes",
+      icon: HelpCircle,
+      path: `${ROUTES.dashboard}?view=faq`,
+    },
   ];
 
   const clientLinks = [
@@ -300,6 +316,21 @@ export default function Navbar() {
       label: "Solicitudes",
       icon: ClipboardList,
       path: `${ROUTES.dashboard}?view=job-requests`,
+    },
+    {
+      label: "Notificaciones",
+      icon: Bell,
+      path: `${ROUTES.dashboard}?view=notifications`,
+    },
+    {
+      label: "Suscripción",
+      icon: CreditCard,
+      path: `${ROUTES.dashboard}?view=subscription`,
+    },
+    {
+      label: "Reportar Error",
+      icon: AlertTriangle,
+      path: `${ROUTES.dashboard}?view=report-errors`,
     },
     {
       label: "Preguntas Frecuentes",
