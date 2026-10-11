@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import QRCode from "qrcode";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -54,6 +55,36 @@ const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
   return false;
 };
 
+const isServiceOrder = (order?: Partial<OrderSummary> | null) =>
+  Boolean(
+    order?.service_id ||
+    order?.service ||
+    order?.items?.some((item) => item.service_id || item.service),
+  );
+
+const serviceProgressStep = (order?: Partial<OrderSummary> | null) => {
+  if (
+    !order ||
+    ["pending", "pending_payment", "cancelled", "refunded"].includes(
+      order.status || "",
+    )
+  )
+    return 0;
+  if (
+    isOrderDelivered(order) ||
+    order.appointment_status === "completed" ||
+    order.appointment?.status === "completed"
+  )
+    return 3;
+  if (
+    order.status === "confirmed" ||
+    order.appointment_status === "scheduled" ||
+    order.appointment?.status === "scheduled"
+  )
+    return 2;
+  return order.paid_at || order.status === "paid" ? 1 : 0;
+};
+
 export default function BuyerOrdersSection() {
   const token = getAccessToken();
   setApiAccessToken(token);
@@ -65,6 +96,17 @@ export default function BuyerOrdersSection() {
 
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
+  const [pickupQrUrl, setPickupQrUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setPickupQrUrl(null);
+    if (selectedOrder?.pickup_code) {
+      QRCode.toDataURL(selectedOrder.pickup_code, { width: 200, margin: 1 })
+        .then((url) => { if (active) setPickupQrUrl(url); })
+        .catch(() => { if (active) setPickupQrUrl(null); });
+    }
+    return () => { active = false; };
+  }, [selectedOrder?.pickup_code]);
   const [chatOrder, setChatOrder] = useState<OrderSummary | null>(null);
   const [reviewOrder, setReviewOrder] = useState<OrderSummary | null>(null);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
@@ -357,6 +399,20 @@ export default function BuyerOrdersSection() {
     status: OrderStatus | "delivered" | string,
     order?: Partial<OrderSummary> | null,
   ) => {
+    if (isServiceOrder(order) && serviceProgressStep(order) > 0) {
+      const step = serviceProgressStep(order);
+      return (
+        <span
+          className={`buyer-badge buyer-badge--${step === 3 ? "delivered" : "confirmed"}`}
+        >
+          {step === 3
+            ? "Realizado"
+            : step === 2
+              ? "Servicio confirmado"
+              : "Pago confirmado"}
+        </span>
+      );
+    }
     if (
       isOrderDelivered(order) ||
       status === "delivered" ||
@@ -605,7 +661,7 @@ export default function BuyerOrdersSection() {
                           )}
                         </div>
                       )}
-                      {order.delivery_type === "pickup" &&
+                      {(order.delivery_type === "pickup" || isServiceOrder(order)) &&
                         Boolean(order.pickup_code) &&
                         !isOrderDelivered(order) &&
                         ![
@@ -617,7 +673,7 @@ export default function BuyerOrdersSection() {
                         ].includes(order.status) && (
                           <div className="buyer-order-pickup-code-chip">
                             <QrCode size={13} />
-                            <span>Código de retiro:</span>
+                            <span>{isServiceOrder(order) ? "Código del servicio:" : "Código de retiro:"}</span>
                             <strong>{order.pickup_code}</strong>
                           </div>
                         )}
@@ -738,6 +794,30 @@ export default function BuyerOrdersSection() {
                   <span>La compra todavía no tiene un pago confirmado.</span>
                 )}
               </div>
+            ) : isServiceOrder(selectedOrder) ? (
+              <div
+                className="buyer-step-tracker buyer-step-tracker--service"
+                aria-label="Seguimiento del servicio"
+              >
+                <div
+                  className={`tracker-step ${serviceProgressStep(selectedOrder) >= 1 ? "tracker-step--done" : ""}`}
+                >
+                  <CheckCircle2 size={22} aria-hidden="true" />
+                  <span>Pago confirmado</span>
+                </div>
+                <div
+                  className={`tracker-step ${serviceProgressStep(selectedOrder) >= 2 ? "tracker-step--done" : ""}`}
+                >
+                  <CalendarCheck size={22} aria-hidden="true" />
+                  <span>Servicio confirmado</span>
+                </div>
+                <div
+                  className={`tracker-step ${serviceProgressStep(selectedOrder) >= 3 ? "tracker-step--done" : ""}`}
+                >
+                  <CheckCircle2 size={22} aria-hidden="true" />
+                  <span>Realizado</span>
+                </div>
+              </div>
             ) : (
               <div className="buyer-step-tracker">
                 <div className="tracker-step tracker-step--done">
@@ -834,7 +914,7 @@ export default function BuyerOrdersSection() {
                     {getDeliveryText(selectedOrder.delivery_type)}
                   </strong>
                 </div>
-                {selectedOrder.delivery_type === "pickup" &&
+                {(selectedOrder.delivery_type === "pickup" || isServiceOrder(selectedOrder)) &&
                   !isOrderDelivered(selectedOrder) &&
                   !["delivered", "settled", "cancelled", "refunded"].includes(
                     selectedOrder.status,
@@ -1099,7 +1179,7 @@ export default function BuyerOrdersSection() {
               )}
 
             {/* Pickup QR & Code */}
-            {selectedOrder.delivery_type === "pickup" &&
+            {(selectedOrder.delivery_type === "pickup" || isServiceOrder(selectedOrder)) &&
               !isOrderDelivered(selectedOrder) &&
               ![
                 "pending_payment",
@@ -1110,7 +1190,7 @@ export default function BuyerOrdersSection() {
               ].includes(selectedOrder.status) &&
               Boolean(selectedOrder.pickup_code) && (
                 <div className="buyer-pickup-info-card">
-                  {isOrderPickupReady(selectedOrder) && (
+                  {!isServiceOrder(selectedOrder) && isOrderPickupReady(selectedOrder) && (
                     <div className="buyer-pickup-ready-banner">
                       <CheckCircle2 size={18} />
                       <span>
@@ -1118,17 +1198,18 @@ export default function BuyerOrdersSection() {
                       </span>
                     </div>
                   )}
-                  <h4>Código para Retiro en Sucursal</h4>
+                  <h4>{isServiceOrder(selectedOrder) ? "Código para confirmar el servicio" : "Código para Retiro en Sucursal"}</h4>
                   <p>
-                    Presentá este código de 7 caracteres o mostrá la pantalla al
-                    llegar al comercio:
+                    {isServiceOrder(selectedOrder)
+                      ? "Entregá este código al profesional cuando termine el servicio. Sin él no podrá confirmar que se realizó."
+                      : "Presentá este código de 7 caracteres o mostrá la pantalla al llegar al comercio:"}
                   </p>
                   <div className="pickup-code-display">
                     <span>{selectedOrder.pickup_code}</span>
                   </div>
                   <div className="pickup-qr-visual">
-                    <QrCode size={64} />
-                    <span>Código QR de entrega</span>
+                    <>{pickupQrUrl ? <img src={pickupQrUrl} alt="Código QR para confirmar la entrega" /> : <QrCode size={64} />}
+                    <span>{isServiceOrder(selectedOrder) ? "QR del servicio" : "Código QR de entrega"}</span></>
                   </div>
                 </div>
               )}

@@ -41,7 +41,10 @@ export default function OrderReviewModal({
   const [commentText, setCommentText] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedReview, setSubmittedReview] = useState<PurchaseReview | null>(null);
+  const [submittedReview, setSubmittedReview] = useState<{ orderId: string; review: PurchaseReview } | null>(null);
+  const [confirmedReview, setConfirmedReview] = useState<{ orderId: string; review: PurchaseReview | null } | null>(null);
+  const [reviewLookup, setReviewLookup] = useState<"loading" | "ready" | "error">("loading");
+  const [reviewLookupAttempt, setReviewLookupAttempt] = useState(0);
 
   useEffect(() => {
     if (!isOpen || !user?.id) return;
@@ -63,6 +66,24 @@ export default function OrderReviewModal({
     setSubmittedReview(null);
   }, [order?.id]);
 
+  useEffect(() => {
+    if (!isOpen || !order?.id) return;
+    let active = true;
+    setConfirmedReview(null);
+    setReviewLookup("loading");
+    commerceService.orderDetail(order.id).then((latestOrder) => {
+      if (!active) return;
+      const latestReview = Array.isArray(latestOrder.review)
+        ? latestOrder.review[0] ?? null
+        : latestOrder.review ?? null;
+      setConfirmedReview({ orderId: order.id, review: latestReview });
+      setReviewLookup("ready");
+    }).catch(() => {
+      if (active) setReviewLookup("error");
+    });
+    return () => { active = false; };
+  }, [isOpen, order?.id, reviewLookupAttempt]);
+
   if (!order) return null;
 
   const isService = Boolean(order.service_id || order.service);
@@ -72,7 +93,10 @@ export default function OrderReviewModal({
     firstProductItem?.product_id ||
     firstProductItem?.product?.id;
   const orderReview = Array.isArray(order.review) ? order.review[0] : order.review;
-  const savedReview = submittedReview || orderReview;
+  const savedReview =
+    (submittedReview?.orderId === order.id ? submittedReview.review : null) ||
+    (confirmedReview?.orderId === order.id ? confirmedReview.review : null) ||
+    orderReview;
 
   const title =
     order.service?.name ||
@@ -87,7 +111,7 @@ export default function OrderReviewModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (savedReview) return;
+    if (savedReview || reviewLookup !== "ready") return;
 
     if (!commentText.trim()) {
       showError("Por favor, escribí tu opinión.");
@@ -139,7 +163,7 @@ export default function OrderReviewModal({
       showSuccess("¡Reseña enviada con éxito! Gracias por tu opinión.");
       setCommentText("");
       setImageFile(null);
-      setSubmittedReview(saved);
+      setSubmittedReview({ orderId: order.id, review: saved });
       onSuccess?.(saved);
     } catch (err: any) {
       showError(err?.message || "No se pudo registrar la reseña");
@@ -189,6 +213,15 @@ export default function OrderReviewModal({
             {savedReview.image_url && <img className="order-review-saved__image" src={savedReview.image_url} alt="Foto de tu reseña" />}
             <small>{new Date(savedReview.created_at).toLocaleDateString("es-AR")}</small>
             <button type="button" className="order-review-cancel-btn" onClick={onClose}>Cerrar</button>
+          </div>
+        ) : reviewLookup === "loading" ? (
+          <p role="status">Comprobando si ya calificaste esta compra...</p>
+        ) : reviewLookup === "error" ? (
+          <div role="alert">
+            <p>No se pudo comprobar si esta compra ya tiene una calificación.</p>
+            <button type="button" className="order-review-cancel-btn" onClick={() => setReviewLookupAttempt((attempt) => attempt + 1)}>
+              Reintentar
+            </button>
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="order-review-form">

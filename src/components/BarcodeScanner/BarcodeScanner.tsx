@@ -5,9 +5,11 @@ import "./BarcodeScanner.css";
 interface BarcodeScannerProps {
   onScan: (decodedText: string) => void;
   onClose: () => void;
+  title?: string;
+  hint?: string;
 }
 
-export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
+export default function BarcodeScanner({ onScan, onClose, title = "Escanear Código EAN", hint = "Apunta la cámara al código de barras del producto." }: BarcodeScannerProps) {
   const [error, setError] = useState<string>("");
   
   useEffect(() => {
@@ -41,13 +43,13 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     <div className="barcode-scanner-overlay">
       <div className="barcode-scanner-modal">
         <div className="barcode-scanner-header">
-          <h3>Escanear Código EAN</h3>
+          <h3>{title}</h3>
           <button onClick={onClose} className="barcode-scanner-close">✕</button>
         </div>
         {error && <div className="barcode-scanner-error">{error}</div>}
         <div id="reader" className="barcode-scanner-reader"></div>
         <p className="barcode-scanner-hint">
-          Apunta la cámara al código de barras del producto.
+          {hint}
         </p>
       </div>
     </div>

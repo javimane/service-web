@@ -415,6 +415,15 @@
   font-weight: var(--weight-bold);
 }
 
+.buyer-step-tracker--service .tracker-step {
+  flex: 1;
+  text-align: center;
+}
+
+.buyer-step-tracker--service .tracker-step--done {
+  color: var(--success-color);
+}
+
 .buyer-pickup-info-card,
 .buyer-shipment-tracking-card {
   background: var(--surface-soft);
@@ -472,6 +481,11 @@
   font-weight: var(--weight-black);
   letter-spacing: 0.15em;
   color: var(--brand-blue);
+}
+
+.pickup-qr-visual img {
+  width: 200px;
+  height: 200px;
 }
 
 .pickup-qr-visual {

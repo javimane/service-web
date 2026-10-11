@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft,
@@ -9,18 +9,32 @@ import {
   MessageSquare,
   Loader2,
   Sparkles,
+  X,
+  ZoomIn,
 } from "lucide-react";
 import useCarouselDrag from "../../hooks/useCarouselDrag";
 import {
   getProductCommentsAction,
   getServiceCommentsAction,
 } from "../../app/actions/comments";
+import Modal from "../Modal/Modal";
 import "./CommentsCarousel.css";
 
 interface CommentsCarouselProps {
   type: "product" | "service";
   targetId: string;
   title?: string;
+}
+
+interface CommentItem {
+  id: string | number;
+  user_name?: string;
+  avatar_url?: string;
+  user_avatar?: string;
+  rating?: number | string;
+  text?: string;
+  image_url?: string;
+  created_at?: string;
 }
 
 function formatDate(dateStr: string) {
@@ -52,6 +66,11 @@ export default function CommentsCarousel({
   title,
 }: CommentsCarouselProps) {
   const sliderRef = useRef<HTMLDivElement>(null);
+  const [selectedComment, setSelectedComment] = useState<CommentItem | null>(null);
+  const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
+
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+  const hasDraggedRef = useRef(false);
 
   const {
     showLeftArrow,
@@ -62,6 +81,21 @@ export default function CommentsCarousel({
     handlePointerUp,
     updateArrowVisibility,
   } = useCarouselDrag(sliderRef, ".comment-card");
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setExpandedImageUrl(null);
+      }
+    };
+
+    if (expandedImageUrl) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [expandedImageUrl]);
 
   const queryKey = useMemo(
     () => ["comments", type, targetId],
@@ -92,7 +126,7 @@ export default function CommentsCarousel({
     staleTime: 1000 * 60 * 3,
   });
 
-  const commentsList = useMemo(() => {
+  const commentsList: CommentItem[] = useMemo(() => {
     if (!commentsResponse) return [];
     if (Array.isArray(commentsResponse)) return commentsResponse;
     if (Array.isArray(commentsResponse.items)) return commentsResponse.items;
@@ -105,6 +139,28 @@ export default function CommentsCarousel({
     type === "product"
       ? "Opiniones sobre el Producto"
       : "Opiniones sobre el Servicio";
+
+  const handlePointerDownWithDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    hasDraggedRef.current = false;
+    handlePointerDown(e);
+  };
+
+  const handlePointerMoveWithDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStartPos.current) {
+      const dx = Math.abs(e.clientX - dragStartPos.current.x);
+      const dy = Math.abs(e.clientY - dragStartPos.current.y);
+      if (dx > 8 || dy > 8) {
+        hasDraggedRef.current = true;
+      }
+    }
+    handlePointerMove(e);
+  };
+
+  const handleCardClick = (comment: CommentItem) => {
+    if (hasDraggedRef.current) return;
+    setSelectedComment(comment);
+  };
 
   return (
     <section className="comments-carousel">
@@ -157,18 +213,31 @@ export default function CommentsCarousel({
               ref={sliderRef}
               className="comments-carousel__scroll"
               onScroll={updateArrowVisibility}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
+              onPointerDown={handlePointerDownWithDrag}
+              onPointerMove={handlePointerMoveWithDrag}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
               onPointerLeave={handlePointerUp}
             >
-              {commentsList.map((c: any) => {
+              {commentsList.map((c) => {
                 const commentRating = Number(c.rating || 5);
                 const avatar = c.user_avatar || c.avatar_url;
 
                 return (
-                  <article key={c.id} className="comment-card">
+                  <article
+                    key={c.id}
+                    className="comment-card comment-card--clickable"
+                    onClick={() => handleCardClick(c)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedComment(c);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Ver opinión de ${c.user_name || "Cliente"}`}
+                  >
                     <div className="comment-card__header">
                       <div className="comment-card__avatar">
                         {avatar ? (
@@ -188,7 +257,7 @@ export default function CommentsCarousel({
                           {c.user_name || "Cliente"}
                         </span>
                         <span className="comment-card__date">
-                          {formatDate(c.created_at)}
+                          {formatDate(c.created_at || "")}
                         </span>
                         <div className="comment-card__rating">
                           {[1, 2, 3, 4, 5].map((star) => (
@@ -200,7 +269,7 @@ export default function CommentsCarousel({
                                   ? "comment-card__star"
                                   : "comment-card__star--empty"
                               }
-                              fill={star <= commentRating ? "#f59e0b" : "none"}
+                              fill={star <= commentRating ? "currentColor" : "none"}
                             />
                           ))}
                         </div>
@@ -216,6 +285,9 @@ export default function CommentsCarousel({
                           alt="Foto adjunta"
                           draggable="false"
                         />
+                        <span className="comment-card__image-overlay">
+                          <ZoomIn size={14} />
+                        </span>
                       </div>
                     )}
                   </article>
@@ -236,6 +308,126 @@ export default function CommentsCarousel({
           </>
         )}
       </div>
+
+      {/* Modal con detalle del comentario */}
+      <Modal
+        isOpen={Boolean(selectedComment)}
+        onClose={() => {
+          setSelectedComment(null);
+          setExpandedImageUrl(null);
+        }}
+        title="Opinión de la comunidad"
+        maxWidth="560px"
+      >
+        {selectedComment && (
+          <div className="comment-modal-detail">
+            <div className="comment-modal-detail__header">
+              <div className="comment-modal-detail__avatar">
+                {selectedComment.user_avatar || selectedComment.avatar_url ? (
+                  <img
+                    src={selectedComment.user_avatar || selectedComment.avatar_url}
+                    alt={selectedComment.user_name || "Usuario"}
+                  />
+                ) : (
+                  <span className="comment-modal-detail__initials">
+                    {getInitials(selectedComment.user_name || "Usuario")}
+                  </span>
+                )}
+              </div>
+              <div className="comment-modal-detail__meta">
+                <span className="comment-modal-detail__author">
+                  {selectedComment.user_name || "Cliente"}
+                </span>
+                <span className="comment-modal-detail__date">
+                  {formatDate(selectedComment.created_at || "")}
+                </span>
+                <div
+                  className="comment-modal-detail__rating"
+                  aria-label={`Calificación: ${Number(selectedComment.rating || 5)} de 5 estrellas`}
+                >
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      size={16}
+                      className={
+                        star <= Number(selectedComment.rating || 5)
+                          ? "comment-card__star"
+                          : "comment-card__star--empty"
+                      }
+                      fill={
+                        star <= Number(selectedComment.rating || 5)
+                          ? "currentColor"
+                          : "none"
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="comment-modal-detail__content">
+              <p className="comment-modal-detail__text">{selectedComment.text}</p>
+            </div>
+
+            {selectedComment.image_url && (
+              <div className="comment-modal-detail__media">
+                <span className="comment-modal-detail__media-label">
+                  Foto adjunta
+                </span>
+                <button
+                  type="button"
+                  className="comment-modal-detail__image-btn"
+                  onClick={() =>
+                    setExpandedImageUrl(selectedComment.image_url || null)
+                  }
+                  title="Hacé click para ver la imagen en tamaño grande"
+                  aria-label="Ver imagen ampliada"
+                >
+                  <img
+                    src={selectedComment.image_url}
+                    alt="Foto adjunta a la opinión"
+                    className="comment-modal-detail__image"
+                  />
+                  <span className="comment-modal-detail__zoom-tag">
+                    <ZoomIn size={15} />
+                    <span>Hacé click para ampliar</span>
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Lightbox para ver la imagen en tamaño grande */}
+      {expandedImageUrl && (
+        <div
+          className="comment-lightbox"
+          onClick={() => setExpandedImageUrl(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Imagen ampliada"
+        >
+          <div
+            className="comment-lightbox__dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="comment-lightbox__close"
+              onClick={() => setExpandedImageUrl(null)}
+              aria-label="Cerrar imagen"
+            >
+              <X size={24} />
+            </button>
+            <img
+              src={expandedImageUrl}
+              alt="Foto adjunta en tamaño grande"
+              className="comment-lightbox__img"
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

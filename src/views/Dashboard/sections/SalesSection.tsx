@@ -41,6 +41,7 @@ import AssignServiceAppointmentModal from "./AssignServiceAppointmentModal";
 import PackageThermalLabelModal from "./PackageThermalLabelModal";
 import BatchOrderTicketsModal from "./BatchOrderTicketsModal";
 import ReturnReceiptModal from "./ReturnReceiptModal";
+import BarcodeScanner from "@/components/BarcodeScanner/BarcodeScanner";
 import OrderChatModal from "./OrderChatModal";
 import { getBuyerEmail, getBuyerName, getBuyerPhone, getDeliveryAddress, getOrderLines, getProductImage, isPrintableOrder } from "./orderTicketData";
 import DateRangeFilter, { DateRangeValue, toUtcDateRange } from "./DateRangeFilter";
@@ -107,6 +108,7 @@ export default function SalesSection() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [pickupCode, setPickupCode] = useState("");
+  const [pickupScannerOpen, setPickupScannerOpen] = useState(false);
   const [invoiceUrlInput, setInvoiceUrlInput] = useState("");
   const [packageImageUrl, setPackageImageUrl] = useState("");
   const [transportCarrier, setTransportCarrier] = useState("");
@@ -472,7 +474,6 @@ export default function SalesSection() {
       case "dispatched":
       case "in_transit":
         return <span className="sales-badge sales-badge--transit">En tránsito</span>;
-      case "delivered":
       case "settled":
         return <span className="sales-badge sales-badge--delivered">Entregado</span>;
       case "cancelled":
@@ -1186,7 +1187,7 @@ export default function SalesSection() {
                 </div>
               )}
 
-              {selectedOrder.status === "confirmed" && (
+              {selectedOrder.status === "confirmed" && !selectedOrder.service_id && !selectedOrder.service && (
                 <div className="order-actions-group">
                   <button
                     type="button"
@@ -1199,7 +1200,7 @@ export default function SalesSection() {
                 </div>
               )}
 
-              {selectedOrder.status === "preparing" && (
+              {selectedOrder.status === "preparing" && !selectedOrder.service_id && !selectedOrder.service && (
                 <div className="order-actions-group">
                   {selectedOrder.delivery_type === "pickup" ? (
                     <button
@@ -1224,20 +1225,21 @@ export default function SalesSection() {
               )}
 
               {/* Pickup Verification */}
-              {selectedOrder.delivery_type === "pickup" && (
+              {((selectedOrder.service_id || selectedOrder.service || selectedOrder.items?.some((item) => item.service_id || item.service))
+                ? selectedOrder.status === "confirmed"
+                : isOrderPickupReady(selectedOrder)) && (
                 <div className="pickup-verify-box">
-                  <h5>Validar Entrega en Sucursal</h5>
+                  <h5>{selectedOrder.service_id || selectedOrder.service ? "Confirmar servicio realizado" : "Validar Entrega en Sucursal"}</h5>
                   <p>
-                    Ingresá el código de 7 caracteres numéricos o escaneá el QR
-                    presentado por el cliente.
+                    Escaneá el QR o ingresá el código de 7 caracteres que te entregue el comprador al finalizar.
                   </p>
                   <div className="pickup-verify-input-group">
                     <input
                       type="text"
                       maxLength={7}
-                      placeholder="Ej: 8492015"
+                      placeholder="Ej: AB2CD34"
                       value={pickupCode}
-                      onChange={(e) => setPickupCode(e.target.value)}
+                      onChange={(e) => setPickupCode(e.target.value.toUpperCase())}
                     />
                     <button
                       type="button"
@@ -1250,7 +1252,10 @@ export default function SalesSection() {
                         })
                       }
                     >
-                      Validar y completar
+                      {selectedOrder.service_id || selectedOrder.service ? "Validar y completar servicio" : "Validar y completar"}
+                    </button>
+                    <button type="button" className="btn-secondary" onClick={() => setPickupScannerOpen(true)}>
+                      Escanear QR
                     </button>
                   </div>
                 </div>
@@ -1562,6 +1567,20 @@ export default function SalesSection() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {pickupScannerOpen && selectedOrder && (
+        <BarcodeScanner
+          title="Escanear código del comprador"
+          hint="Apuntá la cámara al QR del comprador para completar el pedido."
+          onClose={() => setPickupScannerOpen(false)}
+          onScan={(value) => {
+            setPickupScannerOpen(false);
+            const code = value.replace(/^PICKUP:/i, "").trim().toUpperCase();
+            setPickupCode(code);
+            pickupVerifyMutation.mutate({ id: selectedOrder.id, code });
+          }}
+        />
       )}
 
       {/* Order-scoped Chat Modal */}
