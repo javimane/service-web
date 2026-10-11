@@ -2,6 +2,7 @@ export interface ProfileRow {
   readonly id: string;
   readonly email: string | null;
   readonly display_name: string | null;
+  readonly first_name?: string | null;
   readonly avatar_url: string | null;
   readonly portfolio_image_url?: string | null;
   readonly updated_at: string | null;

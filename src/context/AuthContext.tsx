@@ -22,8 +22,16 @@ import {
 import Modal from "../components/Modal/Modal";
 import { sileo } from "sileo";
 import "./AuthContext.css";
+import { AccountAccessNotice } from "./AccountAccessNotice";
+import { showDesktopNotification } from "../services/desktopNotifications";
 
 type SessionStatus = {
+  is_blocked?: boolean;
+  is_paused?: boolean;
+  blocked_reason?: string | null;
+  paused_reason?: string | null;
+  can_sell?: boolean;
+  can_accept_orders?: boolean;
   status?: boolean | string;
   is_professional?: boolean;
   professional_active?: boolean;
@@ -272,6 +280,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!user?.id) return;
+    let pending = false;
+    const reload = async () => {
+      if (pending || document.visibilityState !== "visible") return;
+      pending = true;
+      try { await refreshSession(); } finally { pending = false; }
+    };
+    const timer = window.setInterval(reload, 30000);
+    window.addEventListener("focus", reload);
+    document.addEventListener("visibilitychange", reload);
+    window.addEventListener("account-restricted", reload);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", reload);
+      document.removeEventListener("visibilitychange", reload);
+      window.removeEventListener("account-restricted", reload);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     if (user) {
       localStorage.setItem("was_logged_in", "true");
     }
@@ -332,6 +360,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 payload.message ||
                 "Tienes una nueva notificación",
             });
+            showDesktopNotification(payload);
           } catch (e) {
             console.error("Error al procesar la notificación en vivo:", e);
           }
@@ -442,7 +471,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user || typeof window === "undefined") return;
 
       // Obtener silenciosamente el token FCM actual de Firebase con la VAPID key
-      const currentToken = await getFirebaseMessagingToken(false);
+      let currentToken: string | null = null;
+      try {
+        currentToken = await getFirebaseMessagingToken(false);
+      } catch {
+        return;
+      }
       const savedToken = localStorage.getItem("registered_device_token");
 
       if (!currentToken) return;
@@ -477,16 +511,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         sileo.info({ title, description: body });
 
-        if (
-          typeof window !== "undefined" &&
-          Notification.permission === "granted"
-        ) {
-          new Notification(title, { body });
-        }
+        showDesktopNotification({
+          id: payload?.data?.notificationId ?? payload?.data?.notification_id,
+          type: payload?.data?.type,
+          title,
+          body,
+          data: payload?.data,
+        });
       });
     };
 
-    setupForegroundNotifications();
+    setupForegroundNotifications().catch(() => {
+      // Los avisos en vivo siguen disponibles por SSE si Firebase no responde.
+    });
+
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === "sercio-push") {
+        showDesktopNotification(event.data.payload);
+      }
+    };
+    navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
 
     const handleSessionExpired = () => {
       setUser(null);
@@ -496,6 +540,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       if (unsubscribe) unsubscribe();
+      navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
       window.removeEventListener("session-expired", handleSessionExpired);
     };
   }, []);
@@ -523,7 +568,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSessionStatus,
       }}
     >
-      {children}
+      {user && (sessionStatus?.is_blocked || sessionStatus?.is_paused) &&
+        <AccountAccessNotice blocked={sessionStatus?.is_blocked === true}
+          reason={sessionStatus?.is_blocked ? sessionStatus?.blocked_reason : sessionStatus?.paused_reason}
+          refresh={refreshSession} logout={logout} />}
+      {!(user && sessionStatus?.is_blocked) && children}
       <Modal
         isOpen={showChatSyncModal}
         title="Sincronización de Chat"

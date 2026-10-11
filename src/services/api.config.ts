@@ -290,6 +290,8 @@ export const API_ENDPOINTS = {
   },
   storage: {
     products: `${API_BASE_URL}/api/storage/products`,
+    productComments: (productId: string) =>
+      `${API_BASE_URL}/api/storage/products/${encodeURIComponent(productId)}/comments`,
     promotions: `${API_BASE_URL}/api/storage/promotions`,
     profile: `${API_BASE_URL}/api/storage/profile`,
     portfolio: `${API_BASE_URL}/api/storage/portfolio`,

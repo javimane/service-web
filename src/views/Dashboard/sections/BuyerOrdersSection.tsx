@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ShoppingBag,
@@ -20,6 +21,7 @@ import {
   Star,
   MessageSquare,
   RotateCcw,
+  RefreshCw,
 } from "lucide-react";
 import {
   commerceService,
@@ -40,6 +42,17 @@ import OrderChatModal from "./OrderChatModal";
 import { getProductImage } from "./orderTicketData";
 import ReturnTicketModal from "./ReturnTicketModal";
 import "./BuyerOrdersSection.css";
+import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
+
+const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
+  if (!order) return false;
+  const status = (order.status as string)?.toLowerCase();
+  if (status === "delivered" || status === "settled" || status === "completed")
+    return true;
+  if (order.delivered_at) return true;
+  if (order.shipment_status === "delivered") return true;
+  return false;
+};
 
 export default function BuyerOrdersSection() {
   const token = getAccessToken();
@@ -47,6 +60,8 @@ export default function BuyerOrdersSection() {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useAlert();
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const orderIdParam = searchParams?.get("orderId");
 
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
@@ -57,7 +72,8 @@ export default function BuyerOrdersSection() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [claimOpen, setClaimOpen] = useState(false);
-  const [confirmClaimResolutionOpen, setConfirmClaimResolutionOpen] = useState(false);
+  const [confirmClaimResolutionOpen, setConfirmClaimResolutionOpen] =
+    useState(false);
   const [claimReason, setClaimReason] = useState("");
   const [claimType, setClaimType] = useState("Reclamo");
   const [returnTicket, setReturnTicket] = useState<ReturnTicket | null>(null);
@@ -65,6 +81,7 @@ export default function BuyerOrdersSection() {
   const {
     data: ordersData,
     isLoading,
+    isFetching,
     isError,
     refetch,
   } = useQuery<PageResponse<OrderSummary>>({
@@ -76,22 +93,24 @@ export default function BuyerOrdersSection() {
   const total = ordersData?.total ?? orders.length;
   const totalPages = ordersData?.totalPages ?? (Math.ceil(total / 10) || 1);
 
+  const activeOrderId = selectedOrder?.id || orderIdParam || undefined;
+
   const {
     data: detailedOrder,
     isFetching: isLoadingDetail,
     isError: isDetailError,
     refetch: refetchDetail,
   } = useQuery({
-    queryKey: ["buyer-order-detail", selectedOrder?.id],
-    queryFn: () => commerceService.orderDetail(selectedOrder!.id),
-    enabled: Boolean(selectedOrder?.id),
+    queryKey: ["buyer-order-detail", activeOrderId],
+    queryFn: () => commerceService.orderDetail(activeOrderId!),
+    enabled: Boolean(activeOrderId),
   });
 
   useEffect(() => {
-    if (detailedOrder && detailedOrder.id === selectedOrder?.id) {
+    if (detailedOrder && detailedOrder.id === activeOrderId) {
       setSelectedOrder(detailedOrder);
     }
-  }, [detailedOrder, selectedOrder?.id]);
+  }, [detailedOrder, activeOrderId]);
 
   const withdrawalMutation = useMutation({
     mutationFn: () =>
@@ -108,9 +127,15 @@ export default function BuyerOrdersSection() {
       queryClient.invalidateQueries({
         queryKey: ["buyer-order-detail", selectedOrder?.id],
       });
-      if (selectedOrder?.status === "delivered" && !selectedOrder.service_id) {
+
+      const order = selectedOrder;
+      if (
+        order &&
+        (order.status === "delivered" || isOrderDelivered(order)) &&
+        !order.service_id
+      ) {
         try {
-          setReturnTicket(await commerceService.returnTicket(selectedOrder.id));
+          setReturnTicket(await commerceService.returnTicket(order.id));
         } catch {
           showError(
             "La solicitud se envió, pero no se pudo cargar el comprobante. Podés abrirlo desde el detalle de la compra.",
@@ -120,6 +145,16 @@ export default function BuyerOrdersSection() {
     },
     onError: (error: Error) =>
       showError(error.message || "No se pudo enviar la solicitud."),
+  });
+
+  const syncPaymentMutation = useMutation({
+    mutationFn: (id: string) => commerceService.syncPaywayPayment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["buyer-order-detail"] });
+      showSuccess("Estado del pago actualizado.");
+    },
+    onError: (error: Error) => showError(error.message),
   });
 
   const cancelMutation = useMutation({
@@ -155,13 +190,15 @@ export default function BuyerOrdersSection() {
         queryKey: ["buyer-order-detail", selectedOrder?.id],
       });
       showSuccess("Reclamo iniciado. Te avisaremos cuando haya novedades.");
+      const order = selectedOrder;
       if (
-        selectedOrder?.status === "delivered" &&
-        !selectedOrder.service_id &&
+        order &&
+        (order.status === "delivered" || isOrderDelivered(order)) &&
+        !order.service_id &&
         claimType !== "Reclamo"
       ) {
         try {
-          setReturnTicket(await commerceService.returnTicket(selectedOrder.id));
+          setReturnTicket(await commerceService.returnTicket(order.id));
         } catch {
           showError(
             "El reclamo se envió, pero no se pudo cargar el comprobante de devolución.",
@@ -182,7 +219,9 @@ export default function BuyerOrdersSection() {
       showSuccess("Confirmaste que el reclamo se resolvió.");
     },
     onError: (error: Error) =>
-      showError(error.message || "No se pudo confirmar la solución del reclamo."),
+      showError(
+        error.message || "No se pudo confirmar la solución del reclamo.",
+      ),
   });
 
   const openReturnTicket = async (orderId: string) => {
@@ -201,11 +240,18 @@ export default function BuyerOrdersSection() {
     onSuccess: () => {
       showSuccess("Recepción confirmada. ¡Gracias por tu compra!");
       queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      if (selectedOrder?.id) {
+        queryClient.invalidateQueries({
+          queryKey: ["buyer-order-detail", selectedOrder.id],
+        });
+      }
       refetch();
+      refetchDetail();
       if (selectedOrder) {
         const updated = {
           ...selectedOrder,
           status: "delivered" as OrderStatus,
+          delivered_at: new Date().toISOString(),
         };
         setSelectedOrder(updated);
         setReviewOrder(updated);
@@ -214,7 +260,121 @@ export default function BuyerOrdersSection() {
     onError: () => showError("No se pudo confirmar la recepción."),
   });
 
-  const getStatusBadge = (status: OrderStatus) => {
+  const isOrderPickupReady = (order?: Partial<OrderSummary> | null) => {
+    if (!order) return false;
+    if (isOrderDelivered(order)) return false;
+    if (order.status === "ready_for_pickup") return true;
+    const hasPickupReadyTimestamp = Boolean(
+      order.pickup_ready_at || (order as any)?.pickup_ready_ap,
+    );
+    return Boolean(
+      order.delivery_type === "pickup" &&
+      hasPickupReadyTimestamp &&
+      order.status !== "delivered" &&
+      (order.status as string) !== "settled" &&
+      !order.delivered_at &&
+      order.status !== "cancelled" &&
+      order.status !== "refunded",
+    );
+  };
+
+  const isPreparedFoodOrder = (order?: Partial<OrderSummary> | null) => {
+    if (!order) return false;
+    const hasItemFood = order.items?.some((item: any) => {
+      const prod = item?.product;
+      const cat = prod?.category;
+      const subCat = prod?.subCategory || prod?.subcategory;
+      return Boolean(
+        prod?.is_food_perishable ||
+        cat?.is_food ||
+        cat?.no_installments ||
+        subCat?.is_food ||
+        subCat?.no_installments ||
+        String(cat?.name || "")
+          .toLowerCase()
+          .includes("gastronom") ||
+        String(cat?.name || "")
+          .toLowerCase()
+          .includes("comida") ||
+        String(prod?.category_name || "")
+          .toLowerCase()
+          .includes("gastronom") ||
+        String(prod?.category_name || "")
+          .toLowerCase()
+          .includes("comida"),
+      );
+    });
+    if (hasItemFood) return true;
+
+    const prod = (order as any)?.professional_product?.product;
+    const cat = prod?.category;
+    const subCat = prod?.subCategory || prod?.subcategory;
+    return Boolean(
+      prod?.is_food_perishable ||
+      cat?.is_food ||
+      cat?.no_installments ||
+      subCat?.is_food ||
+      subCat?.no_installments ||
+      String(cat?.name || "")
+        .toLowerCase()
+        .includes("gastronom") ||
+      String(cat?.name || "")
+        .toLowerCase()
+        .includes("comida"),
+    );
+  };
+
+  const isOrderWithdrawalEligible = (order?: Partial<OrderSummary> | null) => {
+    if (!order) return false;
+    if (order.withdrawal_requested) return false;
+    if (
+      ["cancelled", "refunded", "pending_payment", "pending"].includes(
+        order.status || "",
+      )
+    ) {
+      return false;
+    }
+    if (isPreparedFoodOrder(order)) {
+      return false;
+    }
+    if (order.withdrawal_eligible) {
+      return true;
+    }
+    // Si la compra es retiro en tienda o está en estado de Listo Retiro / confirmada / preparada / entregada
+    if (order.delivery_type === "pickup") {
+      return true;
+    }
+    if (isOrderPickupReady(order)) {
+      return true;
+    }
+    if (isOrderDelivered(order)) {
+      return true;
+    }
+    return false;
+  };
+
+  const getStatusBadge = (
+    status: OrderStatus | "delivered" | string,
+    order?: Partial<OrderSummary> | null,
+  ) => {
+    if (
+      isOrderDelivered(order) ||
+      status === "delivered" ||
+      (status as string) === "settled"
+    ) {
+      return (
+        <span className="buyer-badge buyer-badge--delivered">Entregado</span>
+      );
+    }
+
+    if (isOrderPickupReady(order)) {
+      return (
+        <span className="buyer-badge buyer-badge--ready">
+          Listo para retirar
+        </span>
+      );
+    }
+
     switch (status) {
       case "pending":
         return (
@@ -262,6 +422,7 @@ export default function BuyerOrdersSection() {
           <span className="buyer-badge buyer-badge--transit">En camino</span>
         );
       case "delivered":
+      case "settled":
         return (
           <span className="buyer-badge buyer-badge--delivered">Entregado</span>
         );
@@ -330,6 +491,24 @@ export default function BuyerOrdersSection() {
           <span className="buyer-orders-section__subtitle">Mis Compras</span>
           <h1 className="buyer-orders-section__title">Historial de Pedidos</h1>
         </div>
+        <div className="buyer-orders-section__actions">
+          <button
+            type="button"
+            className="btn-secondary buyer-orders-section__refresh-btn"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            title="Refrescar pedidos"
+            aria-label="Refrescar lista de pedidos"
+          >
+            <RefreshCw
+              size={16}
+              className={
+                isFetching ? "buyer-orders-section__refresh-icon--spinning" : ""
+              }
+            />
+            <span>{isFetching ? "Actualizando..." : "Refrescar"}</span>
+          </button>
+        </div>
       </header>
 
       {/* List or States */}
@@ -385,7 +564,7 @@ export default function BuyerOrdersSection() {
                       {new Date(order.created_at).toLocaleDateString("es-AR")}
                     </span>
                   </div>
-                  {getStatusBadge(order.status)}
+                  {getStatusBadge(order.status, order)}
                 </div>
 
                 <div className="buyer-order-card__body">
@@ -426,6 +605,22 @@ export default function BuyerOrdersSection() {
                           )}
                         </div>
                       )}
+                      {order.delivery_type === "pickup" &&
+                        Boolean(order.pickup_code) &&
+                        !isOrderDelivered(order) &&
+                        ![
+                          "pending_payment",
+                          "cancelled",
+                          "refunded",
+                          "delivered",
+                          "settled",
+                        ].includes(order.status) && (
+                          <div className="buyer-order-pickup-code-chip">
+                            <QrCode size={13} />
+                            <span>Código de retiro:</span>
+                            <strong>{order.pickup_code}</strong>
+                          </div>
+                        )}
                     </div>
                   </div>
 
@@ -440,7 +635,22 @@ export default function BuyerOrdersSection() {
                 </div>
 
                 <div className="buyer-order-card__footer">
-                  {order.status === "pending_payment" && (
+                  {order.status === "pending_payment" &&
+                    order.payment_provider === "payway" && (
+                      <button
+                        type="button"
+                        className="btn-secondary buyer-order-action"
+                        disabled={syncPaymentMutation.isPending}
+                        onClick={() => syncPaymentMutation.mutate(order.id)}
+                      >
+                        Consultar pago
+                      </button>
+                    )}
+                  {(order.status === "pending_payment" ||
+                    (["paid", "confirmed"].includes(order.status) &&
+                      ["payway", "getnet"].includes(
+                        order.payment_provider || "",
+                      ))) && (
                     <button
                       type="button"
                       className="btn-secondary buyer-order-action"
@@ -453,6 +663,7 @@ export default function BuyerOrdersSection() {
                       <span>Cancelar compra</span>
                     </button>
                   )}
+
                   <button
                     type="button"
                     className="btn-secondary buyer-view-detail-btn"
@@ -471,14 +682,22 @@ export default function BuyerOrdersSection() {
                     <span>Chat</span>
                   </button>
 
-                  {order.status === "delivered" && (
+                  {(order.status === "delivered" ||
+                    isOrderDelivered(order)) && (
                     <button
                       type="button"
                       className="buyer-review-btn"
                       onClick={() => setReviewOrder(order)}
                     >
                       <Star size={15} />
-                      <span>Calificar compra</span>
+                      <span>
+                        {order.review &&
+                        (Array.isArray(order.review)
+                          ? order.review.length > 0
+                          : true)
+                          ? "Ver mi calificación"
+                          : "Calificar compra"}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -514,7 +733,7 @@ export default function BuyerOrdersSection() {
             selectedOrder.status === "cancelled" ||
             selectedOrder.status === "refunded" ? (
               <div className="buyer-order-modal__current-status">
-                {getStatusBadge(selectedOrder.status)}
+                {getStatusBadge(selectedOrder.status, selectedOrder)}
                 {selectedOrder.status === "pending_payment" && (
                   <span>La compra todavía no tiene un pago confirmado.</span>
                 )}
@@ -532,7 +751,9 @@ export default function BuyerOrdersSection() {
                     selectedOrder.status === "ready_for_pickup" ||
                     selectedOrder.status === "ready_for_dispatch" ||
                     selectedOrder.status === "dispatched" ||
-                    selectedOrder.status === "delivered"
+                    selectedOrder.status === "delivered" ||
+                    isOrderDelivered(selectedOrder) ||
+                    isOrderPickupReady(selectedOrder)
                       ? "tracker-step--done"
                       : ""
                   }`}
@@ -545,7 +766,9 @@ export default function BuyerOrdersSection() {
                     selectedOrder.status === "ready_for_pickup" ||
                     selectedOrder.status === "ready_for_dispatch" ||
                     selectedOrder.status === "dispatched" ||
-                    selectedOrder.status === "delivered"
+                    selectedOrder.status === "delivered" ||
+                    isOrderDelivered(selectedOrder) ||
+                    isOrderPickupReady(selectedOrder)
                       ? "tracker-step--done"
                       : ""
                   }`}
@@ -559,7 +782,8 @@ export default function BuyerOrdersSection() {
                 </div>
                 <div
                   className={`tracker-step ${
-                    selectedOrder.status === "delivered"
+                    selectedOrder.status === "delivered" ||
+                    isOrderDelivered(selectedOrder)
                       ? "tracker-step--done"
                       : ""
                   }`}
@@ -610,14 +834,38 @@ export default function BuyerOrdersSection() {
                     {getDeliveryText(selectedOrder.delivery_type)}
                   </strong>
                 </div>
+                {selectedOrder.delivery_type === "pickup" &&
+                  !isOrderDelivered(selectedOrder) &&
+                  !["delivered", "settled", "cancelled", "refunded"].includes(
+                    selectedOrder.status,
+                  ) &&
+                  Boolean(selectedOrder.pickup_code) && (
+                    <div>
+                      <span>Código de retiro</span>
+                      <strong className="buyer-order-modal__pickup-code">
+                        {selectedOrder.pickup_code}
+                      </strong>
+                    </div>
+                  )}
                 <div>
                   <span>Medio de pago</span>
                   <strong>
                     {selectedOrder.payment_method === "paycloud_qr"
                       ? "QR"
-                      : selectedOrder.payment_method === "getnet_card"
-                        ? "Tarjeta"
-                        : selectedOrder.payment_method || "Sin información"}
+                      : (
+                            selectedOrder.card_type ||
+                            (selectedOrder as any).card_details?.card_type
+                          )?.toLowerCase() === "credit"
+                        ? "Crédito"
+                        : (
+                              selectedOrder.card_type ||
+                              (selectedOrder as any).card_details?.card_type
+                            )?.toLowerCase() === "debit"
+                          ? "Débito"
+                          : selectedOrder.payment_method === "payway_card" ||
+                              selectedOrder.payment_method === "getnet_card"
+                            ? "Tarjeta"
+                            : selectedOrder.payment_method || "Sin información"}
                   </strong>
                 </div>
                 <div>
@@ -633,6 +881,36 @@ export default function BuyerOrdersSection() {
                     <span>Pago confirmado el</span>
                     <strong>
                       {new Date(selectedOrder.paid_at).toLocaleString("es-AR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </strong>
+                  </div>
+                )}
+                {(selectedOrder.pickup_ready_at ||
+                  (selectedOrder as any).pickup_ready_ap) && (
+                  <div>
+                    <span>Listo para retirar el</span>
+                    <strong>
+                      {new Date(
+                        selectedOrder.pickup_ready_at ||
+                          (selectedOrder as any).pickup_ready_ap,
+                      ).toLocaleString("es-AR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </strong>
+                  </div>
+                )}
+                {(selectedOrder.delivered_at ||
+                  (selectedOrder as any).settled_at) && (
+                  <div>
+                    <span>Entregado el</span>
+                    <strong>
+                      {new Date(
+                        selectedOrder.delivered_at ||
+                          (selectedOrder as any).settled_at,
+                      ).toLocaleString("es-AR", {
                         dateStyle: "short",
                         timeStyle: "short",
                       })}
@@ -716,10 +994,11 @@ export default function BuyerOrdersSection() {
                         {item.product?.ean && (
                           <span>EAN: {item.product.ean}</span>
                         )}
-                        <span>
-                          Cantidad: {item.quantity} · Precio unitario: $
-                          {Number(item.unit_price).toLocaleString("es-AR")}
-                        </span>
+                        <span>Cantidad: {item.quantity}</span>
+                        <OrderItemPricing
+                          pricing={item.pricing_snapshot}
+                          unitPrice={Number(item.unit_price)}
+                        />
                       </div>
                       <strong>
                         ${Number(item.subtotal).toLocaleString("es-AR")}
@@ -821,11 +1100,24 @@ export default function BuyerOrdersSection() {
 
             {/* Pickup QR & Code */}
             {selectedOrder.delivery_type === "pickup" &&
-              !["pending_payment", "cancelled", "refunded"].includes(
-                selectedOrder.status,
-              ) &&
+              !isOrderDelivered(selectedOrder) &&
+              ![
+                "pending_payment",
+                "cancelled",
+                "refunded",
+                "delivered",
+                "settled",
+              ].includes(selectedOrder.status) &&
               Boolean(selectedOrder.pickup_code) && (
                 <div className="buyer-pickup-info-card">
+                  {isOrderPickupReady(selectedOrder) && (
+                    <div className="buyer-pickup-ready-banner">
+                      <CheckCircle2 size={18} />
+                      <span>
+                        ¡Tu pedido ya está listo para retirar en la sucursal!
+                      </span>
+                    </div>
+                  )}
                   <h4>Código para Retiro en Sucursal</h4>
                   <p>
                     Presentá este código de 7 caracteres o mostrá la pantalla al
@@ -907,6 +1199,7 @@ export default function BuyerOrdersSection() {
 
             {/* Confirm Receipt Action */}
             {["dispatched", "in_transit"].includes(selectedOrder.status) &&
+              !isOrderDelivered(selectedOrder) &&
               selectedOrder.shipment_id && (
                 <div className="buyer-confirm-receipt-box">
                   <p>¿Ya recibiste tu producto en tus manos y está en orden?</p>
@@ -924,7 +1217,8 @@ export default function BuyerOrdersSection() {
               )}
 
             {/* Review Purchase Action */}
-            {selectedOrder.status === "delivered" && (
+            {(selectedOrder.status === "delivered" ||
+              isOrderDelivered(selectedOrder)) && (
               <div className="buyer-review-action-row">
                 <button
                   type="button"
@@ -932,7 +1226,14 @@ export default function BuyerOrdersSection() {
                   onClick={() => setReviewOrder(selectedOrder)}
                 >
                   <Star size={16} />
-                  <span>Dejar reseña sobre esta compra</span>
+                  <span>
+                    {selectedOrder.review &&
+                    (Array.isArray(selectedOrder.review)
+                      ? selectedOrder.review.length > 0
+                      : true)
+                      ? "Ver mi calificación"
+                      : "Dejar reseña sobre esta compra"}
+                  </span>
                 </button>
               </div>
             )}
@@ -966,23 +1267,31 @@ export default function BuyerOrdersSection() {
               </div>
             )}
 
-            {selectedOrder.withdrawal_eligible && (
+            {isOrderWithdrawalEligible(selectedOrder) && (
               <div className="buyer-order-modal__withdrawal">
                 <p>
-                  {selectedOrder.status === "delivered" &&
+                  {(selectedOrder.status === "delivered" ||
+                    isOrderDelivered(selectedOrder)) &&
                   !selectedOrder.service_id
                     ? "Podés solicitar la devolución del producto. La solicitud se revisará según las políticas de devolución."
-                    : "Podés solicitar la cancelación de esta compra para su revisión según las políticas de devolución."}
+                    : selectedOrder.delivery_type === "pickup" ||
+                        isOrderPickupReady(selectedOrder)
+                      ? "Podés solicitar el botón de arrepentimiento de esta compra de retiro en tienda. Las comidas elaboradas están excluidas según las políticas."
+                      : "Podés solicitar la cancelación de esta compra para su revisión según las políticas de devolución."}
                 </p>
                 <button
                   type="button"
                   className="btn-secondary"
                   onClick={() => setWithdrawalOpen(true)}
                 >
-                  {selectedOrder.status === "delivered" &&
+                  {(selectedOrder.status === "delivered" ||
+                    isOrderDelivered(selectedOrder)) &&
                   !selectedOrder.service_id
                     ? "Solicitar devolución"
-                    : "Solicitar cancelación"}
+                    : selectedOrder.delivery_type === "pickup" ||
+                        isOrderPickupReady(selectedOrder)
+                      ? "Solicitar arrepentimiento"
+                      : "Solicitar cancelación"}
                 </button>
               </div>
             )}
@@ -1069,7 +1378,9 @@ export default function BuyerOrdersSection() {
           isOpen
           onClose={() => setWithdrawalOpen(false)}
           title={
-            selectedOrder.status === "delivered" && !selectedOrder.service_id
+            (selectedOrder.status === "delivered" ||
+              isOrderDelivered(selectedOrder)) &&
+            !selectedOrder.service_id
               ? "Solicitar devolución"
               : "Solicitar cancelación"
           }
@@ -1225,9 +1536,9 @@ export default function BuyerOrdersSection() {
         >
           <div className="buyer-order-modal__withdrawal-form">
             <p>
-              Confirmá solo si el problema se resolvió con el vendedor. El reclamo
-              se cerrará sin intervención de Sercio y esta acción no solicita un
-              reembolso.
+              Confirmá solo si el problema se resolvió con el vendedor. El
+              reclamo se cerrará sin intervención de Sercio y esta acción no
+              solicita un reembolso.
             </p>
             <div className="buyer-order-modal__withdrawal-actions">
               <button
@@ -1264,7 +1575,15 @@ export default function BuyerOrdersSection() {
         isOpen={Boolean(reviewOrder)}
         onClose={() => setReviewOrder(null)}
         order={reviewOrder}
-        onSuccess={() => {
+        onSuccess={(review) => {
+          setReviewOrder((current) =>
+            current ? { ...current, review } : current,
+          );
+          setSelectedOrder((current) =>
+            current && current.id === reviewOrder?.id
+              ? { ...current, review }
+              : current,
+          );
           queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
         }}
       />

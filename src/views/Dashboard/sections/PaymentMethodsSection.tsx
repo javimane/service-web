@@ -21,6 +21,7 @@ import { useAlert } from "@/context/AlertContext";
 import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
 import { useAuth } from "@/context/AuthContext";
+import { getCardConfig } from '@/services/cardPayments';
 import "./PaymentMethodsSection.css";
 
 // Helper para detectar marca de tarjeta según el BIN
@@ -141,6 +142,12 @@ export default function PaymentMethodsSection() {
   });
 
   const handleOpenModal = async () => {
+    try {
+      if ((await getCardConfig()).provider === 'payway') {
+        showSuccess('Para guardar una tarjeta Payway, usala en una compra y marcá “Guardar tarjeta después del pago”.');
+        return;
+      }
+    } catch { showError('No se pudo consultar el proveedor de tarjetas.'); return; }
     const { data: currentStatus } = await refetchIdentity();
     if (!currentStatus?.purchase_eligible) {
       showError("Verificá tu identidad y edad en la app de Sercio antes de registrar una tarjeta.");
@@ -366,7 +373,7 @@ export default function PaymentMethodsSection() {
                       </span>
                     </div>
                     <span className="payment-methods__card-brand-badge">
-                      {brandName}
+                      {brandName} · {method.provider === 'payway' ? 'Payway' : 'Getnet'}
                     </span>
                   </div>
 

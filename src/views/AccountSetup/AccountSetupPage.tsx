@@ -42,7 +42,7 @@ const stepLabels: Record<SetupStep, string> = {
 
 export default function AccountSetupPage() {
   const router = useRouter();
-  const { user, sessionStatus, loading } = useAuth();
+  const { user, sessionStatus, loading, isAgeVerified } = useAuth();
   const isProfessional = Boolean(
     sessionStatus?.is_professional ||
       sessionStatus?.professional_id ||
@@ -226,10 +226,17 @@ export default function AccountSetupPage() {
             </div>
           )}
           {step === "done" && (
-            <div className="account-setup__identity">
-              <Check size={40} aria-hidden="true" />
-              <h3>Tu cuenta está preparada</h3>
-              <p>Ya tenés tus datos personales y una dirección de entrega. Podés comprar o completar otros datos cuando quieras.</p>
+            <div className={`account-setup__identity ${!isAgeVerified ? "account-setup__identity--verification" : ""}`}>
+              {isAgeVerified ? <Check size={40} aria-hidden="true" /> : <ShieldCheck size={40} aria-hidden="true" />}
+              <h3>{isAgeVerified ? "Tu cuenta está preparada" : "Antes de comprar, verificá tu cuenta"}</h3>
+              {isAgeVerified ? (
+                <p>Ya tenés tus datos personales y una dirección de entrega. Podés comprar productos y servicios o completar otros datos cuando quieras.</p>
+              ) : (
+                <>
+                  <p>Para comprar productos o contratar servicios, verificá tu identidad desde la aplicación de Sercio. Ingresá con esta misma cuenta y completá la verificación con tu DNI y una foto de tu rostro.</p>
+                  <p>Los datos de tu cuenta deben coincidir con los del titular de la tarjeta que uses para pagar. Podés explorar la web mientras completás este paso.</p>
+                </>
+              )}
             </div>
           )}
           {error && <p className="account-setup__error" role="alert">{error}</p>}

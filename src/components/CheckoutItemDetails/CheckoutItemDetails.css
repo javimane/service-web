@@ -1,0 +1,6 @@
+.checkout-item-details { margin-top: var(--space-2); color: var(--text-secondary); font-size: var(--text-sm); }
+.checkout-item-details__list { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; }
+.checkout-item-details__row { display: flex; flex-wrap: wrap; gap: var(--space-1); min-width: 0; }
+.checkout-item-details dt { font-weight: var(--weight-semibold); }
+.checkout-item-details dd { margin: 0; overflow-wrap: anywhere; }
+.checkout-item-details__description { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }

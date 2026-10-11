@@ -24,7 +24,6 @@ import {
 } from "../../app/actions/services";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
-import ServicePaymentModal from "./components/ServicePaymentModal";
 import ProductInstallmentsModal from "../Products/components/ProductInstallmentsModal";
 import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 import CommentsCarousel from "../../components/CommentsCarousel/CommentsCarousel";
@@ -53,7 +52,6 @@ export default function ServiceDetailPage({
   const { user } = useAuth();
   const { showSuccess: showSuccessAlert, showError } = useAlert();
 
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isInstallmentsModalOpen, setIsInstallmentsModalOpen] = useState(false);
   const { data: commissionRates = [] } = useQuery({
     queryKey: ["public-marketplace-commissions"],
@@ -478,7 +476,7 @@ export default function ServiceDetailPage({
                   <button
                     type="button"
                     className="service-detail__buy-btn"
-                    onClick={() => setIsPaymentModalOpen(true)}
+                    onClick={() => router.push(`/pagar/servicio/${service.id}`)}
                   >
                     <CreditCard size={18} />
                     <span>Contratar servicio</span>
@@ -582,23 +580,6 @@ export default function ServiceDetailPage({
           viewAllText="Ver perfil"
         />
       </main>
-
-      {/* Service Payment Modal (No shipping, with shift assignment notice) */}
-      <ServicePaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        service={service}
-        professionalId={professionalId}
-        professionalName={professionalName}
-        professionalPhone={
-          profile?.phone ||
-          profile?.phone_number ||
-          professional?.phone ||
-          professional?.phone_number ||
-          company?.phone ||
-          company?.phone_number
-        }
-      />
 
       {/* Installments Breakdown Modal */}
       <ProductInstallmentsModal

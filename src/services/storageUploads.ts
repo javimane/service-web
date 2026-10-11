@@ -140,6 +140,10 @@ export async function uploadReviewImage(input: UploadInput) {
   return uploadFile(API_ENDPOINTS.storage.reviews, input);
 }
 
+export async function uploadProductCommentImage(productId: string, file: File) {
+  return uploadFile(API_ENDPOINTS.storage.productComments(productId), { file });
+}
+
 export async function uploadJobRequestImage(input: UploadInput) {
   return uploadFile(API_ENDPOINTS.storage.jobRequests, input);
 }

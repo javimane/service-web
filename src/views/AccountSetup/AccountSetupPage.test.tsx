@@ -12,6 +12,7 @@ const { router, auth } = vi.hoisted(() => ({
     user: { id: "user-1" },
     sessionStatus: { is_professional: false, professional_id: null } as any,
     loading: false,
+    isAgeVerified: false,
   },
 }));
 
@@ -74,6 +75,21 @@ describe("AccountSetupPage", () => {
     await waitFor(() => expect(updateProfileAction).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ first_name: "Ana", last_name: "Pérez" }) }),
     ));
+  });
+
+  it("informa en el último paso que el comprador debe verificarse en la app antes de pagar", async () => {
+    vi.mocked(commerceService.getUserAddresses).mockResolvedValue([{ id: "address-1" }] as any);
+    render(<AccountSetupPage />);
+
+    await screen.findByDisplayValue("Ana");
+    fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
+    await screen.findByText("Formulario de direcciones");
+    fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
+    await screen.findByText("Formulario de facturación");
+    fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
+
+    expect(await screen.findByRole("heading", { name: "Antes de comprar, verificá tu cuenta" })).toBeInTheDocument();
+    expect(screen.getByText(/titular de la tarjeta que uses para pagar/i)).toBeInTheDocument();
   });
 
   it("lleva al profesional hasta la indicación de verificar DNI y rostro en la app", async () => {

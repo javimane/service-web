@@ -161,6 +161,18 @@
   color: var(--success-color);
 }
 
+.account-setup__identity--verification {
+  max-width: none;
+  padding: var(--space-6);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+}
+
+.account-setup__identity--verification > svg {
+  color: var(--brand-blue);
+}
+
 .account-setup__identity h3,
 .account-setup__identity p {
   margin: 0;

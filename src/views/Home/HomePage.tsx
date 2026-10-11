@@ -106,14 +106,14 @@ const quickLinks = [
   {
     label: "Inmuebles",
     path: `${ROUTES.products}?category=46`,
-    icon: "/inmuebles.jpg",
+    icon: "/Icono casa 3d.png",
     badge: "BUSCÁ",
     badgeColor: "blue",
   },
   {
     label: "Vehículos",
     path: `${ROUTES.products}?category=45`,
-    icon: "/vehiculos.jpg",
+    icon: "/Icono Auto 3d.png",
     badge: "DESCUBRÍ",
     badgeColor: "blue",
   },

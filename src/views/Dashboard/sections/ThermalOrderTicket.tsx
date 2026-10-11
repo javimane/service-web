@@ -9,6 +9,7 @@ import {
   getSaleLocation,
 } from "./orderTicketData";
 import "./ThermalOrderTicket.css";
+import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
 
 type ThermalOrderTicketProps = {
   order: OrderSummary;
@@ -50,6 +51,8 @@ export default function ThermalOrderTicket({ order, qrDataUrl, storeName, branch
         {line.attributes && <span>{line.attributes}</span>}
         {line.brand && <span>Marca: {line.brand}</span>}
         {line.ean && <span>EAN: {line.ean}</span>}
+        <OrderItemPricing pricing={line.pricing} unitPrice={line.unitPrice} />
+        <span>Subtotal: ${line.subtotal.toLocaleString("es-AR")}</span>
       </div>)}
       {order.appointment && <p>Turno: {order.appointment.appointment_date} {order.appointment.appointment_time} hs</p>}
     </section>

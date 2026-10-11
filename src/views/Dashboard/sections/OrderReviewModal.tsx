@@ -2,14 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { Star, Loader2, Sparkles } from "lucide-react";
+import { uploadProductCommentImage, uploadReviewImage } from "@/services/storageUploads";
 import Modal from "@/components/Modal/Modal";
-import { OrderSummary } from "@/services/commerceService";
+import { commerceService, OrderSummary, PurchaseReview } from "@/services/commerceService";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
-import {
-  createProductCommentAction,
-  createServiceCommentAction,
-} from "@/app/actions/comments";
+import { profileService } from "@/services/profileService";
 import { createReviewAction } from "@/app/actions/reviews";
 import "./OrderReviewModal.css";
 
@@ -17,7 +15,7 @@ interface OrderReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderSummary | null;
-  onSuccess?: () => void;
+  onSuccess?: (review: PurchaseReview) => void;
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -41,28 +39,40 @@ export default function OrderReviewModal({
   const [hoverRating, setHoverRating] = useState(0);
   const [userName, setUserName] = useState("");
   const [commentText, setCommentText] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedReview, setSubmittedReview] = useState<PurchaseReview | null>(null);
 
   useEffect(() => {
-    if (isOpen && user) {
-      const defaultName =
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split("@")[0] ||
-        "";
-      setUserName(defaultName);
-    }
-  }, [isOpen, user]);
+    if (!isOpen || !user?.id) return;
+    let active = true;
+    setUserName("");
+    profileService.getProfile(user.id).then((profile) => {
+      if (active) setUserName(profile.first_name?.trim() || "");
+    }).catch(() => {
+      if (active) setUserName("");
+    });
+    return () => { active = false; };
+  }, [isOpen, user?.id]);
+
+  useEffect(() => {
+    if (!isOpen) setImageFile(null);
+  }, [isOpen]);
+
+  useEffect(() => {
+    setSubmittedReview(null);
+  }, [order?.id]);
 
   if (!order) return null;
 
   const isService = Boolean(order.service_id || order.service);
-  const serviceId = order.service_id || order.service?.id;
+  const firstProductItem = order.items?.find((item) => item.product_id || item.product?.id);
   const productId =
     order.professional_product?.product?.id ||
-    (order as any).items?.[0]?.product_id ||
-    (order as any).professional_product_id;
+    firstProductItem?.product_id ||
+    firstProductItem?.product?.id;
+  const orderReview = Array.isArray(order.review) ? order.review[0] : order.review;
+  const savedReview = submittedReview || orderReview;
 
   const title =
     order.service?.name ||
@@ -77,37 +87,36 @@ export default function OrderReviewModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savedReview) return;
 
     if (!commentText.trim()) {
       showError("Por favor, escribí tu opinión.");
       return;
     }
     if (!userName.trim()) {
-      showError("Por favor, ingresá tu nombre.");
+      showError("Completá tu nombre en tu perfil para calificar la compra.");
+      return;
+    }
+    if (imageFile && (!imageFile.type.startsWith("image/") || imageFile.size > 10 * 1024 * 1024)) {
+      showError("Elegí una imagen de hasta 10 MB.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      if (isService && serviceId) {
-        await createServiceCommentAction({
-          service_id: serviceId,
-          text: commentText.trim(),
-          user_name: userName.trim(),
-          rating,
-          user_avatar: user?.user_metadata?.avatar_url || undefined,
-          image_url: imageUrl.trim() || undefined,
-        });
-      } else if (productId) {
-        await createProductCommentAction({
-          product_id: String(productId),
-          text: commentText.trim(),
-          user_name: userName.trim(),
-          rating,
-          user_avatar: user?.user_metadata?.avatar_url || undefined,
-          image_url: imageUrl.trim() || undefined,
-        });
+      if (!isService && !productId) {
+        throw new Error("No se pudo identificar el producto de esta compra.");
       }
+      const imageUrl = imageFile
+        ? (isService
+            ? await uploadReviewImage({ file: imageFile })
+            : await uploadProductCommentImage(String(productId), imageFile)).publicUrl
+        : undefined;
+      const saved = await commerceService.createPurchaseReview(order.id, {
+        rating,
+        text: commentText.trim(),
+        image_url: imageUrl,
+      });
 
       // Also record professional review if merchant exists
       if (order.professional_id && user?.id) {
@@ -117,7 +126,7 @@ export default function OrderReviewModal({
             user_id: user.id,
             rating,
             comment: commentText.trim(),
-            image_url: imageUrl.trim() || undefined,
+            image_url: imageUrl,
           });
         } catch (revErr) {
           console.warn(
@@ -127,18 +136,11 @@ export default function OrderReviewModal({
         }
       }
 
-      // Mark order as reviewed in localStorage
-      if (typeof window !== "undefined" && order.id) {
-        localStorage.setItem(`order_reviewed_${order.id}`, "true");
-      }
-
       showSuccess("¡Reseña enviada con éxito! Gracias por tu opinión.");
       setCommentText("");
-      setImageUrl("");
-      onClose();
-      if (onSuccess) {
-        onSuccess();
-      }
+      setImageFile(null);
+      setSubmittedReview(saved);
+      onSuccess?.(saved);
     } catch (err: any) {
       showError(err?.message || "No se pudo registrar la reseña");
     } finally {
@@ -152,7 +154,7 @@ export default function OrderReviewModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Calificar tu compra"
+      title={savedReview ? "Tu calificación" : "Calificar tu compra"}
       maxWidth="520px"
     >
       <div className="order-review-modal">
@@ -175,6 +177,20 @@ export default function OrderReviewModal({
           </div>
         </div>
 
+        {savedReview ? (
+          <div className="order-review-saved">
+            <div className="order-review-saved__stars" aria-label={`${savedReview.rating} de 5 estrellas`}>
+              {Array.from({ length: 5 }, (_, index) => (
+                <Star key={index} size={20} fill={index < savedReview.rating ? "currentColor" : "none"} />
+              ))}
+            </div>
+            <strong>{savedReview.user_name}</strong>
+            <p>{savedReview.text}</p>
+            {savedReview.image_url && <img className="order-review-saved__image" src={savedReview.image_url} alt="Foto de tu reseña" />}
+            <small>{new Date(savedReview.created_at).toLocaleDateString("es-AR")}</small>
+            <button type="button" className="order-review-cancel-btn" onClick={onClose}>Cerrar</button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="order-review-form">
           <div className="order-review-field">
             <label>Tu calificación general</label>
@@ -214,8 +230,8 @@ export default function OrderReviewModal({
               type="text"
               className="order-review-input"
               value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              placeholder="Ej: Juan Pérez"
+              placeholder="Nombre de tu perfil"
+              readOnly
               required
             />
           </div>
@@ -239,12 +255,12 @@ export default function OrderReviewModal({
             <label htmlFor="order-review-image">Foto o imagen (opcional)</label>
             <input
               id="order-review-image"
-              type="url"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
               className="order-review-input"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
+              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
             />
+            {imageFile && <span className="order-review-image-name">{imageFile.name}</span>}
           </div>
 
           <div className="order-review-actions">
@@ -275,6 +291,7 @@ export default function OrderReviewModal({
             </button>
           </div>
         </form>
+        )}
       </div>
     </Modal>
   );

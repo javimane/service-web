@@ -1,7 +1,10 @@
 "use client";
 
+import { useCardPaymentConfig } from "@/hooks/useCardPaymentConfig";
+import { getCardConfig, tokenizePayway, validateCardholder } from "@/services/cardPayments";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   CreditCard,
   QrCode,
@@ -36,9 +39,12 @@ import Modal from "@/components/Modal/Modal";
 import OrderBillingDataCard from "@/components/OrderBillingDataCard/OrderBillingDataCard";
 import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
 import { calculateProductPricing } from "@/utils/productPricing";
+import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
 import { getDeliveryCoverage } from "@/utils/deliveryCoverage";
 import { requestIdentityVerification } from "@/utils/identityVerification";
 import "./ProductPaymentModal.css";
+import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
+import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
 
 interface ProductPaymentModalProps {
   isOpen: boolean;
@@ -52,6 +58,8 @@ interface ProductPaymentModalProps {
   companyFreeShippingCountryMinAmount?: number;
   isAgeRestricted?: boolean;
   canPurchase?: boolean;
+  pageMode?: boolean;
+  initialQuantity?: number;
 }
 
 export default function ProductPaymentModal({
@@ -65,16 +73,21 @@ export default function ProductPaymentModal({
   companyFreeShippingCountryMinAmount = 0,
   isAgeRestricted = false,
   canPurchase = true,
+  pageMode = false,
+  initialQuantity = 1,
 }: ProductPaymentModalProps) {
   const router = useRouter();
+  const { data: cardConfig } = useCardPaymentConfig();
   const { user, isAgeVerified } = useAuth();
   const { showSuccess, showError } = useAlert();
 
   // Step and flow states
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<number>(initialQuantity);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("pickup");
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [billingAddressId, setBillingAddressId] = useState('');
+  const [billingAddressComplete, setBillingAddressComplete] = useState(false);
   const [scheduleForNextDay, setScheduleForNextDay] = useState(false);
 
   const { data: userAddresses = [] } = useQuery<UserAddress[]>({
@@ -157,8 +170,8 @@ export default function ProductPaymentModal({
 
   // Payment states
   const [paymentMethod, setPaymentMethod] = useState<
-    "getnet_card" | "paycloud_qr"
-  >("getnet_card");
+    "card" | "paycloud_qr"
+  >("card");
   const [installments, setInstallments] = useState<number>(1);
 
   // Saved payment methods
@@ -178,12 +191,12 @@ export default function ProductPaymentModal({
       return await commerceService.getUserPaymentMethods();
     },
     enabled: isOpen,
-  });
+  select: (cards: UserPaymentMethod[]) => cards.filter(card => (card.provider || 'getnet') === cardConfig?.provider),
+    });
 
   const [useSavedCard, setUseSavedCard] = useState<boolean>(true);
   const [selectedSavedCardId, setSelectedSavedCardId] = useState<string>("");
   const [saveCardForFuture, setSaveCardForFuture] = useState<boolean>(false);
-  const [cardBank, setCardBank] = useState<string>("Santander");
   const [cardType, setCardType] = useState<"credit" | "debit">("credit");
 
   // Card details (Getnet)
@@ -215,9 +228,9 @@ export default function ProductPaymentModal({
     if (isOpen) {
       setCompletedOrder(null);
       setActiveQr(null);
-      setQuantity(1);
+      setQuantity(initialQuantity);
     }
-  }, [isOpen]);
+  }, [isOpen, initialQuantity]);
 
   // QR countdown
   useEffect(() => {
@@ -294,12 +307,18 @@ export default function ProductPaymentModal({
 
   if (!isOpen) return null;
 
+  const firstImage = product?.Images?.[0] ?? product?.images?.[0] ?? product?.image_url;
+  const productImage = typeof firstImage === "string"
+    ? firstImage : firstImage?.image_url ?? firstImage?.url;
+
   // Active pricing calculation
   const pricing = calculateProductPricing(product, quantity);
   const activeUnitPrice = pricing.unitPrice;
 
   // Active installments conditions
   const installmentsEnabled = Boolean(product?.installments_enabled);
+  const installmentsRestricted = Boolean(product?.is_food_perishable || product?.category?.no_installments ||
+    product?.category?.is_food || product?.subCategory?.no_installments || product?.subCategory?.is_food);
 
   const maxInstallments = Number(product?.max_installments || 12);
 
@@ -324,65 +343,28 @@ export default function ProductPaymentModal({
         : Number(currentShippingCalc.shippingCost || 0)
       : 0;
 
-  const fallbackGetnetDirectRates: Record<number, number> = {
-    1: 0,
-    2: 5.57,
-    3: 8.52,
-    6: 16.48,
-    9: 24.28,
-    12: 32.58,
-    18: 49.38,
-  };
-
-  const baseRateObj = commissions.find((r) => r.installments === 1);
-  const baseCommissionPct = baseRateObj
-    ? Number(baseRateObj.commission_pct)
-    : 11.0;
-
-  const currentPlanRate = commissions.find(
-    (r) => r.installments === installments,
-  );
-  const ivaPct = Number(currentPlanRate?.iva_pct ?? 21.0);
-
-  const diffCommissionPct = currentPlanRate
-    ? Math.max(0, Number(currentPlanRate.commission_pct) - baseCommissionPct)
-    : (fallbackGetnetDirectRates[installments] ?? 0);
-
-  const surchargePctWithIva = Number(
-    (diffCommissionPct * (1 + ivaPct / 100)).toFixed(2),
-  );
-  const dynamicSurchargeRate = surchargePctWithIva / 100;
-
-  // Surcharge for non-promotional installments (using Getnet dynamic rates)
-  let financingSurchargeRate = 0;
-  if (
-    !installmentsEnabled &&
-    paymentMethod === "getnet_card" &&
-    installments > 1
-  ) {
-    financingSurchargeRate = dynamicSurchargeRate;
-  }
-
-  const financingAmount = Math.round(subtotal * financingSurchargeRate);
+  const financingQuote = calculateInstallmentFinancing(subtotal, installments, commissions);
+  const financingAmount = !installmentsEnabled && paymentMethod === "card" && installments > 1 && financingQuote
+    ? financingQuote.totalAmount - subtotal : 0;
   const totalToPay = subtotal + financingAmount + calculatedShippingFee;
-  const installmentAmount = Math.round(totalToPay / installments);
+  const installmentAmount = Number((totalToPay / installments).toFixed(2));
 
   // Available installment choices
-  const possibleCounts = [1, 3, 6, 9, 12, 18];
+  const possibleCounts = [1, 2, 3, 6, 9, 12, 18];
   const interestFreeChoices = possibleCounts.filter(
-    (c) => c <= maxInstallments,
+    (c) => c <= maxInstallments && (c === 1 || (!installmentsRestricted && commissions.some((rate) => Number(rate.installments) === c))),
   );
   const standardChoices =
     commissions.length > 0
       ? commissions
           .map((c) => c.installments)
-          .filter((inst) => [1, 2, 3, 6, 9, 12, 18].includes(inst))
+          .filter((inst) => [1, 2, 3, 6, 9, 12, 18].includes(inst) && (inst === 1 || !installmentsRestricted) && calculateInstallmentFinancing(subtotal, inst, commissions))
           .sort((a, b) => a - b)
-      : [1, 2, 3, 6, 9, 12, 18];
+      : [1];
 
   // Card input formatters
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 19);
     const formatted = raw.replace(/(\d{4})(?=\d)/g, "$1 ");
     setCardNumber(formatted);
   };
@@ -470,7 +452,7 @@ export default function ProductPaymentModal({
 
     const selectedCard = savedCards.find((c) => c.id === selectedSavedCardId);
 
-    if (paymentMethod === "getnet_card") {
+    if (paymentMethod === "card") {
       if (useSavedCard && selectedCard) {
         if (cardCvv.length > 0 && cardCvv.length < 3) {
           showError("Código de seguridad (CVV) inválido.");
@@ -510,8 +492,8 @@ export default function ProductPaymentModal({
       let cardholderName: string;
       let expiration: string;
 
-      if (paymentMethod === "getnet_card" && useSavedCard && selectedCard) {
-        token = selectedCard.getnet_card_token;
+      if (paymentMethod === "card" && useSavedCard && selectedCard) {
+        token = selectedCard.getnet_card_token || '';
         cardLastFour = selectedCard.last_four;
         cardholderName = selectedCard.card_holder_name || "TITULAR";
         expiration =
@@ -526,11 +508,35 @@ export default function ProductPaymentModal({
         expiration = cardExpiry;
       }
 
+      let paywayData = {};
+      let refreshPayment: (() => ReturnType<typeof tokenizePayway>) | undefined;
+      let providerMethod: 'getnet_card' | 'payway_card' = 'getnet_card';
+      if (paymentMethod === 'card') {
+        const config = await getCardConfig();
+        if (config.provider === 'payway') {
+          if (!billingAddressId || !billingAddressComplete) throw new Error('Seleccioná o completá la dirección del comprador antes de pagar.');
+          refreshPayment = () => tokenizePayway(config, { number: cardNumber, holder: cardHolder.trim(),
+            dni: cardDni.trim(), expiry: cardExpiry, cvv: cardCvv, type: cardType },
+            useSavedCard ? selectedCard : undefined);
+          const prepared = await refreshPayment();
+          token = prepared.card_token;
+          paywayData = prepared;
+          providerMethod = 'payway_card';
+        } else if (selectedCard && (selectedCard.provider || 'getnet') !== 'getnet') {
+          throw new Error('Cambió el proveedor. Actualizá las tarjetas.');
+        } else if (!useSavedCard || !selectedCard) {
+          await validateCardholder(cardHolder, cardDni);
+        }
+      }
       const res = await commerceService.checkout({
+        ...paywayData,
+        save_card: providerMethod === 'payway_card' && saveCardForFuture && !useSavedCard,
         professional_id: professionalId,
         professional_product_id: professionalProductId,
         quantity: quantity,
+        expected_total_amount: totalToPay,
         delivery_type: deliveryType,
+        billing_address_id: providerMethod === 'payway_card' ? billingAddressId : undefined,
         ...(deliveryType !== "coordinate_with_merchant" ? originSelection : {}),
         delivery_address_id:
           deliveryType === "shipment" ? selectedAddressId : undefined,
@@ -540,11 +546,18 @@ export default function ProductPaymentModal({
             ? scheduleForNextDay
             : undefined,
         payment_method:
-          paymentMethod === "getnet_card" ? "getnet_card" : "paycloud_qr",
-        card_token: paymentMethod === "getnet_card" ? token : undefined,
-        installments: paymentMethod === "getnet_card" ? installments : 1,
+          paymentMethod === "card" ? providerMethod : "paycloud_qr",
+        ...(providerMethod === 'getnet_card' && paymentMethod === 'card'
+          ? {
+              saved_payment_method_id: useSavedCard && selectedCard ? selectedCard.id : undefined,
+              card_holder_name: useSavedCard && selectedCard ? undefined : cardHolder.trim(),
+              card_holder_dni: useSavedCard && selectedCard ? undefined : cardDni.trim(),
+            }
+          : {}),
+        card_token: paymentMethod === "card" ? token : undefined,
+        installments: paymentMethod === "card" ? installments : 1,
         card_details:
-          paymentMethod === "getnet_card"
+          paymentMethod === "card" && providerMethod === 'getnet_card'
             ? {
                 card_number: cardLastFour,
                 cardholder_name: cardholderName,
@@ -553,7 +566,7 @@ export default function ProductPaymentModal({
                 dni: cardDni.trim() || "0",
               }
             : undefined,
-      });
+      }, { refreshPayment });
 
       if (paymentMethod === "paycloud_qr" && res.qr) {
         setActiveQr(res.qr);
@@ -561,10 +574,10 @@ export default function ProductPaymentModal({
       } else {
         // Si pagó con tarjeta nueva y marcó guardar tarjeta
         if (
-          paymentMethod === "getnet_card" &&
+          paymentMethod === "card" &&
           !useSavedCard &&
           saveCardForFuture &&
-          process.env.NODE_ENV === "development"
+          providerMethod === "getnet_card" && process.env.NODE_ENV === "development"
         ) {
           const [mmStr, yyStr] = cardExpiry.split("/");
           commerceService
@@ -573,7 +586,6 @@ export default function ProductPaymentModal({
               last_four: cardLastFour,
               card_brand: cardBrand || "tarjeta",
               card_type: cardType,
-              bank_name: cardBank,
               card_holder_name: cardholderName,
               card_holder_dni: cardDni.trim(),
               expiry_month: parseInt(mmStr, 10) || 12,
@@ -583,8 +595,8 @@ export default function ProductPaymentModal({
             .catch((e) => console.error("Error guardando tarjeta:", e));
         }
 
-        setCompletedOrder(res.order || { id: `ORD-${Date.now()}` });
-        showSuccess("¡Pago procesado con éxito!");
+        setCompletedOrder({ ...res.order, card_saved: res.card_saved, save_requested: providerMethod === 'payway_card' && saveCardForFuture && !useSavedCard });
+        showSuccess(res.payment_status === 'approved' ? '¡Pago procesado con éxito!' : 'Estamos verificando tu pago. Consultá Mis Compras sin volver a pagar.');
       }
     } catch (err: any) {
       showError(
@@ -596,9 +608,8 @@ export default function ProductPaymentModal({
     }
   };
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Finalizar Compra">
-      <div className="product-payment-modal">
+  const content = (
+      <div className={`product-payment-modal${pageMode ? " product-payment-modal--page" : ""}`}>
         {/* Active QR Screen */}
         {activeQr ? (
           <div className="product-payment-modal__qr-view">
@@ -647,7 +658,7 @@ export default function ProductPaymentModal({
                 type="button"
                 className="btn-primary product-payment-modal__btn-full"
                 onClick={() => {
-                  onClose();
+                  if (!pageMode) onClose();
                   router.push("/panel?view=purchases");
                 }}
               >
@@ -667,14 +678,15 @@ export default function ProductPaymentModal({
               />
             </div>
             <h3 className="product-payment-modal__success-title">
-              ¡Pago procesado con éxito!
+              {completedOrder.status === 'paid' ? '¡Pago confirmado!' : 'Pago pendiente de confirmación'}
             </h3>
             <p className="product-payment-modal__success-desc">
-              Tu compra fue confirmada y el vendedor ha sido notificado para
-              preparar tu pedido.
+              {completedOrder.status === 'paid' ? 'Tu compra fue confirmada y el vendedor ha sido notificado.' : 'Consultá el estado desde Mis Compras. Evitá volver a pagar mientras se confirma el cobro.'}
             </p>
 
             <div className="product-payment-modal__success-card">
+              {completedOrder.status === 'paid' && completedOrder.save_requested && !completedOrder.card_saved &&
+                <p>El pago fue confirmado, pero no se pudo guardar la tarjeta. Podés volver a consultar el pago desde Mis Compras.</p>}
               <div className="product-payment-modal__summary-row">
                 <span>Producto:</span>
                 <strong>{product?.name}</strong>
@@ -684,7 +696,7 @@ export default function ProductPaymentModal({
                 <strong>{quantity} unidad(es)</strong>
               </div>
               <div className="product-payment-modal__summary-row">
-                <span>Total abonado:</span>
+                <span>Total del pedido:</span>
                 <strong>${totalToPay.toLocaleString("es-AR")}</strong>
               </div>
               <div className="product-payment-modal__summary-row">
@@ -709,7 +721,7 @@ export default function ProductPaymentModal({
               type="button"
               className="btn-primary product-payment-modal__btn-full"
               onClick={() => {
-                onClose();
+                if (!pageMode) onClose();
                 router.push("/panel?view=purchases");
               }}
             >
@@ -757,12 +769,25 @@ export default function ProductPaymentModal({
               </div>
             )}
 
+            <div className="product-payment-modal__checkout-grid">
+              <div className="product-payment-modal__checkout-main">
+                <h2 className="product-payment-modal__panel-title">Tu pedido</h2>
+
             {/* Product Summary Header */}
             <div className="product-payment-modal__product-header">
+              {productImage && <Image
+                src={productImage}
+                alt={product?.name || "Producto"}
+                width={96}
+                height={96}
+                className="product-payment-modal__product-image"
+                unoptimized
+              />}
               <div className="product-payment-modal__product-info">
                 <span className="product-payment-modal__product-name">
                   {product?.name}
                 </span>
+                <CheckoutItemDetails product={product} />
                 <span className="product-payment-modal__seller-tag">
                   Vendedor: {sellerName || "Comercio verificado"}
                 </span>
@@ -1072,10 +1097,18 @@ export default function ProductPaymentModal({
                           .
                         </span>
                       </label>
-                    )}
+                  )}
                 </div>
               )}
             </div>
+
+              </div>
+              <div className="product-payment-modal__checkout-payment">
+                <h2 className="product-payment-modal__panel-title">Pago</h2>
+                {user && paymentMethod === 'card' && cardConfig?.provider === 'payway' &&
+                  <PaymentAddressCard preferredId={selectedAddressId} onChange={(id, complete) => {
+                    setBillingAddressId(id); setBillingAddressComplete(complete);
+                  }} />}
 
             {/* Payment Method Selector */}
             <div className="product-payment-modal__section">
@@ -1086,12 +1119,12 @@ export default function ProductPaymentModal({
                 <button
                   type="button"
                   className={`product-payment-modal__payment-tab ${
-                    paymentMethod === "getnet_card"
+                    paymentMethod === "card"
                       ? "product-payment-modal__payment-tab--active"
                       : ""
                   }`}
                   onClick={() => {
-                    setPaymentMethod("getnet_card");
+                    setPaymentMethod("card");
                     setInstallments(1);
                   }}
                 >
@@ -1117,7 +1150,7 @@ export default function ProductPaymentModal({
               </div>
 
               {/* Getnet Card Form & Installments */}
-              {paymentMethod === "getnet_card" ? (
+              {paymentMethod === "card" ? (
                 <div className="product-payment-modal__card-block">
                   {/* Installments selection */}
                   <div className="product-payment-modal__form-group">
@@ -1143,23 +1176,10 @@ export default function ProductPaymentModal({
                             );
                           })
                         : standardChoices.map((c) => {
-                            const rateObj = commissions.find(
-                              (r) => r.installments === c,
-                            );
-                            const iva = Number(rateObj?.iva_pct ?? 21.0);
-                            const diffComm = rateObj
-                              ? Math.max(
-                                  0,
-                                  Number(rateObj.commission_pct) -
-                                    baseCommissionPct,
-                                )
-                              : (fallbackGetnetDirectRates[c] ?? 0);
-                            const surchargePct = Number(
-                              (diffComm * (1 + iva / 100)).toFixed(2),
-                            );
-                            const rate = surchargePct / 100;
-                            const totalW = Math.round(subtotal * (1 + rate));
-                            const instPrice = Math.round(totalW / c);
+                            const quote = calculateInstallmentFinancing(subtotal, c, commissions)!;
+                            const surchargePct = quote.surchargePct;
+                            const totalW = quote.totalAmount;
+                            const instPrice = quote.installmentAmount;
                             return (
                               <option key={c} value={c}>
                                 {c === 1
@@ -1310,35 +1330,15 @@ export default function ProductPaymentModal({
                       <div className="product-payment-modal__form-row">
                         <div className="product-payment-modal__form-group flex-1">
                           <label className="product-payment-modal__input-label">
-                            Banco emisor
-                          </label>
-                          <select
-                            className="product-payment-modal__select"
-                            value={cardBank}
-                            onChange={(e) => setCardBank(e.target.value)}
-                          >
-                            <option value="Santander">Santander</option>
-                            <option value="Galicia">Galicia</option>
-                            <option value="BBVA">BBVA</option>
-                            <option value="Macro">Macro</option>
-                            <option value="Banco Nación">Banco Nación</option>
-                            <option value="Banco Provincia">
-                              Banco Provincia
-                            </option>
-                            <option value="Mercado Pago">Mercado Pago</option>
-                            <option value="Brubank">Brubank</option>
-                            <option value="Ualá">Ualá</option>
-                            <option value="Otro">Otro Banco</option>
-                          </select>
-                        </div>
-                        <div className="product-payment-modal__form-group flex-1">
-                          <label className="product-payment-modal__input-label">
                             Tipo
                           </label>
                           <select
                             className="product-payment-modal__select"
                             value={cardType}
-                            onChange={(e) => setCardType(e.target.value as any)}
+                            onChange={(e) => {
+                              setCardType(e.target.value as "credit" | "debit");
+                              if (e.target.value === "debit") setInstallments(1);
+                            }}
                           >
                             <option value="credit">Crédito</option>
                             <option value="debit">Débito</option>
@@ -1503,7 +1503,9 @@ export default function ProductPaymentModal({
               <button
                 type="submit"
                 className="btn-primary product-payment-modal__btn-submit"
-                disabled={isSubmitting || (isAgeRestricted && !canPurchase)}
+                disabled={isSubmitting || (isAgeRestricted && !canPurchase) ||
+                  (paymentMethod === "card" && installments > 1 && !installmentsEnabled && !financingQuote) ||
+                  (paymentMethod === "card" && cardConfig?.provider === "payway" && !billingAddressComplete)}
               >
                 {isSubmitting ? (
                   <>
@@ -1528,9 +1530,13 @@ export default function ProductPaymentModal({
               <ShieldCheck size={16} />
               <span>Transacción cifrada y protegida</span>
             </div>
+              </div>
+            </div>
           </form>
         )}
       </div>
-    </Modal>
+  );
+  return pageMode ? content : (
+    <Modal isOpen={isOpen} onClose={onClose} title="Finalizar Compra">{content}</Modal>
   );
 }

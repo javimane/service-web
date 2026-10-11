@@ -24,6 +24,7 @@ export type OrderStatus =
   | "dispatched"
   | "in_transit"
   | "delivered"
+  | "settled"
   | "cancelled"
   | "refunded";
 
@@ -39,8 +40,22 @@ export type GeneratedReportNotification = {
   created_at: string;
 };
 
+export type OrderPricingSnapshot = {
+  version: 1;
+  original_unit_price: number;
+  applied_unit_price: number;
+  price_type: "regular" | "offer" | "wholesale";
+  unit_discount_amount: number;
+  unit_discount_percent: number;
+  promotion: "2x1" | "3x2" | null;
+  paid_units: number;
+  free_units: number;
+  total_discount_amount: number;
+};
+
 export type OrderSummary = {
   id: string;
+  review?: PurchaseReview | PurchaseReview[] | null;
   order_number?: string | null;
   status: OrderStatus;
   delivery_type: DeliveryType;
@@ -53,9 +68,12 @@ export type OrderSummary = {
   paid_at?: string | null;
   cancelled_at?: string | null;
   delivered_at?: string | null;
+  pickup_ready_at?: string | null;
+  pickup_ready_ap?: string | null;
   cancel_reason?: string | null;
   payment_method?: string | null;
   payment_provider?: string | null;
+  card_type?: string | null;
   installments?: number | null;
   withdrawal_eligible?: boolean;
   withdrawal_requested?: boolean;
@@ -98,7 +116,10 @@ export type OrderSummary = {
       size_letter?: string | null;
       size_number?: number | null;
       attributes?: Array<{ name: string; value: string }> | null;
-      products_images?: Array<{ image_url: string; display_order?: number | null }> | null;
+      products_images?: Array<{
+        image_url: string;
+        display_order?: number | null;
+      }> | null;
     };
   } | null;
   service?: {
@@ -162,8 +183,14 @@ export type OrderSummary = {
       color?: string | null;
       size_letter?: string | null;
       size_number?: number | null;
-      attributes?: Array<{ name?: string; value?: string }> | Record<string, string> | null;
-      products_images?: Array<{ image_url: string; display_order?: number | null }> | null;
+      attributes?:
+        | Array<{ name?: string; value?: string }>
+        | Record<string, string>
+        | null;
+      products_images?: Array<{
+        image_url: string;
+        display_order?: number | null;
+      }> | null;
     } | null;
     service?: { id: string; name: string } | null;
     product_name?: string;
@@ -171,6 +198,7 @@ export type OrderSummary = {
     quantity: number;
     unit_price: number;
     subtotal: number;
+    pricing_snapshot?: OrderPricingSnapshot | null;
   }>;
   branch_id?: string | null;
   origin_address_id?: number | null;
@@ -183,6 +211,15 @@ export type OrderSummary = {
     zip_code?: string | null;
     phone?: string | null;
   } | null;
+};
+
+export type PurchaseReview = {
+  id: string;
+  rating: number;
+  text: string;
+  image_url?: string | null;
+  user_name: string;
+  created_at: string;
 };
 
 export type ReturnTicket = {
@@ -203,8 +240,19 @@ export type ReturnTicket = {
     province?: string | null;
     department?: string | null;
   };
-  buyer: { name: string; phone?: string | null; email?: string | null; address?: string | null; zip_code?: string | null };
-  items: Array<{ name: string; quantity: number; ean?: string | null; attributes?: unknown }>;
+  buyer: {
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+    zip_code?: string | null;
+  };
+  items: Array<{
+    name: string;
+    quantity: number;
+    ean?: string | null;
+    attributes?: unknown;
+  }>;
 };
 
 export type OrderServiceAppointment = {
@@ -322,7 +370,11 @@ export type UserDataBank = {
 export type UserPaymentMethod = {
   id: string;
   user_id: string;
-  getnet_card_token: string;
+  getnet_card_token?: string | null;
+  provider?: "getnet" | "payway";
+  provider_card_token?: string;
+  payway_payment_method_id?: number;
+  card_bin?: string;
   last_four: string;
   card_brand?: string;
   card_type?: "credit" | "debit" | string;
@@ -336,7 +388,11 @@ export type UserPaymentMethod = {
 };
 
 export type CreatePaymentMethodDto = {
-  getnet_card_token: string;
+  getnet_card_token?: string;
+  provider?: "getnet" | "payway";
+  provider_card_token?: string;
+  payway_payment_method_id?: number;
+  card_bin?: string;
   last_four?: string;
   card_brand?: string;
   card_type?: "credit" | "debit" | string;
@@ -515,6 +571,11 @@ export type CartItem = {
     max_installments?: number;
   } | null;
   product?: {
+    brand?: string | null;
+    attributes?: unknown;
+    color?: string | null;
+    size_letter?: string | null;
+    size_number?: number | null;
     id: string;
     name: string;
     image_url?: string | null;
@@ -529,7 +590,8 @@ export type CartItem = {
     installments_enabled?: boolean;
     max_installments?: number;
     is_food_perishable?: boolean;
-    category?: { id: number; name: string } | null;
+    category?: { id: number; name: string; no_installments?: boolean; is_food?: boolean } | null;
+    subCategory?: { no_installments?: boolean; is_food?: boolean } | null;
     professional?: {
       id: number;
       name?: string;
@@ -537,6 +599,7 @@ export type CartItem = {
     } | null;
   } | null;
   service?: {
+    description?: string | null;
     id: string;
     name: string;
     price: number;
@@ -602,6 +665,7 @@ export type MarketplaceCommission = {
   iva_pct: number;
   iva_commission_pct: number;
   total_commission_pct: number;
+  coefficient?: number | null;
   description?: string;
   is_active: boolean;
 };
@@ -739,6 +803,8 @@ export type CreateUserAddressDto = {
 };
 
 export type CheckoutDto = {
+  payway_device_fingerprint_id?: string;
+  billing_address_id?: string;
   idempotency_key?: string;
   expected_total_amount?: number;
   professional_id: number;
@@ -768,7 +834,18 @@ export type CheckoutDto = {
   };
   shipping_cost?: number;
   billing_data_id?: string;
-  payment_method: "getnet" | "getnet_card" | "paycloud_qr";
+  payment_method:
+    | "getnet"
+    | "getnet_card"
+    | "payway_card"
+    | "card"
+    | "paycloud_qr";
+  payway_payment_method_id?: number;
+  card_bin?: string;
+  saved_payment_method_id?: string;
+  save_card?: boolean;
+  card_holder_name?: string;
+  card_holder_dni?: string;
   card_token?: string;
   installments?: number;
   card_details?: {
@@ -814,6 +891,11 @@ const query = (params: Record<string, string | number | undefined | null>) => {
 
 export const commerceService = {
   // Orders
+  createPurchaseReview: (orderId: string, data: { rating: number; text: string; image_url?: string }) =>
+    apiClient<PurchaseReview>(`${API_ENDPOINTS.orders.detail(orderId)}/review`, {
+      method: "POST",
+      body: data,
+    }),
   merchantOrders: (
     page = 1,
     limit = 10,
@@ -845,6 +927,12 @@ export const commerceService = {
       method: "POST",
     }),
 
+  syncPaywayPayment: (id: string) =>
+    apiClient<{ order_id: string; status: string }>(
+      `${API_ENDPOINTS.orders.detail(id)}/sync-payway-payment`,
+      { method: "POST" },
+    ),
+
   cancelOrder: (id: string, reason?: string) =>
     apiClient<OrderSummary>(API_ENDPOINTS.orders.cancel(id), {
       method: "POST",
@@ -864,10 +952,12 @@ export const commerceService = {
     }),
 
   confirmClaimResolved: (id: string) =>
-    apiClient<{ id: string; order_id: string; status: string; resolution: string }>(
-      API_ENDPOINTS.orders.confirmClaimResolved(id),
-      { method: "POST" },
-    ),
+    apiClient<{
+      id: string;
+      order_id: string;
+      status: string;
+      resolution: string;
+    }>(API_ENDPOINTS.orders.confirmClaimResolved(id), { method: "POST" }),
 
   returnTicket: (id: string) =>
     apiClient<ReturnTicket>(API_ENDPOINTS.orders.returnTicket(id)),
@@ -912,7 +1002,11 @@ export const commerceService = {
       },
     ),
 
-  calculateServiceCheckout: (serviceId: string, quantity: number, installments: number) =>
+  calculateServiceCheckout: (
+    serviceId: string,
+    quantity: number,
+    installments: number,
+  ) =>
     apiClient<{ totalAmount: number; financingSurchargeAmount: number }>(
       API_ENDPOINTS.orders.calculateShipping,
       {
@@ -993,7 +1087,9 @@ export const commerceService = {
       method: "DELETE",
     }),
 
-  checkout: async (data: CheckoutDto) => {
+  checkout: async (data: CheckoutDto, options: {
+    refreshPayment?: () => Promise<Partial<CheckoutDto>>;
+  } = {}) => {
     // Keep the same key after a timeout or lost response. The API claims it
     // atomically before contacting a payment provider.
     const intent = JSON.stringify({
@@ -1010,6 +1106,7 @@ export const commerceService = {
       payment_method: data.payment_method,
       installments: data.installments,
       billing_data_id: data.billing_data_id,
+      billing_address_id: data.billing_address_id,
     });
     const storageKey = `checkout-attempt:${intent}`;
     const expiryKey = `${storageKey}:qr-expiry`;
@@ -1020,43 +1117,86 @@ export const commerceService = {
         window.sessionStorage.removeItem(expiryKey);
       }
     }
-    const key = data.idempotency_key ||
-      (typeof window !== "undefined" ? window.sessionStorage.getItem(storageKey) : null) ||
+    let key =
+      data.idempotency_key ||
+      (typeof window !== "undefined"
+        ? window.sessionStorage.getItem(storageKey)
+        : null) ||
       crypto.randomUUID();
-    if (typeof window !== "undefined") window.sessionStorage.setItem(storageKey, key);
-    const response = await apiClient<{
+    if (typeof window !== "undefined")
+      window.sessionStorage.setItem(storageKey, key);
+    let requestData = data;
+    const send = () => apiClient<{
       order_id: string;
       payment_method: string;
       total_amount: number;
       qr_code?: string;
       qr_image_url?: string;
       qr_expires_at?: string;
+      status?: string;
+      card_saved?: boolean;
+      verification_pending?: boolean;
     }>(API_ENDPOINTS.orders.checkout, {
       method: "POST",
-      body: { ...data, idempotency_key: key },
-    }).catch((error: { data?: { error_code?: string } }) => {
+      body: { ...requestData, idempotency_key: key },
+    });
+    type CheckoutError = Error & { statusCode?: number; data?: { error_code?: string; retryable?: boolean; requires_new_attempt?: boolean } };
+    const handleError = (error: CheckoutError) => {
       if (error.data?.error_code === "IDENTITY_VERIFICATION_REQUIRED") {
         requestIdentityVerification();
       }
       if (
         typeof window !== "undefined" &&
-        ["QR_GENERATION_REJECTED", "CHECKOUT_FAILED"].includes(error.data?.error_code ?? "")
+        ["QR_GENERATION_REJECTED", "CHECKOUT_FAILED", "CHECKOUT_NOT_SUBMITTED"].includes(
+          error.data?.error_code ?? "",
+        )
       ) {
         window.sessionStorage.removeItem(storageKey);
         window.sessionStorage.removeItem(expiryKey);
       }
       throw error;
+    };
+    const response = await send().catch(async (error: CheckoutError) => {
+      // A 409 only reports a previously failed attempt: this request did not charge.
+      // A new provider rejection (400) must remain visible, without an automatic charge loop.
+      if (error.statusCode === 409 && error.data?.error_code === 'CHECKOUT_FAILED' &&
+          error.data.retryable === true && error.data.requires_new_attempt === true &&
+          (data.payment_method !== 'payway_card' || options.refreshPayment)) {
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.removeItem(storageKey);
+          window.sessionStorage.removeItem(expiryKey);
+        }
+        const freshPayment = options.refreshPayment ? await options.refreshPayment() : {};
+        requestData = { ...data, ...freshPayment };
+        key = crypto.randomUUID();
+        if (typeof window !== 'undefined') window.sessionStorage.setItem(storageKey, key);
+        return send().catch(handleError);
+      }
+      return handleError(error);
     });
     // A confirmed card response ends this attempt. Keep QR attempts until they
     // are resolved so reopening the checkout cannot issue a second QR.
-    if (!response.qr_code && typeof window !== "undefined") {
+    if (
+      !response.qr_code &&
+      response.status !== "pending_payment" &&
+      typeof window !== "undefined"
+    ) {
       window.sessionStorage.removeItem(storageKey);
       window.sessionStorage.removeItem(expiryKey);
     } else if (response.qr_expires_at && typeof window !== "undefined") {
-      window.sessionStorage.setItem(expiryKey, String(new Date(response.qr_expires_at).getTime()));
+      window.sessionStorage.setItem(
+        expiryKey,
+        String(new Date(response.qr_expires_at).getTime()),
+      );
     }
     return {
-      order: { id: response.order_id, total_amount: response.total_amount } as OrderSummary,
+      order: {
+        id: response.order_id,
+        total_amount: response.total_amount,
+        status: response.status || "pending_payment",
+      } as OrderSummary,
+      card_saved: response.card_saved,
+      verification_pending: response.verification_pending,
       qr: response.qr_code
         ? {
             order_id: response.order_id,
@@ -1068,7 +1208,9 @@ export const commerceService = {
         : undefined,
       payment_status: response.qr_code
         ? ("pending" as const)
-        : ("approved" as const),
+        : response.status === "paid"
+          ? ("approved" as const)
+          : ("pending" as const),
     };
   },
 
@@ -1538,7 +1680,9 @@ export const commerceService = {
 
   // User Payment Methods (Saved Cards)
   getIdentityVerificationStatus: () =>
-    apiClient<IdentityVerificationStatus>(API_ENDPOINTS.identityVerification.me),
+    apiClient<IdentityVerificationStatus>(
+      API_ENDPOINTS.identityVerification.me,
+    ),
 
   getUserPaymentMethods: () =>
     apiClient<UserPaymentMethod[]>(API_ENDPOINTS.paymentMethods.base),

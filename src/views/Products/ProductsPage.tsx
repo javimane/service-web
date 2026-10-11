@@ -616,13 +616,7 @@ export default function ProductsPage() {
           <div className="products-results">
             {/* Header controls inside results for better flow */}
             <div className="results-header">
-              <div className="results-header__info">
-                <p>
-                  {isLoading
-                    ? "Buscando..."
-                    : `${normalizedProductsResponse.count} productos encontrados`}
-                </p>
-              </div>
+              <div className="results-header__info"></div>
               <div className="results-header__controls">
                 <div className="products-page__sort">
                   <SlidersHorizontal size={16} />

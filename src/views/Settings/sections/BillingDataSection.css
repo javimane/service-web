@@ -354,7 +354,20 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
+  flex-wrap: wrap;
   margin-top: var(--space-2);
+}
+
+.billing-section__form-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 42px;
+  min-height: 42px;
+  margin: 0;
+  border-width: 1px;
+  line-height: 1;
 }
 
 @media (max-width: 640px) {

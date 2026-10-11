@@ -92,6 +92,10 @@ axiosInstance.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    if (isBrowser && error.response?.status === 403 &&
+        ["ACCOUNT_BLOCKED", "ACCOUNT_PAUSED"].includes(error.response?.data?.code)) {
+      window.dispatchEvent(new Event("account-restricted"));
+    }
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !/\/api\/(?:backend\/)?auth\/(login|register|sync-oauth|refresh)(?:[/?]|$)/.test(originalRequest.url || "")) {
       // Si estamos en el servidor, verificar si podemos escribir cookies (Server Actions / Route Handlers)

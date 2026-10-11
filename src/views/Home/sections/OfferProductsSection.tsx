@@ -205,12 +205,16 @@ export default function OfferProductsSection({
                 onPointerLeave={handlePointerUp}
               >
                 {productsList.map((product) => (
-                  <button
+                  <article
                     key={product.id}
-                    type="button"
                     className="offer-product-card"
-                    onClick={() => handleCardClick(product)}
                   >
+                    <button
+                      type="button"
+                      className="offer-product-card__open"
+                      onClick={() => handleCardClick(product)}
+                      aria-label={`Ver ${product.title}`}
+                    />
                     <div className="offer-product-card__image">
                       <img
                         src={product.image}
@@ -274,7 +278,7 @@ export default function OfferProductsSection({
                         </div>
                       </div>
                     </div>
-                  </button>
+                  </article>
                 ))}
               </div>
 

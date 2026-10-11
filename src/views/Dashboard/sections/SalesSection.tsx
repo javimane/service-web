@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Clock,
@@ -44,6 +45,7 @@ import OrderChatModal from "./OrderChatModal";
 import { getBuyerEmail, getBuyerName, getBuyerPhone, getDeliveryAddress, getOrderLines, getProductImage, isPrintableOrder } from "./orderTicketData";
 import DateRangeFilter, { DateRangeValue, toUtcDateRange } from "./DateRangeFilter";
 import "./SalesSection.css";
+import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
 
 const STATUS_FILTERS: Array<{ label: string; value: string }> = [
   { label: "Todas", value: "" },
@@ -63,6 +65,8 @@ export default function SalesSection() {
   const queryClient = useQueryClient();
   const { sessionStatus, user } = useAuth();
   const { showSuccess, showError } = useAlert();
+  const searchParams = useSearchParams();
+  const orderIdParam = searchParams?.get("orderId");
 
   const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
   const { data: professional } = useQuery({
@@ -86,6 +90,20 @@ export default function SalesSection() {
   const [returnReceiptOpen, setReturnReceiptOpen] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
+
+  // Auto-cargar orden si viene orderId por URL (ej. desde notificación)
+  const activeOrderId = selectedOrder?.id || orderIdParam || undefined;
+  const { data: routeOrderDetail } = useQuery({
+    queryKey: ["merchant-order-detail", activeOrderId],
+    queryFn: () => commerceService.orderDetail(activeOrderId!),
+    enabled: Boolean(activeOrderId && !selectedOrder),
+  });
+
+  useEffect(() => {
+    if (routeOrderDetail && !selectedOrder) {
+      setSelectedOrder(routeOrderDetail);
+    }
+  }, [routeOrderDetail, selectedOrder]);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [pickupCode, setPickupCode] = useState("");
@@ -400,7 +418,44 @@ export default function SalesSection() {
     onError: () => showError("No se pudo guardar la información de transporte."),
   });
 
-  const getStatusBadge = (status: OrderStatus) => {
+  const isOrderPickupReady = (order?: Partial<OrderSummary> | null) => {
+    if (!order) return false;
+    if (order.status === "ready_for_pickup") return true;
+    const hasPickupReadyTimestamp = Boolean(
+      order.pickup_ready_at || (order as any)?.pickup_ready_ap,
+    );
+    return Boolean(
+      order.delivery_type === "pickup" &&
+        hasPickupReadyTimestamp &&
+        order.status !== "delivered" &&
+        (order.status as string) !== "settled" &&
+        !order.delivered_at &&
+        order.status !== "cancelled" &&
+        order.status !== "refunded",
+    );
+  };
+
+  const getStatusBadge = (
+    status: OrderStatus,
+    order?: Partial<OrderSummary> | null,
+  ) => {
+    if (
+      status === "delivered" ||
+      (status as string) === "settled" ||
+      Boolean(order?.delivered_at) ||
+      order?.shipment_status === "delivered"
+    ) {
+      return (
+        <span className="sales-badge sales-badge--delivered">Entregado</span>
+      );
+    }
+
+    if (isOrderPickupReady(order)) {
+      return (
+        <span className="sales-badge sales-badge--ready">Listo para retiro</span>
+      );
+    }
+
     switch (status) {
       case "pending":
         return <span className="sales-badge sales-badge--pending">Pendiente</span>;
@@ -418,6 +473,7 @@ export default function SalesSection() {
       case "in_transit":
         return <span className="sales-badge sales-badge--transit">En tránsito</span>;
       case "delivered":
+      case "settled":
         return <span className="sales-badge sales-badge--delivered">Entregado</span>;
       case "cancelled":
         return <span className="sales-badge sales-badge--cancelled">Cancelado</span>;
@@ -762,7 +818,7 @@ export default function SalesSection() {
                           <span className="sales-table__schedule">Programado: {order.scheduled_delivery_date.split("-").reverse().join("/")}</span>
                         )}
                       </td>
-                      <td>{getStatusBadge(order.status)}</td>
+                      <td>{getStatusBadge(order.status, order)}</td>
                       <td className="sales-table__total">
                         ${Number(order.total_amount ?? 0).toLocaleString("es-AR")}
                       </td>
@@ -850,7 +906,7 @@ export default function SalesSection() {
               <div className="order-detail-grid">
                 <div>
                   <span className="order-detail-label">Estado de la venta:</span>
-                  <span className="order-detail-value">{getStatusBadge(selectedOrder.status)}</span>
+                  <span className="order-detail-value">{getStatusBadge(selectedOrder.status, selectedOrder)}</span>
                 </div>
                 <div>
                   <span className="order-detail-label">Fecha de compra:</span>
@@ -987,7 +1043,9 @@ export default function SalesSection() {
                     {item.brand && <span>Marca: {item.brand}</span>}
                     {item.attributes && <span>Características: {item.attributes}</span>}
                     {item.ean && <span>Código de barras (EAN): {item.ean}</span>}
-                    <span>Cantidad: {item.quantity} · Precio unitario: ${item.unitPrice.toLocaleString("es-AR")} · Subtotal: ${item.subtotal.toLocaleString("es-AR")}</span>
+                    <span>Cantidad: {item.quantity}</span>
+                    <OrderItemPricing pricing={item.pricing} unitPrice={item.unitPrice} />
+                    <span>Subtotal: ${item.subtotal.toLocaleString("es-AR")}</span>
                   </div>
                 </div>)}
               </div>

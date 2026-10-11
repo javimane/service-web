@@ -80,6 +80,7 @@
 
 /* ===== OFFER PRODUCT CARD ===== */
 .offer-product-card {
+  position: relative;
   min-width: 220px;
   width: 220px;
   min-height: 340px;
@@ -88,7 +89,6 @@
   overflow: hidden;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-card);
-  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   display: flex;
@@ -98,15 +98,27 @@
   appearance: none;
 }
 
+.offer-product-card__open {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.offer-product-card__open:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
+}
+
 .offer-product-card:hover {
   transform: translateY(-6px);
   box-shadow: var(--shadow-xl);
   border-color: var(--accent-color);
-}
-
-.offer-product-card:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
 }
 
 /* Image */

@@ -8,6 +8,7 @@ import {
   commerceService,
   MarketplaceCommission,
 } from "@/services/commerceService";
+import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
 import "./ProductInstallmentsModal.css";
 
 interface ProductInstallmentsModalProps {
@@ -88,24 +89,29 @@ export default function ProductInstallmentsModal({
       };
     }
 
+    const quote = calculateInstallmentFinancing(price, count, commissions);
+    if (quote) {
+      return {
+        count,
+        totalWithInterest: quote.totalAmount,
+        installmentAmount: quote.installmentAmount,
+        surchargePct: quote.surchargePct,
+        badgeLabel:
+          quote.surchargePct > 0
+            ? `+${quote.surchargePct.toFixed(2)}%`
+            : "Sin recargo",
+      };
+    }
+
     const rateObj = commissions.find((c) => c.installments === count);
     const ivaPct = Number(rateObj?.iva_pct ?? 21.0);
-
-    // 1) Restar de la columna commission_pct la comisión en 1 cuota:
-    // Ej para 2 cuotas: 16.57% - 11% = 5.57% (tasa directa de Getnet)
     const diffCommissionPct = rateObj
       ? Math.max(0, Number(rateObj.commission_pct) - baseCommissionPct)
       : (FALLBACK_GETNET_DIRECT_RATES[count] ?? 0);
-
-    // 2) Incluir el IVA (21%) sobre esa tasa directa para calcular el recargo total:
-    // Ej: 5.57% * (1 + 0.21) = 6.74%
     const surchargePctWithIva = Number(
       (diffCommissionPct * (1 + ivaPct / 100)).toFixed(2),
     );
-    const surchargeRate = surchargePctWithIva / 100;
-
-    // 3) Monto total con interés financiado y valor de cada cuota fija:
-    const totalWithInterest = Math.round(price * (1 + surchargeRate));
+    const totalWithInterest = Math.round(price * (1 + surchargePctWithIva / 100));
     const installmentAmount = Math.round(totalWithInterest / count);
 
     return {

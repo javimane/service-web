@@ -9,6 +9,73 @@
   padding: var(--space-2) var(--space-1);
 }
 
+.service-payment-modal--page {
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+}
+
+.service-payment-modal--page .service-payment-modal__checkout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.service-payment-modal--page .service-payment-modal__checkout-main,
+.service-payment-modal--page .service-payment-modal__checkout-payment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+  padding: var(--space-6);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.service-payment-modal__panel-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+
+.service-payment-modal__service-image {
+  width: 96px;
+  height: 96px;
+  flex: none;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.service-payment-modal--page .service-payment-modal__qr-view,
+.service-payment-modal--page .service-payment-modal__success-view {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: var(--space-8);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+@media (max-width: 1024px) {
+  .service-payment-modal--page .service-payment-modal__checkout-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .service-payment-modal--page .service-payment-modal__checkout-main,
+  .service-payment-modal--page .service-payment-modal__checkout-payment {
+    padding: var(--space-4);
+  }
+  .service-payment-modal__service-image { width: 72px; height: 72px; }
+}
+
 .service-payment-modal__form {
   display: flex;
   flex-direction: column;

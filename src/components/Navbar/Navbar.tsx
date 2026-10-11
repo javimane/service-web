@@ -45,28 +45,27 @@ import {
   HelpCircle,
   MapPin,
   ShoppingCart,
+  ShoppingBag,
+  Store,
+  Building2,
+  Truck,
+  Map as MapIcon,
+  Award,
+  AlertTriangle,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
 import BrandLogo from "../BrandLogo/BrandLogo";
 import { getGuestCart } from "../../utils/guestCart";
+import { enableDesktopNotifications } from "../../services/desktopNotifications";
+import {
+  getNotificationMeta,
+  getNotificationTargetUrl,
+  getNotificationDescription,
+  getReportDownloadUrl,
+} from "../../utils/notificationNavigation";
 
 import "./Navbar.css";
-
-const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case "like":
-      return { icon: Heart, color: "red" };
-    case "comment":
-      return { icon: MessageSquare, color: "blue" };
-    case "propossal":
-      return { icon: Briefcase, color: "purple" };
-    case "message":
-      return { icon: MessageSquare, color: "green" };
-    default:
-      return { icon: Bell, color: "gray" };
-  }
-};
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -81,6 +80,11 @@ export default function Navbar() {
   const { openAuth } = useAuthModal();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [desktopPermission, setDesktopPermission] = useState<
+    NotificationPermission | "unsupported"
+  >("default");
+  const [isEnablingDesktop, setIsEnablingDesktop] = useState(false);
+  const [desktopNotice, setDesktopNotice] = useState("");
   const [isPlansOpen, setIsPlansOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -93,7 +97,8 @@ export default function Navbar() {
     queryKey: ["user-cart", user?.id ?? "guest"],
     queryFn: () => (user?.id ? commerceService.cart() : getGuestCart()),
   });
-  const cartCount = cart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0;
+  const cartCount =
+    cart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0;
 
   // Traer las notificaciones reales
   const { data: notifications = [] } = useQuery({
@@ -108,6 +113,7 @@ export default function Navbar() {
       return [];
     },
     enabled: !!user?.id,
+    refetchInterval: 30_000,
   });
 
   // Traer direcciones del usuario para el botón "Enviar a:"
@@ -127,7 +133,9 @@ export default function Navbar() {
   });
 
   const defaultAddress = useMemo(() => {
-    return userAddresses.find((a: any) => a.is_default) || userAddresses[0] || null;
+    return (
+      userAddresses.find((a: any) => a.is_default) || userAddresses[0] || null
+    );
   }, [userAddresses]);
 
   const deliveryAddressLabel = useMemo(() => {
@@ -156,6 +164,8 @@ export default function Navbar() {
     },
   });
 
+  const isProfessional = Boolean(sessionStatus?.is_professional);
+
   const handleNotificationClick = (notif: any) => {
     if (!notif.is_read) {
       markAsReadMutation.mutate(notif.id);
@@ -163,21 +173,15 @@ export default function Navbar() {
 
     setIsNotifOpen(false);
 
-    switch (notif.type) {
-      case "proposal":
-      case "propossal":
-        router.push(`${ROUTES.dashboard}?view=proposals-view`);
-        break;
-      case "message":
-        router.push(ROUTES.messages);
-        break;
-      case "promotion":
-        router.push(`${ROUTES.dashboard}?view=promotions-all`);
-        break;
-      default:
-        router.push(`${ROUTES.dashboard}?view=notifications`);
-        break;
+    if (String(notif.type || "").toUpperCase() === "REPORT_READY") {
+      const downloadUrl = getReportDownloadUrl(notif);
+      if (downloadUrl) window.open(downloadUrl, "_blank", "noopener,noreferrer");
+      else window.alert("El enlace de este reporte no está disponible. Solicitá un nuevo reporte.");
+      return;
     }
+
+    const targetUrl = getNotificationTargetUrl(notif, { isProfessional });
+    router.push(targetUrl);
   };
 
   const { data: unreadMessagesCount = 0 } = useQuery({
@@ -256,23 +260,113 @@ export default function Navbar() {
     { label: "Empleos", path: ROUTES.jobs },
   ];
 
+  // Traer perfil para roles logísticos / empresa
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile-me"],
+    queryFn: () => commerceService.getUserProfile(),
+    enabled: Boolean(user?.id),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isProfessionalActive = Boolean(
+    sessionStatus?.is_professional &&
+    (sessionStatus?.professional_active || hasProfessionalSubscription),
+  );
+
+  const isCompanyActive = Boolean(
+    sessionStatus?.role_id === 3 && isProfessionalActive,
+  );
+
+  const isEmployer =
+    userProfile?.logistics_role === "transport_company" ||
+    userProfile?.logistics_role === "company" ||
+    isCompanyActive;
+
   const dashboardLinks = [
     { label: "Panel", icon: LayoutDashboard, path: ROUTES.dashboard },
+    {
+      label: "Ventas",
+      icon: BarChart3,
+      path: `${ROUTES.dashboard}?view=sales`,
+    },
+    {
+      label: "Liquidaciones",
+      icon: CreditCard,
+      path: `${ROUTES.dashboard}?view=liquidations`,
+    },
+    {
+      label: "Datos Comerciales",
+      icon: Building2,
+      path: `${ROUTES.dashboard}?view=commercial-data`,
+    },
+    {
+      label: "Sucursales",
+      icon: Store,
+      path: `${ROUTES.dashboard}?view=branches`,
+    },
+    {
+      label: "Reputación y Score",
+      icon: Award,
+      path: `${ROUTES.dashboard}?view=reputation`,
+    },
+    ...(isEmployer
+      ? [
+          {
+            label: "Riders y Fleteros",
+            icon: Truck,
+            path: `${ROUTES.dashboard}?view=riders`,
+          },
+          {
+            label: "Mapa de Envíos",
+            icon: MapIcon,
+            path: `${ROUTES.dashboard}?view=fleet-map`,
+          },
+        ]
+      : []),
+    {
+      label: "Productos",
+      icon: Package,
+      path: `${ROUTES.dashboard}?view=products`,
+    },
+    {
+      label: "Servicios",
+      icon: Briefcase,
+      path: `${ROUTES.dashboard}?view=services`,
+    },
+    {
+      label: "Compras",
+      icon: ShoppingBag,
+      path: `${ROUTES.dashboard}?view=purchases`,
+    },
+    {
+      label: "Favoritos",
+      icon: Heart,
+      path: `${ROUTES.dashboard}?view=favorites`,
+    },
+    {
+      label: "Tarjetas",
+      icon: CreditCard,
+      path: `${ROUTES.dashboard}?view=payment-methods`,
+    },
+    {
+      label: "Carrito",
+      icon: ShoppingCart,
+      path: `${ROUTES.dashboard}?view=cart`,
+    },
     {
       label: "Perfil",
       icon: UserRound,
       path: `${ROUTES.dashboard}?view=profile`,
     },
     {
-      label: "Solicitudes",
-      icon: ClipboardList,
-      path: `${ROUTES.dashboard}?view=job-requests`,
-    },
-    { label: "Mensajes", icon: MessageSquare, path: ROUTES.messages },
-    {
       label: "Presupuestos",
       icon: FileText,
       path: `${ROUTES.dashboard}?view=proposals-view`,
+    },
+    {
+      label: "Solicitudes",
+      icon: ClipboardList,
+      path: `${ROUTES.dashboard}?view=job-requests`,
     },
     {
       label: "Promociones",
@@ -285,24 +379,14 @@ export default function Navbar() {
       path: `${ROUTES.dashboard}?view=bank-promotions`,
     },
     {
-      label: "Productos",
-      icon: Package,
-      path: `${ROUTES.dashboard}?view=products`,
-    },
-    {
-      label: "Servicios",
+      label: "Empleos",
       icon: Briefcase,
-      path: `${ROUTES.dashboard}?view=services`,
+      path: `${ROUTES.dashboard}?view=jobs`,
     },
     {
       label: "Publicaciones",
       icon: UploadCloud,
       path: `${ROUTES.dashboard}?view=publications`,
-    },
-    {
-      label: "Empleos",
-      icon: Briefcase,
-      path: `${ROUTES.dashboard}?view=jobs`,
     },
     {
       label: "Agenda",
@@ -319,15 +403,52 @@ export default function Navbar() {
       icon: Users,
       path: `${ROUTES.dashboard}?view=referrals`,
     },
+    { label: "Mensajes", icon: MessageSquare, path: ROUTES.messages },
+    {
+      label: "Notificaciones",
+      icon: Bell,
+      path: `${ROUTES.dashboard}?view=notifications`,
+    },
     {
       label: "Suscripción",
       icon: CreditCard,
       path: `${ROUTES.dashboard}?view=subscription`,
     },
     { label: "Configuración", icon: Settings, path: ROUTES.settings },
+    {
+      label: "Ayuda",
+      icon: HelpCircle,
+      path: `${ROUTES.dashboard}?view=faq`,
+    },
+    {
+      label: "Reportar Error",
+      icon: AlertTriangle,
+      path: `${ROUTES.dashboard}?view=report-errors`,
+    },
   ];
 
   const clientLinks = [
+    { label: "Panel", icon: LayoutDashboard, path: ROUTES.dashboard },
+    {
+      label: "Compras",
+      icon: ShoppingBag,
+      path: `${ROUTES.dashboard}?view=purchases`,
+    },
+    {
+      label: "Favoritos",
+      icon: Heart,
+      path: `${ROUTES.dashboard}?view=favorites`,
+    },
+    {
+      label: "Tarjetas",
+      icon: CreditCard,
+      path: `${ROUTES.dashboard}?view=payment-methods`,
+    },
+    {
+      label: "Carrito",
+      icon: ShoppingCart,
+      path: `${ROUTES.dashboard}?view=cart`,
+    },
     { label: "Mensajes", icon: MessageSquare, path: ROUTES.messages },
     {
       label: "Presupuestos",
@@ -340,11 +461,26 @@ export default function Navbar() {
       path: `${ROUTES.dashboard}?view=job-requests`,
     },
     {
+      label: "Notificaciones",
+      icon: Bell,
+      path: `${ROUTES.dashboard}?view=notifications`,
+    },
+    {
+      label: "Suscripción",
+      icon: CreditCard,
+      path: `${ROUTES.dashboard}?view=subscription`,
+    },
+    { label: "Configuración", icon: Settings, path: ROUTES.settings },
+    {
       label: "Preguntas Frecuentes",
       icon: HelpCircle,
       path: `${ROUTES.dashboard}?view=faq`,
     },
-    { label: "Configuración", icon: Settings, path: ROUTES.settings },
+    {
+      label: "Reportar Error",
+      icon: AlertTriangle,
+      path: `${ROUTES.dashboard}?view=report-errors`,
+    },
   ];
 
   // Close menus when clicking outside
@@ -390,8 +526,31 @@ export default function Navbar() {
   };
 
   const toggleNotif = () => {
+    setDesktopPermission(
+      typeof window !== "undefined" && "Notification" in window
+        ? Notification.permission
+        : "unsupported",
+    );
     setIsNotifOpen(!isNotifOpen);
     setIsMenuOpen(false);
+  };
+
+  const handleEnableDesktop = async () => {
+    setIsEnablingDesktop(true);
+    const status = await enableDesktopNotifications();
+    setDesktopPermission(
+      "Notification" in window ? Notification.permission : "unsupported",
+    );
+    setDesktopNotice(
+      status === "enabled"
+        ? "Avisos de escritorio activados en este navegador."
+        : status === "browser-only"
+          ? "Permiso concedido. Recibirás avisos mientras la web esté abierta; no se pudo activar el envío en segundo plano."
+          : status === "blocked"
+            ? "El navegador bloqueó los avisos. Permitilos desde la configuración de este sitio."
+            : "Este navegador requiere HTTPS o no admite avisos de escritorio.",
+    );
+    setIsEnablingDesktop(false);
   };
 
   const handleLogout = async () => {
@@ -454,7 +613,10 @@ export default function Navbar() {
             <MapPin size={18} className="navbar__deliver-icon" />
             <div className="navbar__deliver-info">
               <span className="navbar__deliver-sub">Enviar a</span>
-              <span className="navbar__deliver-title" title={deliveryAddressLabel}>
+              <span
+                className="navbar__deliver-title"
+                title={deliveryAddressLabel}
+              >
                 {deliveryAddressLabel}
               </span>
             </div>
@@ -491,7 +653,11 @@ export default function Navbar() {
                 title="Ir al carrito"
               >
                 <ShoppingCart size={20} aria-hidden="true" />
-                <span className="navbar__cart-count" aria-live="polite" aria-atomic="true">
+                <span
+                  className="navbar__cart-count"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
                   {cartCount > 0 ? cartCount : null}
                 </span>
               </Link>
@@ -538,6 +704,34 @@ export default function Navbar() {
                         <CheckCheck size={16} />
                       </button>
                     </div>
+                    {desktopPermission !== "granted" && (
+                      <div className="notif-dropdown__desktop">
+                        {desktopPermission === "default" ? (
+                          <button
+                            type="button"
+                            className="notif-dropdown__desktop-button"
+                            onClick={handleEnableDesktop}
+                            disabled={isEnablingDesktop}
+                          >
+                            <Bell size={16} aria-hidden="true" />
+                            {isEnablingDesktop
+                              ? "Activando..."
+                              : "Activar avisos de escritorio"}
+                          </button>
+                        ) : (
+                          <p className="notif-dropdown__desktop-help">
+                            {desktopPermission === "denied"
+                              ? "Los avisos están bloqueados. Permitilos desde la configuración de este sitio."
+                              : "Los avisos requieren HTTPS y un navegador compatible."}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {desktopNotice && (
+                      <p className="notif-dropdown__desktop-help" role="status">
+                        {desktopNotice}
+                      </p>
+                    )}
                     <div className="notif-dropdown__list">
                       {notifications.length === 0 ? (
                         <div className="notif-dropdown__empty">
@@ -545,7 +739,7 @@ export default function Navbar() {
                         </div>
                       ) : (
                         notifications.slice(0, 5).map((notif: any) => {
-                          const { icon: IconComp, color } = getNotificationIcon(
+                          const { icon: IconComp, color } = getNotificationMeta(
                             notif.type,
                           );
 
@@ -575,7 +769,7 @@ export default function Navbar() {
                                   {notif.title}
                                 </span>
                                 <span className="notif-item__desc">
-                                  {notif.content}
+                                  {getNotificationDescription(notif)}
                                 </span>
                               </div>
                               <span className="notif-item__time">
@@ -690,7 +884,9 @@ export default function Navbar() {
           >
             <MapPin size={15} className="navbar__deliver-icon" />
             <span className="navbar__deliver-sub">Enviar a:</span>
-            <span className="navbar__deliver-title">{deliveryAddressLabel}</span>
+            <span className="navbar__deliver-title">
+              {deliveryAddressLabel}
+            </span>
           </button>
           <SearchBar />
         </div>

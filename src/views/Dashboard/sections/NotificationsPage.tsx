@@ -7,14 +7,9 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   Bell,
-  Heart,
-  MessageSquare,
-  Briefcase,
   CheckCheck,
   Filter,
   Trash2,
-  Ticket,
-  Upload
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import {
@@ -23,37 +18,27 @@ import {
   markNotificationAsReadAction,
   deleteNotificationAction,
 } from "../../../app/actions/notifications";
+import {
+  getNotificationMeta,
+  getNotificationTargetUrl,
+  getNotificationDescription,
+  getReportDownloadUrl,
+} from "../../../utils/notificationNavigation";
 import "./NotificationsPage.css";
-
-const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case "like":
-      return { icon: Heart, color: "red" };
-    case "comment":
-      return { icon: MessageSquare, color: "blue" };
-    case "propossal":
-      return { icon: Briefcase, color: "purple" };
-    case "message":
-      return { icon: MessageSquare, color: "green" };
-    case "promotion":
-      return { icon: Ticket, color: "orange" };
-    case "upload":
-      return { icon: Upload, color: "teal" };
-    default:
-      return { icon: Bell, color: "gray" };
-  }
-};
 
 const filterOptions = [
   { key: "all", label: "Todas" },
   { key: "unread", label: "No leídas" },
-  { key: "propossal", label: "Propuestas" },
-  { key: "message", label: "Mensajes" },
-  { key: "upload", label: "Subidas" },
+  { key: "sales", label: "Ventas" },
+  { key: "purchases", label: "Compras" },
+  { key: "messages", label: "Mensajes" },
+  { key: "proposals", label: "Presupuestos" },
+  { key: "promotions", label: "Promociones" },
+  { key: "reels", label: "Historias" },
 ];
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
+  const { user, sessionStatus } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState("all");
@@ -70,6 +55,7 @@ export default function NotificationsPage() {
       return [];
     },
     enabled: !!user?.id,
+    refetchInterval: 30_000,
   });
 
   const markAllAsReadMutation = useMutation({
@@ -99,32 +85,28 @@ export default function NotificationsPage() {
     },
   });
 
+  const isProfessional = Boolean(sessionStatus?.is_professional);
+
   const handleNotificationClick = (notif: any) => {
     if (!notif.is_read) {
       markAsReadMutation.mutate(notif.id);
     }
     
-    switch (notif.type) {
-      case "proposal":
-      case "propossal":
-        router.push(`${ROUTES.dashboard}?view=proposals-view`);
-        break;
-      case "message":
-        router.push(ROUTES.messages);
-        break;
-      case "promotion":
-        router.push(`${ROUTES.dashboard}?view=promotions-all`);
-        break;
-      case "upload":
-        router.push(`${ROUTES.dashboard}?view=reels`);
-        break;
+    if (String(notif.type || "").toUpperCase() === "REPORT_READY") {
+      const downloadUrl = getReportDownloadUrl(notif);
+      if (downloadUrl) window.open(downloadUrl, "_blank", "noopener,noreferrer");
+      else window.alert("El enlace de este reporte no está disponible. Solicitá un nuevo reporte.");
+      return;
     }
+    const targetUrl = getNotificationTargetUrl(notif, { isProfessional });
+    router.push(targetUrl);
   };
 
   const filtered = notificationsList.filter((n: any) => {
     if (activeFilter === "all") return true;
     if (activeFilter === "unread") return !n.is_read;
-    return n.type === activeFilter;
+    const meta = getNotificationMeta(n.type);
+    return meta.category === activeFilter;
   });
 
   const unreadCount = notificationsList.filter((n: any) => !n.is_read).length;
@@ -179,7 +161,7 @@ export default function NotificationsPage() {
         ) : (
           <div className="notifications-group__list">
             {filtered.map((notif: any) => {
-              const { icon: IconComp, color } = getNotificationIcon(notif.type);
+              const { icon: IconComp, color } = getNotificationMeta(notif.type);
               
               let timeStr = "";
               try {
@@ -210,7 +192,7 @@ export default function NotificationsPage() {
                       </span>
                     </div>
                     <p className="notification-card__desc">
-                      {notif.content}
+                      {getNotificationDescription(notif)}
                     </p>
                   </div>
                   

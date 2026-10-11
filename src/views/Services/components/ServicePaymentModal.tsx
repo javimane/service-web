@@ -1,7 +1,10 @@
 "use client";
 
+import { useCardPaymentConfig } from "@/hooks/useCardPaymentConfig";
+import { getCardConfig, tokenizePayway, validateCardholder } from "@/services/cardPayments";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import {
   CreditCard,
@@ -29,6 +32,8 @@ import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
 import WhatsAppContactButton from "@/components/WhatsAppContactButton/WhatsAppContactButton";
 import { requestIdentityVerification } from "@/utils/identityVerification";
 import "./ServicePaymentModal.css";
+import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
+import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
 
 interface ServicePaymentModalProps {
   isOpen: boolean;
@@ -37,6 +42,7 @@ interface ServicePaymentModalProps {
   professionalId: number | string;
   professionalName?: string;
   professionalPhone?: string;
+  pageMode?: boolean;
 }
 
 export default function ServicePaymentModal({
@@ -46,8 +52,10 @@ export default function ServicePaymentModal({
   professionalId,
   professionalName = "Comercio o Profesional",
   professionalPhone,
+  pageMode = false,
 }: ServicePaymentModalProps) {
   const router = useRouter();
+  const { data: cardConfig } = useCardPaymentConfig();
   const { user, isAgeVerified } = useAuth();
   const { showSuccess, showError } = useAlert();
 
@@ -56,8 +64,8 @@ export default function ServicePaymentModal({
 
   // Payment states
   const [paymentMethod, setPaymentMethod] = useState<
-    "getnet_card" | "paycloud_qr"
-  >("getnet_card");
+    "card" | "paycloud_qr"
+  >("card");
   const [installments, setInstallments] = useState<number>(1);
 
   // Card details (Getnet)
@@ -66,9 +74,13 @@ export default function ServicePaymentModal({
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [cardDni, setCardDni] = useState("");
+  const [billingAddressId, setBillingAddressId] = useState('');
+  const [billingAddressComplete, setBillingAddressComplete] = useState(false);
+  const [cardType, setCardType] = useState<"credit" | "debit">("credit");
 
   // Submission & Results
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveCard, setSaveCard] = useState(false);
   const submittingRef = useRef(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [activeQr, setActiveQr] = useState<PayCloudQrResponse | null>(null);
@@ -87,7 +99,7 @@ export default function ServicePaymentModal({
     queryKey: ["service-checkout-quote", service?.id, quantity, installments],
     queryFn: () => commerceService.calculateServiceCheckout(String(service.id), quantity, installments),
     enabled: isOpen && Boolean(user) && Boolean(service?.id) &&
-      paymentMethod === "getnet_card" && installments > 1,
+      paymentMethod === "card" && installments > 1,
     staleTime: 1000 * 30,
   });
 
@@ -112,6 +124,11 @@ export default function ServicePaymentModal({
 
   if (!isOpen || !service) return null;
 
+  const firstImage = service?.Images?.[0] ?? service?.images?.[0] ?? service?.image_url;
+  const serviceImage = typeof firstImage === "string"
+    ? firstImage : firstImage?.image_url ?? firstImage?.url ??
+      service?.professional?.profile?.avatar_url ?? service?.Professional?.Profile?.avatar_url;
+
   // Price calculations
   const unitPrice = Number(service.price ?? service.base_price ?? 0);
   const baseTotal = unitPrice * quantity;
@@ -126,20 +143,21 @@ export default function ServicePaymentModal({
   const installmentOptions = service.category?.no_installments
     ? [1]
     : installmentsEnabled
-    ? [1, 2, 3, 6, 9, 12, 18].filter((n) => n <= maxInstallments)
+    ? [1, 2, 3, 6, 9, 12, 18].filter((n) => n <= maxInstallments &&
+        (n === 1 || commissionRates.some((rate) => Number(rate.installments) === n)))
     : [1, ...commissionRates
         .map((rate) => Number(rate.installments))
         .filter((n) => n > 1 && [2, 3, 6, 9, 12, 18].includes(n))];
   const financedQuote = !installmentsEnabled && installments > 1
     ? calculateInstallmentFinancing(baseTotal, installments, commissionRates)
     : null;
-  const totalToPay = paymentMethod === "getnet_card" && installments > 1
+  const totalToPay = paymentMethod === "card" && installments > 1
     ? Number(serverQuote?.totalAmount ?? financedQuote?.totalAmount ?? baseTotal)
     : baseTotal;
 
   // Card input formatters
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 19);
     const formatted = raw.replace(/(\d{4})(?=\d)/g, "$1 ");
     setCardNumber(formatted);
   };
@@ -181,13 +199,13 @@ export default function ServicePaymentModal({
       showError("El monto del servicio debe ser mayor a $0.");
       return;
     }
-    if (paymentMethod === "getnet_card" && installments > 1 &&
+    if (paymentMethod === "card" && installments > 1 &&
         (quoteLoading || quoteError || !serverQuote)) {
       showError("No se pudo confirmar el importe vigente de las cuotas. Intentá nuevamente.");
       return;
     }
 
-    if (paymentMethod === "getnet_card") {
+    if (paymentMethod === "card") {
       const cleanCard = cardNumber.replace(/\s/g, "");
       if (cleanCard.length < 15) {
         showError("Ingresa un número de tarjeta válido (15 o 16 dígitos).");
@@ -214,23 +232,45 @@ export default function ServicePaymentModal({
     submittingRef.current = true;
     setIsSubmitting(true);
     try {
-      const token = `gn_tok_${Date.now()}_${Math.random()
+      let token = `gn_tok_${Date.now()}_${Math.random()
         .toString(36)
         .substring(2, 8)}`;
 
+      let paywayData = {};
+      let refreshPayment: (() => ReturnType<typeof tokenizePayway>) | undefined;
+      let providerMethod: 'getnet_card' | 'payway_card' = 'getnet_card';
+      if (paymentMethod === 'card') {
+        const config = await getCardConfig();
+        if (config.provider === 'payway') {
+          if (!billingAddressId || !billingAddressComplete) throw new Error('Seleccioná o completá la dirección del comprador antes de pagar.');
+          refreshPayment = () => tokenizePayway(config, { number: cardNumber, holder: cardHolder.trim(),
+            dni: cardDni.trim(), expiry: cardExpiry, cvv: cardCvv, type: cardType });
+          const prepared = await refreshPayment();
+          token = prepared.card_token;
+          paywayData = prepared;
+          providerMethod = 'payway_card';
+        } else {
+          await validateCardholder(cardHolder, cardDni);
+        }
+      }
       const res = await commerceService.checkout({
+        ...paywayData, save_card: providerMethod === 'payway_card' && saveCard,
         professional_id: Number(professionalId || 0),
         service_id: String(service.id),
         quantity: quantity,
         delivery_type: "coordinate_with_merchant",
+        billing_address_id: providerMethod === 'payway_card' ? billingAddressId : undefined,
         shipping_cost: 0,
         payment_method:
-          paymentMethod === "getnet_card" ? "getnet_card" : "paycloud_qr",
-        card_token: paymentMethod === "getnet_card" ? token : undefined,
-        installments: paymentMethod === "getnet_card" ? installments : 1,
+          paymentMethod === "card" ? providerMethod : "paycloud_qr",
+        ...(providerMethod === 'getnet_card' && paymentMethod === 'card'
+          ? { card_holder_name: cardHolder.trim(), card_holder_dni: cardDni.trim() }
+          : {}),
+        card_token: paymentMethod === "card" ? token : undefined,
+        installments: paymentMethod === "card" ? installments : 1,
         expected_total_amount: totalToPay,
         card_details:
-          paymentMethod === "getnet_card"
+          paymentMethod === "card" && providerMethod === 'getnet_card'
             ? {
                 card_number: cardNumber.replace(/\s/g, "").slice(-4),
                 cardholder_name: cardHolder.trim(),
@@ -239,14 +279,14 @@ export default function ServicePaymentModal({
                 dni: cardDni.trim(),
               }
             : undefined,
-      });
+      }, { refreshPayment });
 
       if (paymentMethod === "paycloud_qr" && res.qr) {
         setActiveQr(res.qr);
         setQrSecondsLeft(900);
       } else {
-        setCompletedOrder(res.order || { id: `ORD-${Date.now()}` });
-        showSuccess("¡Pago procesado con éxito!");
+        setCompletedOrder({ ...res.order, card_saved: res.card_saved, save_requested: providerMethod === 'payway_card' && saveCard });
+        showSuccess(res.payment_status === 'approved' ? '¡Pago procesado con éxito!' : 'Estamos verificando tu pago. Consultá Mis Compras sin volver a pagar.');
       }
     } catch (err: any) {
       showError(
@@ -263,7 +303,7 @@ export default function ServicePaymentModal({
     const msg = `Hola ${professionalName}, acabo de contratar el servicio "${service.name}"${
       orderRef ? ` (Orden #${orderRef})` : ""
     }. Quisiera coordinar la asignación del turno. ¡Muchas gracias!`;
-    onClose();
+    if (!pageMode) onClose();
     router.push(
       `/mensajes?professionalId=${professionalId}&initialMessage=${encodeURIComponent(
         msg,
@@ -271,9 +311,8 @@ export default function ServicePaymentModal({
     );
   };
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Contratar Servicio">
-      <div className="service-payment-modal">
+  const content = (
+      <div className={`service-payment-modal${pageMode ? " service-payment-modal--page" : ""}`}>
         {/* Active QR View */}
         {activeQr ? (
           <div className="service-payment-modal__qr-view">
@@ -357,10 +396,12 @@ export default function ServicePaymentModal({
             </div>
 
             <h3 className="service-payment-modal__success-title">
-              ¡Pago procesado con éxito!
+              {completedOrder.status === 'paid' ? '¡Pago confirmado!' : 'Pago pendiente de confirmación'}
             </h3>
 
             {/* Required Shift Assignment Notice */}
+            {completedOrder.status === 'paid' && completedOrder.save_requested && !completedOrder.card_saved &&
+              <p>El pago fue confirmado, pero no se pudo guardar la tarjeta. Volvé a consultar el pago desde Mis Compras.</p>}
             <div className="service-payment-modal__shift-card">
               <Calendar
                 size={28}
@@ -429,7 +470,7 @@ export default function ServicePaymentModal({
                 type="button"
                 className="service-payment-modal__btn-secondary"
                 onClick={() => {
-                  onClose();
+                  if (!pageMode) onClose();
                   router.push("/panel?view=purchases");
                 }}
               >
@@ -445,12 +486,24 @@ export default function ServicePaymentModal({
             onSubmit={handleSubmitPayment}
             className="service-payment-modal__form"
           >
+            <div className="service-payment-modal__checkout-grid">
+              <div className="service-payment-modal__checkout-main">
+                <h2 className="service-payment-modal__panel-title">Tu servicio</h2>
             {/* Service & Provider Header Banner */}
             <div className="service-payment-modal__service-card">
+              {serviceImage && <Image
+                src={serviceImage}
+                alt={service.name || "Servicio"}
+                width={96}
+                height={96}
+                className="service-payment-modal__service-image"
+                unoptimized
+              />}
               <div className="service-payment-modal__service-info">
                 <h4 className="service-payment-modal__service-name">
                   {service.name}
                 </h4>
+                <CheckoutItemDetails description={service.description} />
                 <p className="service-payment-modal__service-provider">
                   Ofrecido por: <strong>{professionalName}</strong>
                 </p>
@@ -494,6 +547,20 @@ export default function ServicePaymentModal({
               </div>
             </div>
 
+              <div className="service-payment-modal__shift-notice">
+                <Calendar size={20} className="service-payment-modal__shift-notice-icon" />
+                <p className="service-payment-modal__shift-notice-text">
+                  Una vez realizado el pago, el Comercio o Profesional te asignará un turno y podrás contactarte de forma directa.
+                </p>
+              </div>
+              </div>
+              <div className="service-payment-modal__checkout-payment">
+                <h2 className="service-payment-modal__panel-title">Pago</h2>
+                {user && paymentMethod === 'card' && cardConfig?.provider === 'payway' &&
+                  <PaymentAddressCard onChange={(id, complete) => {
+                    setBillingAddressId(id); setBillingAddressComplete(complete);
+                  }} />}
+
             {/* Payment Method Selector */}
             <div className="service-payment-modal__field">
               <label className="service-payment-modal__label">
@@ -503,11 +570,11 @@ export default function ServicePaymentModal({
                 <button
                   type="button"
                   className={`service-payment-modal__method-btn ${
-                    paymentMethod === "getnet_card"
+                    paymentMethod === "card"
                       ? "service-payment-modal__method-btn--active"
                       : ""
                   }`}
-                  onClick={() => setPaymentMethod("getnet_card")}
+                  onClick={() => setPaymentMethod("card")}
                 >
                   <CreditCard size={20} />
                   <div className="service-payment-modal__method-info">
@@ -541,7 +608,10 @@ export default function ServicePaymentModal({
             </div>
 
             {/* Getnet Card Details */}
-            {paymentMethod === "getnet_card" && (
+            {paymentMethod === 'card' && cardConfig?.provider === 'payway' && (
+              <label><input type="checkbox" checked={saveCard} onChange={e => setSaveCard(e.target.checked)} /> Guardar tarjeta después del pago</label>
+            )}
+            {paymentMethod === "card" && (
               <div className="service-payment-modal__card-section">
                 <div className="service-payment-modal__field">
                   <label className="service-payment-modal__label">
@@ -607,6 +677,17 @@ export default function ServicePaymentModal({
                   />
                 </div>
 
+                {cardConfig?.provider === 'payway' && <div className="service-payment-modal__field">
+                  <label className="service-payment-modal__label" htmlFor="service-card-type">Tipo de tarjeta:</label>
+                  <select id="service-card-type" className="service-payment-modal__input" value={cardType}
+                    onChange={(event) => {
+                      setCardType(event.target.value as 'credit' | 'debit');
+                      if (event.target.value === 'debit') setInstallments(1);
+                    }}>
+                    <option value="credit">Crédito</option>
+                    <option value="debit">Débito</option>
+                  </select>
+                </div>}
                 <div className="service-payment-modal__row-group">
                   <div className="service-payment-modal__field">
                     <label className="service-payment-modal__label">
@@ -651,18 +732,6 @@ export default function ServicePaymentModal({
               </div>
             )}
 
-            {/* Notice that appointment is scheduled by merchant */}
-            <div className="service-payment-modal__shift-notice">
-              <Calendar
-                size={20}
-                className="service-payment-modal__shift-notice-icon"
-              />
-              <p className="service-payment-modal__shift-notice-text">
-                Una vez realizado el pago, el Comercio o Profesional le va a
-                asignar un turno y podrás contactarte de forma directa.
-              </p>
-            </div>
-
             {/* Protected Purchase Banner */}
             <div className="service-payment-modal__protection-badge">
               <ShieldCheck
@@ -675,14 +744,14 @@ export default function ServicePaymentModal({
             {/* Total Summary & Submit Button */}
             <ReturnsPolicyLink />
             <div className="service-payment-modal__footer">
-              {paymentMethod === "getnet_card" && financedQuote && (
+              {paymentMethod === "card" && financedQuote && (
                 <p className="service-payment-modal__financing-breakdown">
                   Recargo por {installments} cuotas: ${Number(
                     serverQuote?.financingSurchargeAmount ?? financedQuote.totalAmount - baseTotal,
                   ).toLocaleString("es-AR")}
                 </p>
               )}
-              {paymentMethod === "getnet_card" && installments > 1 && quoteError && (
+              {paymentMethod === "card" && installments > 1 && quoteError && (
                 <p className="service-payment-modal__financing-breakdown">
                   No pudimos confirmar el importe de las cuotas. Intentá nuevamente.
                 </p>
@@ -700,7 +769,8 @@ export default function ServicePaymentModal({
                 type="submit"
                 className="service-payment-modal__btn-primary"
                 disabled={isSubmitting || totalToPay <= 0 ||
-                  (paymentMethod === "getnet_card" && installments > 1 &&
+                  (paymentMethod === "card" && cardConfig?.provider === "payway" && !billingAddressComplete) ||
+                  (paymentMethod === "card" && installments > 1 &&
                     (quoteLoading || quoteError || !serverQuote))}
               >
                 {isSubmitting ? (
@@ -721,9 +791,13 @@ export default function ServicePaymentModal({
                 )}
               </button>
             </div>
+              </div>
+            </div>
           </form>
         )}
       </div>
-    </Modal>
+  );
+  return pageMode ? content : (
+    <Modal isOpen={isOpen} onClose={onClose} title="Contratar Servicio">{content}</Modal>
   );
 }

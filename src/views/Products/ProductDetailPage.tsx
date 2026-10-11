@@ -40,7 +40,6 @@ import { useAuth } from "../../context/AuthContext";
 import { useAlert } from "../../context/AlertContext";
 import { addGuestCartItem } from "../../utils/guestCart";
 import { calculateProductPricing } from "../../utils/productPricing";
-import ProductPaymentModal from "./components/ProductPaymentModal";
 import ProductInstallmentsModal from "./components/ProductInstallmentsModal";
 import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 import CommentsCarousel from "../../components/CommentsCarousel/CommentsCarousel";
@@ -110,7 +109,6 @@ export default function ProductDetailPage({
   const [quantity, setQuantity] = useState(1);
   const videoFrameRef = useRef<HTMLDivElement | null>(null);
 
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isInstallmentsModalOpen, setIsInstallmentsModalOpen] = useState(false);
 
   const {
@@ -1214,7 +1212,7 @@ export default function ProductDetailPage({
                           <button
                             type="button"
                             className="seller-buy-btn"
-                            onClick={() => setIsPaymentModalOpen(true)}
+                            onClick={() => router.push(`/pagar/producto/${item.id}?quantity=${quantity}`)}
                           >
                             <CreditCard size={18} />
                             <span>Comprar ahora</span>
@@ -1302,21 +1300,6 @@ export default function ProductDetailPage({
           viewAllText="Ver catálogo"
         />
       </main>
-
-      {/* Payment Checkout Modal (Getnet Cards + PayCloud QR) */}
-      <ProductPaymentModal
-        isOpen={isPaymentModalOpen && canPurchase}
-        onClose={() => setIsPaymentModalOpen(false)}
-        product={{ ...item, ...professionalProduct, name: item?.name }}
-        professionalId={Number(professionalId || 0)}
-        professionalProductId={professionalProductId}
-        sellerName={sellerName}
-        companyFreeShippingCountry={companyHasCountryFreeShipping}
-        companyFreeShippingCountryMinAmount={countryShippingMinimum}
-        sellerProvince={sellerProvince}
-        isAgeRestricted={isAgeRestricted}
-        canPurchase={canPurchase}
-      />
 
       {/* Installments Breakdown Modal */}
       <ProductInstallmentsModal

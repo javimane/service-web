@@ -17,13 +17,12 @@ import {
   EyeOff,
 } from "lucide-react";
 import { authService } from "../../../services/authService";
-import { userService } from "../../../services/userService";
 import {
   getProfileAction,
   updateProfileAction,
 } from "../../../app/actions/profile";
 import { getAccessToken } from "../../../utils/auth";
-import { getFirebaseMessagingToken } from "../../../services/firebaseMessaging";
+import { enableDesktopNotifications } from "../../../services/desktopNotifications";
 import "./PersonalInfoSection.css";
 
 interface PersonalInfoSectionProps {
@@ -53,7 +52,7 @@ export default function PersonalInfoSection({
   const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
 
   const notificationPermissionState =
-    typeof window === "undefined"
+    typeof window === "undefined" || !("Notification" in window)
       ? "pending"
       : Notification.permission === "granted"
         ? "allowed"
@@ -244,32 +243,16 @@ export default function PersonalInfoSection({
 
     setIsEnablingNotifications(true);
     try {
-      const token = await getFirebaseMessagingToken(true);
-
-      if (!token) {
-        const permission = Notification.permission;
-        if (permission === "denied") {
-          setNotification({
-            type: "error",
-            message:
-              "Las notificaciones estan bloqueadas en el navegador. Habilitalas desde la configuracion del sitio.",
-          });
-        } else {
-          setNotification({
-            type: "error",
-            message:
-              "No se pudo obtener el token de notificaciones. Revisá la configuracion de Firebase.",
-          });
-        }
-        return;
-      }
-
-      await userService.registerDeviceToken(token, "web");
-      localStorage.setItem("firebase_token", token);
-      localStorage.setItem("registered_device_token", token);
+      const status = await enableDesktopNotifications();
       setNotification({
-        type: "success",
-        message: "Notificaciones activadas correctamente en este dispositivo.",
+        type: status === "enabled" || status === "browser-only" ? "success" : "error",
+        message: status === "enabled"
+          ? "Avisos de escritorio activados en este dispositivo."
+          : status === "browser-only"
+            ? "Permiso concedido. Recibirás avisos mientras la web esté abierta; el envío en segundo plano no está disponible."
+            : status === "blocked"
+              ? "Los avisos están bloqueados. Permitilos desde la configuración de este sitio."
+              : "Los avisos requieren HTTPS y un navegador compatible.",
       });
     } catch (error) {
       setNotification({

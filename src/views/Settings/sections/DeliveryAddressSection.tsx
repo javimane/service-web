@@ -92,10 +92,12 @@ function matchDepartment(
 
 interface DeliveryAddressSectionProps {
   userId?: string;
+  requirePaymentAddress?: boolean;
 }
 
 export default function DeliveryAddressSection({
   userId,
+  requirePaymentAddress = false,
 }: DeliveryAddressSectionProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -342,6 +344,9 @@ export default function DeliveryAddressSection({
       }
       if (!number.trim()) {
         throw new Error("El número de calle es obligatorio.");
+      }
+      if (requirePaymentAddress && (!provinceId || !departmentId || !postalCode.trim())) {
+        throw new Error('Para pagar, completá provincia, localidad y código postal.');
       }
 
       const selectedProvince = provinces.find(

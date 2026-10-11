@@ -46,39 +46,66 @@
   gap: var(--space-1);
 }
 
+.login-card .register-terms__label,
 .register-terms__label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  width: fit-content;
+  max-width: 100%;
   font-size: var(--text-sm);
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
   line-height: 1.4;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
+.login-card input.register-terms__checkbox,
+.login-card .register-terms__checkbox,
 .register-terms__checkbox {
-  width: 18px;
-  height: 18px;
+  width: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  max-height: 18px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
   accent-color: var(--accent-color);
   cursor: pointer;
-  flex-shrink: 0;
+  flex: 0 0 18px !important;
+  flex-shrink: 0 !important;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .register-terms__text {
   display: inline;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 .register-terms__link {
+  display: inline;
   background: none;
   border: none;
   padding: 0;
+  margin: 0 0 0 4px;
   color: var(--accent-color);
   font-weight: var(--weight-semibold);
   font-size: var(--text-sm);
   cursor: pointer;
   text-decoration: underline;
   font-family: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
   transition: color 0.2s ease;
 }
 
@@ -111,6 +138,7 @@
 
 .terms-modal-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-4);
