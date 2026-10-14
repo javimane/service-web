@@ -60,6 +60,11 @@ export type OrderSummary = {
   status: OrderStatus;
   delivery_type: DeliveryType;
   total_amount: number | null;
+  refunded_amount?: number;
+  has_return?: boolean;
+  has_chargeback?: boolean;
+  dispatch_evidence_path?: string | null;
+  dispatch_evidence_uploaded_at?: string | null;
   shipping_cost?: number | null;
   delivery_eta_minutes?: number | null;
   scheduled_delivery_date?: string | null;
@@ -82,6 +87,7 @@ export type OrderSummary = {
   return_ticket_available?: boolean;
   shipment_id?: string | null;
   shipment_status?: string | null;
+  shipments?: Array<{ id: string; status: string }> | { id: string; status: string } | null;
   user_id?: string;
   professional_id?: number;
   buyer?: {
@@ -166,6 +172,18 @@ export type OrderSummary = {
   billing_data?: UserBillingData | any;
   billing_profile?: UserBillingData | any;
   transport_shipment?: {
+    company_name?: string | null;
+    carrier_name?: string | null;
+    tracking_number?: string | null;
+    tracking_url?: string | null;
+  } | null;
+  transport_shipments?: Array<{
+    company_name?: string | null;
+    carrier_name?: string | null;
+    tracking_number?: string | null;
+    tracking_url?: string | null;
+  }> | {
+    company_name?: string | null;
     carrier_name?: string | null;
     tracking_number?: string | null;
     tracking_url?: string | null;
@@ -281,6 +299,23 @@ export type Liquidation = {
   platform_fee?: number;
   tax_withholding?: number;
   net_amount?: number;
+  gross_amount?: number;
+  platform_commission?: number;
+  iva_amount?: number;
+  refunded_gross_amount?: number;
+  refund_deduction_amount?: number;
+  chargeback_deduction_amount?: number;
+  chargeback_debt_amount?: number;
+  debt_offset_amount?: number;
+  chargebacks?: Array<{
+    id: string; order_id: string; amount: number; status: string;
+    merchant_deduction: number; provider: string | null;
+    provider_movement_id: string | null; reason: string | null;
+  }>;
+  chargeback_offsets?: Array<{
+    debt_id: string; amount: number; status: string;
+    source_chargeback: { order_id: string; provider_movement_id: string | null } | null;
+  }>;
   created_at: string;
   cutoff_date?: string;
   scheduled_release_at?: string | null;
@@ -927,6 +962,35 @@ export const commerceService = {
       method: "POST",
     }),
 
+  markCoordinatedPreparing: (id: string) =>
+    apiClient<OrderSummary>(API_ENDPOINTS.orders.coordinatedPreparing(id), {
+      method: "POST",
+    }),
+
+  markCoordinatedDispatched: (id: string) =>
+    apiClient<OrderSummary>(API_ENDPOINTS.orders.coordinatedDispatched(id), {
+      method: "POST",
+    }),
+
+  markPickupReady: (id: string) =>
+    apiClient<OrderSummary>(API_ENDPOINTS.orders.pickupReady(id), { method: 'POST' }),
+
+  uploadDispatchEvidence: (id: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiClient<{ id: string; dispatch_evidence_path: string }>(
+      API_ENDPOINTS.orders.dispatchEvidence(id), { method: 'POST', body: form },
+    );
+  },
+
+  viewDispatchEvidence: (id: string) =>
+    apiClient<{ url: string }>(API_ENDPOINTS.orders.dispatchEvidence(id)),
+
+  confirmCoordinatedDelivery: (id: string) =>
+    apiClient<OrderSummary>(API_ENDPOINTS.orders.confirmCoordinatedDelivery(id), {
+      method: "POST",
+    }),
+
   syncPaywayPayment: (id: string) =>
     apiClient<{ order_id: string; status: string }>(
       `${API_ENDPOINTS.orders.detail(id)}/sync-payway-payment`,
@@ -983,7 +1047,7 @@ export const commerceService = {
   updateTransportShipment: (
     id: string,
     data: {
-      carrier_name: string;
+      company_name: string;
       tracking_number: string;
       tracking_url?: string;
     },
@@ -1220,12 +1284,12 @@ export const commerceService = {
 
   preparingShipment: (shipmentId: string) =>
     apiClient<any>(API_ENDPOINTS.shipments.preparing(shipmentId), {
-      method: "POST",
+      method: "PATCH",
     }),
 
   readyShipment: (shipmentId: string) =>
     apiClient<any>(API_ENDPOINTS.shipments.ready(shipmentId), {
-      method: "POST",
+      method: "PATCH",
     }),
 
   uploadShipmentImage: (shipmentId: string, imageUrl: string) =>

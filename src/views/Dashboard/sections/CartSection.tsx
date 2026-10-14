@@ -44,6 +44,7 @@ import { ROUTES } from "@/routes/paths";
 import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
 import { requestIdentityVerification } from "@/utils/identityVerification";
+import { getProfessionalDetailAction } from "@/app/actions/professionals";
 import {
   clearGuestCart,
   getGuestCart,
@@ -65,20 +66,32 @@ export default function CartSection() {
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("pickup");
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
   const [selectedAddressId, setSelectedAddressId] = useState("");
-  const [billingAddressId, setBillingAddressId] = useState('');
+  const [billingAddressId, setBillingAddressId] = useState("");
   const [billingAddressComplete, setBillingAddressComplete] = useState(false);
   const [shippingCost, setShippingCost] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState("");
-  const [shippingQuote, setShippingQuote] = useState<CalculateShippingResponse | null>(null);
+  const [shippingQuote, setShippingQuote] =
+    useState<CalculateShippingResponse | null>(null);
   const [scheduleForNextDay, setScheduleForNextDay] = useState(false);
   const [quotedFor, setQuotedFor] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "paycloud_qr">("paycloud_qr");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "paycloud_qr">(
+    "paycloud_qr",
+  );
   const [selectedCardId, setSelectedCardId] = useState("");
-  const [paywayInput, setPaywayInput] = useState({ number: '', holder: '', dni: '', expiry: '', cvv: '', type: 'credit' as 'credit' | 'debit' });
+  const [paywayInput, setPaywayInput] = useState({
+    number: "",
+    holder: "",
+    dni: "",
+    expiry: "",
+    cvv: "",
+    type: "credit" as "credit" | "debit",
+  });
   const [savePaywayCard, setSavePaywayCard] = useState(false);
   const [installments, setInstallments] = useState(1);
   const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [activeQrData, setActiveQrData] = useState<PayCloudQrResponse | null>(null);
+  const [activeQrData, setActiveQrData] = useState<PayCloudQrResponse | null>(
+    null,
+  );
   const [qrTimerSeconds, setQrTimerSeconds] = useState(900); // 15 min
   const isMigratingGuestCart = useRef(false);
   const checkoutStartedRef = useRef(false);
@@ -99,9 +112,37 @@ export default function CartSection() {
   const hasService = items.some((item) =>
     Boolean(item.service_id || item.service),
   );
-  const hasFinancedService = items.some((item) => item.service
-    ? !item.service.installments_enabled && !item.service.category?.no_installments
-    : !item.professional_product?.installments_enabled);
+  const { data: merchant } = useQuery({
+    queryKey: ["cart-merchant", merchantId],
+    queryFn: async () => {
+      const result = await getProfessionalDetailAction({ id: merchantId! });
+      return result?.data ?? null;
+    },
+    enabled: Boolean(merchantId),
+    staleTime: 1000 * 60 * 10,
+  });
+  const merchantCompanyData =
+    merchant?.Companies ??
+    merchant?.Company ??
+    merchant?.companies ??
+    merchant?.company;
+  const merchantCompany = Array.isArray(merchantCompanyData)
+    ? merchantCompanyData[0]
+    : merchantCompanyData;
+  const merchantName =
+    merchantCompany?.name?.trim() ||
+    items[0]?.service?.professional?.commercial_name?.trim() ||
+    items[0]?.service?.professional?.name?.trim() ||
+    items[0]?.product?.professional?.commercial_name?.trim() ||
+    items[0]?.product?.professional?.name?.trim() ||
+    merchant?.Profile?.display_name?.trim() ||
+    (hasService ? "Profesional" : "Comercio");
+  const hasFinancedService = items.some((item) =>
+    item.service
+      ? !item.service.installments_enabled &&
+        !item.service.category?.no_installments
+      : !item.professional_product?.installments_enabled,
+  );
   const { data: commissionRates = [] } = useQuery({
     queryKey: ["public-marketplace-commissions"],
     queryFn: commerceService.publicCommissions,
@@ -139,18 +180,28 @@ export default function CartSection() {
     queryKey: ["user-payment-methods", user?.id],
     queryFn: () => commerceService.getUserPaymentMethods(),
     enabled: Boolean(user),
-  select: (cards: UserPaymentMethod[]) => cards.filter(card => (card.provider || 'getnet') === cardConfig?.provider),
-    });
+    select: (cards: UserPaymentMethod[]) =>
+      cards.filter(
+        (card) => (card.provider || "getnet") === cardConfig?.provider,
+      ),
+  });
   useEffect(() => {
     if (!selectedCardId && savedCards.length) {
-      setSelectedCardId((savedCards.find((card) => card.is_default) || savedCards[0]).id);
+      setSelectedCardId(
+        (savedCards.find((card) => card.is_default) || savedCards[0]).id,
+      );
     }
   }, [selectedCardId, savedCards]);
 
   useEffect(() => {
-    const available = userAddresses.filter((address) => address.latitude != null && address.longitude != null);
+    const available = userAddresses.filter(
+      (address) => address.latitude != null && address.longitude != null,
+    );
     if (!available.some((address) => address.id === selectedAddressId)) {
-      setSelectedAddressId((available.find((address) => address.is_default) || available[0])?.id || "");
+      setSelectedAddressId(
+        (available.find((address) => address.is_default) || available[0])?.id ||
+          "",
+      );
     }
   }, [selectedAddressId, userAddresses]);
 
@@ -189,9 +240,7 @@ export default function CartSection() {
         }
       } catch (err: any) {
         const rawMsg =
-          err?.response?.data?.message ||
-          err?.data?.message ||
-          err?.message;
+          err?.response?.data?.message || err?.data?.message || err?.message;
         const msg = Array.isArray(rawMsg)
           ? rawMsg.join(". ")
           : rawMsg ||
@@ -207,17 +256,22 @@ export default function CartSection() {
 
   useEffect(() => {
     const current = branches.find((branch) => branch.id === selectedBranchId);
-    const canUse = (branch: Branch) => deliveryType === "pickup"
-      ? branch.is_pickup_point
-      : branch.is_open !== false || branch.own_riders_available;
+    const canUse = (branch: Branch) =>
+      deliveryType === "pickup"
+        ? branch.is_pickup_point
+        : branch.is_open !== false || branch.own_riders_available;
     if ((!current || !canUse(current)) && branches.length) {
       const available = branches.find(canUse);
       setSelectedBranchId(available?.id || "");
     }
   }, [branches, selectedBranchId, deliveryType]);
-  useEffect(() => { setScheduleForNextDay(false); }, [selectedBranchId, deliveryType]);
+  useEffect(() => {
+    setScheduleForNextDay(false);
+  }, [selectedBranchId, deliveryType]);
 
-  const selectedBranch = branches.find((branch) => branch.id === selectedBranchId);
+  const selectedBranch = branches.find(
+    (branch) => branch.id === selectedBranchId,
+  );
   const originSelection = selectedBranch?.is_main
     ? { origin_address_id: selectedBranch.address_id ?? undefined }
     : { branch_id: selectedBranchId || undefined };
@@ -236,10 +290,7 @@ export default function CartSection() {
         ? commerceService.updateCartItem(id, qty)
         : Promise.resolve(updateGuestCartItem(id, qty)),
     onSuccess: (updatedCart) => {
-      queryClient.setQueryData(
-        ["user-cart", user?.id ?? "guest"],
-        updatedCart,
-      );
+      queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
     },
   });
 
@@ -250,10 +301,7 @@ export default function CartSection() {
         : Promise.resolve(removeGuestCartItem(id)),
     onSuccess: (updatedCart) => {
       showSuccess("Artículo eliminado del carrito.");
-      queryClient.setQueryData(
-        ["user-cart", user?.id ?? "guest"],
-        updatedCart,
-      );
+      queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
     },
   });
 
@@ -262,10 +310,7 @@ export default function CartSection() {
       user ? commerceService.clearCart() : Promise.resolve(clearGuestCart()),
     onSuccess: (updatedCart) => {
       showSuccess("Carrito vaciado.");
-      queryClient.setQueryData(
-        ["user-cart", user?.id ?? "guest"],
-        updatedCart,
-      );
+      queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
     },
   });
 
@@ -304,9 +349,14 @@ export default function CartSection() {
   // Keep the quote current as quantities change, including while pickup is selected.
   // This lets buyers see when their cart reaches the free home-delivery minimum.
   useEffect(() => {
-    if (hasService || deliveryType === "coordinate_with_merchant" ||
-        !merchantId || !selectedBranch || !selectedAddressId ||
-        !items.some((item) => item.professional_product_id)) {
+    if (
+      hasService ||
+      deliveryType === "coordinate_with_merchant" ||
+      !merchantId ||
+      !selectedBranch ||
+      !selectedAddressId ||
+      !items.some((item) => item.professional_product_id)
+    ) {
       setQuotedFor("");
       setShippingQuote(null);
       return;
@@ -316,10 +366,12 @@ export default function CartSection() {
     const timer = setTimeout(async () => {
       try {
         const quote = await commerceService.calculateShipping({
-          items: items.filter((item) => item.professional_product_id).map((item) => ({
-            professional_product_id: item.professional_product_id!,
-            quantity: item.quantity,
-          })),
+          items: items
+            .filter((item) => item.professional_product_id)
+            .map((item) => ({
+              professional_product_id: item.professional_product_id!,
+              quantity: item.quantity,
+            })),
           delivery_type: "shipment",
           delivery_address_id: selectedAddressId,
           ...(selectedBranch.is_main
@@ -342,48 +394,71 @@ export default function CartSection() {
       active = false;
       clearTimeout(timer);
     };
-  }, [hasService, deliveryType, merchantId, selectedBranch, selectedBranchId,
-    selectedAddressId, items, quoteKey]);
+  }, [
+    hasService,
+    deliveryType,
+    merchantId,
+    selectedBranch,
+    selectedBranchId,
+    selectedAddressId,
+    items,
+    quoteKey,
+  ]);
 
   const checkoutMutation = useMutation({
     mutationFn: async () => {
       let cardData = {};
       let refreshPayment: (() => ReturnType<typeof tokenizePayway>) | undefined;
       let paymentAddressId: string | undefined;
-      if (paymentMethod === 'card') {
+      if (paymentMethod === "card") {
         const config = await getCardConfig();
-        const saved = savedCards.find(card => card.id === selectedCardId);
-        if (config.provider === 'payway') {
-          if (!billingAddressId || !billingAddressComplete) throw new Error('Seleccioná o completá la dirección del comprador antes de pagar.');
+        const saved = savedCards.find((card) => card.id === selectedCardId);
+        if (config.provider === "payway") {
+          if (!billingAddressId || !billingAddressComplete)
+            throw new Error(
+              "Seleccioná o completá la dirección del comprador antes de pagar.",
+            );
           paymentAddressId = billingAddressId;
           refreshPayment = () => tokenizePayway(config, paywayInput, saved);
-          cardData = { ...await refreshPayment(), save_card: !saved && savePaywayCard };
-        } else if (!saved || (saved.provider || 'getnet') !== 'getnet') {
-          throw new Error('Seleccioná una tarjeta guardada compatible con Getnet.');
+          cardData = {
+            ...(await refreshPayment()),
+            save_card: !saved && savePaywayCard,
+          };
+        } else if (!saved || (saved.provider || "getnet") !== "getnet") {
+          throw new Error("Seleccioná una tarjeta guardada.");
         }
       }
-      return commerceService.checkout({
-        professional_id: merchantId!,
-        items: items.map((item) => ({
-          professional_product_id: item.professional_product_id || undefined,
-          service_id: item.service_id || undefined,
-          quantity: item.quantity,
-        })),
-        delivery_type: activeDeliveryType,
-        billing_address_id: paymentAddressId,
-        ...(!hasService ? originSelection : {}),
-        delivery_address_id: activeDeliveryType === "shipment" ? selectedAddressId : undefined,
-        schedule_for_next_day: activeDeliveryType === "shipment" &&
-          quotedFor === quoteKey && shippingQuote?.requires_scheduled_delivery
-          ? scheduleForNextDay : undefined,
-        payment_method: paymentMethod,
-        card_token: paymentMethod === "card"
-          ? savedCards.find((card) => card.id === selectedCardId)?.getnet_card_token ?? undefined
-          : undefined,
-        installments: paymentMethod === "card" ? installments : 1,
-        expected_total_amount: total,
-        ...cardData,
-      }, { refreshPayment });
+      return commerceService.checkout(
+        {
+          professional_id: merchantId!,
+          items: items.map((item) => ({
+            professional_product_id: item.professional_product_id || undefined,
+            service_id: item.service_id || undefined,
+            quantity: item.quantity,
+          })),
+          delivery_type: activeDeliveryType,
+          billing_address_id: paymentAddressId,
+          ...(!hasService ? originSelection : {}),
+          delivery_address_id:
+            activeDeliveryType === "shipment" ? selectedAddressId : undefined,
+          schedule_for_next_day:
+            activeDeliveryType === "shipment" &&
+            quotedFor === quoteKey &&
+            shippingQuote?.requires_scheduled_delivery
+              ? scheduleForNextDay
+              : undefined,
+          payment_method: paymentMethod,
+          card_token:
+            paymentMethod === "card"
+              ? (savedCards.find((card) => card.id === selectedCardId)
+                  ?.getnet_card_token ?? undefined)
+              : undefined,
+          installments: paymentMethod === "card" ? installments : 1,
+          expected_total_amount: total,
+          ...cardData,
+        },
+        { refreshPayment },
+      );
     },
     onSuccess: (res) => {
       if (paymentMethod === "paycloud_qr" && res.qr) {
@@ -391,7 +466,11 @@ export default function CartSection() {
         setQrTimerSeconds(900);
         setQrModalOpen(true);
       } else {
-        showSuccess(res.payment_status === 'approved' ? '¡Pago procesado con éxito!' : 'Estamos verificando tu pago. Consultá Mis Compras sin volver a pagar.');
+        showSuccess(
+          res.payment_status === "approved"
+            ? "¡Pago procesado con éxito!"
+            : "Estamos verificando tu pago. Consultá Mis Compras sin volver a pagar.",
+        );
         queryClient.invalidateQueries({ queryKey: ["user-cart"] });
         router.push(`${ROUTES.dashboard}?view=purchases`);
       }
@@ -412,41 +491,86 @@ export default function CartSection() {
   }, [qrModalOpen, qrTimerSeconds]);
 
   // Match the installment limits and financing rates enforced by checkout.
-  const hasPerishable = items.some((i) => i.product?.is_food_perishable || i.product?.category?.is_food ||
-    i.product?.category?.no_installments || i.product?.subCategory?.is_food || i.product?.subCategory?.no_installments);
+  const hasPerishable = items.some(
+    (i) =>
+      i.product?.is_food_perishable ||
+      i.product?.category?.is_food ||
+      i.product?.category?.no_installments ||
+      i.product?.subCategory?.is_food ||
+      i.product?.subCategory?.no_installments,
+  );
   const maxInstallments = hasPerishable
     ? 1
     : items.length > 0
-    ? Math.min(...items.map((item) => item.service
-        ? (item.service.category?.no_installments ? 1 :
-            item.service.installments_enabled ? Number(item.service.max_installments || 1) : 18)
-        : (item.professional_product?.installments_enabled
-            ? Number(item.professional_product.max_installments || 1)
-            : 18)))
-    : 12;
-  const availableInstallments = [1, 2, 3, 6, 9, 12, 18].filter((count) =>
-    count <= maxInstallments && (count === 1 || !hasFinancedService ||
-      (commissionRates.some((rate) => Number(rate.installments) === count) &&
-        items.every(item => (item.service ? item.service.installments_enabled : item.professional_product?.installments_enabled) ||
-          calculateInstallmentFinancing(item.subtotal || 0, count, commissionRates) !== null))));
-  const financingSurcharge = paymentMethod === "card" && installments > 1
-    ? items.reduce((sum, item) => {
-        if (item.service ? item.service.installments_enabled : item.professional_product?.installments_enabled) return sum;
-        const quote = calculateInstallmentFinancing(item.subtotal || 0, installments, commissionRates);
-        return sum + (quote ? quote.totalAmount - (item.subtotal || 0) : 0);
-      }, 0)
-    : 0;
+      ? Math.min(
+          ...items.map((item) =>
+            item.service
+              ? item.service.category?.no_installments
+                ? 1
+                : item.service.installments_enabled
+                  ? Number(item.service.max_installments || 1)
+                  : 18
+              : item.professional_product?.installments_enabled
+                ? Number(item.professional_product.max_installments || 1)
+                : 18,
+          ),
+        )
+      : 12;
+  const availableInstallments = [1, 2, 3, 6, 9, 12, 18].filter(
+    (count) =>
+      count <= maxInstallments &&
+      (count === 1 ||
+        !hasFinancedService ||
+        (commissionRates.some((rate) => Number(rate.installments) === count) &&
+          items.every(
+            (item) =>
+              (item.service
+                ? item.service.installments_enabled
+                : item.professional_product?.installments_enabled) ||
+              calculateInstallmentFinancing(
+                item.subtotal || 0,
+                count,
+                commissionRates,
+              ) !== null,
+          ))),
+  );
+  const financingSurcharge =
+    paymentMethod === "card" && installments > 1
+      ? items.reduce((sum, item) => {
+          if (
+            item.service
+              ? item.service.installments_enabled
+              : item.professional_product?.installments_enabled
+          )
+            return sum;
+          const quote = calculateInstallmentFinancing(
+            item.subtotal || 0,
+            installments,
+            commissionRates,
+          );
+          return sum + (quote ? quote.totalAmount - (item.subtotal || 0) : 0);
+        }, 0)
+      : 0;
   useEffect(() => {
-    if (installments > maxInstallments ||
-        (installments > 1 && hasFinancedService &&
-          !commissionRates.some((rate) => Number(rate.installments) === installments))) {
+    if (
+      installments > maxInstallments ||
+      (installments > 1 &&
+        hasFinancedService &&
+        !commissionRates.some(
+          (rate) => Number(rate.installments) === installments,
+        ))
+    ) {
       setInstallments(1);
     }
   }, [installments, maxInstallments, hasFinancedService, commissionRates]);
 
   const subtotal = items.reduce((acc, curr) => acc + (curr.subtotal || 0), 0);
-  const total = subtotal + financingSurcharge +
-    (activeDeliveryType === "shipment" && quotedFor === quoteKey ? shippingCost : 0);
+  const total =
+    subtotal +
+    financingSurcharge +
+    (activeDeliveryType === "shipment" && quotedFor === quoteKey
+      ? shippingCost
+      : 0);
 
   const handleCheckout = () => {
     if (checkoutStartedRef.current || checkoutMutation.isPending) return;
@@ -459,29 +583,49 @@ export default function CartSection() {
       return;
     }
 
-    if (!hasService && (!selectedBranch ||
-      (activeDeliveryType === "pickup" && !selectedBranch.is_pickup_point) ||
-      (activeDeliveryType === "shipment" && selectedBranch.is_open === false && !selectedBranch.own_riders_available))) {
+    if (
+      !hasService &&
+      (!selectedBranch ||
+        (activeDeliveryType === "pickup" && !selectedBranch.is_pickup_point) ||
+        (activeDeliveryType === "shipment" &&
+          selectedBranch.is_open === false &&
+          !selectedBranch.own_riders_available))
+    ) {
       showError("Seleccioná una sucursal disponible para el retiro o envío.");
       return;
     }
     if (activeDeliveryType === "shipment" && quotedFor !== quoteKey) {
-      showError("Calculá el costo de envío con la sucursal y dirección elegidas.");
+      showError(
+        "Calculá el costo de envío con la sucursal y dirección elegidas.",
+      );
       return;
     }
-    if (activeDeliveryType === "shipment" && shippingQuote?.requires_scheduled_delivery && !scheduleForNextDay) {
+    if (
+      activeDeliveryType === "shipment" &&
+      shippingQuote?.requires_scheduled_delivery &&
+      !scheduleForNextDay
+    ) {
       showError("Confirmá el envío programado para mañana.");
       return;
     }
-    if (paymentMethod === 'card' && !cardConfig) {
-      showError('No se pudo obtener el proveedor de tarjetas. Actualizá la página.');
+    if (paymentMethod === "card" && !cardConfig) {
+      showError(
+        "No se pudo obtener el proveedor de tarjetas. Actualizá la página.",
+      );
       return;
     }
-    if (paymentMethod === "card" && cardConfig?.provider === 'getnet' && !savedCards.find((card) => card.id === selectedCardId)?.getnet_card_token) {
+    if (
+      paymentMethod === "card" &&
+      cardConfig?.provider === "getnet" &&
+      !savedCards.find((card) => card.id === selectedCardId)?.getnet_card_token
+    ) {
       showError("Seleccioná una tarjeta guardada para pagar");
       return;
     }
-    if (paymentMethod === "card" && !availableInstallments.includes(installments)) {
+    if (
+      paymentMethod === "card" &&
+      !availableInstallments.includes(installments)
+    ) {
       showError("No hay una tasa vigente para las cuotas seleccionadas.");
       return;
     }
@@ -518,7 +662,11 @@ export default function CartSection() {
         <div className="cart-state cart-state--error">
           <AlertCircle size={32} />
           <p>Error al sincronizar tu carrito.</p>
-          <button type="button" className="btn-primary" onClick={() => refetchCart()}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => refetchCart()}
+          >
             Reintentar
           </button>
         </div>
@@ -544,7 +692,7 @@ export default function CartSection() {
               <Store size={18} />
               <span>
                 {hasService ? "Contratando a" : "Comprando en"}{" "}
-                <strong>Comercio #{merchantId}</strong>.{" "}
+                <strong>{merchantName}</strong>.{" "}
                 {hasService
                   ? "El profesional se comunicará para acordar los detalles del servicio."
                   : "Cada pedido se procesa individualmente por comercio para asegurar el despacho."}
@@ -553,9 +701,14 @@ export default function CartSection() {
 
             <div className="cart-items-list">
               {items.map((item) => {
-                const name = item.product?.name || item.service?.name || "Artículo";
+                const name =
+                  item.product?.name || item.service?.name || "Artículo";
                 const img = item.product?.image_url;
-                const unitPrice = item.unit_price ?? item.product?.price ?? item.service?.price ?? 0;
+                const unitPrice =
+                  item.unit_price ??
+                  item.product?.price ??
+                  item.service?.price ??
+                  0;
                 const isServiceItem = Boolean(item.service_id || item.service);
 
                 return (
@@ -571,7 +724,10 @@ export default function CartSection() {
 
                       <div className="cart-item-info">
                         <h4 className="cart-item-name">{name}</h4>
-                        <CheckoutItemDetails product={item.product} description={item.service?.description} />
+                        <CheckoutItemDetails
+                          product={item.product}
+                          description={item.service?.description}
+                        />
                         <span className="cart-item-unit-price">
                           ${unitPrice.toLocaleString("es-AR")}
                           {isServiceItem ? " por servicio" : " c/u"}
@@ -700,10 +856,14 @@ export default function CartSection() {
               {/* Pickup branch selection */}
               {!hasService && deliveryType === "pickup" && (
                 <div className="delivery-details-subbox">
-                  <label className="commercial-label">Seleccionar sucursal de retiro:</label>
-                  {branches.filter((branch) => branch.is_pickup_point).length === 0 ? (
+                  <label className="commercial-label">
+                    Seleccionar sucursal de retiro:
+                  </label>
+                  {branches.filter((branch) => branch.is_pickup_point)
+                    .length === 0 ? (
                     <p className="no-branches-warning">
-                      El comercio no tiene sucursales cargadas aún. Se coordinará por mensajería.
+                      El comercio no tiene sucursales cargadas aún. Se
+                      coordinará por mensajería.
                     </p>
                   ) : (
                     <select
@@ -711,15 +871,25 @@ export default function CartSection() {
                       value={selectedBranchId}
                       onChange={(e) => setSelectedBranchId(e.target.value)}
                     >
-                      {branches.filter((branch) => branch.is_pickup_point).map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name} — {b.street_name} {b.street_number} ({b.opening_hours || "Horario comercial"})
-                          {b.delivery_eta_minutes ? ` · Demora ${b.delivery_eta_minutes} min` : ""}
-                        </option>
-                      ))}
+                      {branches
+                        .filter((branch) => branch.is_pickup_point)
+                        .map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name} — {b.street_name} {b.street_number} (
+                            {b.opening_hours || "Horario comercial"})
+                            {b.delivery_eta_minutes
+                              ? ` · Demora ${b.delivery_eta_minutes} min`
+                              : ""}
+                          </option>
+                        ))}
                     </select>
                   )}
-                  {selectedBranch?.is_open === false && <p>Podés comprar ahora y retirar el pedido cuando te convenga.</p>}
+                  {selectedBranch?.is_open === false && (
+                    <p>
+                      Podés comprar ahora y retirar el pedido cuando te
+                      convenga.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -727,34 +897,81 @@ export default function CartSection() {
               {!hasService && deliveryType === "shipment" && (
                 <div className="delivery-details-subbox">
                   <label className="commercial-label">Sucursal de origen</label>
-                  <select className="branch-select" value={selectedBranchId}
-                    onChange={(event) => setSelectedBranchId(event.target.value)}>
-                    {branches.filter((branch) => branch.is_open !== false || branch.own_riders_available).map((branch) => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name}{branch.delivery_eta_minutes ? ` · Demora ${branch.delivery_eta_minutes} min` : ""}
-                        {branch.is_open === false ? " · Envío mañana" : ""}
-                      </option>
-                    ))}
+                  <select
+                    className="branch-select"
+                    value={selectedBranchId}
+                    onChange={(event) =>
+                      setSelectedBranchId(event.target.value)
+                    }
+                  >
+                    {branches
+                      .filter(
+                        (branch) =>
+                          branch.is_open !== false ||
+                          branch.own_riders_available,
+                      )
+                      .map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name}
+                          {branch.delivery_eta_minutes
+                            ? ` · Demora ${branch.delivery_eta_minutes} min`
+                            : ""}
+                          {branch.is_open === false ? " · Envío mañana" : ""}
+                        </option>
+                      ))}
                   </select>
-                  {selectedBranch?.delivery_eta_minutes != null &&
-                    <p>Demora estimada {selectedBranch.is_open === false ? "desde el despacho de mañana" : "de esta sucursal"}: {selectedBranch.delivery_eta_minutes} minutos.</p>}
-                  <label className="commercial-label">Dirección de entrega</label>
-                  <select className="branch-select" value={selectedAddressId}
-                    onChange={(event) => setSelectedAddressId(event.target.value)}>
+                  {selectedBranch?.delivery_eta_minutes != null && (
+                    <p>
+                      Demora estimada{" "}
+                      {selectedBranch.is_open === false
+                        ? "desde el despacho de mañana"
+                        : "de esta sucursal"}
+                      : {selectedBranch.delivery_eta_minutes} minutos.
+                    </p>
+                  )}
+                  <label className="commercial-label">
+                    Dirección de entrega
+                  </label>
+                  <select
+                    className="branch-select"
+                    value={selectedAddressId}
+                    onChange={(event) =>
+                      setSelectedAddressId(event.target.value)
+                    }
+                  >
                     <option value="">Seleccionar dirección guardada</option>
-                    {userAddresses.filter((address) => address.latitude != null && address.longitude != null).map((address) => (
-                      <option key={address.id} value={address.id}>
-                        {address.name || address.street_name || address.street} {address.street_number || address.number}
-                      </option>
-                    ))}
+                    {userAddresses
+                      .filter(
+                        (address) =>
+                          address.latitude != null && address.longitude != null,
+                      )
+                      .map((address) => (
+                        <option key={address.id} value={address.id}>
+                          {address.name ||
+                            address.street_name ||
+                            address.street}{" "}
+                          {address.street_number || address.number}
+                        </option>
+                      ))}
                   </select>
-                  {!userAddresses.some((address) => address.latitude != null && address.longitude != null) &&
-                    <p>Guardá una dirección con ubicación en el mapa para pedir el envío.</p>}
+                  {!userAddresses.some(
+                    (address) =>
+                      address.latitude != null && address.longitude != null,
+                  ) && (
+                    <p>
+                      Guardá una dirección con ubicación en el mapa para pedir
+                      el envío.
+                    </p>
+                  )}
                   <div className="shipping-calc-row">
                     <button
                       type="button"
                       className="btn-secondary"
-                      disabled={!selectedAddressId || !selectedBranchId || calculateShippingMutation.isPending}
+                      disabled={
+                        !selectedAddressId ||
+                        !selectedBranchId ||
+                        calculateShippingMutation.isPending
+                      }
                       onClick={() => calculateShippingMutation.mutate(quoteKey)}
                     >
                       Calcular costo
@@ -763,19 +980,44 @@ export default function CartSection() {
 
                   {quotedFor === quoteKey && (
                     <div className="shipping-result-badge">
-                      <span>Costo estimado: <strong>${shippingCost.toLocaleString("es-AR")}</strong></span>
-                      <span>{shippingQuote?.requires_scheduled_delivery ? "Demora desde el despacho" : "Plazo"}: <strong>{estimatedTime || "A confirmar"}</strong></span>
-                      {shippingQuote?.requires_scheduled_delivery &&
-                        <span>Entrega programable para mañana ({shippingQuote.scheduled_delivery_date?.split("-").reverse().join("/")}).</span>}
+                      <span>
+                        Costo estimado:{" "}
+                        <strong>${shippingCost.toLocaleString("es-AR")}</strong>
+                      </span>
+                      <span>
+                        {shippingQuote?.requires_scheduled_delivery
+                          ? "Demora desde el despacho"
+                          : "Plazo"}
+                        : <strong>{estimatedTime || "A confirmar"}</strong>
+                      </span>
+                      {shippingQuote?.requires_scheduled_delivery && (
+                        <span>
+                          Entrega programable para mañana (
+                          {shippingQuote.scheduled_delivery_date
+                            ?.split("-")
+                            .reverse()
+                            .join("/")}
+                          ).
+                        </span>
+                      )}
                     </div>
                   )}
-                  {quotedFor === quoteKey && shippingQuote?.requires_scheduled_delivery && (
-                    <label className="cart-schedule-option">
-                      <input type="checkbox" checked={scheduleForNextDay}
-                        onChange={(event) => setScheduleForNextDay(event.target.checked)} />
-                      <span>El comercio está cerrado. Programar el envío con sus riders para mañana.</span>
-                    </label>
-                  )}
+                  {quotedFor === quoteKey &&
+                    shippingQuote?.requires_scheduled_delivery && (
+                      <label className="cart-schedule-option">
+                        <input
+                          type="checkbox"
+                          checked={scheduleForNextDay}
+                          onChange={(event) =>
+                            setScheduleForNextDay(event.target.checked)
+                          }
+                        />
+                        <span>
+                          El comercio está cerrado. Programar el envío con sus
+                          riders para mañana.
+                        </span>
+                      </label>
+                    )}
                 </div>
               )}
             </div>
@@ -787,7 +1029,9 @@ export default function CartSection() {
               <h3 className="cart-box-title">Resumen de la Compra</h3>
 
               <div className="cart-summary-row">
-                <span>{hasService ? "Subtotal servicios:" : "Subtotal productos:"}</span>
+                <span>
+                  {hasService ? "Subtotal servicios:" : "Subtotal productos:"}
+                </span>
                 <span>${subtotal.toLocaleString("es-AR")}</span>
               </div>
 
@@ -797,10 +1041,10 @@ export default function CartSection() {
                   {activeDeliveryType === "pickup"
                     ? "Gratis"
                     : activeDeliveryType === "coordinate_with_merchant"
-                    ? "A convenir"
-                    : quotedFor === quoteKey
-                    ? `$${shippingCost.toLocaleString("es-AR")}`
-                    : "Pendiente de cálculo"}
+                      ? "A convenir"
+                      : quotedFor === quoteKey
+                        ? `$${shippingCost.toLocaleString("es-AR")}`
+                        : "Pendiente de cálculo"}
                 </span>
               </div>
 
@@ -825,10 +1069,16 @@ export default function CartSection() {
               </div>
 
               {/* Payment gateway selection */}
-              {paymentMethod === 'card' && cardConfig?.provider === 'payway' &&
-                <PaymentAddressCard preferredId={selectedAddressId} onChange={(id, complete) => {
-                  setBillingAddressId(id); setBillingAddressComplete(complete);
-                }} />}
+              {paymentMethod === "card" &&
+                cardConfig?.provider === "payway" && (
+                  <PaymentAddressCard
+                    preferredId={selectedAddressId}
+                    onChange={(id, complete) => {
+                      setBillingAddressId(id);
+                      setBillingAddressComplete(complete);
+                    }}
+                  />
+                )}
               <div className="cart-payment-methods">
                 <label className="commercial-label">Medio de Pago</label>
 
@@ -843,7 +1093,9 @@ export default function CartSection() {
                   <QrCode size={20} />
                   <div>
                     <strong>QR Interoperable</strong>
-                    <p>Pagá con cualquier billetera (Mercado Pago, MODO, etc.)</p>
+                    <p>
+                      Pagá con cualquier billetera (Mercado Pago, MODO, etc.)
+                    </p>
                   </div>
                 </div>
 
@@ -867,28 +1119,148 @@ export default function CartSection() {
               {paymentMethod === "card" && (
                 <div className="installments-box">
                   <label className="commercial-label">Tarjeta guardada</label>
-                  <select className="installments-select" value={selectedCardId}
-                    onChange={(event) => setSelectedCardId(event.target.value)}>
+                  <select
+                    className="installments-select"
+                    value={selectedCardId}
+                    onChange={(event) => setSelectedCardId(event.target.value)}
+                  >
                     <option value="">Seleccionar tarjeta</option>
-                    {cardConfig?.provider === 'payway' && <option value="new">Usar una tarjeta nueva</option>}
+                    {cardConfig?.provider === "payway" && (
+                      <option value="new">Usar una tarjeta nueva</option>
+                    )}
                     {savedCards.map((card) => (
                       <option key={card.id} value={card.id}>
                         {card.card_brand} terminada en {card.last_four}
                       </option>
                     ))}
                   </select>
-                  {savedCards.length === 0 && cardConfig?.provider !== 'payway' && <p>Guardá una tarjeta en tu perfil para usar este medio de pago.</p>}
-                  {cardConfig?.provider === 'payway' && <>
-                    {!savedCards.some(card => card.id === selectedCardId) && <>
-                      <label className="commercial-label">Número de tarjeta<input className="installments-select" autoComplete="cc-number" value={paywayInput.number} onChange={e => setPaywayInput({ ...paywayInput, number: e.target.value.replace(/\D/g, '').slice(0,19) })} /></label>
-                      <label className="commercial-label">Titular<input className="installments-select" autoComplete="cc-name" value={paywayInput.holder} onChange={e => setPaywayInput({ ...paywayInput, holder: e.target.value })} /></label>
-                      <label className="commercial-label">DNI<input className="installments-select" value={paywayInput.dni} onChange={e => setPaywayInput({ ...paywayInput, dni: e.target.value.replace(/\D/g, '').slice(0,9) })} /></label>
-                      <label className="commercial-label">Vencimiento (MM/AA)<input className="installments-select" autoComplete="cc-exp" value={paywayInput.expiry} onChange={e => setPaywayInput({ ...paywayInput, expiry: e.target.value })} /></label>
-                      <select className="installments-select" aria-label="Tipo de tarjeta" value={paywayInput.type} onChange={e => setPaywayInput({ ...paywayInput, type: e.target.value as 'credit' | 'debit' })}><option value="credit">Crédito</option><option value="debit">Débito</option></select>
-                      <label><input type="checkbox" checked={savePaywayCard} onChange={e => setSavePaywayCard(e.target.checked)} /> Guardar tarjeta después del pago</label>
-                    </>}
-                    <label className="commercial-label">Código de seguridad<input className="installments-select" type="password" autoComplete="cc-csc" maxLength={4} value={paywayInput.cvv} onChange={e => setPaywayInput({ ...paywayInput, cvv: e.target.value.replace(/\D/g, '') })} /></label>
-                  </>}
+                  {savedCards.length === 0 &&
+                    cardConfig?.provider !== "payway" && (
+                      <p>
+                        Guardá una tarjeta en tu perfil para usar este medio de
+                        pago.
+                      </p>
+                    )}
+                  {cardConfig?.provider === "payway" && (
+                    <>
+                      {!savedCards.some(
+                        (card) => card.id === selectedCardId,
+                      ) && (
+                        <>
+                          <label className="commercial-label cart-card-field">
+                            Número de tarjeta
+                            <input
+                              className="installments-select"
+                              autoComplete="cc-number"
+                              value={paywayInput.number}
+                              onChange={(e) =>
+                                setPaywayInput({
+                                  ...paywayInput,
+                                  number: e.target.value
+                                    .replace(/\D/g, "")
+                                    .slice(0, 19),
+                                })
+                              }
+                            />
+                          </label>
+                          <label className="commercial-label cart-card-field">
+                            Titular
+                            <input
+                              className="installments-select"
+                              autoComplete="cc-name"
+                              value={paywayInput.holder}
+                              onChange={(e) =>
+                                setPaywayInput({
+                                  ...paywayInput,
+                                  holder: e.target.value,
+                                })
+                              }
+                            />
+                          </label>
+                          <label className="commercial-label cart-card-field">
+                            DNI
+                            <input
+                              className="installments-select"
+                              value={paywayInput.dni}
+                              onChange={(e) =>
+                                setPaywayInput({
+                                  ...paywayInput,
+                                  dni: e.target.value
+                                    .replace(/\D/g, "")
+                                    .slice(0, 9),
+                                })
+                              }
+                            />
+                          </label>
+                          <label className="commercial-label cart-card-field">
+                            Vencimiento (MM/AA)
+                            <input
+                              className="installments-select"
+                              autoComplete="cc-exp"
+                              inputMode="numeric"
+                              maxLength={5}
+                              placeholder="MM/AA"
+                              value={paywayInput.expiry}
+                              onChange={(e) => {
+                                const digits = e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 4);
+                                setPaywayInput((current) => ({
+                                  ...current,
+                                  expiry:
+                                    digits.length > 2
+                                      ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+                                      : digits,
+                                }));
+                              }}
+                            />
+                          </label>
+                          <label className="commercial-label cart-card-field">
+                            Tipo de tarjeta
+                            <select
+                              className="installments-select"
+                              value={paywayInput.type}
+                              onChange={(e) =>
+                                setPaywayInput({
+                                  ...paywayInput,
+                                  type: e.target.value as "credit" | "debit",
+                                })
+                              }
+                            >
+                              <option value="credit">Crédito</option>
+                              <option value="debit">Débito</option>
+                            </select>
+                          </label>
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={savePaywayCard}
+                              onChange={(e) =>
+                                setSavePaywayCard(e.target.checked)
+                              }
+                            />{" "}
+                            Guardar tarjeta después del pago
+                          </label>
+                        </>
+                      )}
+                      <label className="commercial-label cart-card-field">
+                        Código de seguridad
+                        <input
+                          className="installments-select"
+                          type="password"
+                          autoComplete="cc-csc"
+                          maxLength={4}
+                          value={paywayInput.cvv}
+                          onChange={(e) =>
+                            setPaywayInput({
+                              ...paywayInput,
+                              cvv: e.target.value.replace(/\D/g, ""),
+                            })
+                          }
+                        />
+                      </label>
+                    </>
+                  )}
                   <label className="commercial-label">Cuotas Disponibles</label>
                   {hasPerishable ? (
                     <div className="perishable-warning-pill">
@@ -901,23 +1273,48 @@ export default function CartSection() {
                     <select
                       className="installments-select"
                       value={installments}
-                      onChange={(e) => setInstallments(parseInt(e.target.value, 10))}
+                      onChange={(e) =>
+                        setInstallments(parseInt(e.target.value, 10))
+                      }
                     >
                       {availableInstallments.map((count) => {
-                        const surcharge = count > 1 && hasFinancedService
-                          ? items.reduce((sum, item) => {
-                              if (item.service ? item.service.installments_enabled : item.professional_product?.installments_enabled) return sum;
-                              const quote = calculateInstallmentFinancing(item.subtotal || 0, count, commissionRates);
-                              return sum + (quote ? quote.totalAmount - (item.subtotal || 0) : 0);
-                            }, 0)
-                          : 0;
-                        const installmentTotal = subtotal + surcharge +
-                          (activeDeliveryType === "shipment" && quotedFor === quoteKey ? shippingCost : 0);
+                        const surcharge =
+                          count > 1 && hasFinancedService
+                            ? items.reduce((sum, item) => {
+                                if (
+                                  item.service
+                                    ? item.service.installments_enabled
+                                    : item.professional_product
+                                        ?.installments_enabled
+                                )
+                                  return sum;
+                                const quote = calculateInstallmentFinancing(
+                                  item.subtotal || 0,
+                                  count,
+                                  commissionRates,
+                                );
+                                return (
+                                  sum +
+                                  (quote
+                                    ? quote.totalAmount - (item.subtotal || 0)
+                                    : 0)
+                                );
+                              }, 0)
+                            : 0;
+                        const installmentTotal =
+                          subtotal +
+                          surcharge +
+                          (activeDeliveryType === "shipment" &&
+                          quotedFor === quoteKey
+                            ? shippingCost
+                            : 0);
                         return (
                           <option key={count} value={count}>
-                            {count === 1 ? "1 pago" : `${count} cuotas`} de ${
-                              Math.round(installmentTotal / count).toLocaleString("es-AR")
-                            }{surcharge > 0 ? " con recargo" : " sin interés"}
+                            {count === 1 ? "1 pago" : `${count} cuotas`} de $
+                            {Math.round(
+                              installmentTotal / count,
+                            ).toLocaleString("es-AR")}
+                            {surcharge > 0 ? " con recargo" : " sin interés"}
                           </option>
                         );
                       })}
@@ -930,8 +1327,13 @@ export default function CartSection() {
               <button
                 type="button"
                 className="btn-primary cart-checkout-btn"
-                disabled={checkoutMutation.isPending || isAuthLoading ||
-                  (paymentMethod === "card" && cardConfig?.provider === "payway" && !billingAddressComplete)}
+                disabled={
+                  checkoutMutation.isPending ||
+                  isAuthLoading ||
+                  (paymentMethod === "card" &&
+                    cardConfig?.provider === "payway" &&
+                    !billingAddressComplete)
+                }
                 onClick={handleCheckout}
               >
                 <span>Pagar pedido</span>
@@ -975,13 +1377,15 @@ export default function CartSection() {
             </div>
 
             <p className="qr-hint">
-              Abrí tu app bancaria o billetera (Mercado Pago, MODO, BNA+, Ualá, etc.)
-              y escaneá este código QR interoperable.
+              Abrí tu app bancaria o billetera (Mercado Pago, MODO, BNA+, Ualá,
+              etc.) y escaneá este código QR interoperable.
             </p>
 
             <div className="qr-amount-pill">
               <span>Total a transferir:</span>
-              <strong>${activeQrData.total_amount.toLocaleString("es-AR")}</strong>
+              <strong>
+                ${activeQrData.total_amount.toLocaleString("es-AR")}
+              </strong>
             </div>
 
             <button

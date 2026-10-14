@@ -44,6 +44,7 @@ import { getProductImage } from "./orderTicketData";
 import ReturnTicketModal from "./ReturnTicketModal";
 import "./BuyerOrdersSection.css";
 import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
+import { isServiceOrderSummary as isServiceOrder } from "@/utils/orderKind";
 
 const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
   if (!order) return false;
@@ -54,13 +55,6 @@ const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
   if (order.shipment_status === "delivered") return true;
   return false;
 };
-
-const isServiceOrder = (order?: Partial<OrderSummary> | null) =>
-  Boolean(
-    order?.service_id ||
-    order?.service ||
-    order?.items?.some((item) => item.service_id || item.service),
-  );
 
 const serviceProgressStep = (order?: Partial<OrderSummary> | null) => {
   if (
@@ -300,6 +294,17 @@ export default function BuyerOrdersSection() {
       }
     },
     onError: () => showError("No se pudo confirmar la recepción."),
+  });
+
+  const confirmCoordinatedDeliveryMutation = useMutation({
+    mutationFn: (orderId: string) => commerceService.confirmCoordinatedDelivery(orderId),
+    onSuccess: (updated) => {
+      showSuccess("Entrega confirmada. ¡Gracias por tu compra!");
+      setSelectedOrder((current) => current ? { ...current, ...updated } : updated);
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["buyer-order-detail", updated.id] });
+    },
+    onError: (error) => showError((error as Error).message || "No se pudo confirmar la recepción."),
   });
 
   const isOrderPickupReady = (order?: Partial<OrderSummary> | null) => {
@@ -687,6 +692,11 @@ export default function BuyerOrdersSection() {
                     <span className="buyer-order-total-amount">
                       ${Number(order.total_amount ?? 0).toLocaleString("es-AR")}
                     </span>
+                    {Number(order.refunded_amount ?? 0) > 0 && (
+                      <span className="buyer-order-refund">Reembolsado: ${Number(order.refunded_amount).toLocaleString("es-AR")}</span>
+                    )}
+                    {order.has_return && <span className="buyer-order-refund">Devolución recibida por el comercio</span>}
+                    {order.has_chargeback && <span className="buyer-order-refund">Pago en disputa</span>}
                   </div>
                 </div>
 
@@ -1237,27 +1247,45 @@ export default function BuyerOrdersSection() {
                   {selectedOrder.shipment_status && (
                     <p>Estado del envío: {selectedOrder.shipment_status}</p>
                   )}
-                  {selectedOrder.transport_shipment && (
-                    <div className="transport-info-box">
-                      <p>
-                        <strong>Empresa de transporte:</strong>{" "}
-                        {selectedOrder.transport_shipment.carrier_name}
-                      </p>
-                      <p>
-                        <strong>Número de guía:</strong>{" "}
-                        {selectedOrder.transport_shipment.tracking_number}
-                      </p>
-                      {selectedOrder.transport_shipment.tracking_url && (
-                        <a
-                          href={selectedOrder.transport_shipment.tracking_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="external-track-link"
-                        >
-                          <ExternalLink size={16} /> Rastrear en el sitio
-                          oficial
-                        </a>
-                      )}
+                </div>
+              )}
+
+            {selectedOrder.delivery_type === "coordinate_with_merchant" &&
+              !isServiceOrder(selectedOrder) && (
+                <div className="buyer-shipment-tracking-card">
+                  <h4>Envío coordinado con el vendedor</h4>
+                  <p>{["delivered", "settled"].includes(selectedOrder.status)
+                    ? "Confirmaste la recepción de este pedido."
+                    : ["dispatched", "in_transit"].includes(selectedOrder.status)
+                    ? "El vendedor despachó tu pedido."
+                    : selectedOrder.status === "preparing"
+                      ? "El vendedor está preparando tu pedido."
+                      : "El vendedor te avisará cuando prepare y despache tu pedido."}</p>
+                  {(() => {
+                    const relation = selectedOrder.transport_shipments;
+                    const shipment = Array.isArray(relation) ? relation[0] : relation ?? selectedOrder.transport_shipment;
+                    if (!shipment || !["dispatched", "in_transit", "delivered", "settled"].includes(selectedOrder.status)) return null;
+                    return <div className="transport-info-box">
+                      <p><strong>Empresa de transporte:</strong> {shipment.company_name ?? shipment.carrier_name}</p>
+                      <p><strong>Número de guía:</strong> {shipment.tracking_number}</p>
+                      {shipment.tracking_url && <a href={shipment.tracking_url} target="_blank"
+                        rel="noreferrer" className="external-track-link">
+                        <ExternalLink size={16} /> Rastrear en el sitio oficial
+                      </a>}
+                    </div>;
+                  })()}
+                  {selectedOrder.status === "dispatched" && (
+                    <div className="buyer-confirm-receipt-box">
+                      <p>Confirmá únicamente si ya recibiste el producto. Si no llegó o hay un problema, contactá al comercio o iniciá un reclamo.</p>
+                      <button type="button" className="btn-primary"
+                        disabled={confirmCoordinatedDeliveryMutation.isPending}
+                        onClick={() => {
+                          if (window.confirm("¿Ya recibiste el producto? La entrega quedará registrada y se programará la liquidación al comercio.")) {
+                            confirmCoordinatedDeliveryMutation.mutate(selectedOrder.id);
+                          }
+                        }}>
+                        {confirmCoordinatedDeliveryMutation.isPending ? "Confirmando..." : "Confirmar que recibí el producto"}
+                      </button>
                     </div>
                   )}
                 </div>

@@ -47,11 +47,13 @@ import { getBuyerEmail, getBuyerName, getBuyerPhone, getDeliveryAddress, getOrde
 import DateRangeFilter, { DateRangeValue, toUtcDateRange } from "./DateRangeFilter";
 import "./SalesSection.css";
 import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
+import { isServiceOrderSummary as isServiceSale } from "@/utils/orderKind";
 
 const STATUS_FILTERS: Array<{ label: string; value: string }> = [
   { label: "Todas", value: "" },
   { label: "Pendientes", value: "pending" },
   { label: "Pendiente de Pago", value: "pending_payment" },
+  { label: "Pagadas", value: "paid" },
   { label: "Confirmadas", value: "confirmed" },
   { label: "En preparación", value: "preparing" },
   { label: "Listas para retiro", value: "ready_for_pickup" },
@@ -110,10 +112,18 @@ export default function SalesSection() {
   const [pickupCode, setPickupCode] = useState("");
   const [pickupScannerOpen, setPickupScannerOpen] = useState(false);
   const [invoiceUrlInput, setInvoiceUrlInput] = useState("");
-  const [packageImageUrl, setPackageImageUrl] = useState("");
+  const [packageImageFile, setPackageImageFile] = useState<File | null>(null);
+  useEffect(() => setPackageImageFile(null), [selectedOrder?.id]);
   const [transportCarrier, setTransportCarrier] = useState("");
   const [transportTrackingNumber, setTransportTrackingNumber] = useState("");
   const [transportTrackingUrl, setTransportTrackingUrl] = useState("");
+  useEffect(() => {
+    const relation = selectedOrder?.transport_shipments;
+    const shipment = Array.isArray(relation) ? relation[0] : relation ?? selectedOrder?.transport_shipment;
+    setTransportCarrier(shipment?.company_name ?? shipment?.carrier_name ?? "");
+    setTransportTrackingNumber(shipment?.tracking_number ?? "");
+    setTransportTrackingUrl(shipment?.tracking_url ?? "");
+  }, [selectedOrder?.id, selectedOrder?.transport_shipments, selectedOrder?.transport_shipment]);
   const [selectedOrderForAppointment, setSelectedOrderForAppointment] = useState<OrderSummary | null>(null);
   const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<OrderSummary | null>(null);
   const [selectedOrderForServiceVoucher, setSelectedOrderForServiceVoucher] = useState<OrderSummary | null>(null);
@@ -325,12 +335,18 @@ export default function SalesSection() {
   }, [orders, isAutoPrintActive, selectedBranchId, companyId, showSuccess]);
 
   // Mutations
+  const refreshSelectedOrder = async (id: string) => {
+    queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
+    await refetch();
+    const updated = await commerceService.orderDetail(id);
+    setSelectedOrder((current) => current?.id === id ? updated : current);
+  };
+
   const confirmMutation = useMutation({
     mutationFn: (id: string) => commerceService.confirmOrder(id),
-    onSuccess: (updated) => {
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
       showSuccess("Pedido confirmado con éxito.");
-      queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
-      setSelectedOrder(updated);
     },
     onError: () => showError("No se pudo confirmar el pedido."),
   });
@@ -354,23 +370,70 @@ export default function SalesSection() {
   });
 
   const preparingMutation = useMutation({
-    mutationFn: (id: string) => commerceService.preparingShipment(id),
-    onSuccess: () => {
+    mutationFn: async (id: string) => {
+      const order = await commerceService.orderDetail(id);
+      const shipmentId = Array.isArray(order.shipments)
+        ? order.shipments[0]?.id : order.shipments?.id ?? order.shipment_id;
+      if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
+      return commerceService.preparingShipment(shipmentId);
+    },
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
       showSuccess("Pedido marcado en preparación.");
-      queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
-      refetch();
     },
     onError: () => showError("Error al actualizar estado."),
   });
 
   const readyMutation = useMutation({
-    mutationFn: (id: string) => commerceService.readyShipment(id),
-    onSuccess: () => {
+    mutationFn: async (id: string) => {
+      const order = await commerceService.orderDetail(id);
+      const shipmentId = Array.isArray(order.shipments)
+        ? order.shipments[0]?.id : order.shipments?.id ?? order.shipment_id;
+      if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
+      return commerceService.readyShipment(shipmentId);
+    },
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
       showSuccess("Pedido marcado listo.");
-      queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
-      refetch();
     },
     onError: () => showError("Error al actualizar estado."),
+  });
+
+  const pickupReadyMutation = useMutation({
+    mutationFn: (id: string) => commerceService.markPickupReady(id),
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
+      showSuccess("Pedido listo para retiro en sucursal.");
+    },
+    onError: (error: Error) => showError(error.message || "No se pudo marcar listo para retiro."),
+  });
+
+  const coordinatedPreparingMutation = useMutation({
+    mutationFn: (id: string) => commerceService.markCoordinatedPreparing(id),
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
+      showSuccess("Pedido marcado en preparación.");
+    },
+    onError: () => showError("No se pudo marcar el pedido en preparación."),
+  });
+
+  const coordinatedDispatchedMutation = useMutation({
+    mutationFn: (id: string) => commerceService.markCoordinatedDispatched(id),
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
+      showSuccess("Pedido despachado. Ya podés cargar los datos del envío.");
+    },
+    onError: () => showError("No se pudo confirmar el despacho."),
+  });
+
+  const dispatchEvidenceMutation = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => commerceService.uploadDispatchEvidence(id, file),
+    onSuccess: async (_, variables) => {
+      setPackageImageFile(null);
+      await refreshSelectedOrder(variables.id);
+      showSuccess("Foto del paquete guardada.");
+    },
+    onError: (error: Error) => showError(error.message || "No se pudo subir la foto."),
   });
 
   const pickupVerifyMutation = useMutation({
@@ -398,24 +461,23 @@ export default function SalesSection() {
   const transportMutation = useMutation({
     mutationFn: ({
       id,
-      carrier_name,
+      company_name,
       tracking_number,
       tracking_url,
     }: {
       id: string;
-      carrier_name: string;
+      company_name: string;
       tracking_number: string;
       tracking_url: string;
     }) =>
       commerceService.updateTransportShipment(id, {
-        carrier_name,
+        company_name,
         tracking_number,
         tracking_url,
       }),
-    onSuccess: () => {
+    onSuccess: async (_, variables) => {
       showSuccess("Datos de transporte larga distancia actualizados.");
-      queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
-      refetch();
+      await refreshSelectedOrder(variables.id);
     },
     onError: () => showError("No se pudo guardar la información de transporte."),
   });
@@ -463,6 +525,8 @@ export default function SalesSection() {
         return <span className="sales-badge sales-badge--pending">Pendiente</span>;
       case "pending_payment":
         return <span className="sales-badge sales-badge--pending-payment">Pendiente de Pago</span>;
+      case "paid":
+        return <span className="sales-badge sales-badge--confirmed">Pagado</span>;
       case "confirmed":
         return <span className="sales-badge sales-badge--confirmed">Confirmado</span>;
       case "preparing":
@@ -472,6 +536,7 @@ export default function SalesSection() {
       case "ready_for_dispatch":
         return <span className="sales-badge sales-badge--ready">Listo despacho</span>;
       case "dispatched":
+        return <span className="sales-badge sales-badge--transit">Despachado</span>;
       case "in_transit":
         return <span className="sales-badge sales-badge--transit">En tránsito</span>;
       case "settled":
@@ -529,6 +594,14 @@ export default function SalesSection() {
         return type;
     }
   };
+
+  const selectedShipmentStatus = Array.isArray(selectedOrder?.shipments)
+    ? selectedOrder.shipments[0]?.status : selectedOrder?.shipments?.status;
+  const canUploadSelectedEvidence = Boolean(selectedOrder && !isServiceSale(selectedOrder) &&
+    ((selectedOrder.delivery_type === 'coordinate_with_merchant' &&
+      ['confirmed', 'preparing'].includes(selectedOrder.status)) ||
+     (selectedOrder.delivery_type === 'shipment' && selectedOrder.status === 'confirmed' &&
+      ['pending', 'created', 'confirmed', 'preparing'].includes(selectedShipmentStatus ?? ''))));
 
   return (
     <div className="sales-section">
@@ -822,6 +895,9 @@ export default function SalesSection() {
                       <td>{getStatusBadge(order.status, order)}</td>
                       <td className="sales-table__total">
                         ${Number(order.total_amount ?? 0).toLocaleString("es-AR")}
+                        {Number(order.refunded_amount ?? 0) > 0 && <small className="sales-table__refund">Devuelto: ${Number(order.refunded_amount).toLocaleString("es-AR")}</small>}
+                        {order.has_return && <small className="sales-table__refund">Producto devuelto recibido</small>}
+                        {order.has_chargeback && <small className="sales-table__refund">Pago en disputa</small>}
                       </td>
                       <td>
                         <div className="sales-row-actions">
@@ -932,14 +1008,16 @@ export default function SalesSection() {
                   </span>
                 </div>
                 <div>
-                  <span className="order-detail-label">Método de entrega:</span>
+                  <span className="order-detail-label">{isServiceSale(selectedOrder) ? "Modalidad del servicio:" : "Método de entrega:"}</span>
                   <span className="order-detail-value">
-                    {getDeliveryLabel(selectedOrder.delivery_type)}
+                    {isServiceSale(selectedOrder) && selectedOrder.delivery_type === "coordinate_with_merchant"
+                      ? "A coordinar con el profesional"
+                      : getDeliveryLabel(selectedOrder.delivery_type)}
                   </span>
                 </div>
                 {selectedOrder.scheduled_delivery_date && (
                   <div>
-                    <span className="order-detail-label">Envío programado:</span>
+                    <span className="order-detail-label">{isServiceSale(selectedOrder) ? "Fecha prevista:" : "Envío programado:"}</span>
                     <span className="order-detail-value">{selectedOrder.scheduled_delivery_date.split("-").reverse().join("/")}</span>
                   </div>
                 )}
@@ -963,7 +1041,7 @@ export default function SalesSection() {
 
               {(selectedOrder.delivery_address || selectedOrder.shipping_address) && (
                 <div className="order-detail-address">
-                  <span className="order-detail-label">Dirección de entrega:</span>
+                  <span className="order-detail-label">{isServiceSale(selectedOrder) ? "Lugar del servicio:" : "Dirección de entrega:"}</span>
                   <p className="order-detail-address__text">
                     {getDeliveryAddress(selectedOrder)}
                   </p>
@@ -1056,7 +1134,7 @@ export default function SalesSection() {
             <div className="order-detail-section">
               <h4 className="order-detail-section__title">Desglose de Pago</h4>
               <div className="order-detail-row">
-                <span>Subtotal artículos:</span>
+                <span>{isServiceSale(selectedOrder) ? "Subtotal del servicio:" : "Subtotal artículos:"}</span>
                 <span>
                   $
                   {(
@@ -1065,12 +1143,12 @@ export default function SalesSection() {
                   ).toLocaleString("es-AR")}
                 </span>
               </div>
-              <div className="order-detail-row">
-                <span>Costo de envío:</span>
+              {(!isServiceSale(selectedOrder) || Number(selectedOrder.shipping_cost ?? 0) > 0) && <div className="order-detail-row">
+                <span>{isServiceSale(selectedOrder) ? "Costo de traslado:" : "Costo de envío:"}</span>
                 <span>
                   ${Number(selectedOrder.shipping_cost ?? 0).toLocaleString("es-AR")}
                 </span>
-              </div>
+              </div>}
               <div className="order-detail-row order-detail-row--total">
                 <span>Total:</span>
                 <span>
@@ -1083,7 +1161,7 @@ export default function SalesSection() {
             <div className="order-detail-section">
               <h4 className="order-detail-section__title">Acciones del Pedido</h4>
 
-              {selectedOrder.status === "pending" && (
+              {selectedOrder.status === "paid" && (
                 <div className="order-actions-group">
                   <button
                     type="button"
@@ -1104,7 +1182,7 @@ export default function SalesSection() {
               )}
 
               {/* Service Appointment assignment if order has service */}
-              {(selectedOrder.service_id || selectedOrder.service) && (
+              {isServiceSale(selectedOrder) && (
                 <div className="order-service-appointment-box">
                   <h5>Turno del Servicio</h5>
                   {selectedOrder.appointment_status === "pending_appointment" ? (
@@ -1160,7 +1238,7 @@ export default function SalesSection() {
               )}
 
               {/* Thermal Label Print button for product orders */}
-              {isPrintableOrder(selectedOrder) && !selectedOrder.service_id && !selectedOrder.service && (
+              {isPrintableOrder(selectedOrder) && !isServiceSale(selectedOrder) && (
                 <div className="order-print-label-row">
                   <button
                     type="button"
@@ -1174,7 +1252,7 @@ export default function SalesSection() {
               )}
 
               {/* Service Voucher Print button for service orders */}
-              {isPrintableOrder(selectedOrder) && (selectedOrder.service_id || selectedOrder.service) && (
+              {isPrintableOrder(selectedOrder) && isServiceSale(selectedOrder) && (
                 <div className="order-print-label-row">
                   <button
                     type="button"
@@ -1187,7 +1265,11 @@ export default function SalesSection() {
                 </div>
               )}
 
-              {selectedOrder.status === "confirmed" && !selectedOrder.service_id && !selectedOrder.service && (
+              {selectedOrder.status === "confirmed" && selectedOrder.delivery_type === "shipment" &&
+                ["pending", "created", "confirmed"].includes(
+                  (Array.isArray(selectedOrder.shipments) ? selectedOrder.shipments[0]?.status
+                    : selectedOrder.shipments?.status) ?? "") &&
+                !isServiceSale(selectedOrder) && (
                 <div className="order-actions-group">
                   <button
                     type="button"
@@ -1200,36 +1282,63 @@ export default function SalesSection() {
                 </div>
               )}
 
-              {selectedOrder.status === "preparing" && !selectedOrder.service_id && !selectedOrder.service && (
+              {selectedOrder.status === "confirmed" && selectedOrder.delivery_type === "pickup" &&
+                !selectedOrder.pickup_ready_at && !isServiceSale(selectedOrder) && (
                 <div className="order-actions-group">
-                  {selectedOrder.delivery_type === "pickup" ? (
                     <button
                       type="button"
                       className="btn-primary"
-                      disabled={readyMutation.isPending}
-                      onClick={() => readyMutation.mutate(selectedOrder.id)}
+                      disabled={pickupReadyMutation.isPending}
+                      onClick={() => pickupReadyMutation.mutate(selectedOrder.id)}
                     >
                       Marcar listo para retiro en sucursal
                     </button>
-                  ) : (
+                </div>
+              )}
+
+              {selectedOrder.status === "confirmed" && selectedOrder.delivery_type === "shipment" &&
+                (Array.isArray(selectedOrder.shipments) ? selectedOrder.shipments[0]?.status
+                  : selectedOrder.shipments?.status) === "preparing" && !isServiceSale(selectedOrder) && (
+                <div className="order-actions-group">
                     <button
                       type="button"
                       className="btn-primary"
-                      disabled={readyMutation.isPending}
+                      disabled={readyMutation.isPending || !selectedOrder.dispatch_evidence_path}
                       onClick={() => readyMutation.mutate(selectedOrder.id)}
                     >
                       Marcar listo para despacho
                     </button>
-                  )}
+                </div>
+              )}
+
+              {selectedOrder.delivery_type === "coordinate_with_merchant" && !isServiceSale(selectedOrder) &&
+                selectedOrder.status === "confirmed" && (
+                <div className="order-actions-group">
+                  <button type="button" className="btn-primary"
+                    disabled={coordinatedPreparingMutation.isPending}
+                    onClick={() => coordinatedPreparingMutation.mutate(selectedOrder.id)}>
+                    Marcar en preparación
+                  </button>
+                </div>
+              )}
+
+              {selectedOrder.delivery_type === "coordinate_with_merchant" && !isServiceSale(selectedOrder) &&
+                selectedOrder.status === "preparing" && (
+                <div className="order-actions-group">
+                  <button type="button" className="btn-primary"
+                    disabled={coordinatedDispatchedMutation.isPending || !selectedOrder.dispatch_evidence_path}
+                    onClick={() => coordinatedDispatchedMutation.mutate(selectedOrder.id)}>
+                    Confirmar que ya se despachó
+                  </button>
                 </div>
               )}
 
               {/* Pickup Verification */}
-              {((selectedOrder.service_id || selectedOrder.service || selectedOrder.items?.some((item) => item.service_id || item.service))
+              {(isServiceSale(selectedOrder)
                 ? selectedOrder.status === "confirmed"
                 : isOrderPickupReady(selectedOrder)) && (
                 <div className="pickup-verify-box">
-                  <h5>{selectedOrder.service_id || selectedOrder.service ? "Confirmar servicio realizado" : "Validar Entrega en Sucursal"}</h5>
+                  <h5>{isServiceSale(selectedOrder) ? "Confirmar servicio realizado" : "Validar Entrega en Sucursal"}</h5>
                   <p>
                     Escaneá el QR o ingresá el código de 7 caracteres que te entregue el comprador al finalizar.
                   </p>
@@ -1252,7 +1361,7 @@ export default function SalesSection() {
                         })
                       }
                     >
-                      {selectedOrder.service_id || selectedOrder.service ? "Validar y completar servicio" : "Validar y completar"}
+                      {isServiceSale(selectedOrder) ? "Validar y completar servicio" : "Validar y completar"}
                     </button>
                     <button type="button" className="btn-secondary" onClick={() => setPickupScannerOpen(true)}>
                       Escanear QR
@@ -1262,31 +1371,50 @@ export default function SalesSection() {
               )}
 
               {/* Local shipment image / dispatch */}
-              {selectedOrder.delivery_type === "shipment" && (
+              {(canUploadSelectedEvidence || Boolean(selectedOrder.dispatch_evidence_path)) && (
                 <div className="shipment-dispatch-box">
-                  <h5>Despacho por Rider / Flete</h5>
-                  <label>Foto previa del paquete (URL o comprobante):</label>
-                  <div className="pickup-verify-input-group">
+                  <h5>Foto de evidencia del paquete</h5>
+                  <p>{selectedOrder.dispatch_evidence_path
+                    ? "Foto guardada. Ya podés confirmar el despacho o marcar el paquete listo para el rider."
+                    : "Subí una foto antes de confirmar el despacho o avisar al rider."}</p>
+                  {selectedOrder.dispatch_evidence_path && (
+                    <button type="button" className="btn-secondary" onClick={async () => {
+                      try {
+                        const { url } = await commerceService.viewDispatchEvidence(selectedOrder.id);
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      } catch (error) {
+                        showError(error instanceof Error ? error.message : 'No se pudo abrir la foto.');
+                      }
+                    }}>Ver foto guardada</button>
+                  )}
+                  {canUploadSelectedEvidence && <>
+                    <label htmlFor="dispatch-evidence-file">Foto del paquete (JPG, PNG o WebP; hasta 8 MB)</label>
+                    <div className="pickup-verify-input-group">
                     <input
-                      type="url"
-                      placeholder="https://..."
-                      value={packageImageUrl}
-                      onChange={(e) => setPackageImageUrl(e.target.value)}
+                      id="dispatch-evidence-file"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        if (file && (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 8 * 1024 * 1024)) {
+                          showError('Elegí una foto JPG, PNG o WebP de hasta 8 MB.');
+                          setPackageImageFile(null);
+                          e.target.value = '';
+                        } else {
+                          setPackageImageFile(file);
+                        }
+                      }}
                     />
                     <button data-action-tone="upload"
                       type="button"
                       className="btn-secondary"
-                      disabled={!packageImageUrl}
-                      onClick={() => {
-                        commerceService
-                          .uploadShipmentImage(selectedOrder.id, packageImageUrl)
-                          .then(() => showSuccess("Foto del paquete guardada."))
-                          .catch(() => showError("No se pudo guardar la foto."));
-                      }}
+                      disabled={!packageImageFile || dispatchEvidenceMutation.isPending}
+                      onClick={() => packageImageFile && dispatchEvidenceMutation.mutate({ id: selectedOrder.id, file: packageImageFile })}
                     >
-                      Subir foto
+                      {dispatchEvidenceMutation.isPending ? "Subiendo..." : "Subir foto"}
                     </button>
-                  </div>
+                    </div>
+                  </>}
                 </div>
               )}
 
@@ -1317,9 +1445,12 @@ export default function SalesSection() {
               </div>
 
               {/* Long distance transport guide */}
+              {selectedOrder.delivery_type === "coordinate_with_merchant" && !isServiceSale(selectedOrder) && (
               <div className="transport-guide-box">
                 <h5>Transporte Larga Distancia / Encomienda</h5>
+                {selectedOrder.status === "dispatched" ? (
                 <div className="transport-guide-fields">
+                  <p>Despachado. La entrega se completará cuando el comprador confirme la recepción.</p>
                   <input
                     type="text"
                     placeholder="Empresa de transporte (ej: Andreani, Vía Cargo)"
@@ -1341,20 +1472,24 @@ export default function SalesSection() {
                   <button
                     type="button"
                     className="btn-secondary"
-                    disabled={!transportCarrier || !transportTrackingNumber}
+                    disabled={!transportCarrier.trim() || !transportTrackingNumber.trim() || transportMutation.isPending}
                     onClick={() =>
                       transportMutation.mutate({
                         id: selectedOrder.id,
-                        carrier_name: transportCarrier,
-                        tracking_number: transportTrackingNumber,
-                        tracking_url: transportTrackingUrl,
+                        company_name: transportCarrier.trim(),
+                        tracking_number: transportTrackingNumber.trim(),
+                        tracking_url: transportTrackingUrl.trim(),
                       })
                     }
                   >
                     Guardar guía de transporte
                   </button>
                 </div>
+                ) : selectedOrder.status === "settled" || selectedOrder.status === "delivered"
+                  ? <p>El comprador confirmó que recibió el producto.</p>
+                  : <p>Confirmá la preparación y el despacho para cargar los datos del envío.</p>}
               </div>
+              )}
 
               {/* Invoice section */}
               <div className="invoice-box">

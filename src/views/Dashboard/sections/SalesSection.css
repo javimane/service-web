@@ -980,3 +980,9 @@
   border-color: #154ca0;
   color: var(--white);
 }
+.sales-table__refund {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  margin-top: var(--space-1);
+}

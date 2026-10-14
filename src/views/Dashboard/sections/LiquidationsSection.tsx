@@ -133,15 +133,15 @@ export default function LiquidationsSection() {
   // Header Metrics Calculations
   const availableBalance = liquidations
     .filter((l) => l.status === "available")
-    .reduce((acc, curr) => acc + (curr.net_amount ?? curr.amount ?? 0), 0);
+    .reduce((acc, curr) => acc + Math.max(0, Number(curr.net_amount ?? curr.amount ?? 0) - Number(curr.debt_offset_amount ?? 0)), 0);
 
   const pendingReleaseBalance = liquidations
     .filter((l) => l.status === "pending" || l.status === "in_process")
-    .reduce((acc, curr) => acc + (curr.net_amount ?? curr.amount ?? 0), 0);
+    .reduce((acc, curr) => acc + Math.max(0, Number(curr.net_amount ?? curr.amount ?? 0) - Number(curr.debt_offset_amount ?? 0)), 0);
 
   const historicalSettled = liquidations
-    .filter((l) => l.status === "settled")
-    .reduce((acc, curr) => acc + (curr.net_amount ?? curr.amount ?? 0), 0);
+    .filter((l) => l.status === "settled" || l.status === "paid")
+    .reduce((acc, curr) => acc + Math.max(0, Number(curr.net_amount ?? curr.amount ?? 0) - Number(curr.debt_offset_amount ?? 0)), 0);
 
   // Next automatic liquidation estimation (e.g. next Friday or end of month)
   const nextPayoutDate = new Date();
@@ -159,6 +159,7 @@ export default function LiquidationsSection() {
           <span className="liq-badge liq-badge--process">En proceso</span>
         );
       case "settled":
+      case "paid":
         return (
           <span className="liq-badge liq-badge--settled">Liquidado</span>
         );
@@ -365,9 +366,9 @@ export default function LiquidationsSection() {
               </thead>
               <tbody>
                 {liquidations.map((liq) => {
-                  const gross = liq.amount ?? 0;
-                  const fee = liq.platform_fee ?? gross * 0.1;
-                  const tax = liq.tax_withholding ?? 0;
+                  const gross = liq.gross_amount ?? liq.amount ?? 0;
+                  const fee = liq.platform_commission ?? liq.platform_fee ?? 0;
+                  const tax = liq.iva_amount ?? liq.tax_withholding ?? 0;
                   const net = liq.net_amount ?? (gross - fee - tax);
 
                   return (
@@ -388,7 +389,15 @@ export default function LiquidationsSection() {
                         ${tax > 0 ? `-${tax.toLocaleString("es-AR")}` : "0"}
                       </td>
                       <td className="liquidations-table__net">
-                        ${net.toLocaleString("es-AR")}
+                        ${Math.max(0, net - Number(liq.debt_offset_amount ?? 0)).toLocaleString("es-AR")}
+                        {Number(liq.refunded_gross_amount ?? 0) > 0 && (
+                          <small className="liquidations-table__refund">Devolución: ${Number(liq.refunded_gross_amount).toLocaleString("es-AR")} · descuento al comercio: ${Number(liq.refund_deduction_amount ?? 0).toLocaleString("es-AR")}</small>
+                        )}
+                        {Number(liq.chargeback_deduction_amount ?? 0) > 0 && <small className="liquidations-table__refund">Contracargo descontado: ${Number(liq.chargeback_deduction_amount).toLocaleString("es-AR")}</small>}
+                        {Number(liq.chargeback_debt_amount ?? 0) > 0 && <small className="liquidations-table__refund">Deuda por contracargo posterior: ${Number(liq.chargeback_debt_amount).toLocaleString("es-AR")}</small>}
+                        {Number(liq.debt_offset_amount ?? 0) > 0 && <small className="liquidations-table__refund">Compensación de deuda anterior: -${Number(liq.debt_offset_amount).toLocaleString("es-AR")}</small>}
+                        {liq.chargebacks?.map((movement) => <small key={movement.id} className="liquidations-table__refund">Contracargo de venta #{movement.order_id.slice(0, 8)} · {movement.status} · ${Number(movement.amount).toLocaleString("es-AR")}{movement.reason ? ` · ${movement.reason}` : ""}</small>)}
+                        {liq.chargeback_offsets?.map((offset) => <small key={`${offset.debt_id}-${offset.status}`} className="liquidations-table__refund">Deuda de venta #{offset.source_chargeback?.order_id?.slice(0, 8) ?? "desconocida"} compensada: -${Number(offset.amount).toLocaleString("es-AR")}</small>)}
                       </td>
                       <td>{getStatusBadge(liq.status)}</td>
                       <td>
@@ -486,6 +495,12 @@ export default function LiquidationsSection() {
                 ).toLocaleString("es-AR")}
               </span>
             </div>
+            {Number(selectedLiquidation.refunded_gross_amount ?? 0) > 0 && (
+              <div className="liq-detail-row">
+                <span>Reembolsado al comprador:</span>
+                <span>${Number(selectedLiquidation.refunded_gross_amount).toLocaleString("es-AR")} (descuento al comercio: ${Number(selectedLiquidation.refund_deduction_amount ?? 0).toLocaleString("es-AR")})</span>
+              </div>
+            )}
 
             <div className="liq-detail-orders-section">
               <h4>Órdenes asociadas</h4>

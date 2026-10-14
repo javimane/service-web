@@ -87,6 +87,7 @@ export function getNotificationMeta(rawType?: string): NotificationMeta {
       return { icon: CheckCircle, color: "blue", category: "purchases" };
 
     case "ORDER_PREPARING":
+    case "ORDER_DISPATCHED":
       return { icon: ShoppingBag, color: "orange", category: "purchases" };
 
     case "ORDER_READY_FOR_PICKUP":
@@ -179,6 +180,7 @@ export function getNotificationTargetUrl(
     case "SERVICE_APPOINTMENT_SCHEDULED":
     case "ORDER_CONFIRMED":
     case "ORDER_PREPARING":
+    case "ORDER_DISPATCHED":
     case "ORDER_READY_FOR_PICKUP":
     case "SHIPMENT_READY_FOR_COLLECTION":
     case "SHIPMENT_IN_TRANSIT":
