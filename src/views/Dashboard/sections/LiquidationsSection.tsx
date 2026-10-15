@@ -389,15 +389,17 @@ export default function LiquidationsSection() {
                         ${tax > 0 ? `-${tax.toLocaleString("es-AR")}` : "0"}
                       </td>
                       <td className="liquidations-table__net">
-                        ${Math.max(0, net - Number(liq.debt_offset_amount ?? 0)).toLocaleString("es-AR")}
                         {Number(liq.refunded_gross_amount ?? 0) > 0 && (
-                          <small className="liquidations-table__refund">Devolución: ${Number(liq.refunded_gross_amount).toLocaleString("es-AR")} · descuento al comercio: ${Number(liq.refund_deduction_amount ?? 0).toLocaleString("es-AR")}</small>
+                          <small className="liquidations-table__refund">Devuelto al comprador: ${Number(liq.refunded_gross_amount).toLocaleString("es-AR")}</small>
                         )}
+                        {Number(liq.refund_deduction_amount ?? 0) > 0 && <small className="liquidations-table__refund">Neto retenido por devolución: -${Number(liq.refund_deduction_amount).toLocaleString("es-AR")}</small>}
+                        {Number(liq.refund_debt_amount ?? 0) > 0 && <small className="liquidations-table__refund">Deuda generada por devolución: ${Number(liq.refund_debt_amount).toLocaleString("es-AR")}</small>}
                         {Number(liq.chargeback_deduction_amount ?? 0) > 0 && <small className="liquidations-table__refund">Contracargo descontado: ${Number(liq.chargeback_deduction_amount).toLocaleString("es-AR")}</small>}
                         {Number(liq.chargeback_debt_amount ?? 0) > 0 && <small className="liquidations-table__refund">Deuda por contracargo posterior: ${Number(liq.chargeback_debt_amount).toLocaleString("es-AR")}</small>}
                         {Number(liq.debt_offset_amount ?? 0) > 0 && <small className="liquidations-table__refund">Compensación de deuda anterior: -${Number(liq.debt_offset_amount).toLocaleString("es-AR")}</small>}
-                        {liq.chargebacks?.map((movement) => <small key={movement.id} className="liquidations-table__refund">Contracargo de venta #{movement.order_id.slice(0, 8)} · {movement.status} · ${Number(movement.amount).toLocaleString("es-AR")}{movement.reason ? ` · ${movement.reason}` : ""}</small>)}
+                        {liq.financial_adjustments?.map((movement) => <small key={movement.id} className="liquidations-table__refund">{movement.charge_concept === 'customer_claim' ? 'Cargo por reclamo del usuario' : 'Cargo por cancelación o contracargo'} · venta #{movement.order_id.slice(0, 8)} · {movement.status} · devuelto: ${Number(movement.amount).toLocaleString("es-AR")} · descuento: ${Number(movement.merchant_deduction).toLocaleString("es-AR")}{Number(movement.commission_reduction_pp) > 0 ? ` · bonificación: ${movement.commission_reduction_pp} puntos` : ""}{movement.reason ? ` · ${movement.reason}` : ""}</small>)}
                         {liq.chargeback_offsets?.map((offset) => <small key={`${offset.debt_id}-${offset.status}`} className="liquidations-table__refund">Deuda de venta #{offset.source_chargeback?.order_id?.slice(0, 8) ?? "desconocida"} compensada: -${Number(offset.amount).toLocaleString("es-AR")}</small>)}
+                        <strong>${Math.max(0, net - Number(liq.debt_offset_amount ?? 0)).toLocaleString("es-AR")}</strong>
                       </td>
                       <td>{getStatusBadge(liq.status)}</td>
                       <td>
@@ -463,44 +465,58 @@ export default function LiquidationsSection() {
               <span>{getStatusBadge(selectedLiquidation.status)}</span>
             </div>
             <div className="liq-detail-row">
-              <span>Monto bruto acumulado:</span>
-              <span>${Number(selectedLiquidation.amount ?? 0).toLocaleString("es-AR")}</span>
+              <span>Importe bruto:</span>
+              <span>${Number(selectedLiquidation.gross_amount ?? selectedLiquidation.amount ?? 0).toLocaleString("es-AR")}</span>
             </div>
             <div className="liq-detail-row">
-              <span>Comisión de plataforma (Sercio):</span>
+              <span>Comisión Sercio:</span>
               <span className="liq-detail-deduction">
                 -$
                 {Number(
-                  selectedLiquidation.platform_fee ??
-                    (selectedLiquidation.amount ?? 0) * 0.1
+                  selectedLiquidation.platform_commission ?? selectedLiquidation.platform_fee ?? 0
                 ).toLocaleString("es-AR")}
               </span>
             </div>
+            {Number(selectedLiquidation.payment_provider_fee ?? 0) > 0 && <div className="liq-detail-row">
+              <span>Costo del medio de pago:</span><span className="liq-detail-deduction">-${Number(selectedLiquidation.payment_provider_fee).toLocaleString("es-AR")}</span>
+            </div>}
             <div className="liq-detail-row">
-              <span>Retenciones impositivas (ARCA/IIBB):</span>
+              <span>IVA sobre comisión:</span>
               <span className="liq-detail-deduction">
                 -$
-                {Number(selectedLiquidation.tax_withholding ?? 0).toLocaleString(
+                {Number(selectedLiquidation.iva_amount ?? selectedLiquidation.tax_withholding ?? 0).toLocaleString(
                   "es-AR"
                 )}
               </span>
             </div>
-            <div className="liq-detail-row liq-detail-row--total">
-              <span>Neto a percibir:</span>
-              <span>
-                $
-                {Number(
-                  selectedLiquidation.net_amount ??
-                    (selectedLiquidation.amount ?? 0)
-                ).toLocaleString("es-AR")}
-              </span>
-            </div>
+            {Number(selectedLiquidation.iibb_amount ?? 0) > 0 && <div className="liq-detail-row">
+              <span>Ingresos Brutos:</span><span className="liq-detail-deduction">-${Number(selectedLiquidation.iibb_amount).toLocaleString("es-AR")}</span>
+            </div>}
+            {Number(selectedLiquidation.other_deductions ?? 0) > 0 && <div className="liq-detail-row">
+              <span>Otras deducciones:</span><span className="liq-detail-deduction">-${Number(selectedLiquidation.other_deductions).toLocaleString("es-AR")}</span>
+            </div>}
             {Number(selectedLiquidation.refunded_gross_amount ?? 0) > 0 && (
               <div className="liq-detail-row">
-                <span>Reembolsado al comprador:</span>
-                <span>${Number(selectedLiquidation.refunded_gross_amount).toLocaleString("es-AR")} (descuento al comercio: ${Number(selectedLiquidation.refund_deduction_amount ?? 0).toLocaleString("es-AR")})</span>
+                <span>Devuelto al comprador (referencia):</span>
+                <span>${Number(selectedLiquidation.refunded_gross_amount).toLocaleString("es-AR")}</span>
               </div>
             )}
+            {Number(selectedLiquidation.refund_deduction_amount ?? 0) > 0 && <div className="liq-detail-row">
+              <span>Neto retenido por devolución:</span><span className="liq-detail-deduction">-${Number(selectedLiquidation.refund_deduction_amount).toLocaleString("es-AR")}</span>
+            </div>}
+            {Number(selectedLiquidation.refund_debt_amount ?? 0) > 0 && <div className="liq-detail-row">
+              <span>Deuda generada por devolución:</span><span>${Number(selectedLiquidation.refund_debt_amount).toLocaleString("es-AR")}</span>
+            </div>}
+            {Number(selectedLiquidation.chargeback_deduction_amount ?? 0) > 0 && <div className="liq-detail-row">
+              <span>Contracargo retenido:</span><span className="liq-detail-deduction">-${Number(selectedLiquidation.chargeback_deduction_amount).toLocaleString("es-AR")}</span>
+            </div>}
+            {Number(selectedLiquidation.debt_offset_amount ?? 0) > 0 && <div className="liq-detail-row">
+              <span>Deuda compensada:</span><span className="liq-detail-deduction">-${Number(selectedLiquidation.debt_offset_amount).toLocaleString("es-AR")}</span>
+            </div>}
+            <div className="liq-detail-row liq-detail-row--total">
+              <span>{selectedLiquidation.paid_to_merchant_at ? 'Neto transferido al comercio:' : 'Neto a transferir:'}</span>
+              <span>${Math.max(0, Number(selectedLiquidation.net_amount ?? ((selectedLiquidation.amount ?? 0) - (selectedLiquidation.platform_fee ?? 0) - (selectedLiquidation.tax_withholding ?? 0))) - Number(selectedLiquidation.debt_offset_amount ?? 0)).toLocaleString("es-AR")}</span>
+            </div>
 
             <div className="liq-detail-orders-section">
               <h4>Órdenes asociadas</h4>

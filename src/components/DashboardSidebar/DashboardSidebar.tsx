@@ -38,6 +38,7 @@ import {
   Heart,
   ShoppingCart,
   Award,
+  ShieldAlert,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -290,6 +291,12 @@ export default function DashboardSidebar({
       label: "REPUTACIÓN Y SCORE",
       icon: Award,
       onClick: () => goToDashboardView("reputation"),
+    },
+    {
+      key: "denuncias",
+      label: "DENUNCIAS",
+      icon: ShieldAlert,
+      onClick: () => goToDashboardView("denuncias"),
     },
     // Transport & Logistics
     ...(isEmployer

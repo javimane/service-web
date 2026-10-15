@@ -292,6 +292,7 @@ export default function CartSection() {
     onSuccess: (updatedCart) => {
       queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
     },
+    onError: (error: Error) => showError(error.message || "No se pudo actualizar la cantidad."),
   });
 
   const removeMutation = useMutation({
@@ -460,18 +461,35 @@ export default function CartSection() {
         { refreshPayment },
       );
     },
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (paymentMethod === "paycloud_qr" && res.qr) {
         setActiveQrData(res.qr);
         setQrTimerSeconds(900);
         setQrModalOpen(true);
       } else {
+        if (user) {
+          try {
+            await commerceService.clearCart();
+          } catch {
+            // El backend también borra los productos del carrito al confirmar el pago
+          }
+        } else {
+          clearGuestCart();
+        }
+        queryClient.setQueryData(["user-cart", user?.id ?? "guest"], {
+          id: "",
+          user_id: user?.id ?? "",
+          items: [],
+          subtotal: 0,
+          total: 0,
+          item_count: 0,
+        });
+        queryClient.invalidateQueries({ queryKey: ["user-cart"] });
         showSuccess(
           res.payment_status === "approved"
             ? "¡Pago procesado con éxito!"
             : "Estamos verificando tu pago. Consultá Mis Compras sin volver a pagar.",
         );
-        queryClient.invalidateQueries({ queryKey: ["user-cart"] });
         router.push(`${ROUTES.dashboard}?view=purchases`);
       }
     },
@@ -710,6 +728,7 @@ export default function CartSection() {
                   item.service?.price ??
                   0;
                 const isServiceItem = Boolean(item.service_id || item.service);
+                const itemStock = item.professional_product?.stock ?? item.product?.stock;
 
                 return (
                   <div key={item.id} className="cart-item-card">
@@ -761,7 +780,7 @@ export default function CartSection() {
                           <button
                             type="button"
                             className="qty-btn"
-                            disabled={updateQtyMutation.isPending}
+                            disabled={updateQtyMutation.isPending || (itemStock != null && item.quantity >= itemStock)}
                             onClick={() =>
                               updateQtyMutation.mutate({
                                 id: item.id,
@@ -1393,6 +1412,7 @@ export default function CartSection() {
               className="btn-primary"
               onClick={() => {
                 setQrModalOpen(false);
+                queryClient.invalidateQueries({ queryKey: ["user-cart"] });
                 router.push(`${ROUTES.dashboard}?view=purchases`);
               }}
             >

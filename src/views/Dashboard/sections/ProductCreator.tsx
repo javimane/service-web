@@ -100,6 +100,7 @@ export default function ProductCreator({
     sessionStatus?.professional_id;
 
   const [newProduct, setNewProduct] = useState({
+    product_condition: "",
     name: "",
     brand: "",
     categoryId: "",
@@ -359,6 +360,7 @@ export default function ProductCreator({
               ...(merchantListing
                 ? {
                     warranty: merchantListing.warranty,
+                    product_condition: merchantListing.product_condition,
                     installments_enabled: merchantListing.installments_enabled,
                     max_installments: merchantListing.max_installments,
                     free_shipping: merchantListing.free_shipping,
@@ -375,6 +377,7 @@ export default function ProductCreator({
 
       setNewProduct((prev) => ({
         ...prev,
+        product_condition: fullProduct.product_condition || "",
         name: fullProduct.name || "",
         brand: fullProduct.brand || "",
         categoryId:
@@ -610,6 +613,7 @@ export default function ProductCreator({
 
   const handleAddFromEan = async () => {
     if (!eanMatch) return;
+    if (!newProduct.product_condition) { showError("Elegí la condición del producto."); return; }
     try {
       if (eanMatch.isAlreadyAssigned && variantParent) {
         await commerceService.linkVariant(
@@ -623,6 +627,7 @@ export default function ProductCreator({
         return;
       }
       await assignMutation.mutateAsync({
+        product_condition: newProduct.product_condition,
         professional_id: professionalId,
         product_id: String(eanMatch.id),
         price: Number(eanCustomPrice) || 0,
@@ -685,6 +690,7 @@ export default function ProductCreator({
         e.ean =
           "El EAN es obligatorio si no marcas la opción 'No tiene código de barra'.";
       if (!formPrice) e.price = "El precio es obligatorio.";
+      if (!newProduct.product_condition) e.product_condition = "Elegí la condición del producto.";
       if (!(variantParent?.categories_products_id || newProduct.categoryId))
         e.categoryId = "La categoría es obligatoria.";
       if (!formStock) e.stock = "El stock es obligatorio.";
@@ -764,6 +770,7 @@ export default function ProductCreator({
       );
 
       const payload = {
+        product_condition: newProduct.product_condition,
         ean: newProduct.has_ean ? undefined : newProduct.ean,
         attributes: normalizedAttributes,
         color: attributeValue("Color") || null,
@@ -906,6 +913,7 @@ export default function ProductCreator({
           professionalId,
           productId,
           updates: {
+            product_condition: payload.product_condition,
             price: payload.price,
             sale_type: payload.sale_type,
             stock: payload.stock,
@@ -1152,6 +1160,14 @@ export default function ProductCreator({
 
               {!eanMatch.isAlreadyAssigned && (
                 <>
+                  <div className="product-creator__field">
+                    <label htmlFor="ean-product-condition">Condición del producto *</label>
+                    <select id="ean-product-condition" required value={newProduct.product_condition} onChange={event => set("product_condition", event.target.value)}>
+                      <option value="">Seleccioná una opción</option>
+                      <option value="original">Original</option><option value="replica">Réplica</option>
+                      <option value="used">Usado</option><option value="alternative">Alternativo</option>
+                    </select>
+                  </div>
                   <div
                     className="product-creator__grid"
                     style={{ marginTop: 0 }}
@@ -1851,6 +1867,16 @@ export default function ProductCreator({
                     <option value="2x1">2x1</option>
                     <option value="3x2">3x2</option>
                   </select>
+                </div>
+
+                <div className="product-creator__field product-creator__field--full">
+                  <label htmlFor="product-condition">Condición del producto *</label>
+                  <select id="product-condition" required value={newProduct.product_condition} onChange={event => set("product_condition", event.target.value)}>
+                    <option value="">Seleccioná una opción</option>
+                    <option value="original">Original</option><option value="replica">Réplica</option>
+                    <option value="used">Usado</option><option value="alternative">Alternativo</option>
+                  </select>
+                  {errors.product_condition && <span role="alert">{errors.product_condition}</span>}
                 </div>
 
                 {/* Cuotas sin interés */}

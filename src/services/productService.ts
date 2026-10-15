@@ -7,6 +7,7 @@ import type {
 } from "../types/database.types";
 
 export interface CreateProductRequest {
+  product_condition?: 'original' | 'replica' | 'used' | 'alternative';
   ean: string;
   name: string;
   description?: string;
@@ -44,6 +45,7 @@ export interface UpdatePriceToManyRequest {
 }
 
 export interface AssignProductToProfessionalRequest {
+  product_condition?: 'original' | 'replica' | 'used' | 'alternative';
   professional_id: number;
   product_id: string;
   price: number;

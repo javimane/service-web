@@ -48,6 +48,12 @@ describe("notificationNavigation", () => {
       expect(meta.category).toBe("system");
       expect(meta.color).toBe("teal");
     });
+
+    it("mapea denuncias de publicacion a alert y category system", () => {
+      const meta = getNotificationMeta("LISTING_REPORT_RECEIVED");
+      expect(meta.category).toBe("system");
+      expect(meta.color).toBe("orange");
+    });
   });
 
   describe("getNotificationTargetUrl", () => {
@@ -109,6 +115,19 @@ describe("notificationNavigation", () => {
         type: "ERROR_REPORT",
       });
       expect(url).toBe(`${ROUTES.dashboard}?view=report-errors`);
+    });
+
+    it("dirige LISTING_REPORT_RECEIVED a /panel?view=denuncias", () => {
+      const url = getNotificationTargetUrl({
+        type: "listing_report_received",
+        source_id: "target-123",
+      });
+      expect(url).toBe(`${ROUTES.dashboard}?view=denuncias&targetId=target-123`);
+
+      const urlWithoutSource = getNotificationTargetUrl({
+        type: "listing_report_received",
+      });
+      expect(urlWithoutSource).toBe(`${ROUTES.dashboard}?view=denuncias`);
     });
   });
 });

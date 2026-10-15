@@ -304,13 +304,24 @@ export type Liquidation = {
   iva_amount?: number;
   refunded_gross_amount?: number;
   refund_deduction_amount?: number;
+  refund_debt_amount?: number;
   chargeback_deduction_amount?: number;
+  payment_provider_fee?: number;
+  iibb_amount?: number;
+  other_deductions?: number;
   chargeback_debt_amount?: number;
   debt_offset_amount?: number;
   chargebacks?: Array<{
     id: string; order_id: string; amount: number; status: string;
     merchant_deduction: number; provider: string | null;
     provider_movement_id: string | null; reason: string | null;
+  }>;
+  financial_adjustments?: Array<{
+    id: string; order_id: string; kind: string; status: string;
+    amount: number; merchant_deduction: number;
+    platform_commission_loss_amount: number;
+    commission_reduction_pp: number; charge_concept: string | null;
+    reason: string | null;
   }>;
   chargeback_offsets?: Array<{
     debt_id: string; amount: number; status: string;
@@ -602,6 +613,7 @@ export type CartItem = {
   subtotal: number;
   unit_price?: number;
   professional_product?: {
+    stock?: number | null;
     installments_enabled?: boolean;
     max_installments?: number;
   } | null;

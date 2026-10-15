@@ -52,6 +52,7 @@ import {
   Map as MapIcon,
   Award,
   AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import PlansModal from "../PlansModal/PlansModal";
@@ -308,6 +309,11 @@ export default function Navbar() {
       label: "Reputación y Score",
       icon: Award,
       path: `${ROUTES.dashboard}?view=reputation`,
+    },
+    {
+      label: "Denuncias",
+      icon: ShieldAlert,
+      path: `${ROUTES.dashboard}?view=denuncias`,
     },
     ...(isEmployer
       ? [

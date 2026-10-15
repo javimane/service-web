@@ -61,6 +61,7 @@ import BarcodeScanner from "../../../components/BarcodeScanner/BarcodeScanner";
 import CommissionsModal from "../../../components/CommissionsModal/CommissionsModal";
 import ShippingRatesModal from "../../../components/ShippingRatesModal/ShippingRatesModal";
 import "./DashboardProducts.css";
+import MerchantListingReports from "../../../components/ListingReport/MerchantListingReports";
 
 const MAX_PRODUCT_IMAGES = 10;
 
@@ -264,6 +265,7 @@ export default function DashboardProducts({
   // Add product modal
   const [addOpen, setAddOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
+    product_condition: "",
     name: "",
     brand: "",
     price: "",
@@ -303,6 +305,7 @@ export default function DashboardProducts({
   // Edit product modal
   const [editOpen, setEditOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<{
+    product_condition: string;
     id: number;
     name: string;
     brand: string;
@@ -322,6 +325,8 @@ export default function DashboardProducts({
     wholesale_unit: string;
     offer_2x1: boolean;
     offer_3x2: boolean;
+    listing_status?: string;
+    moderation_reason?: string | null;
   } | null>(null);
   const [editImageItems, setEditImageItems] = useState<EditImageItem[]>([]);
   const [editOriginalImageUrls, setEditOriginalImageUrls] = useState<string[]>(
@@ -354,6 +359,7 @@ export default function DashboardProducts({
     queryFn: async () => {
       const result = await getProductsByProfessionalAction({
         professionalId,
+        manage: true,
         page,
         limit,
         name: searchQuery || undefined,
@@ -539,7 +545,10 @@ export default function DashboardProducts({
       height: item.Product?.height,
       depth: item.Product?.depth,
       sale_type: item.sale_type,
+      product_condition: item.product_condition,
       is_active: item.is_active,
+      listing_status: item.listing_status || 'active',
+      moderation_reason: item.moderation_reason || '',
       currency_code: item.currency_code || item.Product?.currency_code || "ARG",
       percent_discount:
         item.percent_discount !== undefined
@@ -1099,11 +1108,13 @@ export default function DashboardProducts({
   // Add existing product from EAN match
   const handleAddFromEan = () => {
     if (!eanMatch) return;
+    if (!newProduct.product_condition) { setNewProductErrors({ product_condition: "Elegí la condición del producto." }); return; }
     const finalPrice = Number(eanCustomPrice) || 0;
     const finalOfferPrice = Number(eanOfferPrice) || 0;
     const finalStock = Number(eanStock) || 0;
 
     assignMutation.mutate({
+      product_condition: newProduct.product_condition,
       professional_id: professionalId,
       product_id: String(eanMatch.id),
       price: finalPrice,
@@ -1117,6 +1128,7 @@ export default function DashboardProducts({
   // Reset add modal state
   const clearForm = () => {
     setNewProduct({
+      product_condition: "",
       name: "",
       brand: "",
       price: "",
@@ -1159,6 +1171,7 @@ export default function DashboardProducts({
     if (!newProduct.categoryId)
       errors.categoryId = "La categoría es obligatoria.";
     if (!formStock) errors.stock = "El stock es obligatorio.";
+    if (!newProduct.product_condition) errors.product_condition = "Elegí la condición del producto.";
 
     if (Object.keys(errors).length > 0) {
       setNewProductErrors(errors);
@@ -1184,6 +1197,7 @@ export default function DashboardProducts({
           : [];
 
     createMutation.mutate({
+      product_condition: newProduct.product_condition,
       ean: newProduct.ean,
       name: newProduct.name,
       description: newProduct.description,
@@ -1219,6 +1233,7 @@ export default function DashboardProducts({
     const categoryMatch = categories.find((c) => c.name === product.category);
 
     setEditProduct({
+      product_condition: product.product_condition || "",
       id: product.id,
       name: product.name,
       brand: product.brand || "",
@@ -1242,6 +1257,8 @@ export default function DashboardProducts({
       wholesale_unit: String(product.wholesale_unit || ""),
       offer_2x1: Boolean(product.offer_2x1),
       offer_3x2: Boolean(product.offer_3x2),
+      listing_status: product.listing_status,
+      moderation_reason: product.moderation_reason,
     });
     const initialImages: string[] = getOrderedProductImages(
       product.images,
@@ -1311,6 +1328,7 @@ export default function DashboardProducts({
     if (!editProduct.name.trim()) errors.name = "El nombre es obligatorio.";
     if (!editProduct.price.toString().trim())
       errors.price = "El precio es obligatorio.";
+    if (!editProduct.product_condition) errors.product_condition = "Elegí la condición del producto.";
     if (!editProduct.stock.toString().trim())
       errors.stock = "El stock es obligatorio.";
 
@@ -1342,6 +1360,7 @@ export default function DashboardProducts({
     updateMutation.mutate({
       productId: String(editProduct.id),
       data: {
+        product_condition: editProduct.product_condition,
         price: Number(editProduct.price),
         stock: Number(editProduct.stock),
         offer_price: Number(editProduct.offerPrice) || 0,
@@ -1385,6 +1404,7 @@ export default function DashboardProducts({
 
   return (
     <div className="dash-products">
+      <MerchantListingReports targetType="professional_product" />
       {/* Header */}
       <div className="dash-products__header">
         <div>
@@ -1691,6 +1711,27 @@ export default function DashboardProducts({
                     <span className="dash-products__product-name">
                       {product.name}
                     </span>
+                    {product.listing_status && product.listing_status !== 'active' && (
+                      <div
+                        role="status"
+                        className={`dash-products__moderation-notice dash-products__moderation-notice--${product.listing_status}`}
+                        title={product.moderation_reason || undefined}
+                      >
+                        <div className="dash-products__moderation-header">
+                          <AlertTriangle size={13} className="dash-products__moderation-icon" />
+                          <span className="dash-products__moderation-label">
+                            {product.listing_status === 'blocked'
+                              ? 'Bloqueado por moderación'
+                              : 'Pausado por moderación'}
+                          </span>
+                        </div>
+                        {product.moderation_reason && (
+                          <p className="dash-products__moderation-reason">
+                            {product.moderation_reason}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <div className="dash-products__item-badges">
                       {product.free_shipping && (
                         <span
@@ -2549,6 +2590,30 @@ export default function DashboardProducts({
                 </button>
               </div>
 
+              {editProduct.listing_status && editProduct.listing_status !== 'active' && (
+                <div
+                  role="status"
+                  className={`dash-products__moderation-banner dash-products__moderation-banner--${editProduct.listing_status}`}
+                >
+                  <div className="dash-products__moderation-banner-header">
+                    <AlertTriangle size={18} className="dash-products__moderation-icon" />
+                    <span className="dash-products__moderation-banner-title">
+                      {editProduct.listing_status === 'blocked'
+                        ? 'Publicación bloqueada por moderación'
+                        : 'Publicación pausada por moderación'}
+                    </span>
+                  </div>
+                  {editProduct.moderation_reason && (
+                    <p className="dash-products__moderation-banner-reason">
+                      <strong>Motivo:</strong> {editProduct.moderation_reason}
+                    </p>
+                  )}
+                  <p className="dash-products__moderation-banner-hint">
+                    Modificá los campos indicados y guardá los cambios para que podamos revisar y rehabilitar tu publicación.
+                  </p>
+                </div>
+              )}
+
               <div className="dash-products__form-grid">
                 <div className="dash-products__modal-field dash-products__field--full">
                   <label>Nombre del producto *</label>
@@ -2728,6 +2793,15 @@ export default function DashboardProducts({
                       {editProductErrors.stock}
                     </span>
                   )}
+                </div>
+
+                <div className="dash-products__modal-field dash-products__field--full">
+                  <label htmlFor="edit-product-condition">Condición del producto *</label>
+                  <select id="edit-product-condition" className="dash-products__modal-select" required value={editProduct.product_condition} onChange={event => setEditProduct({ ...editProduct, product_condition: event.target.value })}>
+                    <option value="">Seleccioná una opción</option>
+                    <option value="original">Original</option><option value="replica">Réplica</option>
+                    <option value="used">Usado</option><option value="alternative">Alternativo</option>
+                  </select>
                 </div>
 
                 {/* Wholesale options Edit */}

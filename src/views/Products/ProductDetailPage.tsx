@@ -46,6 +46,7 @@ import CommentsCarousel from "../../components/CommentsCarousel/CommentsCarousel
 import ProductSlider from "../../components/ProductSlider/ProductSlider";
 import WhatsAppContactButton from "../../components/WhatsAppContactButton/WhatsAppContactButton";
 import "./ProductDetailPage.css";
+import ListingReportButton from "../../components/ListingReport/ListingReportButton";
 
 const AGE_RESTRICTED_SUBCATEGORIES = new Set([
   "2d6c30b1-95b8-4a2a-b43f-f9f09e5c507a",
@@ -819,6 +820,8 @@ export default function ProductDetailPage({
                     <MapPin size={14} />
                     <span>{sellerProvince}</span>
                   </div>
+                  <p>Condición: {({ original: "Original", replica: "Réplica", used: "Usado", alternative: "Alternativo" } as Record<string, string>)[professionalProduct?.product_condition || ""] || "No informada"}</p>
+                  {professionalProduct?.id && <ListingReportButton targetType="professional_product" targetId={String(professionalProduct.id)} />}
 
                   {/* Variants selector (if product has variants) */}
                   {variants.length > 1 && (

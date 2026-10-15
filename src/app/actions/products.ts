@@ -94,6 +94,7 @@ export const getProductsByProfessionalAction = publicAction
   .schema(
     z.object({
       professionalId: z.number(),
+      manage: z.boolean().optional(),
       wholesale: z.boolean().optional(),
       ean: z.string().optional(),
       name: z.string().optional(),
@@ -109,7 +110,7 @@ export const getProductsByProfessionalAction = publicAction
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
-    const { professionalId, ...queryParams } = parsedInput;
+    const { professionalId, manage, ...queryParams } = parsedInput;
     const query = new URLSearchParams();
     if (queryParams.wholesale !== undefined)
       query.append("wholesale", String(queryParams.wholesale));
@@ -135,12 +136,12 @@ export const getProductsByProfessionalAction = publicAction
       query.append("limit", String(queryParams.limit));
 
     const queryString = query.toString() ? `?${query.toString()}` : "";
-    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${professionalId}${queryString}`;
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${professionalId}${manage ? '/manage' : ''}${queryString}`;
 
     try {
       const response = await axios.get(url, {
         headers: {
-          ...ctx.headers,
+          ...(manage ? await buildActionHeaders(ctx) : ctx.headers),
         },
       });
 

@@ -14,6 +14,7 @@ import {
   RotateCcw,
   CheckCircle,
   XCircle,
+  ShieldAlert,
   LucideIcon,
 } from "lucide-react";
 import { ROUTES } from "@/routes/paths";
@@ -145,6 +146,11 @@ export function getNotificationMeta(rawType?: string): NotificationMeta {
     case "ERROR_REPORT":
       return { icon: AlertTriangle, color: "red", category: "system" };
 
+    // ── Denuncias / Reportes de publicación ──
+    case "LISTING_REPORT_RECEIVED":
+    case "LISTING_REPORT":
+      return { icon: ShieldAlert, color: "orange", category: "system" };
+
     default:
       if (type.startsWith("CLAIM_")) {
         return { icon: AlertTriangle, color: "orange", category: "purchases" };
@@ -233,6 +239,13 @@ export function getNotificationTargetUrl(
     // ── Reporte de error ──
     case "ERROR_REPORT":
       return `${ROUTES.dashboard}?view=report-errors`;
+
+    // ── Denuncias / Reportes de publicación ──
+    case "LISTING_REPORT_RECEIVED":
+    case "LISTING_REPORT":
+      return sourceId
+        ? `${ROUTES.dashboard}?view=denuncias&targetId=${encodeURIComponent(sourceId)}`
+        : `${ROUTES.dashboard}?view=denuncias`;
 
     default:
       // Estados de reclamos (CLAIM_*)

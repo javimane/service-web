@@ -63,6 +63,7 @@ import FavoritesSection from "./sections/FavoritesSection";
 import PaymentMethodsSection from "./sections/PaymentMethodsSection";
 import CartSection from "./sections/CartSection";
 import ReputationSection from "./sections/ReputationSection";
+import DenunciasSection from "./sections/DenunciasSection";
 import { commerceService } from "../../services/commerceService";
 
 export default function DashboardPage() {
@@ -306,6 +307,7 @@ export default function DashboardPage() {
     "payment-methods",
     "cart",
     "reputation",
+    "denuncias",
   ]);
   const shouldLockDashboardView =
     isProfessionalUser &&
@@ -591,6 +593,8 @@ export default function DashboardPage() {
               <CartSection />
             ) : view === "reputation" ? (
               <ReputationSection professionalIdProp={professionalId} />
+            ) : view === "denuncias" ? (
+              <DenunciasSection />
             ) : view === "services" ? (
               <DashboardServices />
             ) : view === "notifications" ? (

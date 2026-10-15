@@ -247,6 +247,11 @@
   text-align: center;
 }
 
+.product-payment-modal__stock-note {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
 /* Delivery options */
 .product-payment-modal__delivery-options {
   display: flex;

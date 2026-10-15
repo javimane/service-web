@@ -2,6 +2,10 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 export const API_ENDPOINTS = {
+  listingReports: {
+    base: `${API_BASE_URL}/api/listing-reports`,
+    mine: `${API_BASE_URL}/api/listing-reports/mine`,
+  },
   auth: {
     register: `${API_BASE_URL}/api/auth/register`,
     login: `${API_BASE_URL}/api/auth/login`,

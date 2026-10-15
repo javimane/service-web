@@ -28,6 +28,7 @@ import {
   getPublicationUploadUrlAction,
 } from "@/app/actions/publications";
 import "./DashboardPublications.css";
+import MerchantListingReports from "@/components/ListingReport/MerchantListingReports";
 import { uploadPublicationsImage } from "@/services/storageUploads";
 import { ROUTES } from "@/routes/paths";
 
@@ -318,7 +319,8 @@ export default function DashboardPublications() {
           <h2>
             {publicationToEdit ? "Editar Publicación" : "Crear Publicación"}
           </h2>
-          <button data-action-tone="cancel"
+          <button
+            data-action-tone="cancel"
             className="dash-pubs__btn-cancel"
             onClick={handleCloseCreator}
             disabled={isSaving}
@@ -431,6 +433,7 @@ export default function DashboardPublications() {
 
   return (
     <div className="dash-pubs" onScroll={handleScroll}>
+      <MerchantListingReports targetType="professional_publication" />
       <div className="dash-pubs__header">
         <h1 className="dash-pubs__title">Mis Publicaciones</h1>
         <button
