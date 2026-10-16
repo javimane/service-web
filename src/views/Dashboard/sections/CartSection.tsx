@@ -441,7 +441,9 @@ export default function CartSection() {
           billing_address_id: paymentAddressId,
           ...(!hasService ? originSelection : {}),
           delivery_address_id:
-            activeDeliveryType === "shipment" ? selectedAddressId : undefined,
+            activeDeliveryType === "shipment" || activeDeliveryType === "coordinate_with_merchant"
+              ? selectedAddressId || undefined
+              : undefined,
           schedule_for_next_day:
             activeDeliveryType === "shipment" &&
             quotedFor === quoteKey &&
@@ -871,6 +873,24 @@ export default function CartSection() {
                   </div>
                 </button>
               </div>
+
+              {deliveryType === "coordinate_with_merchant" && (
+                <div className="delivery-details-subbox">
+                  <label className="commercial-label">Dirección del destinatario</label>
+                  <select
+                    className="branch-select"
+                    value={selectedAddressId}
+                    onChange={(event) => setSelectedAddressId(event.target.value)}
+                  >
+                    <option value="">Seleccionar dirección guardada</option>
+                    {userAddresses.map((address) => (
+                      <option key={address.id} value={address.id}>
+                        {address.name || address.street_name || address.street} {address.street_number || address.number}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Pickup branch selection */}
               {!hasService && deliveryType === "pickup" && (

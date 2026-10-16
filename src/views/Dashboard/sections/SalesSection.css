@@ -306,7 +306,8 @@
   color: var(--green-dark);
 }
 
-.sales-badge--cancelled {
+.sales-badge--cancelled,
+.sales-badge--refunded {
   background: rgba(250, 82, 82, 0.15);
   color: var(--error-color);
 }

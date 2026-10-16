@@ -615,7 +615,9 @@ export default function ProductPaymentModal({
             ? originSelection
             : {}),
           delivery_address_id:
-            deliveryType === "shipment" ? selectedAddressId : undefined,
+            deliveryType === "shipment" || deliveryType === "coordinate_with_merchant"
+              ? selectedAddressId || undefined
+              : undefined,
           schedule_for_next_day:
             deliveryType === "shipment" &&
             currentShippingCalc?.requires_scheduled_delivery
@@ -1077,10 +1079,12 @@ export default function ProductPaymentModal({
                 )}
 
                 {/* Dirección guardada para envío */}
-                {(deliveryType === "shipment" || isOutsideDeliveryRange) && (
+                {(deliveryType === "shipment" || deliveryType === "coordinate_with_merchant" || isOutsideDeliveryRange) && (
                   <div className="product-payment-modal__address-fields">
                     <label className="product-payment-modal__input-label">
-                      {isOutsideDeliveryRange
+                      {deliveryType === "coordinate_with_merchant"
+                        ? "Dirección del destinatario"
+                        : isOutsideDeliveryRange
                         ? "Cambiar dirección para comprobar cobertura"
                         : "Dirección de entrega"}
                     </label>
@@ -1094,9 +1098,8 @@ export default function ProductPaymentModal({
                       <option value="">Seleccionar dirección guardada</option>
                       {userAddresses
                         .filter(
-                          (address) =>
-                            address.latitude != null &&
-                            address.longitude != null,
+                          (address) => deliveryType === "coordinate_with_merchant" ||
+                            (address.latitude != null && address.longitude != null),
                         )
                         .map((address) => (
                           <option key={address.id} value={address.id}>
@@ -1107,7 +1110,7 @@ export default function ProductPaymentModal({
                           </option>
                         ))}
                     </select>
-                    {!userAddresses.some(
+                    {deliveryType === "shipment" && !userAddresses.some(
                       (address) =>
                         address.latitude != null && address.longitude != null,
                     ) && (

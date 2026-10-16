@@ -75,12 +75,10 @@ export default function ReturnTicketModal({ ticket, onClose }: Props) {
             {destination.floor_apartment && <span>{destination.floor_apartment}</span>}
             {(destination.department || destination.province) && <span>{[destination.department, destination.province].filter(Boolean).join(", ")}</span>}
             {destination.zip_code && <span>CP {destination.zip_code}</span>}
-            {destination.phone && <span>Tel: {destination.phone}</span>}
           </section>
           <section className="return-ticket__section">
             <h3>Remitente</h3>
             <strong>{ticket.buyer.name}</strong>
-            {ticket.buyer.phone && <span>Tel: {ticket.buyer.phone}</span>}
             {ticket.buyer.email && <span>Email: {ticket.buyer.email}</span>}
             <span>{ticket.buyer.address || "Dirección del remitente no informada"}</span>
             {ticket.buyer.zip_code && <span>CP {ticket.buyer.zip_code}</span>}

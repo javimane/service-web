@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import jsPDF from "jspdf";
-import { Printer, Download, Phone, MapPin, Calendar, Clock, CheckCircle2, User, X } from "lucide-react";
+import { Printer, Download, MapPin, Calendar, Clock, CheckCircle2, User, X } from "lucide-react";
 import Modal from "@/components/Modal/Modal";
 import { OrderSummary } from "@/services/commerceService";
 import { useAlert } from "@/context/AlertContext";
@@ -26,12 +26,6 @@ export default function ServiceOrderVoucherModal({
   const orderNum = order.order_number || `#SRV-${order.id.slice(0, 8).toUpperCase()}`;
   const clientName =
     order.buyer?.full_name || order.user?.full_name || "Cliente Sercio";
-  const clientPhone =
-    order.buyer?.phone ||
-    order.buyer?.phone_number ||
-    order.user?.phone ||
-    order.user?.phone_number ||
-    "Sin teléfono registrado";
 
   const address: any = order.delivery_address || order.shipping_address;
 
@@ -113,9 +107,6 @@ export default function ServiceOrderVoucherModal({
       doc.text("DATOS DEL CLIENTE:", 6, 51);
       doc.setFont("courier", "normal");
       doc.text(`Nombre: ${clientName}`, 6, 56);
-      doc.setFont("courier", "bold");
-      doc.text(`Teléfono: ${clientPhone}`, 6, 61);
-
       doc.line(5, 64, 75, 64);
 
       doc.setFont("courier", "bold");
@@ -205,16 +196,12 @@ export default function ServiceOrderVoucherModal({
               </div>
             </div>
 
-            {/* Client info with Phone prominently shown */}
+            {/* Client info */}
             <div className="service-voucher__section service-voucher__section--highlight">
               <span className="service-voucher__section-title">DATOS DEL CLIENTE</span>
               <div className="service-voucher__field">
                 <User size={14} />
                 <span><strong>Nombre:</strong> {clientName}</span>
-              </div>
-              <div className="service-voucher__field service-voucher__field--phone">
-                <Phone size={14} />
-                <span><strong>Teléfono:</strong> {clientPhone}</span>
               </div>
             </div>
 

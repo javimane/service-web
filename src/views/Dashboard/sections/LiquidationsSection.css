@@ -426,7 +426,6 @@
 
 .liquidations-table__net strong {
   display: block;
-  margin-top: var(--space-2);
 }
 
 .liquidations-action-btn {
@@ -489,6 +488,11 @@
 
 .liq-badge--withheld {
   background: rgba(250, 82, 82, 0.15);
+  color: var(--error-color);
+}
+
+.liq-badge--cancelled {
+  background: var(--action-cancel-bg);
   color: var(--error-color);
 }
 

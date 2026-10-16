@@ -114,10 +114,9 @@ export default function PackageThermalLabelModal({
         storeName,
         order.branch?.name || branchName || saleLocation.name,
         saleLocation.address,
-        saleLocation.phone ? `Tel: ${saleLocation.phone}` : "",
         getOrderNumber(order),
-        `Comprador: ${getBuyerName(order)}`,
-        getDeliveryAddress(order),
+        `${order.delivery_type === "coordinate_with_merchant" ? "Destinatario" : "Comprador"}: ${getBuyerName(order)}`,
+        `Dirección: ${getDeliveryAddress(order)}`,
         ...getOrderLines(order).flatMap((item) =>
           [
             `${item.quantity} x ${item.name}`,

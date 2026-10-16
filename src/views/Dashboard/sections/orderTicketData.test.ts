@@ -5,6 +5,7 @@ import { getBuyerName, getDeliveryAddress, getOrderLines, getProductImage, getSa
 const baseOrder = {
   id: "abc12345",
   status: "confirmed",
+  paid_at: "2026-09-28T12:01:00Z",
   delivery_type: "shipment",
   created_at: "2026-09-28T12:00:00Z",
   total_amount: 2000,
@@ -14,6 +15,7 @@ const baseOrder = {
 describe("datos para tickets de venta", () => {
   it("omite las ventas sin pago y canceladas", () => {
     expect(isPrintableOrder(baseOrder)).toBe(true);
+    expect(isPrintableOrder({ ...baseOrder, paid_at: null })).toBe(false);
     for (const status of ["pending_payment", "cancelled", "refunded"] as const) {
       expect(isPrintableOrder({ ...baseOrder, status })).toBe(false);
     }
@@ -28,6 +30,7 @@ describe("datos para tickets de venta", () => {
     };
     expect(getBuyerName(order)).toBe("Ana Pérez");
     expect(getDeliveryAddress(order)).toContain("Belgrano 123");
+    expect(getDeliveryAddress({ ...order, delivery_type: "coordinate_with_merchant" })).toContain("Belgrano 123");
     expect(getOrderLines(order)[0]).toMatchObject({ name: "Remera", ean: "7791234567890", attributes: "Talle: M" });
   });
 
@@ -53,7 +56,7 @@ describe("datos para tickets de venta", () => {
         product: { id: "p2", name: "Campera", color: "Azul", size_letter: "L" } }],
     };
     expect(getSaleLocation(order)).toEqual({
-      name: "Centro", address: "San Martín 120, CP 5000", phone: "3511234567",
+      name: "Centro", address: "San Martín 120, CP 5000",
     });
     expect(getOrderLines(order)[0].attributes).toBe("Color: Azul · Talle: L");
   });

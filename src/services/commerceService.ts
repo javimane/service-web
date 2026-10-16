@@ -301,7 +301,13 @@ export type Liquidation = {
   net_amount?: number;
   gross_amount?: number;
   platform_commission?: number;
+  platform_commission_pct?: number;
   iva_amount?: number;
+  cancellation_commission?: number;
+  cancellation_fee_basis?: string;
+  processor_unreturned_iva_amount?: number;
+  cancellation_commission_pct?: number;
+  cancellation_iva_amount?: number;
   refunded_gross_amount?: number;
   refund_deduction_amount?: number;
   refund_debt_amount?: number;
@@ -319,6 +325,9 @@ export type Liquidation = {
   financial_adjustments?: Array<{
     id: string; order_id: string; kind: string; status: string;
     amount: number; merchant_deduction: number;
+    cancellation_commission_pct?: number;
+    cancellation_commission_amount?: number;
+    cancellation_iva_amount?: number;
     platform_commission_loss_amount: number;
     commission_reduction_pp: number; charge_concept: string | null;
     reason: string | null;

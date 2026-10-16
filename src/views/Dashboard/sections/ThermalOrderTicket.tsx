@@ -2,7 +2,6 @@ import type { OrderSummary } from "@/services/commerceService";
 import {
   getBuyerEmail,
   getBuyerName,
-  getBuyerPhone,
   getDeliveryAddress,
   getOrderLines,
   getOrderNumber,
@@ -29,7 +28,6 @@ export default function ThermalOrderTicket({ order, qrDataUrl, storeName, branch
       <span>{storeName}</span>
       <span className="thermal-order-ticket__branch">{order.branch?.name || branchName || saleLocation.name}</span>
       <span>{saleLocation.address}</span>
-      {saleLocation.phone && <span>Tel: {saleLocation.phone}</span>}
     </header>
     <div className="thermal-order-ticket__identity">
       {qrDataUrl && <img className="thermal-order-ticket__qr" src={qrDataUrl} alt={`QR de pedido ${getOrderNumber(order)}`} />}
@@ -37,9 +35,8 @@ export default function ThermalOrderTicket({ order, qrDataUrl, storeName, branch
       <span>{new Date(order.created_at).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" })}</span>
     </div>
     <section className="thermal-order-ticket__section">
-      <h3>Comprador</h3>
+      <h3>{order.delivery_type === "coordinate_with_merchant" ? "Destinatario" : "Comprador"}</h3>
       <p><strong>{getBuyerName(order)}</strong></p>
-      {getBuyerPhone(order) !== "No informado" && <p>Tel: {getBuyerPhone(order)}</p>}
       {getBuyerEmail(order) !== "No informado" && <p>Email: {getBuyerEmail(order)}</p>}
       <p>{getDeliveryAddress(order)}</p>
       {order.delivery_address?.notes && <p>Indicaciones: {order.delivery_address.notes}</p>}

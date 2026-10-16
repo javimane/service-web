@@ -43,8 +43,19 @@ import BatchOrderTicketsModal from "./BatchOrderTicketsModal";
 import ReturnReceiptModal from "./ReturnReceiptModal";
 import BarcodeScanner from "@/components/BarcodeScanner/BarcodeScanner";
 import OrderChatModal from "./OrderChatModal";
-import { getBuyerEmail, getBuyerName, getBuyerPhone, getDeliveryAddress, getOrderLines, getProductImage, isPrintableOrder } from "./orderTicketData";
-import DateRangeFilter, { DateRangeValue, toUtcDateRange } from "./DateRangeFilter";
+import {
+  getBuyerEmail,
+  getBuyerName,
+  getBuyerPhone,
+  getDeliveryAddress,
+  getOrderLines,
+  getProductImage,
+  isPrintableOrder,
+} from "./orderTicketData";
+import DateRangeFilter, {
+  DateRangeValue,
+  toUtcDateRange,
+} from "./DateRangeFilter";
 import "./SalesSection.css";
 import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
 import { isServiceOrderSummary as isServiceSale } from "@/utils/orderKind";
@@ -60,6 +71,7 @@ const STATUS_FILTERS: Array<{ label: string; value: string }> = [
   { label: "Despachadas", value: "dispatched" },
   { label: "Entregadas", value: "delivered" },
   { label: "Canceladas", value: "cancelled" },
+  { label: "Reembolsadas", value: "refunded" },
 ];
 
 export default function SalesSection() {
@@ -71,24 +83,34 @@ export default function SalesSection() {
   const searchParams = useSearchParams();
   const orderIdParam = searchParams?.get("orderId");
 
-  const professionalId = sessionStatus?.subscription?.professional_id ?? sessionStatus?.professional_id;
+  const professionalId =
+    sessionStatus?.subscription?.professional_id ??
+    sessionStatus?.professional_id;
   const { data: professional } = useQuery({
     queryKey: ["professional-me", professionalId],
-    queryFn: async () => (await getProfessionalMeAction({ token: await getAccessToken() }))?.data ?? null,
+    queryFn: async () =>
+      (await getProfessionalMeAction({ token: await getAccessToken() }))
+        ?.data ?? null,
     enabled: Boolean(professionalId),
     staleTime: 1000 * 60 * 5,
   });
   const companyData = professional?.companies ?? professional?.Company;
   const company = Array.isArray(companyData) ? companyData[0] : companyData;
-  const companyId = Number(company?.id ?? sessionStatus?.company_id) || undefined;
+  const companyId =
+    Number(company?.id ?? sessionStatus?.company_id) || undefined;
 
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
-  const [dateRange, setDateRange] = useState<DateRangeValue>({ field: "sale", from: "", to: "" });
+  const [dateRange, setDateRange] = useState<DateRangeValue>({
+    field: "sale",
+    from: "",
+    to: "",
+  });
   const [isAutoPrintActive, setIsAutoPrintActive] = useState<boolean>(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
-  const [selectedOrdersForBatchPrint, setSelectedOrdersForBatchPrint] = useState<OrderSummary[]>([]);
+  const [selectedOrdersForBatchPrint, setSelectedOrdersForBatchPrint] =
+    useState<OrderSummary[]>([]);
   const [batchPrintModalOpen, setBatchPrintModalOpen] = useState(false);
   const [returnReceiptOpen, setReturnReceiptOpen] = useState(false);
 
@@ -119,14 +141,23 @@ export default function SalesSection() {
   const [transportTrackingUrl, setTransportTrackingUrl] = useState("");
   useEffect(() => {
     const relation = selectedOrder?.transport_shipments;
-    const shipment = Array.isArray(relation) ? relation[0] : relation ?? selectedOrder?.transport_shipment;
+    const shipment = Array.isArray(relation)
+      ? relation[0]
+      : (relation ?? selectedOrder?.transport_shipment);
     setTransportCarrier(shipment?.company_name ?? shipment?.carrier_name ?? "");
     setTransportTrackingNumber(shipment?.tracking_number ?? "");
     setTransportTrackingUrl(shipment?.tracking_url ?? "");
-  }, [selectedOrder?.id, selectedOrder?.transport_shipments, selectedOrder?.transport_shipment]);
-  const [selectedOrderForAppointment, setSelectedOrderForAppointment] = useState<OrderSummary | null>(null);
-  const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<OrderSummary | null>(null);
-  const [selectedOrderForServiceVoucher, setSelectedOrderForServiceVoucher] = useState<OrderSummary | null>(null);
+  }, [
+    selectedOrder?.id,
+    selectedOrder?.transport_shipments,
+    selectedOrder?.transport_shipment,
+  ]);
+  const [selectedOrderForAppointment, setSelectedOrderForAppointment] =
+    useState<OrderSummary | null>(null);
+  const [selectedOrderForLabel, setSelectedOrderForLabel] =
+    useState<OrderSummary | null>(null);
+  const [selectedOrderForServiceVoucher, setSelectedOrderForServiceVoucher] =
+    useState<OrderSummary | null>(null);
   const [isOrderChatOpen, setIsOrderChatOpen] = useState(false);
   const [whatsAppWarningOpen, setWhatsAppWarningOpen] = useState(false);
 
@@ -137,13 +168,17 @@ export default function SalesSection() {
     enabled: Boolean(companyId),
   });
 
-  const branches: Branch[] = React.useMemo(() => Array.isArray(rawBranches)
-    ? rawBranches
-    : Array.isArray((rawBranches as any)?.data)
-      ? (rawBranches as any).data
-      : Array.isArray((rawBranches as any)?.items)
-        ? (rawBranches as any).items
-        : [], [rawBranches]);
+  const branches: Branch[] = React.useMemo(
+    () =>
+      Array.isArray(rawBranches)
+        ? rawBranches
+        : Array.isArray((rawBranches as any)?.data)
+          ? (rawBranches as any).data
+          : Array.isArray((rawBranches as any)?.items)
+            ? (rawBranches as any).items
+            : [],
+    [rawBranches],
+  );
 
   // Restore active branch and auto-print preference from localStorage
   useEffect(() => {
@@ -173,8 +208,20 @@ export default function SalesSection() {
     }
   }, [rawBranches, branches, selectedBranchId]);
 
-  const { data: ordersData, isLoading, isError, error, refetch } = useQuery<PageResponse<OrderSummary>>({
-    queryKey: ["merchant-orders", page, statusFilter, selectedBranchId, dateRange],
+  const {
+    data: ordersData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery<PageResponse<OrderSummary>>({
+    queryKey: [
+      "merchant-orders",
+      page,
+      statusFilter,
+      selectedBranchId,
+      dateRange,
+    ],
     queryFn: () =>
       commerceService.merchantOrders(
         page,
@@ -184,21 +231,29 @@ export default function SalesSection() {
         {
           [`${dateRange.field}_date_from`]: toUtcDateRange(dateRange).from,
           [`${dateRange.field}_date_to`]: toUtcDateRange(dateRange).to,
-        }
+        },
       ),
     refetchInterval: isAutoPrintActive ? 10000 : false,
-    enabled: (!dateRange.from || !dateRange.to || dateRange.from <= dateRange.to) &&
-      (!selectedBranchId || branchesError || (rawBranches !== undefined && branches.some((branch) => branch.id === selectedBranchId))),
+    enabled:
+      (!dateRange.from || !dateRange.to || dateRange.from <= dateRange.to) &&
+      (!selectedBranchId ||
+        branchesError ||
+        (rawBranches !== undefined &&
+          branches.some((branch) => branch.id === selectedBranchId))),
   });
-  const ordersRouteMissing = (error as { response?: { status?: number } } | null)?.response?.status === 404;
-  const waitingForBranches = Boolean(selectedBranchId) && rawBranches === undefined && !branchesError;
+  const ordersRouteMissing =
+    (error as { response?: { status?: number } } | null)?.response?.status ===
+    404;
+  const waitingForBranches =
+    Boolean(selectedBranchId) && rawBranches === undefined && !branchesError;
 
   const orders = React.useMemo(
     () => ordersData?.items ?? ordersData?.data ?? [],
-    [ordersData]
+    [ordersData],
   );
   const totalOrders = ordersData?.total ?? orders.length;
-  const totalPages = ordersData?.totalPages ?? (Math.ceil(totalOrders / 10) || 1);
+  const totalPages =
+    ordersData?.totalPages ?? (Math.ceil(totalOrders / 10) || 1);
 
   // Header quick metrics
   const todaySalesCount = orders.filter((o) => {
@@ -208,11 +263,11 @@ export default function SalesSection() {
   }).length;
 
   const pendingPrepCount = orders.filter(
-    (o) => o.status === "confirmed" || o.status === "preparing"
+    (o) => o.status === "confirmed" || o.status === "preparing",
   ).length;
 
   const readyForDispatchCount = orders.filter(
-    (o) => o.status === "ready_for_pickup" || o.status === "ready_for_dispatch"
+    (o) => o.status === "ready_for_pickup" || o.status === "ready_for_dispatch",
   ).length;
 
   const monthlyBilling = orders
@@ -246,7 +301,10 @@ export default function SalesSection() {
       if (found && typeof found.auto_print_tickets === "boolean") {
         setIsAutoPrintActive(found.auto_print_tickets);
         try {
-          localStorage.setItem("sercio_autoprint_active", String(found.auto_print_tickets));
+          localStorage.setItem(
+            "sercio_autoprint_active",
+            String(found.auto_print_tickets),
+          );
         } catch {
           // ignore
         }
@@ -274,7 +332,7 @@ export default function SalesSection() {
       showSuccess(
         selectedBranchId
           ? "Impresión automática activada para la sucursal seleccionada."
-          : "Impresión automática activada para órdenes entrantes."
+          : "Impresión automática activada para órdenes entrantes.",
       );
     } else {
       showSuccess("Impresión automática pausada.");
@@ -284,23 +342,34 @@ export default function SalesSection() {
   const toggleSelectAll = () => {
     const printableOrders = orders.filter(isPrintableOrder);
     if (printableOrders.length === 0) return;
-    const allVisibleSelected = printableOrders.every((o) => selectedOrderIds.includes(o.id));
+    const allVisibleSelected = printableOrders.every((o) =>
+      selectedOrderIds.includes(o.id),
+    );
     if (allVisibleSelected) {
-      setSelectedOrderIds((prev) => prev.filter((id) => !orders.some((o) => o.id === id)));
+      setSelectedOrderIds((prev) =>
+        prev.filter((id) => !orders.some((o) => o.id === id)),
+      );
     } else {
-      const newIds = new Set([...selectedOrderIds, ...printableOrders.map((o) => o.id)]);
+      const newIds = new Set([
+        ...selectedOrderIds,
+        ...printableOrders.map((o) => o.id),
+      ]);
       setSelectedOrderIds(Array.from(newIds));
     }
   };
 
   const toggleSelectOrder = (orderId: string) => {
     setSelectedOrderIds((prev) =>
-      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]
+      prev.includes(orderId)
+        ? prev.filter((id) => id !== orderId)
+        : [...prev, orderId],
     );
   };
 
   const handleOpenBatchPrint = () => {
-    const selectedList = orders.filter((o) => selectedOrderIds.includes(o.id) && isPrintableOrder(o));
+    const selectedList = orders.filter(
+      (o) => selectedOrderIds.includes(o.id) && isPrintableOrder(o),
+    );
     if (selectedList.length === 0) {
       showError("Selecciona al menos una venta para imprimir.");
       return;
@@ -316,8 +385,8 @@ export default function SalesSection() {
     const unprinted = orders.filter((o) => {
       if (!isPrintableOrder(o)) return false;
       if (selectedBranchId) {
-        const orderLocation = o.branch_id ||
-          (o.origin_address_id ? `main:${companyId}` : "");
+        const orderLocation =
+          o.branch_id || (o.origin_address_id ? `main:${companyId}` : "");
         if (orderLocation !== selectedBranchId) return false;
       }
       try {
@@ -330,7 +399,9 @@ export default function SalesSection() {
     if (unprinted.length > 0) {
       setSelectedOrdersForBatchPrint(unprinted);
       setBatchPrintModalOpen(true);
-      showSuccess(`¡Venta entrante! Preparando ticket de ${unprinted.length} orden(es)...`);
+      showSuccess(
+        `¡Venta entrante! Preparando ticket de ${unprinted.length} orden(es)...`,
+      );
     }
   }, [orders, isAutoPrintActive, selectedBranchId, companyId, showSuccess]);
 
@@ -339,7 +410,7 @@ export default function SalesSection() {
     queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
     await refetch();
     const updated = await commerceService.orderDetail(id);
-    setSelectedOrder((current) => current?.id === id ? updated : current);
+    setSelectedOrder((current) => (current?.id === id ? updated : current));
   };
 
   const confirmMutation = useMutation({
@@ -365,15 +436,20 @@ export default function SalesSection() {
 
   const returnReceiptMutation = useMutation({
     mutationFn: (code: string) => commerceService.receiveReturn(code),
-    onSuccess: () => showSuccess("Producto devuelto registrado como recibido. El reclamo sigue pendiente de resolución."),
-    onError: (error: Error) => showError(error.message || "No se pudo registrar la devolución."),
+    onSuccess: () =>
+      showSuccess(
+        "Producto devuelto registrado como recibido. El reclamo sigue pendiente de resolución.",
+      ),
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo registrar la devolución."),
   });
 
   const preparingMutation = useMutation({
     mutationFn: async (id: string) => {
       const order = await commerceService.orderDetail(id);
       const shipmentId = Array.isArray(order.shipments)
-        ? order.shipments[0]?.id : order.shipments?.id ?? order.shipment_id;
+        ? order.shipments[0]?.id
+        : (order.shipments?.id ?? order.shipment_id);
       if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
       return commerceService.preparingShipment(shipmentId);
     },
@@ -388,7 +464,8 @@ export default function SalesSection() {
     mutationFn: async (id: string) => {
       const order = await commerceService.orderDetail(id);
       const shipmentId = Array.isArray(order.shipments)
-        ? order.shipments[0]?.id : order.shipments?.id ?? order.shipment_id;
+        ? order.shipments[0]?.id
+        : (order.shipments?.id ?? order.shipment_id);
       if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
       return commerceService.readyShipment(shipmentId);
     },
@@ -405,7 +482,8 @@ export default function SalesSection() {
       await refreshSelectedOrder(id);
       showSuccess("Pedido listo para retiro en sucursal.");
     },
-    onError: (error: Error) => showError(error.message || "No se pudo marcar listo para retiro."),
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo marcar listo para retiro."),
   });
 
   const coordinatedPreparingMutation = useMutation({
@@ -427,13 +505,15 @@ export default function SalesSection() {
   });
 
   const dispatchEvidenceMutation = useMutation({
-    mutationFn: ({ id, file }: { id: string; file: File }) => commerceService.uploadDispatchEvidence(id, file),
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      commerceService.uploadDispatchEvidence(id, file),
     onSuccess: async (_, variables) => {
       setPackageImageFile(null);
       await refreshSelectedOrder(variables.id);
       showSuccess("Foto del paquete guardada.");
     },
-    onError: (error: Error) => showError(error.message || "No se pudo subir la foto."),
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo subir la foto."),
   });
 
   const pickupVerifyMutation = useMutation({
@@ -479,7 +559,8 @@ export default function SalesSection() {
       showSuccess("Datos de transporte larga distancia actualizados.");
       await refreshSelectedOrder(variables.id);
     },
-    onError: () => showError("No se pudo guardar la información de transporte."),
+    onError: () =>
+      showError("No se pudo guardar la información de transporte."),
   });
 
   const isOrderPickupReady = (order?: Partial<OrderSummary> | null) => {
@@ -490,12 +571,12 @@ export default function SalesSection() {
     );
     return Boolean(
       order.delivery_type === "pickup" &&
-        hasPickupReadyTimestamp &&
-        order.status !== "delivered" &&
-        (order.status as string) !== "settled" &&
-        !order.delivered_at &&
-        order.status !== "cancelled" &&
-        order.status !== "refunded",
+      hasPickupReadyTimestamp &&
+      order.status !== "delivered" &&
+      (order.status as string) !== "settled" &&
+      !order.delivered_at &&
+      order.status !== "cancelled" &&
+      order.status !== "refunded",
     );
   };
 
@@ -516,40 +597,80 @@ export default function SalesSection() {
 
     if (isOrderPickupReady(order)) {
       return (
-        <span className="sales-badge sales-badge--ready">Listo para retiro</span>
+        <span className="sales-badge sales-badge--ready">
+          Listo para retiro
+        </span>
       );
     }
 
     switch (status) {
       case "pending":
-        return <span className="sales-badge sales-badge--pending">Pendiente</span>;
+        return (
+          <span className="sales-badge sales-badge--pending">Pendiente</span>
+        );
       case "pending_payment":
-        return <span className="sales-badge sales-badge--pending-payment">Pendiente de Pago</span>;
+        return (
+          <span className="sales-badge sales-badge--pending-payment">
+            Pendiente de Pago
+          </span>
+        );
       case "paid":
-        return <span className="sales-badge sales-badge--confirmed">Pagado</span>;
+        return (
+          <span className="sales-badge sales-badge--confirmed">Pagado</span>
+        );
       case "confirmed":
-        return <span className="sales-badge sales-badge--confirmed">Confirmado</span>;
+        return (
+          <span className="sales-badge sales-badge--confirmed">Confirmado</span>
+        );
       case "preparing":
-        return <span className="sales-badge sales-badge--preparing">En preparación</span>;
+        return (
+          <span className="sales-badge sales-badge--preparing">
+            En preparación
+          </span>
+        );
       case "ready_for_pickup":
-        return <span className="sales-badge sales-badge--ready">Listo para retiro</span>;
+        return (
+          <span className="sales-badge sales-badge--ready">
+            Listo para retiro
+          </span>
+        );
       case "ready_for_dispatch":
-        return <span className="sales-badge sales-badge--ready">Listo despacho</span>;
+        return (
+          <span className="sales-badge sales-badge--ready">Listo despacho</span>
+        );
       case "dispatched":
-        return <span className="sales-badge sales-badge--transit">Despachado</span>;
+        return (
+          <span className="sales-badge sales-badge--transit">Despachado</span>
+        );
       case "in_transit":
-        return <span className="sales-badge sales-badge--transit">En tránsito</span>;
+        return (
+          <span className="sales-badge sales-badge--transit">En tránsito</span>
+        );
       case "settled":
-        return <span className="sales-badge sales-badge--delivered">Entregado</span>;
+        return (
+          <span className="sales-badge sales-badge--delivered">Entregado</span>
+        );
       case "cancelled":
-        return <span className="sales-badge sales-badge--cancelled">Cancelado</span>;
+        return (
+          <span className="sales-badge sales-badge--cancelled">Cancelado</span>
+        );
+      case "refunded":
+        return (
+          <span className="sales-badge sales-badge--cancelled">
+            Reembolsado
+          </span>
+        );
       default:
         return <span className="sales-badge">{status}</span>;
     }
   };
 
   const formatPaymentMethod = (order: OrderSummary) => {
-    const method = (order.payment_method || order.payment_provider || "").toLowerCase();
+    const method = (
+      order.payment_method ||
+      order.payment_provider ||
+      ""
+    ).toLowerCase();
     const cardType = (
       (order as any).card_type ||
       (order as any).card_details?.card_type ||
@@ -596,12 +717,19 @@ export default function SalesSection() {
   };
 
   const selectedShipmentStatus = Array.isArray(selectedOrder?.shipments)
-    ? selectedOrder.shipments[0]?.status : selectedOrder?.shipments?.status;
-  const canUploadSelectedEvidence = Boolean(selectedOrder && !isServiceSale(selectedOrder) &&
-    ((selectedOrder.delivery_type === 'coordinate_with_merchant' &&
-      ['confirmed', 'preparing'].includes(selectedOrder.status)) ||
-     (selectedOrder.delivery_type === 'shipment' && selectedOrder.status === 'confirmed' &&
-      ['pending', 'created', 'confirmed', 'preparing'].includes(selectedShipmentStatus ?? ''))));
+    ? selectedOrder.shipments[0]?.status
+    : selectedOrder?.shipments?.status;
+  const canUploadSelectedEvidence = Boolean(
+    selectedOrder &&
+    !isServiceSale(selectedOrder) &&
+    ((selectedOrder.delivery_type === "coordinate_with_merchant" &&
+      ["confirmed", "preparing"].includes(selectedOrder.status)) ||
+      (selectedOrder.delivery_type === "shipment" &&
+        selectedOrder.status === "confirmed" &&
+        ["pending", "created", "confirmed", "preparing"].includes(
+          selectedShipmentStatus ?? "",
+        ))),
+  );
 
   return (
     <div className="sales-section">
@@ -629,7 +757,9 @@ export default function SalesSection() {
             <Clock size={20} />
           </div>
           <div className="sales-metric-card__info">
-            <span className="sales-metric-card__label">PENDIENTES PREPARACIÓN</span>
+            <span className="sales-metric-card__label">
+              PENDIENTES PREPARACIÓN
+            </span>
             <span className="sales-metric-card__value">{pendingPrepCount}</span>
           </div>
         </div>
@@ -639,8 +769,12 @@ export default function SalesSection() {
             <PackageCheck size={20} />
           </div>
           <div className="sales-metric-card__info">
-            <span className="sales-metric-card__label">LISTAS PARA ENTREGA / DESPACHO</span>
-            <span className="sales-metric-card__value">{readyForDispatchCount}</span>
+            <span className="sales-metric-card__label">
+              LISTAS PARA ENTREGA / DESPACHO
+            </span>
+            <span className="sales-metric-card__value">
+              {readyForDispatchCount}
+            </span>
           </div>
         </div>
 
@@ -649,7 +783,9 @@ export default function SalesSection() {
             <DollarSign size={20} />
           </div>
           <div className="sales-metric-card__info">
-            <span className="sales-metric-card__label">FACTURACIÓN ESTIMADA</span>
+            <span className="sales-metric-card__label">
+              FACTURACIÓN ESTIMADA
+            </span>
             <span className="sales-metric-card__value">
               ${monthlyBilling.toLocaleString("es-AR")}
             </span>
@@ -659,12 +795,22 @@ export default function SalesSection() {
 
       {/* Branch & Auto-print Toolbar */}
       <div className="sales-branch-toolbar">
-        <button type="button" className="btn-secondary sales-return-receipt-button" onClick={() => setReturnReceiptOpen(true)}><QrCode size={17} />Registrar devolución recibida</button>
+        <button
+          type="button"
+          className="btn-secondary sales-return-receipt-button"
+          onClick={() => setReturnReceiptOpen(true)}
+        >
+          <QrCode size={17} />
+          Registrar devolución recibida
+        </button>
         <div className="sales-branch-control">
           <div className="sales-branch-control__icon">
             <Store size={20} />
           </div>
-          <label htmlFor="sales-branch-select" className="sales-branch-control__label">
+          <label
+            htmlFor="sales-branch-select"
+            className="sales-branch-control__label"
+          >
             Sucursal de este puesto:
           </label>
           <select
@@ -676,7 +822,10 @@ export default function SalesSection() {
             <option value="">Todas las sucursales</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.name} {b.street_name ? `(${b.street_name} ${b.street_number || ""})` : ""}
+                {b.name}{" "}
+                {b.street_name
+                  ? `(${b.street_name} ${b.street_number || ""})`
+                  : ""}
               </option>
             ))}
           </select>
@@ -734,7 +883,9 @@ export default function SalesSection() {
               onClick={handleOpenBatchPrint}
             >
               <Printer size={16} />
-              <span>Imprimir tickets seleccionados ({selectedOrderIds.length})</span>
+              <span>
+                Imprimir tickets seleccionados ({selectedOrderIds.length})
+              </span>
             </button>
             <button
               type="button"
@@ -774,11 +925,16 @@ export default function SalesSection() {
           { value: "delivered", label: "entrega" },
         ]}
         value={dateRange}
-        onChange={(value) => { setDateRange(value); setPage(1); }}
+        onChange={(value) => {
+          setDateRange(value);
+          setPage(1);
+        }}
       />
 
       {/* Content Table / States */}
-      {dateRange.from && dateRange.to && dateRange.from > dateRange.to ? null : isLoading || waitingForBranches ? (
+      {dateRange.from &&
+      dateRange.to &&
+      dateRange.from > dateRange.to ? null : isLoading || waitingForBranches ? (
         <div className="sales-state sales-state--loading">
           <Clock className="sales-state__spinner" size={32} />
           <p>Cargando ventas...</p>
@@ -786,20 +942,32 @@ export default function SalesSection() {
       ) : isError ? (
         <div className="sales-state sales-state--error">
           <AlertCircle size={32} />
-          <p>{ordersRouteMissing
-            ? "La ruta de ventas no está disponible en la API. Es necesario actualizar o reiniciar la API."
-            : "Hubo un error al cargar las ventas."}</p>
-          <button type="button" className="btn-primary" onClick={() => refetch()}>
+          <p>
+            {ordersRouteMissing
+              ? "La ruta de ventas no está disponible en la API. Es necesario actualizar o reiniciar la API."
+              : "Hubo un error al cargar las ventas."}
+          </p>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => refetch()}
+          >
             Reintentar
           </button>
         </div>
       ) : orders.length === 0 ? (
         <div className="sales-state sales-state--empty">
           <PackageCheck size={48} />
-          <h3>{statusFilter || selectedBranchId || dateRange.from || dateRange.to ? "No hay ventas para este filtro" : "Todavía no tenés ventas"}</h3>
-          <p>{statusFilter || selectedBranchId || dateRange.from || dateRange.to
-            ? "Probá con otro estado, sucursal o período."
-            : "Cuando recibas un pedido, aparecerá acá."}</p>
+          <h3>
+            {statusFilter || selectedBranchId || dateRange.from || dateRange.to
+              ? "No hay ventas para este filtro"
+              : "Todavía no tenés ventas"}
+          </h3>
+          <p>
+            {statusFilter || selectedBranchId || dateRange.from || dateRange.to
+              ? "Probá con otro estado, sucursal o período."
+              : "Cuando recibas un pedido, aparecerá acá."}
+          </p>
         </div>
       ) : (
         <div className="sales-table-card">
@@ -813,7 +981,9 @@ export default function SalesSection() {
                       className="sales-checkbox"
                       checked={
                         orders.some(isPrintableOrder) &&
-                        orders.filter(isPrintableOrder).every((o) => selectedOrderIds.includes(o.id))
+                        orders
+                          .filter(isPrintableOrder)
+                          .every((o) => selectedOrderIds.includes(o.id))
                       }
                       onChange={toggleSelectAll}
                       aria-label="Seleccionar todas las ventas visibles"
@@ -854,21 +1024,32 @@ export default function SalesSection() {
                       <td className="sales-table__order-id">
                         #{order.order_number || order.id.slice(0, 8)}
                       </td>
-                      <td>{new Date(order.created_at).toLocaleDateString("es-AR")}</td>
+                      <td>
+                        {new Date(order.created_at).toLocaleDateString("es-AR")}
+                      </td>
                       <td>{buyerName}</td>
                       <td>
                         <div className="sales-table__product-cell">
-                          {getProductImage(order.items?.[0]?.product || order.professional_product?.product) && (
+                          {getProductImage(
+                            order.items?.[0]?.product ||
+                              order.professional_product?.product,
+                          ) && (
                             <img
-                              src={getProductImage(order.items?.[0]?.product || order.professional_product?.product) || ""}
+                              src={
+                                getProductImage(
+                                  order.items?.[0]?.product ||
+                                    order.professional_product?.product,
+                                ) || ""
+                              }
                               alt={article}
                               className="sales-table__thumb"
                             />
                           )}
                           <div className="sales-table__article-col">
                             <span>{article}</span>
-                            {(order.service_id || order.service) && (
-                              order.appointment_status === "pending_appointment" ? (
+                            {(order.service_id || order.service) &&
+                              (order.appointment_status ===
+                              "pending_appointment" ? (
                                 <span className="sales-badge sales-badge--appointment-pending">
                                   ⚠️ Turno Pendiente
                                 </span>
@@ -876,28 +1057,54 @@ export default function SalesSection() {
                                 <span className="sales-badge sales-badge--appointment-scheduled">
                                   📅 Turno Asignado
                                 </span>
-                              )
-                            )}
+                              ))}
                           </div>
                         </div>
                       </td>
                       <td>
                         <span className="sales-table__branch-tag">
-                          {order.branch?.name || (order.branch_id ? "Sucursal asignada" : "Sucursal Principal")}
+                          {order.branch?.name ||
+                            (order.branch_id
+                              ? "Sucursal asignada"
+                              : "Sucursal Principal")}
                         </span>
                       </td>
                       <td>
                         {getDeliveryLabel(order.delivery_type)}
                         {order.scheduled_delivery_date && (
-                          <span className="sales-table__schedule">Programado: {order.scheduled_delivery_date.split("-").reverse().join("/")}</span>
+                          <span className="sales-table__schedule">
+                            Programado:{" "}
+                            {order.scheduled_delivery_date
+                              .split("-")
+                              .reverse()
+                              .join("/")}
+                          </span>
                         )}
                       </td>
                       <td>{getStatusBadge(order.status, order)}</td>
                       <td className="sales-table__total">
-                        ${Number(order.total_amount ?? 0).toLocaleString("es-AR")}
-                        {Number(order.refunded_amount ?? 0) > 0 && <small className="sales-table__refund">Devuelto: ${Number(order.refunded_amount).toLocaleString("es-AR")}</small>}
-                        {order.has_return && <small className="sales-table__refund">Producto devuelto recibido</small>}
-                        {order.has_chargeback && <small className="sales-table__refund">Pago en disputa</small>}
+                        $
+                        {Number(order.total_amount ?? 0).toLocaleString(
+                          "es-AR",
+                        )}
+                        {Number(order.refunded_amount ?? 0) > 0 && (
+                          <small className="sales-table__refund">
+                            Devuelto: $
+                            {Number(order.refunded_amount).toLocaleString(
+                              "es-AR",
+                            )}
+                          </small>
+                        )}
+                        {order.has_return && (
+                          <small className="sales-table__refund">
+                            Producto devuelto recibido
+                          </small>
+                        )}
+                        {order.has_chargeback && (
+                          <small className="sales-table__refund">
+                            Pago en disputa
+                          </small>
+                        )}
                       </td>
                       <td>
                         <div className="sales-row-actions">
@@ -911,41 +1118,49 @@ export default function SalesSection() {
                           </button>
 
                           {(order.service_id || order.service) &&
-                            order.appointment_status === "pending_appointment" && (
+                            order.appointment_status ===
+                              "pending_appointment" && (
                               <button
                                 type="button"
                                 className="sales-action-btn sales-action-btn--appointment"
                                 title="Asignar fecha y hora de turno"
-                                onClick={() => setSelectedOrderForAppointment(order)}
+                                onClick={() =>
+                                  setSelectedOrderForAppointment(order)
+                                }
                               >
                                 <Calendar size={14} />
                                 <span>Turno</span>
                               </button>
                             )}
 
-                          {isPrintableOrder(order) && !order.service_id && !order.service && (
-                            <button
-                              type="button"
-                              className="sales-action-btn sales-action-btn--label"
-                              title="Imprimir Etiqueta Térmica de Paquete"
-                              onClick={() => setSelectedOrderForLabel(order)}
-                            >
-                              <Printer size={14} />
-                              <span>Etiqueta</span>
-                            </button>
-                          )}
+                          {isPrintableOrder(order) &&
+                            !order.service_id &&
+                            !order.service && (
+                              <button
+                                type="button"
+                                className="sales-action-btn sales-action-btn--label"
+                                title="Imprimir Etiqueta Térmica de Paquete"
+                                onClick={() => setSelectedOrderForLabel(order)}
+                              >
+                                <Printer size={14} />
+                                <span>Etiqueta</span>
+                              </button>
+                            )}
 
-                          {isPrintableOrder(order) && (order.service_id || order.service) && (
-                            <button
-                              type="button"
-                              className="sales-action-btn sales-action-btn--label"
-                              title="Imprimir Ficha y Comprobante de Servicio"
-                              onClick={() => setSelectedOrderForServiceVoucher(order)}
-                            >
-                              <Printer size={14} />
-                              <span>Ficha</span>
-                            </button>
-                          )}
+                          {isPrintableOrder(order) &&
+                            (order.service_id || order.service) && (
+                              <button
+                                type="button"
+                                className="sales-action-btn sales-action-btn--label"
+                                title="Imprimir Ficha y Comprobante de Servicio"
+                                onClick={() =>
+                                  setSelectedOrderForServiceVoucher(order)
+                                }
+                              >
+                                <Printer size={14} />
+                                <span>Ficha</span>
+                              </button>
+                            )}
                         </div>
                       </td>
                     </tr>
@@ -979,15 +1194,23 @@ export default function SalesSection() {
           <div className="order-detail-modal">
             {/* Buyer Info */}
             <div className="order-detail-section">
-              <h4 className="order-detail-section__title">Datos del Comprador</h4>
+              <h4 className="order-detail-section__title">
+                Datos del Comprador
+              </h4>
               <div className="order-detail-grid">
                 <div>
-                  <span className="order-detail-label">Estado de la venta:</span>
-                  <span className="order-detail-value">{getStatusBadge(selectedOrder.status, selectedOrder)}</span>
+                  <span className="order-detail-label">
+                    Estado de la venta:
+                  </span>
+                  <span className="order-detail-value">
+                    {getStatusBadge(selectedOrder.status, selectedOrder)}
+                  </span>
                 </div>
                 <div>
                   <span className="order-detail-label">Fecha de compra:</span>
-                  <span className="order-detail-value">{new Date(selectedOrder.created_at).toLocaleString("es-AR")}</span>
+                  <span className="order-detail-value">
+                    {new Date(selectedOrder.created_at).toLocaleString("es-AR")}
+                  </span>
                 </div>
                 <div>
                   <span className="order-detail-label">Nombre:</span>
@@ -1008,44 +1231,83 @@ export default function SalesSection() {
                   </span>
                 </div>
                 <div>
-                  <span className="order-detail-label">{isServiceSale(selectedOrder) ? "Modalidad del servicio:" : "Método de entrega:"}</span>
+                  <span className="order-detail-label">
+                    {isServiceSale(selectedOrder)
+                      ? "Modalidad del servicio:"
+                      : "Método de entrega:"}
+                  </span>
                   <span className="order-detail-value">
-                    {isServiceSale(selectedOrder) && selectedOrder.delivery_type === "coordinate_with_merchant"
+                    {isServiceSale(selectedOrder) &&
+                    selectedOrder.delivery_type === "coordinate_with_merchant"
                       ? "A coordinar con el profesional"
                       : getDeliveryLabel(selectedOrder.delivery_type)}
                   </span>
                 </div>
                 {selectedOrder.scheduled_delivery_date && (
                   <div>
-                    <span className="order-detail-label">{isServiceSale(selectedOrder) ? "Fecha prevista:" : "Envío programado:"}</span>
-                    <span className="order-detail-value">{selectedOrder.scheduled_delivery_date.split("-").reverse().join("/")}</span>
+                    <span className="order-detail-label">
+                      {isServiceSale(selectedOrder)
+                        ? "Fecha prevista:"
+                        : "Envío programado:"}
+                    </span>
+                    <span className="order-detail-value">
+                      {selectedOrder.scheduled_delivery_date
+                        .split("-")
+                        .reverse()
+                        .join("/")}
+                    </span>
                   </div>
                 )}
                 <div>
                   <span className="order-detail-label">Medio de pago:</span>
-                  <span className="order-detail-value">{formatPaymentMethod(selectedOrder)}</span>
+                  <span className="order-detail-value">
+                    {formatPaymentMethod(selectedOrder)}
+                  </span>
                 </div>
-                {selectedOrder.installments && <div>
-                  <span className="order-detail-label">Cuotas:</span>
-                  <span className="order-detail-value">{selectedOrder.installments}</span>
-                </div>}
-                {selectedOrder.paid_at && <div>
-                  <span className="order-detail-label">Fecha de pago:</span>
-                  <span className="order-detail-value">{new Date(selectedOrder.paid_at).toLocaleString("es-AR")}</span>
-                </div>}
-                {selectedOrder.cancel_reason && <div>
-                  <span className="order-detail-label">Motivo de cancelación:</span>
-                  <span className="order-detail-value">{selectedOrder.cancel_reason}</span>
-                </div>}
+                {selectedOrder.installments && (
+                  <div>
+                    <span className="order-detail-label">Cuotas:</span>
+                    <span className="order-detail-value">
+                      {selectedOrder.installments}
+                    </span>
+                  </div>
+                )}
+                {selectedOrder.paid_at && (
+                  <div>
+                    <span className="order-detail-label">Fecha de pago:</span>
+                    <span className="order-detail-value">
+                      {new Date(selectedOrder.paid_at).toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
+                {selectedOrder.cancel_reason && (
+                  <div>
+                    <span className="order-detail-label">
+                      Motivo de cancelación:
+                    </span>
+                    <span className="order-detail-value">
+                      {selectedOrder.cancel_reason}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {(selectedOrder.delivery_address || selectedOrder.shipping_address) && (
+              {(selectedOrder.delivery_address ||
+                selectedOrder.shipping_address) && (
                 <div className="order-detail-address">
-                  <span className="order-detail-label">{isServiceSale(selectedOrder) ? "Lugar del servicio:" : "Dirección de entrega:"}</span>
+                  <span className="order-detail-label">
+                    {isServiceSale(selectedOrder)
+                      ? "Lugar del servicio:"
+                      : "Dirección de entrega:"}
+                  </span>
                   <p className="order-detail-address__text">
                     {getDeliveryAddress(selectedOrder)}
                   </p>
-                  {selectedOrder.delivery_address?.notes && <p className="order-detail-address__text">Indicaciones: {selectedOrder.delivery_address.notes}</p>}
+                  {selectedOrder.delivery_address?.notes && (
+                    <p className="order-detail-address__text">
+                      Indicaciones: {selectedOrder.delivery_address.notes}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -1064,14 +1326,18 @@ export default function SalesSection() {
                   return (
                     <div className="order-detail-grid">
                       <div>
-                        <span className="order-detail-label">Nombre / Razón Social:</span>
+                        <span className="order-detail-label">
+                          Nombre / Razón Social:
+                        </span>
                         <span className="order-detail-value">
                           {bd.company_name || bd.full_name}
                         </span>
                       </div>
                       <div>
                         <span className="order-detail-label">Titular:</span>
-                        <span className="order-detail-value">{bd.full_name}</span>
+                        <span className="order-detail-value">
+                          {bd.full_name}
+                        </span>
                       </div>
                       <div>
                         <span className="order-detail-label">CUIT / CUIL:</span>
@@ -1080,7 +1346,9 @@ export default function SalesSection() {
                         </span>
                       </div>
                       <div>
-                        <span className="order-detail-label">Condición frente al IVA:</span>
+                        <span className="order-detail-label">
+                          Condición frente al IVA:
+                        </span>
                         <span className="order-detail-value">
                           <span
                             className={`sales-billing-badge ${
@@ -1103,30 +1371,46 @@ export default function SalesSection() {
                   <p>
                     El comprador no registró CUIT específico. Emitir como{" "}
                     <strong>Consumidor Final (Factura B)</strong> a nombre de:{" "}
-                    <strong>
-                      {getBuyerName(selectedOrder)}
-                    </strong>
-                    .
+                    <strong>{getBuyerName(selectedOrder)}</strong>.
                   </p>
                 </div>
               )}
             </div>
 
             <div className="order-detail-section">
-              <h4 className="order-detail-section__title">Productos y servicios</h4>
+              <h4 className="order-detail-section__title">
+                Productos y servicios
+              </h4>
               <div className="sales-order-items">
-                {getOrderLines(selectedOrder).map((item) => <div key={item.id} className="sales-order-items__item">
-                  {item.imageUrl && <img className="sales-order-items__image" src={item.imageUrl} alt={item.name} />}
-                  <div className="sales-order-items__content">
-                    <strong>{item.name}</strong>
-                    {item.brand && <span>Marca: {item.brand}</span>}
-                    {item.attributes && <span>Características: {item.attributes}</span>}
-                    {item.ean && <span>Código de barras (EAN): {item.ean}</span>}
-                    <span>Cantidad: {item.quantity}</span>
-                    <OrderItemPricing pricing={item.pricing} unitPrice={item.unitPrice} />
-                    <span>Subtotal: ${item.subtotal.toLocaleString("es-AR")}</span>
+                {getOrderLines(selectedOrder).map((item) => (
+                  <div key={item.id} className="sales-order-items__item">
+                    {item.imageUrl && (
+                      <img
+                        className="sales-order-items__image"
+                        src={item.imageUrl}
+                        alt={item.name}
+                      />
+                    )}
+                    <div className="sales-order-items__content">
+                      <strong>{item.name}</strong>
+                      {item.brand && <span>Marca: {item.brand}</span>}
+                      {item.attributes && (
+                        <span>Características: {item.attributes}</span>
+                      )}
+                      {item.ean && (
+                        <span>Código de barras (EAN): {item.ean}</span>
+                      )}
+                      <span>Cantidad: {item.quantity}</span>
+                      <OrderItemPricing
+                        pricing={item.pricing}
+                        unitPrice={item.unitPrice}
+                      />
+                      <span>
+                        Subtotal: ${item.subtotal.toLocaleString("es-AR")}
+                      </span>
+                    </div>
                   </div>
-                </div>)}
+                ))}
               </div>
             </div>
 
@@ -1134,7 +1418,11 @@ export default function SalesSection() {
             <div className="order-detail-section">
               <h4 className="order-detail-section__title">Desglose de Pago</h4>
               <div className="order-detail-row">
-                <span>{isServiceSale(selectedOrder) ? "Subtotal del servicio:" : "Subtotal artículos:"}</span>
+                <span>
+                  {isServiceSale(selectedOrder)
+                    ? "Subtotal del servicio:"
+                    : "Subtotal artículos:"}
+                </span>
                 <span>
                   $
                   {(
@@ -1143,23 +1431,38 @@ export default function SalesSection() {
                   ).toLocaleString("es-AR")}
                 </span>
               </div>
-              {(!isServiceSale(selectedOrder) || Number(selectedOrder.shipping_cost ?? 0) > 0) && <div className="order-detail-row">
-                <span>{isServiceSale(selectedOrder) ? "Costo de traslado:" : "Costo de envío:"}</span>
-                <span>
-                  ${Number(selectedOrder.shipping_cost ?? 0).toLocaleString("es-AR")}
-                </span>
-              </div>}
+              {(!isServiceSale(selectedOrder) ||
+                Number(selectedOrder.shipping_cost ?? 0) > 0) && (
+                <div className="order-detail-row">
+                  <span>
+                    {isServiceSale(selectedOrder)
+                      ? "Costo de traslado:"
+                      : "Costo de envío:"}
+                  </span>
+                  <span>
+                    $
+                    {Number(selectedOrder.shipping_cost ?? 0).toLocaleString(
+                      "es-AR",
+                    )}
+                  </span>
+                </div>
+              )}
               <div className="order-detail-row order-detail-row--total">
                 <span>Total:</span>
                 <span>
-                  ${Number(selectedOrder.total_amount ?? 0).toLocaleString("es-AR")}
+                  $
+                  {Number(selectedOrder.total_amount ?? 0).toLocaleString(
+                    "es-AR",
+                  )}
                 </span>
               </div>
             </div>
 
             {/* Contextual Actions */}
             <div className="order-detail-section">
-              <h4 className="order-detail-section__title">Acciones del Pedido</h4>
+              <h4 className="order-detail-section__title">
+                Acciones del Pedido
+              </h4>
 
               {selectedOrder.status === "paid" && (
                 <div className="order-actions-group">
@@ -1171,7 +1474,8 @@ export default function SalesSection() {
                   >
                     Confirmar pedido
                   </button>
-                  <button data-action-tone="cancel"
+                  <button
+                    data-action-tone="cancel"
                     type="button"
                     className="btn-danger"
                     onClick={() => setCancelModalOpen(true)}
@@ -1185,21 +1489,27 @@ export default function SalesSection() {
               {isServiceSale(selectedOrder) && (
                 <div className="order-service-appointment-box">
                   <h5>Turno del Servicio</h5>
-                  {selectedOrder.appointment_status === "pending_appointment" ? (
+                  {selectedOrder.appointment_status ===
+                  "pending_appointment" ? (
                     <div className="appointment-pending-banner">
                       <div className="appointment-pending-text">
                         <AlertTriangle size={20} className="icon-amber" />
                         <div>
-                          <strong>⚠️ Turno Pendiente de Asignación Obligatoria</strong>
+                          <strong>
+                            ⚠️ Turno Pendiente de Asignación Obligatoria
+                          </strong>
                           <p>
-                            El cliente espera que le programes la fecha y hora de atención para este servicio.
+                            El cliente espera que le programes la fecha y hora
+                            de atención para este servicio.
                           </p>
                         </div>
                       </div>
                       <button
                         type="button"
                         className="btn-primary"
-                        onClick={() => setSelectedOrderForAppointment(selectedOrder)}
+                        onClick={() =>
+                          setSelectedOrderForAppointment(selectedOrder)
+                        }
                       >
                         <Calendar size={15} />
                         <span>Asignar Turno al Cliente</span>
@@ -1209,15 +1519,23 @@ export default function SalesSection() {
                     <div className="appointment-scheduled-banner">
                       <CheckCircle2 size={20} className="icon-green" />
                       <div className="appointment-scheduled-details">
-                        <strong>Turno Programado: {selectedOrder.appointment.appointment_date} a las {selectedOrder.appointment.appointment_time} hs</strong>
+                        <strong>
+                          Turno Programado:{" "}
+                          {selectedOrder.appointment.appointment_date} a las{" "}
+                          {selectedOrder.appointment.appointment_time} hs
+                        </strong>
                         {selectedOrder.appointment.notes && (
-                          <p className="appointment-notes">Indicaciones: {selectedOrder.appointment.notes}</p>
+                          <p className="appointment-notes">
+                            Indicaciones: {selectedOrder.appointment.notes}
+                          </p>
                         )}
                       </div>
                       <button
                         type="button"
                         className="btn-secondary"
-                        onClick={() => setSelectedOrderForAppointment(selectedOrder)}
+                        onClick={() =>
+                          setSelectedOrderForAppointment(selectedOrder)
+                        }
                       >
                         Reprogramar
                       </button>
@@ -1227,7 +1545,9 @@ export default function SalesSection() {
                       <button
                         type="button"
                         className="btn-secondary"
-                        onClick={() => setSelectedOrderForAppointment(selectedOrder)}
+                        onClick={() =>
+                          setSelectedOrderForAppointment(selectedOrder)
+                        }
                       >
                         <Calendar size={15} />
                         <span>Gestionar Turno</span>
@@ -1238,109 +1558,151 @@ export default function SalesSection() {
               )}
 
               {/* Thermal Label Print button for product orders */}
-              {isPrintableOrder(selectedOrder) && !isServiceSale(selectedOrder) && (
-                <div className="order-print-label-row">
-                  <button
-                    type="button"
-                    className="btn-secondary order-print-label-btn"
-                    onClick={() => setSelectedOrderForLabel(selectedOrder)}
-                  >
-                    <Printer size={16} />
-                    <span>🖨️ Imprimir Etiqueta de Paquete (Térmica 80mm / Bluetooth POS)</span>
-                  </button>
-                </div>
-              )}
+              {isPrintableOrder(selectedOrder) &&
+                !isServiceSale(selectedOrder) && (
+                  <div className="order-print-label-row">
+                    <button
+                      type="button"
+                      className="btn-secondary order-print-label-btn"
+                      onClick={() => setSelectedOrderForLabel(selectedOrder)}
+                    >
+                      <Printer size={16} />
+                      <span>
+                        🖨️ Imprimir Etiqueta de Paquete (Térmica 80mm /
+                        Bluetooth POS)
+                      </span>
+                    </button>
+                  </div>
+                )}
 
               {/* Service Voucher Print button for service orders */}
-              {isPrintableOrder(selectedOrder) && isServiceSale(selectedOrder) && (
-                <div className="order-print-label-row">
-                  <button
-                    type="button"
-                    className="btn-secondary order-print-label-btn"
-                    onClick={() => setSelectedOrderForServiceVoucher(selectedOrder)}
-                  >
-                    <Printer size={16} />
-                    <span>🖨️ Imprimir Ficha de Servicio (con Domicilio y Teléfono)</span>
-                  </button>
-                </div>
-              )}
+              {isPrintableOrder(selectedOrder) &&
+                isServiceSale(selectedOrder) && (
+                  <div className="order-print-label-row">
+                    <button
+                      type="button"
+                      className="btn-secondary order-print-label-btn"
+                      onClick={() =>
+                        setSelectedOrderForServiceVoucher(selectedOrder)
+                      }
+                    >
+                      <Printer size={16} />
+                      <span>
+                        🖨️ Imprimir Ficha de Servicio (con Domicilio)
+                      </span>
+                    </button>
+                  </div>
+                )}
 
-              {selectedOrder.status === "confirmed" && selectedOrder.delivery_type === "shipment" &&
+              {selectedOrder.status === "confirmed" &&
+                selectedOrder.delivery_type === "shipment" &&
                 ["pending", "created", "confirmed"].includes(
-                  (Array.isArray(selectedOrder.shipments) ? selectedOrder.shipments[0]?.status
-                    : selectedOrder.shipments?.status) ?? "") &&
+                  (Array.isArray(selectedOrder.shipments)
+                    ? selectedOrder.shipments[0]?.status
+                    : selectedOrder.shipments?.status) ?? "",
+                ) &&
                 !isServiceSale(selectedOrder) && (
-                <div className="order-actions-group">
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    disabled={preparingMutation.isPending}
-                    onClick={() => preparingMutation.mutate(selectedOrder.id)}
-                  >
-                    Marcar en preparación
-                  </button>
-                </div>
-              )}
+                  <div className="order-actions-group">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={preparingMutation.isPending}
+                      onClick={() => preparingMutation.mutate(selectedOrder.id)}
+                    >
+                      Marcar en preparación
+                    </button>
+                  </div>
+                )}
 
-              {selectedOrder.status === "confirmed" && selectedOrder.delivery_type === "pickup" &&
-                !selectedOrder.pickup_ready_at && !isServiceSale(selectedOrder) && (
-                <div className="order-actions-group">
+              {selectedOrder.status === "confirmed" &&
+                selectedOrder.delivery_type === "pickup" &&
+                !selectedOrder.pickup_ready_at &&
+                !isServiceSale(selectedOrder) && (
+                  <div className="order-actions-group">
                     <button
                       type="button"
                       className="btn-primary"
                       disabled={pickupReadyMutation.isPending}
-                      onClick={() => pickupReadyMutation.mutate(selectedOrder.id)}
+                      onClick={() =>
+                        pickupReadyMutation.mutate(selectedOrder.id)
+                      }
                     >
                       Marcar listo para retiro en sucursal
                     </button>
-                </div>
-              )}
+                  </div>
+                )}
 
-              {selectedOrder.status === "confirmed" && selectedOrder.delivery_type === "shipment" &&
-                (Array.isArray(selectedOrder.shipments) ? selectedOrder.shipments[0]?.status
-                  : selectedOrder.shipments?.status) === "preparing" && !isServiceSale(selectedOrder) && (
-                <div className="order-actions-group">
+              {selectedOrder.status === "confirmed" &&
+                selectedOrder.delivery_type === "shipment" &&
+                (Array.isArray(selectedOrder.shipments)
+                  ? selectedOrder.shipments[0]?.status
+                  : selectedOrder.shipments?.status) === "preparing" &&
+                !isServiceSale(selectedOrder) && (
+                  <div className="order-actions-group">
                     <button
                       type="button"
                       className="btn-primary"
-                      disabled={readyMutation.isPending || !selectedOrder.dispatch_evidence_path}
+                      disabled={
+                        readyMutation.isPending ||
+                        !selectedOrder.dispatch_evidence_path
+                      }
                       onClick={() => readyMutation.mutate(selectedOrder.id)}
                     >
                       Marcar listo para despacho
                     </button>
-                </div>
-              )}
+                  </div>
+                )}
 
-              {selectedOrder.delivery_type === "coordinate_with_merchant" && !isServiceSale(selectedOrder) &&
+              {selectedOrder.delivery_type === "coordinate_with_merchant" &&
+                !isServiceSale(selectedOrder) &&
                 selectedOrder.status === "confirmed" && (
-                <div className="order-actions-group">
-                  <button type="button" className="btn-primary"
-                    disabled={coordinatedPreparingMutation.isPending}
-                    onClick={() => coordinatedPreparingMutation.mutate(selectedOrder.id)}>
-                    Marcar en preparación
-                  </button>
-                </div>
-              )}
+                  <div className="order-actions-group">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={coordinatedPreparingMutation.isPending}
+                      onClick={() =>
+                        coordinatedPreparingMutation.mutate(selectedOrder.id)
+                      }
+                    >
+                      Marcar en preparación
+                    </button>
+                  </div>
+                )}
 
-              {selectedOrder.delivery_type === "coordinate_with_merchant" && !isServiceSale(selectedOrder) &&
+              {selectedOrder.delivery_type === "coordinate_with_merchant" &&
+                !isServiceSale(selectedOrder) &&
                 selectedOrder.status === "preparing" && (
-                <div className="order-actions-group">
-                  <button type="button" className="btn-primary"
-                    disabled={coordinatedDispatchedMutation.isPending || !selectedOrder.dispatch_evidence_path}
-                    onClick={() => coordinatedDispatchedMutation.mutate(selectedOrder.id)}>
-                    Confirmar que ya se despachó
-                  </button>
-                </div>
-              )}
+                  <div className="order-actions-group">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={
+                        coordinatedDispatchedMutation.isPending ||
+                        !selectedOrder.dispatch_evidence_path
+                      }
+                      onClick={() =>
+                        coordinatedDispatchedMutation.mutate(selectedOrder.id)
+                      }
+                    >
+                      Confirmar que ya se despachó
+                    </button>
+                  </div>
+                )}
 
               {/* Pickup Verification */}
               {(isServiceSale(selectedOrder)
                 ? selectedOrder.status === "confirmed"
                 : isOrderPickupReady(selectedOrder)) && (
                 <div className="pickup-verify-box">
-                  <h5>{isServiceSale(selectedOrder) ? "Confirmar servicio realizado" : "Validar Entrega en Sucursal"}</h5>
+                  <h5>
+                    {isServiceSale(selectedOrder)
+                      ? "Confirmar servicio realizado"
+                      : "Validar Entrega en Sucursal"}
+                  </h5>
                   <p>
-                    Escaneá el QR o ingresá el código de 7 caracteres que te entregue el comprador al finalizar.
+                    Escaneá el QR o ingresá el código de 7 caracteres que te
+                    entregue el comprador al finalizar.
                   </p>
                   <div className="pickup-verify-input-group">
                     <input
@@ -1348,12 +1710,17 @@ export default function SalesSection() {
                       maxLength={7}
                       placeholder="Ej: AB2CD34"
                       value={pickupCode}
-                      onChange={(e) => setPickupCode(e.target.value.toUpperCase())}
+                      onChange={(e) =>
+                        setPickupCode(e.target.value.toUpperCase())
+                      }
                     />
                     <button
                       type="button"
                       className="btn-primary"
-                      disabled={pickupCode.length !== 7 || pickupVerifyMutation.isPending}
+                      disabled={
+                        pickupCode.length !== 7 ||
+                        pickupVerifyMutation.isPending
+                      }
                       onClick={() =>
                         pickupVerifyMutation.mutate({
                           id: selectedOrder.id,
@@ -1361,9 +1728,15 @@ export default function SalesSection() {
                         })
                       }
                     >
-                      {isServiceSale(selectedOrder) ? "Validar y completar servicio" : "Validar y completar"}
+                      {isServiceSale(selectedOrder)
+                        ? "Validar y completar servicio"
+                        : "Validar y completar"}
                     </button>
-                    <button type="button" className="btn-secondary" onClick={() => setPickupScannerOpen(true)}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setPickupScannerOpen(true)}
+                    >
                       Escanear QR
                     </button>
                   </div>
@@ -1371,50 +1744,92 @@ export default function SalesSection() {
               )}
 
               {/* Local shipment image / dispatch */}
-              {(canUploadSelectedEvidence || Boolean(selectedOrder.dispatch_evidence_path)) && (
+              {(canUploadSelectedEvidence ||
+                Boolean(selectedOrder.dispatch_evidence_path)) && (
                 <div className="shipment-dispatch-box">
                   <h5>Foto de evidencia del paquete</h5>
-                  <p>{selectedOrder.dispatch_evidence_path
-                    ? "Foto guardada. Ya podés confirmar el despacho o marcar el paquete listo para el rider."
-                    : "Subí una foto antes de confirmar el despacho o avisar al rider."}</p>
+                  <p>
+                    {selectedOrder.dispatch_evidence_path
+                      ? "Foto guardada. Ya podés confirmar el despacho o marcar el paquete listo para el rider."
+                      : "Subí una foto antes de confirmar el despacho o avisar al rider."}
+                  </p>
                   {selectedOrder.dispatch_evidence_path && (
-                    <button type="button" className="btn-secondary" onClick={async () => {
-                      try {
-                        const { url } = await commerceService.viewDispatchEvidence(selectedOrder.id);
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                      } catch (error) {
-                        showError(error instanceof Error ? error.message : 'No se pudo abrir la foto.');
-                      }
-                    }}>Ver foto guardada</button>
-                  )}
-                  {canUploadSelectedEvidence && <>
-                    <label htmlFor="dispatch-evidence-file">Foto del paquete (JPG, PNG o WebP; hasta 8 MB)</label>
-                    <div className="pickup-verify-input-group">
-                    <input
-                      id="dispatch-evidence-file"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] ?? null;
-                        if (file && (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 8 * 1024 * 1024)) {
-                          showError('Elegí una foto JPG, PNG o WebP de hasta 8 MB.');
-                          setPackageImageFile(null);
-                          e.target.value = '';
-                        } else {
-                          setPackageImageFile(file);
-                        }
-                      }}
-                    />
-                    <button data-action-tone="upload"
+                    <button
                       type="button"
                       className="btn-secondary"
-                      disabled={!packageImageFile || dispatchEvidenceMutation.isPending}
-                      onClick={() => packageImageFile && dispatchEvidenceMutation.mutate({ id: selectedOrder.id, file: packageImageFile })}
+                      onClick={async () => {
+                        try {
+                          const { url } =
+                            await commerceService.viewDispatchEvidence(
+                              selectedOrder.id,
+                            );
+                          window.open(url, "_blank", "noopener,noreferrer");
+                        } catch (error) {
+                          showError(
+                            error instanceof Error
+                              ? error.message
+                              : "No se pudo abrir la foto.",
+                          );
+                        }
+                      }}
                     >
-                      {dispatchEvidenceMutation.isPending ? "Subiendo..." : "Subir foto"}
+                      Ver foto guardada
                     </button>
-                    </div>
-                  </>}
+                  )}
+                  {canUploadSelectedEvidence && (
+                    <>
+                      <label htmlFor="dispatch-evidence-file">
+                        Foto del paquete (JPG, PNG o WebP; hasta 8 MB)
+                      </label>
+                      <div className="pickup-verify-input-group">
+                        <input
+                          id="dispatch-evidence-file"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            if (
+                              file &&
+                              (![
+                                "image/jpeg",
+                                "image/png",
+                                "image/webp",
+                              ].includes(file.type) ||
+                                file.size > 8 * 1024 * 1024)
+                            ) {
+                              showError(
+                                "Elegí una foto JPG, PNG o WebP de hasta 8 MB.",
+                              );
+                              setPackageImageFile(null);
+                              e.target.value = "";
+                            } else {
+                              setPackageImageFile(file);
+                            }
+                          }}
+                        />
+                        <button
+                          data-action-tone="upload"
+                          type="button"
+                          className="btn-secondary"
+                          disabled={
+                            !packageImageFile ||
+                            dispatchEvidenceMutation.isPending
+                          }
+                          onClick={() =>
+                            packageImageFile &&
+                            dispatchEvidenceMutation.mutate({
+                              id: selectedOrder.id,
+                              file: packageImageFile,
+                            })
+                          }
+                        >
+                          {dispatchEvidenceMutation.isPending
+                            ? "Subiendo..."
+                            : "Subir foto"}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1445,51 +1860,69 @@ export default function SalesSection() {
               </div>
 
               {/* Long distance transport guide */}
-              {selectedOrder.delivery_type === "coordinate_with_merchant" && !isServiceSale(selectedOrder) && (
-              <div className="transport-guide-box">
-                <h5>Transporte Larga Distancia / Encomienda</h5>
-                {selectedOrder.status === "dispatched" ? (
-                <div className="transport-guide-fields">
-                  <p>Despachado. La entrega se completará cuando el comprador confirme la recepción.</p>
-                  <input
-                    type="text"
-                    placeholder="Empresa de transporte (ej: Andreani, Vía Cargo)"
-                    value={transportCarrier}
-                    onChange={(e) => setTransportCarrier(e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Número de guía / remito"
-                    value={transportTrackingNumber}
-                    onChange={(e) => setTransportTrackingNumber(e.target.value)}
-                  />
-                  <input
-                    type="url"
-                    placeholder="URL de seguimiento externo"
-                    value={transportTrackingUrl}
-                    onChange={(e) => setTransportTrackingUrl(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    disabled={!transportCarrier.trim() || !transportTrackingNumber.trim() || transportMutation.isPending}
-                    onClick={() =>
-                      transportMutation.mutate({
-                        id: selectedOrder.id,
-                        company_name: transportCarrier.trim(),
-                        tracking_number: transportTrackingNumber.trim(),
-                        tracking_url: transportTrackingUrl.trim(),
-                      })
-                    }
-                  >
-                    Guardar guía de transporte
-                  </button>
-                </div>
-                ) : selectedOrder.status === "settled" || selectedOrder.status === "delivered"
-                  ? <p>El comprador confirmó que recibió el producto.</p>
-                  : <p>Confirmá la preparación y el despacho para cargar los datos del envío.</p>}
-              </div>
-              )}
+              {selectedOrder.delivery_type === "coordinate_with_merchant" &&
+                !isServiceSale(selectedOrder) && (
+                  <div className="transport-guide-box">
+                    <h5>Transporte Larga Distancia / Encomienda</h5>
+                    {selectedOrder.status === "dispatched" ? (
+                      <div className="transport-guide-fields">
+                        <p>
+                          Despachado. La entrega se completará cuando el
+                          comprador confirme la recepción.
+                        </p>
+                        <input
+                          type="text"
+                          placeholder="Empresa de transporte (ej: Andreani, Vía Cargo)"
+                          value={transportCarrier}
+                          onChange={(e) => setTransportCarrier(e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Número de guía / remito"
+                          value={transportTrackingNumber}
+                          onChange={(e) =>
+                            setTransportTrackingNumber(e.target.value)
+                          }
+                        />
+                        <input
+                          type="url"
+                          placeholder="URL de seguimiento externo"
+                          value={transportTrackingUrl}
+                          onChange={(e) =>
+                            setTransportTrackingUrl(e.target.value)
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={
+                            !transportCarrier.trim() ||
+                            !transportTrackingNumber.trim() ||
+                            transportMutation.isPending
+                          }
+                          onClick={() =>
+                            transportMutation.mutate({
+                              id: selectedOrder.id,
+                              company_name: transportCarrier.trim(),
+                              tracking_number: transportTrackingNumber.trim(),
+                              tracking_url: transportTrackingUrl.trim(),
+                            })
+                          }
+                        >
+                          Guardar guía de transporte
+                        </button>
+                      </div>
+                    ) : selectedOrder.status === "settled" ||
+                      selectedOrder.status === "delivered" ? (
+                      <p>El comprador confirmó que recibió el producto.</p>
+                    ) : (
+                      <p>
+                        Confirmá la preparación y el despacho para cargar los
+                        datos del envío.
+                      </p>
+                    )}
+                  </div>
+                )}
 
               {/* Invoice section */}
               <div className="invoice-box">
@@ -1550,16 +1983,16 @@ export default function SalesSection() {
               <div className="cancel-penalty-alert__content">
                 <strong>Penalización en tu Reputación</strong>
                 <p>
-                  Atención: Cancelar este pedido afectará negativamente tu puntuación
-                  de reputación <strong>(-20 pts)</strong> y tu visibilidad en el
-                  catálogo. ¿Deseas continuar?
+                  Atención: Cancelar este pedido afectará negativamente tu
+                  puntuación de reputación <strong>(-20 pts)</strong> y tu
+                  visibilidad en el catálogo. ¿Deseas continuar?
                 </p>
               </div>
             </div>
 
             <p>
-              ¿Estás seguro de que deseás cancelar este pedido? Esta acción no se
-              puede deshacer.
+              ¿Estás seguro de que deseás cancelar este pedido? Esta acción no
+              se puede deshacer.
             </p>
             <label className="order-detail-label">Motivo de cancelación:</label>
             <textarea
@@ -1614,7 +2047,12 @@ export default function SalesSection() {
           order={selectedOrderForLabel}
           isOpen={Boolean(selectedOrderForLabel)}
           onClose={() => setSelectedOrderForLabel(null)}
-          storeName={company?.name || company?.business_name || professional?.name || "SERCIO COMERCIO"}
+          storeName={
+            company?.name ||
+            company?.business_name ||
+            professional?.name ||
+            "SERCIO COMERCIO"
+          }
         />
       )}
 
@@ -1624,7 +2062,12 @@ export default function SalesSection() {
           order={selectedOrderForServiceVoucher}
           isOpen={Boolean(selectedOrderForServiceVoucher)}
           onClose={() => setSelectedOrderForServiceVoucher(null)}
-          storeName={company?.name || company?.business_name || professional?.name || "SERCIO COMERCIO"}
+          storeName={
+            company?.name ||
+            company?.business_name ||
+            professional?.name ||
+            "SERCIO COMERCIO"
+          }
         />
       )}
 
@@ -1637,19 +2080,31 @@ export default function SalesSection() {
             setSelectedOrdersForBatchPrint([]);
           }}
           orders={selectedOrdersForBatchPrint}
-          storeName={company?.name || company?.business_name || professional?.name || "SERCIO COMERCIO"}
+          storeName={
+            company?.name ||
+            company?.business_name ||
+            professional?.name ||
+            "SERCIO COMERCIO"
+          }
           branchName={
             branches.find((b) => b.id === selectedBranchId)?.name ||
             "Sucursal Principal"
           }
           onPrinted={(printedIds) => {
             setSelectedOrderIds((prev) =>
-              prev.filter((id) => !printedIds.includes(id))
+              prev.filter((id) => !printedIds.includes(id)),
             );
           }}
         />
       )}
-      {returnReceiptOpen && <ReturnReceiptModal onClose={() => setReturnReceiptOpen(false)} onReceive={(code) => returnReceiptMutation.mutateAsync(code).then(() => undefined)} />}
+      {returnReceiptOpen && (
+        <ReturnReceiptModal
+          onClose={() => setReturnReceiptOpen(false)}
+          onReceive={(code) =>
+            returnReceiptMutation.mutateAsync(code).then(() => undefined)
+          }
+        />
+      )}
 
       {/* WhatsApp Warning Modal */}
       {whatsAppWarningOpen && selectedOrder && (
@@ -1660,11 +2115,18 @@ export default function SalesSection() {
         >
           <div className="whatsapp-warning-modal">
             <div className="whatsapp-warning-alert" role="alert">
-              <AlertTriangle size={32} className="whatsapp-warning-alert__icon" />
+              <AlertTriangle
+                size={32}
+                className="whatsapp-warning-alert__icon"
+              />
               <div className="whatsapp-warning-alert__content">
-                <strong className="whatsapp-warning-alert__title">Aviso de Seguridad</strong>
+                <strong className="whatsapp-warning-alert__title">
+                  Aviso de Seguridad
+                </strong>
                 <p className="whatsapp-warning-alert__text">
-                  Sercio no se hace responsable de los acuerdos por fuera de la plataforma, mejor contactar por chat para poder tener evidencia de los reclamos ante cualquier improvisto.
+                  Sercio no se hace responsable de los acuerdos por fuera de la
+                  plataforma, mejor contactar por chat para poder tener
+                  evidencia de los reclamos ante cualquier improvisto.
                 </p>
               </div>
             </div>
@@ -1711,7 +2173,10 @@ export default function SalesSection() {
           onClose={() => setPickupScannerOpen(false)}
           onScan={(value) => {
             setPickupScannerOpen(false);
-            const code = value.replace(/^PICKUP:/i, "").trim().toUpperCase();
+            const code = value
+              .replace(/^PICKUP:/i, "")
+              .trim()
+              .toUpperCase();
             setPickupCode(code);
             pickupVerifyMutation.mutate({ id: selectedOrder.id, code });
           }}
