@@ -1030,10 +1030,45 @@ export const commerceService = {
       body: { reason },
     }),
 
-  createClaim: (id: string, reason: string) =>
-    apiClient<{ id: string }>(API_ENDPOINTS.orders.claim(id), {
+  createClaim: (id: string, reason: string, files: File[] = []) => {
+    const body = new FormData();
+    body.append("reason", reason);
+    files.forEach((file) => body.append("files", file));
+    return apiClient<{ id: string }>(API_ENDPOINTS.orders.claim(id), {
       method: "POST",
-      body: { reason },
+      body,
+    });
+  },
+
+  orderClaims: (id: string) =>
+    apiClient<Array<{
+      id: string;
+      reason: string;
+      status: string;
+      created_at: string;
+      resolution?: string | null;
+      admin_notes?: string | null;
+      due_date?: string | null;
+      merchant_response?: string | null;
+      merchant_response_at?: string | null;
+      merchant_action?: "full_refund_with_return" | "full_refund_no_return" | "partial_offer" | null;
+      partial_offer_percent?: number | null;
+      partial_offer_amount?: number | null;
+      buyer_decision?: "accepted" | "rejected" | null;
+      media: Array<{ id: string; media_type: "image" | "video"; url: string | null; status: "ready" | "processing" }>;
+    }>>(API_ENDPOINTS.orders.claims(id)),
+
+  respondToClaim: (id: string, claimId: string, body: {
+    action: "full_refund_with_return" | "full_refund_no_return" | "partial_offer";
+    response: string;
+    percent?: number;
+  }) => apiClient(API_ENDPOINTS.orders.merchantClaimResponse(id, claimId), {
+    method: "POST", body: JSON.stringify(body),
+  }),
+
+  answerPartialOffer: (id: string, claimId: string, accept: boolean) =>
+    apiClient(API_ENDPOINTS.orders.answerPartialOffer(id, claimId), {
+      method: "POST", body: JSON.stringify({ accept }),
     }),
 
   confirmClaimResolved: (id: string) =>
@@ -1047,10 +1082,10 @@ export const commerceService = {
   returnTicket: (id: string) =>
     apiClient<ReturnTicket>(API_ENDPOINTS.orders.returnTicket(id)),
 
-  receiveReturn: (code: string) =>
+  receiveReturn: (code: string, conditionVerified: boolean) =>
     apiClient<{ id: string; order_id: string; return_received_at: string }>(
       API_ENDPOINTS.orders.receiveReturn(code),
-      { method: "POST" },
+      { method: "POST", body: JSON.stringify({ condition_verified: conditionVerified }) },
     ),
 
   verifyPickup: (id: string, code: string) =>
@@ -1059,11 +1094,17 @@ export const commerceService = {
       { method: "POST", body: { code } },
     ),
 
-  uploadInvoice: (id: string, invoiceUrl: string) =>
-    apiClient<{ success: boolean; invoice_url: string }>(
-      API_ENDPOINTS.orders.invoice(id),
-      { method: "POST", body: { invoice_url: invoiceUrl } },
-    ),
+  uploadInvoice: (id: string, file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    return apiClient<{ invoice_url: string }>(API_ENDPOINTS.orders.invoice(id), {
+      method: "POST",
+      body,
+    });
+  },
+
+  getInvoiceUrl: (id: string) =>
+    apiClient<{ url: string }>(API_ENDPOINTS.orders.invoice(id)),
 
   updateTransportShipment: (
     id: string,

@@ -145,8 +145,8 @@ export default function PackageThermalLabelModal({
       <div className="package-label-modal">
         {!isPrintableOrder(order) ? (
           <p>
-            Esta venta no se puede imprimir mientras esté pendiente de pago o
-            cancelada.
+            Esta venta no se puede imprimir mientras esté pendiente de pago,
+            cancelada o si ya fue entregada.
           </p>
         ) : (
           <>

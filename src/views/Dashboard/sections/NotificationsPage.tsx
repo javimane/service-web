@@ -98,7 +98,7 @@ export default function NotificationsPage() {
       else window.alert("El enlace de este reporte no está disponible. Solicitá un nuevo reporte.");
       return;
     }
-    const targetUrl = getNotificationTargetUrl(notif, { isProfessional });
+    const targetUrl = getNotificationTargetUrl(notif, { isProfessional, currentUserId: user?.id });
     router.push(targetUrl);
   };
 

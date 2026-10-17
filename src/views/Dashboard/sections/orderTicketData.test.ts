@@ -21,6 +21,12 @@ describe("datos para tickets de venta", () => {
     }
   });
 
+  it("omite las ventas ya entregadas", () => {
+    expect(isPrintableOrder({ ...baseOrder, status: "delivered" })).toBe(false);
+    expect(isPrintableOrder({ ...baseOrder, delivered_at: "2026-10-16T10:00:00Z" } as OrderSummary)).toBe(false);
+    expect(isPrintableOrder({ ...baseOrder, shipment_status: "delivered" } as OrderSummary)).toBe(false);
+  });
+
   it("usa el comprador, dirección y producto reales", () => {
     const order: OrderSummary = {
       ...baseOrder,
@@ -31,6 +37,17 @@ describe("datos para tickets de venta", () => {
     expect(getBuyerName(order)).toBe("Ana Pérez");
     expect(getDeliveryAddress(order)).toContain("Belgrano 123");
     expect(getDeliveryAddress({ ...order, delivery_type: "coordinate_with_merchant" })).toContain("Belgrano 123");
+    expect(getDeliveryAddress({
+      ...order,
+      delivery_type: "coordinate_with_merchant",
+      delivery_address: {
+        id: "saved-address",
+        street_name: "Belgrano",
+        street_number: "123",
+        city: "Córdoba",
+        zip_code: "5000",
+      },
+    })).toBe("Belgrano 123, Córdoba, CP 5000");
     expect(getOrderLines(order)[0]).toMatchObject({ name: "Remera", ean: "7791234567890", attributes: "Talle: M" });
   });
 

@@ -75,6 +75,7 @@ export function getNotificationMeta(rawType?: string): NotificationMeta {
       return { icon: Truck, color: "blue", category: "sales" };
 
     case "ORDER_RETURN_RECEIVED":
+    case "CLAIM_OFFER_REJECTED":
       return { icon: RotateCcw, color: "orange", category: "sales" };
 
     // ── Comprador / Compras ──
@@ -97,6 +98,7 @@ export function getNotificationMeta(rawType?: string): NotificationMeta {
     case "SHIPMENT_READY_FOR_COLLECTION":
     case "SHIPMENT_IN_TRANSIT":
     case "TRANSPORT_UPDATED":
+    case "CLAIM_OFFERED":
       return { icon: Truck, color: "blue", category: "purchases" };
 
     case "INVOICE_AVAILABLE":
@@ -164,7 +166,7 @@ export function getNotificationMeta(rawType?: string): NotificationMeta {
  */
 export function getNotificationTargetUrl(
   notif: NotificationActionItem,
-  options?: { isProfessional?: boolean }
+  options?: { isProfessional?: boolean; currentUserId?: string }
 ): string {
   const type = String(notif.type || "").trim().toUpperCase();
   const sourceId = notif.source_id ? String(notif.source_id).trim() : "";
@@ -177,6 +179,7 @@ export function getNotificationTargetUrl(
     case "SERVICE_SALE":
     case "SHIPMENT_DRIVER_AT_STORE":
     case "ORDER_RETURN_RECEIVED":
+    case "CLAIM_OFFER_REJECTED":
       return sourceId
         ? `${ROUTES.dashboard}?view=sales&orderId=${encodeURIComponent(sourceId)}`
         : `${ROUTES.dashboard}?view=sales`;
@@ -192,6 +195,7 @@ export function getNotificationTargetUrl(
     case "SHIPMENT_IN_TRANSIT":
     case "INVOICE_AVAILABLE":
     case "TRANSPORT_UPDATED":
+    case "CLAIM_OFFERED":
       return sourceId
         ? `${ROUTES.dashboard}?view=purchases&orderId=${encodeURIComponent(sourceId)}`
         : `${ROUTES.dashboard}?view=purchases`;
@@ -250,7 +254,8 @@ export function getNotificationTargetUrl(
     default:
       // Estados de reclamos (CLAIM_*)
       if (type.startsWith("CLAIM_")) {
-        const view = isProfessional ? "sales" : "purchases";
+        const isBuyer = Boolean(options?.currentUserId && senderId === options.currentUserId);
+        const view = isBuyer || !isProfessional ? "purchases" : "sales";
         return sourceId
           ? `${ROUTES.dashboard}?view=${view}&orderId=${encodeURIComponent(sourceId)}`
           : `${ROUTES.dashboard}?view=${view}`;

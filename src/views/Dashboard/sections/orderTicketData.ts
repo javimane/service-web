@@ -4,11 +4,21 @@ type Product =
   | NonNullable<NonNullable<OrderSummary["items"]>[number]["product"]>
   | NonNullable<NonNullable<OrderSummary["professional_product"]>["product"]>;
 
+export const isOrderDeliveredForTicket = (order: OrderSummary) =>
+  order.status === "delivered" ||
+  (order.status as string) === "settled" ||
+  Boolean(order.delivered_at) ||
+  order.shipment_status === "delivered";
+
 export const isPrintableOrder = (order: OrderSummary) =>
   Boolean(order.paid_at) &&
-  !["pending", "pending_payment", "cancelled", "refunded"].includes(
-    order.status,
-  );
+  ![
+    "pending",
+    "pending_payment",
+    "cancelled",
+    "refunded",
+  ].includes(order.status) &&
+  !isOrderDeliveredForTicket(order);
 
 export function getBuyerName(order: OrderSummary): string {
   const buyer = order.buyer || order.user;

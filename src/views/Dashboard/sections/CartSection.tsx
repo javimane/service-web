@@ -38,6 +38,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import Modal from "@/components/Modal/Modal";
 import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
 import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
+import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
 import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
 import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
 import { ROUTES } from "@/routes/paths";
@@ -932,6 +933,10 @@ export default function CartSection() {
                 </div>
               )}
 
+              {!hasService && activeDeliveryType === "pickup" && (
+                <PickupDeadlineWarning />
+              )}
+
               {/* Shipping address & calculator */}
               {!hasService && deliveryType === "shipment" && (
                 <div className="delivery-details-subbox">
@@ -1106,6 +1111,9 @@ export default function CartSection() {
                 <span>Total a pagar:</span>
                 <span>${total.toLocaleString("es-AR")}</span>
               </div>
+              {!hasService && activeDeliveryType === "pickup" && (
+                <PickupDeadlineWarning />
+              )}
 
               {/* Payment gateway selection */}
               {paymentMethod === "card" &&

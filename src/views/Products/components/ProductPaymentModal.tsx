@@ -49,6 +49,7 @@ import { requestIdentityVerification } from "@/utils/identityVerification";
 import "./ProductPaymentModal.css";
 import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
 import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
+import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
 
 interface ProductPaymentModalProps {
   isOpen: boolean;
@@ -749,6 +750,7 @@ export default function ProductPaymentModal({
               ${(activeQr.total_amount || totalToPay).toLocaleString("es-AR")}
             </strong>
           </div>
+          {deliveryType === "pickup" && <PickupDeadlineWarning />}
 
           <div className="product-payment-modal__qr-actions">
             <button
@@ -784,6 +786,7 @@ export default function ProductPaymentModal({
               ? "Tu compra fue confirmada y el vendedor ha sido notificado."
               : "Consultá el estado desde Mis Compras. Evitá volver a pagar mientras se confirma el cobro."}
           </p>
+          {deliveryType === "pickup" && <PickupDeadlineWarning />}
 
           <div className="product-payment-modal__success-card">
             {completedOrder.status === "paid" &&
@@ -1077,6 +1080,8 @@ export default function ProductPaymentModal({
                       )}
                   </div>
                 )}
+
+                {deliveryType === "pickup" && <PickupDeadlineWarning />}
 
                 {/* Dirección guardada para envío */}
                 {(deliveryType === "shipment" || deliveryType === "coordinate_with_merchant" || isOutsideDeliveryRange) && (
@@ -1569,6 +1574,7 @@ export default function ProductPaymentModal({
 
               {/* Total summary */}
               <div className="product-payment-modal__total-block">
+                {deliveryType === "pickup" && <PickupDeadlineWarning />}
                 <div className="product-payment-modal__summary-row">
                   <span>Subtotal ({quantity} un.):</span>
                   <span>${subtotal.toLocaleString("es-AR")}</span>

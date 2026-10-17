@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ShoppingBag,
@@ -44,7 +44,9 @@ import { getProductImage } from "./orderTicketData";
 import ReturnTicketModal from "./ReturnTicketModal";
 import "./BuyerOrdersSection.css";
 import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
+import { compressDocumentImage } from "@/services/storageUploads";
 import { isServiceOrderSummary as isServiceOrder } from "@/utils/orderKind";
+import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
 
 const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
   if (!order) return false;
@@ -54,6 +56,15 @@ const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
   if (order.delivered_at) return true;
   if (order.shipment_status === "delivered") return true;
   return false;
+};
+
+const CLAIM_STATUS_LABELS: Record<string, string> = {
+  open: "Abierto",
+  in_review: "En revisión por Sercio",
+  received: "Recibido",
+  resolved: "Resuelto",
+  rejected: "Rechazado",
+  refunded: "Reembolsado",
 };
 
 const serviceProgressStep = (order?: Partial<OrderSummary> | null) => {
@@ -86,10 +97,22 @@ export default function BuyerOrdersSection() {
   const { showSuccess, showError } = useAlert();
   const { user } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const orderIdParam = searchParams?.get("orderId");
+  const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!orderIdParam) setDismissedOrderId(null);
+  }, [orderIdParam]);
 
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
+  const [claimClock, setClaimClock] = useState(0);
+  useEffect(() => {
+    setClaimClock(Date.now());
+    const interval = window.setInterval(() => setClaimClock(Date.now()), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
   const [pickupQrUrl, setPickupQrUrl] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
@@ -112,6 +135,8 @@ export default function BuyerOrdersSection() {
     useState(false);
   const [claimReason, setClaimReason] = useState("");
   const [claimType, setClaimType] = useState("Reclamo");
+  const [claimImages, setClaimImages] = useState<File[]>([]);
+  const [claimVideo, setClaimVideo] = useState<File | null>(null);
   const [returnTicket, setReturnTicket] = useState<ReturnTicket | null>(null);
 
   const {
@@ -129,7 +154,37 @@ export default function BuyerOrdersSection() {
   const total = ordersData?.total ?? orders.length;
   const totalPages = ordersData?.totalPages ?? (Math.ceil(total / 10) || 1);
 
-  const activeOrderId = selectedOrder?.id || orderIdParam || undefined;
+  const activeOrderId = selectedOrder?.id ||
+    (orderIdParam !== dismissedOrderId ? orderIdParam : undefined) || undefined;
+
+  const { data: orderClaims = [], isError: orderClaimsError } = useQuery({
+    queryKey: ["order-claims", selectedOrder?.id],
+    queryFn: () => commerceService.orderClaims(selectedOrder!.id),
+    enabled: Boolean(selectedOrder?.id),
+    refetchInterval: (query) => query.state.data?.some((claim) =>
+      claim.media.some((item) => item.status === "processing")) ? 15_000 : false,
+  });
+  const answerOfferMutation = useMutation({
+    mutationFn: ({ claimId, accept }: { claimId: string; accept: boolean }) =>
+      commerceService.answerPartialOffer(selectedOrder!.id, claimId, accept),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order-claims", selectedOrder?.id] });
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      showSuccess("Tu respuesta quedó registrada.");
+    },
+    onError: (error: Error) => showError(error.message || "No se pudo responder la propuesta."),
+  });
+
+  const closeOrderDetail = () => {
+    if (orderIdParam) {
+      setDismissedOrderId(orderIdParam);
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.delete("orderId");
+      router.replace(`${pathname}${params.size ? `?${params.toString()}` : ""}`, { scroll: false });
+    }
+    setSelectedOrder(null);
+    setWithdrawalOpen(false);
+  };
 
   const {
     data: detailedOrder,
@@ -155,14 +210,14 @@ export default function BuyerOrdersSection() {
         withdrawalReason || undefined,
       ),
     onSuccess: async () => {
-      showSuccess(
-        "Recibimos tu solicitud de arrepentimiento. Te avisaremos cuando se revise.",
-      );
+      showSuccess("Aceptamos tu solicitud. Si ya recibiste el producto, entregalo al comercio para completar el reembolso.");
       setWithdrawalOpen(false);
       setWithdrawalReason("");
       queryClient.invalidateQueries({
         queryKey: ["buyer-order-detail", selectedOrder?.id],
       });
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["order-claims", selectedOrder?.id] });
 
       const order = selectedOrder;
       if (
@@ -214,33 +269,25 @@ export default function BuyerOrdersSection() {
   });
 
   const claimMutation = useMutation({
-    mutationFn: () =>
-      commerceService.createClaim(
+    mutationFn: async () => {
+      const compressedImages = await Promise.all(claimImages.map(compressDocumentImage));
+      return commerceService.createClaim(
         selectedOrder!.id,
         `${claimType}: ${claimReason.trim()}`,
-      ),
+        [...compressedImages, ...(claimVideo ? [claimVideo] : [])],
+      );
+    },
     onSuccess: async () => {
       setClaimOpen(false);
       setClaimReason("");
+      setClaimImages([]);
+      setClaimVideo(null);
+      queryClient.invalidateQueries({ queryKey: ["order-claims", selectedOrder?.id] });
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
       queryClient.invalidateQueries({
         queryKey: ["buyer-order-detail", selectedOrder?.id],
       });
       showSuccess("Reclamo iniciado. Te avisaremos cuando haya novedades.");
-      const order = selectedOrder;
-      if (
-        order &&
-        (order.status === "delivered" || isOrderDelivered(order)) &&
-        !order.service_id &&
-        claimType !== "Reclamo"
-      ) {
-        try {
-          setReturnTicket(await commerceService.returnTicket(order.id));
-        } catch {
-          showError(
-            "El reclamo se envió, pero no se pudo cargar el comprobante de devolución.",
-          );
-        }
-      }
     },
     onError: (error: Error) =>
       showError(error.message || "No se pudo iniciar el reclamo."),
@@ -325,79 +372,12 @@ export default function BuyerOrdersSection() {
     );
   };
 
-  const isPreparedFoodOrder = (order?: Partial<OrderSummary> | null) => {
-    if (!order) return false;
-    const hasItemFood = order.items?.some((item: any) => {
-      const prod = item?.product;
-      const cat = prod?.category;
-      const subCat = prod?.subCategory || prod?.subcategory;
-      return Boolean(
-        prod?.is_food_perishable ||
-        cat?.is_food ||
-        cat?.no_installments ||
-        subCat?.is_food ||
-        subCat?.no_installments ||
-        String(cat?.name || "")
-          .toLowerCase()
-          .includes("gastronom") ||
-        String(cat?.name || "")
-          .toLowerCase()
-          .includes("comida") ||
-        String(prod?.category_name || "")
-          .toLowerCase()
-          .includes("gastronom") ||
-        String(prod?.category_name || "")
-          .toLowerCase()
-          .includes("comida"),
-      );
-    });
-    if (hasItemFood) return true;
-
-    const prod = (order as any)?.professional_product?.product;
-    const cat = prod?.category;
-    const subCat = prod?.subCategory || prod?.subcategory;
-    return Boolean(
-      prod?.is_food_perishable ||
-      cat?.is_food ||
-      cat?.no_installments ||
-      subCat?.is_food ||
-      subCat?.no_installments ||
-      String(cat?.name || "")
-        .toLowerCase()
-        .includes("gastronom") ||
-      String(cat?.name || "")
-        .toLowerCase()
-        .includes("comida"),
-    );
-  };
-
   const isOrderWithdrawalEligible = (order?: Partial<OrderSummary> | null) => {
     if (!order) return false;
-    if (order.withdrawal_requested) return false;
-    if (
-      ["cancelled", "refunded", "pending_payment", "pending"].includes(
-        order.status || "",
-      )
-    ) {
-      return false;
-    }
-    if (isPreparedFoodOrder(order)) {
-      return false;
-    }
-    if (order.withdrawal_eligible) {
-      return true;
-    }
-    // Si la compra es retiro en tienda o está en estado de Listo Retiro / confirmada / preparada / entregada
-    if (order.delivery_type === "pickup") {
-      return true;
-    }
-    if (isOrderPickupReady(order)) {
-      return true;
-    }
-    if (isOrderDelivered(order)) {
-      return true;
-    }
-    return false;
+    if (order.withdrawal_requested || order.claim_requested ||
+      (order.id === selectedOrder?.id && orderClaims.some((claim) =>
+        ["open", "in_review"].includes(claim.status)))) return false;
+    return order.withdrawal_eligible === true;
   };
 
   const getStatusBadge = (
@@ -642,6 +622,12 @@ export default function BuyerOrdersSection() {
                       <span className="buyer-order-delivery">
                         {getDeliveryText(order.delivery_type)}
                       </span>
+                      {order.delivery_type === "pickup" &&
+                        !isServiceOrder(order) &&
+                        !isOrderDelivered(order) &&
+                        !["pending_payment", "cancelled", "refunded"].includes(order.status) && (
+                          <PickupDeadlineWarning pickupReadyAt={order.pickup_ready_at} />
+                        )}
                       {order.scheduled_delivery_date && (
                         <span className="buyer-order-schedule">
                           Envío programado:{" "}
@@ -787,13 +773,16 @@ export default function BuyerOrdersSection() {
       {selectedOrder && (
         <Modal
           isOpen={Boolean(selectedOrder)}
-          onClose={() => {
-            setSelectedOrder(null);
-            setWithdrawalOpen(false);
-          }}
+          onClose={closeOrderDetail}
           title={`Pedido #${selectedOrder.order_number || selectedOrder.id.slice(0, 8)}`}
         >
           <div className="buyer-order-modal">
+            {selectedOrder.delivery_type === "pickup" &&
+              !isServiceOrder(selectedOrder) &&
+              !isOrderDelivered(selectedOrder) &&
+              !["pending_payment", "cancelled", "refunded"].includes(selectedOrder.status) && (
+                <PickupDeadlineWarning pickupReadyAt={selectedOrder.pickup_ready_at} />
+              )}
             {/* Status step tracker */}
             {selectedOrder.status === "pending_payment" ||
             selectedOrder.status === "cancelled" ||
@@ -1294,15 +1283,24 @@ export default function BuyerOrdersSection() {
             {/* Invoice download */}
             {selectedOrder.invoice_url && (
               <div className="buyer-invoice-row">
-                <a
-                  href={selectedOrder.invoice_url}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const tab = window.open("", "_blank");
+                    try {
+                      const { url } = await commerceService.getInvoiceUrl(selectedOrder.id);
+                      if (tab) tab.location.href = url;
+                      else window.location.href = url;
+                    } catch (error) {
+                      tab?.close();
+                      showError(error instanceof Error ? error.message : "No se pudo abrir la factura.");
+                    }
+                  }}
                   className="btn-secondary"
                 >
                   <FileText size={16} />
                   <span>Descargar Factura del Pedido</span>
-                </a>
+                </button>
               </div>
             )}
 
@@ -1382,11 +1380,11 @@ export default function BuyerOrdersSection() {
                   {(selectedOrder.status === "delivered" ||
                     isOrderDelivered(selectedOrder)) &&
                   !selectedOrder.service_id
-                    ? "Podés solicitar la devolución del producto. La solicitud se revisará según las políticas de devolución."
+                    ? "Podés solicitar la devolución del producto. Se aceptará al instante; el reembolso se hará cuando el comercio registre su recepción."
                     : selectedOrder.delivery_type === "pickup" ||
                         isOrderPickupReady(selectedOrder)
-                      ? "Podés solicitar el botón de arrepentimiento de esta compra de retiro en tienda. Las comidas elaboradas están excluidas según las políticas."
-                      : "Podés solicitar la cancelación de esta compra para su revisión según las políticas de devolución."}
+                      ? "Podés solicitar el arrepentimiento de esta compra de retiro en tienda. Si ya la retiraste, entregala en el comercio; si todavía está allí, Sercio coordinará la reversión."
+                      : "Podés solicitar la cancelación de esta compra. Si ya está en camino, primero se coordinará la devolución."}
                 </p>
                 <button
                   type="button"
@@ -1407,7 +1405,10 @@ export default function BuyerOrdersSection() {
             {selectedOrder.withdrawal_requested && (
               <div className="buyer-order-modal__withdrawal">
                 <p className="buyer-order-modal__withdrawal-status">
-                  Tu solicitud está en revisión.
+                  {orderClaims.some((claim) => claim.status === "open" &&
+                    claim.merchant_action === "full_refund_with_return")
+                    ? "Tu devolución fue aceptada. Entregá el producto para completar el reembolso."
+                    : "Tu solicitud está en proceso."}
                 </p>
                 {selectedOrder.return_ticket_available && (
                   <>
@@ -1442,6 +1443,48 @@ export default function BuyerOrdersSection() {
                   </button>
                 </div>
               )}
+            {orderClaims.length > 0 && (
+              <div className="buyer-order-modal__withdrawal">
+                <strong>Reclamos de esta compra</strong>
+                {orderClaims.map((claim) => (
+                  <article className="buyer-order-modal__claim" key={claim.id}>
+                    <strong>{claim.reason}</strong>
+                    <span>Estado: {claim.status === "open" && claim.merchant_action === "full_refund_with_return"
+                      ? "Aceptado; esperando devolución del producto"
+                      : CLAIM_STATUS_LABELS[claim.status] || claim.status}</span>
+                    <span>Enviado: {new Date(claim.created_at).toLocaleString("es-AR")}</span>
+                    {claim.admin_notes && <p>Respuesta: {claim.admin_notes}</p>}
+                    {claim.merchant_response && <p>Respuesta del comercio: {claim.merchant_response}</p>}
+                    {claim.merchant_action === "full_refund_with_return" && <><p>El comercio aceptó el reembolso total al recibir el producto. Usá el comprobante de devolución para enviarlo.</p><button type="button" className="buyer-order-modal__claim-ticket" onClick={() => openReturnTicket(selectedOrder.id)}>Ver comprobante de devolución</button></>}
+                    {claim.merchant_action === "full_refund_no_return" && <p>El comercio aprobó el reembolso total sin pedir la devolución del producto.</p>}
+                    {claim.merchant_action === "partial_offer" && <p>Oferta de reintegro: {claim.partial_offer_percent}% (${claim.partial_offer_amount}). {claim.buyer_decision === "accepted" ? claim.status === "resolved" ? "Reintegro confirmado" : "Aceptada; reintegro en revisión" : claim.buyer_decision === "rejected" ? "Rechazada; Sercio revisará el reclamo" : "Pendiente de tu respuesta"}.</p>}
+                    {claim.status === "open" && claim.merchant_action === "partial_offer" && !claim.buyer_decision && (
+                      <div className="buyer-order-modal__claim-actions">
+                        <button type="button" data-action-tone="cancel" disabled={answerOfferMutation.isPending} onClick={() => answerOfferMutation.mutate({ claimId: claim.id, accept: false })}>Rechazar oferta</button>
+                        <button type="button" data-action-tone="add" disabled={answerOfferMutation.isPending} onClick={() => answerOfferMutation.mutate({ claimId: claim.id, accept: true })}>Aceptar reintegro parcial</button>
+                      </div>
+                    )}
+                    {claim.status === "open" && !claim.merchant_action && claim.due_date && new Date(claim.due_date).getTime() <= claimClock && <p>El plazo del comercio venció. Sercio decidirá el caso.</p>}
+                    {claim.media.length > 0 && (
+                      <div className="buyer-order-modal__claim-media">
+                        {claim.media.map((item, index) => !item.url ? (
+                          <span key={item.id}>Video en procesamiento</span>
+                        ) : item.media_type === "image" ? (
+                          <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Ver imagen ${index + 1} del reclamo`}>
+                            <img src={item.url} alt={`Evidencia ${index + 1} del reclamo`} />
+                          </a>
+                        ) : (
+                          <video key={item.id} src={item.url} controls preload="metadata" aria-label="Video del reclamo" />
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+            {orderClaimsError && (
+              <p role="alert">No se pudieron cargar los reclamos de esta compra.</p>
+            )}
             {!["pending_payment", "cancelled", "refunded"].includes(
               selectedOrder.status,
             ) && (
@@ -1496,9 +1539,10 @@ export default function BuyerOrdersSection() {
         >
           <div className="buyer-order-modal__withdrawal-form">
             <p>
-              La solicitud se revisará antes de cancelar o reembolsar la compra.
-              Si ya tenés el producto, coordiná la entrega con el comercio antes
-              de enviarlo. Podés indicar un motivo, pero no es obligatorio.
+              Aceptaremos la solicitud si la compra cumple las condiciones de
+              arrepentimiento. Si ya recibiste el producto, coordiná la entrega
+              con el comercio: el reembolso se hará al registrar su recepción.
+              Podés indicar un motivo, pero no es obligatorio.
             </p>
             <label htmlFor="buyer-withdrawal-reason">Motivo (opcional)</label>
             <select
@@ -1608,10 +1652,43 @@ export default function BuyerOrdersSection() {
               onChange={(event) => setClaimReason(event.target.value)}
               rows={5}
               minLength={10}
-              maxLength={1000}
+              maxLength={980}
               required
               placeholder="Describí el producto, el problema y qué solución necesitás"
             />
+            <label htmlFor="buyer-claim-images">Imágenes (hasta 5, 5 MB cada una)</label>
+            <input
+              id="buyer-claim-images"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={(event) => {
+                const files = Array.from(event.target.files || []);
+                if (files.length > 5 || files.some((file) => file.size > 5 * 1024 * 1024)) {
+                  showError("Elegí hasta 5 imágenes de 5 MB cada una.");
+                  event.target.value = "";
+                  return;
+                }
+                setClaimImages(files);
+              }}
+            />
+            {claimImages.length > 0 && <p>{claimImages.map((file) => file.name).join(", ")}</p>}
+            <label htmlFor="buyer-claim-video">Video (opcional, hasta 25 MB)</label>
+            <input
+              id="buyer-claim-video"
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              onChange={(event) => {
+                const file = event.target.files?.[0] || null;
+                if (file && file.size > 25 * 1024 * 1024) {
+                  showError("El video no puede superar 25 MB.");
+                  event.target.value = "";
+                  return;
+                }
+                setClaimVideo(file);
+              }}
+            />
+            {claimVideo && <p>{claimVideo.name}</p>}
             <div className="buyer-order-modal__withdrawal-actions">
               <button
                 type="button"

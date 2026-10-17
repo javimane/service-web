@@ -1,0 +1,28 @@
+.pickup-deadline-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--accent-color);
+  border-radius: var(--radius-md);
+  background: var(--accent-transparent);
+  color: var(--text-primary);
+}
+
+.pickup-deadline-warning__icon {
+  flex: 0 0 auto;
+  color: var(--accent-color);
+}
+
+.pickup-deadline-warning__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.pickup-deadline-warning__content strong {
+  font-weight: var(--weight-bold);
+}

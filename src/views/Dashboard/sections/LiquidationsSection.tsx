@@ -224,7 +224,9 @@ export default function LiquidationsSection() {
       case "withheld":
         return <span className="liq-badge liq-badge--withheld">Retenido</span>;
       case "cancelled":
-        return <span className="liq-badge liq-badge--cancelled">Cancelado</span>;
+        return (
+          <span className="liq-badge liq-badge--cancelled">Cancelado</span>
+        );
       default:
         return <span className="liq-badge">{status}</span>;
     }
@@ -548,7 +550,11 @@ export default function LiquidationsSection() {
                       : originalFee;
                   const displayedTax =
                     (cancellationIva > 0 ? cancellationIva : originalIva) +
-                    (['pending', 'batch_open', 'batch_closed_unpaid'].includes(liq.cancellation_fee_basis || '') ? 0 : Number(liq.iibb_amount ?? 0));
+                    (["pending", "batch_open", "batch_closed_unpaid"].includes(
+                      liq.cancellation_fee_basis || "",
+                    )
+                      ? 0
+                      : Number(liq.iibb_amount ?? 0));
 
                   const rawNet = Number(
                     liq.net_amount ?? gross - originalFee - originalIva,
@@ -582,7 +588,10 @@ export default function LiquidationsSection() {
                           : "$0"}
                         {cancellationCommission > 0 && (
                           <div style={{ fontSize: "0.75rem", opacity: 0.85 }}>
-                            {liq.cancellation_fee_basis === 'batch_closed_unpaid' ? 'Cargo por IVA no reintegrado' : 'Comisión por cancelación'}
+                            {liq.cancellation_fee_basis ===
+                            "batch_closed_unpaid"
+                              ? "Cargo por IVA no reintegrado"
+                              : "Comisión por cancelación"}
                           </div>
                         )}
                       </td>
@@ -663,262 +672,300 @@ export default function LiquidationsSection() {
       )}
 
       {/* Liquidation Detail Modal */}
-      {selectedLiquidation && (() => {
-        const isCancelled = selectedLiquidation.status === "cancelled";
-        const hasChargeback =
-          Number(selectedLiquidation.chargeback_deduction_amount ?? 0) > 0 ||
-          Number(selectedLiquidation.chargeback_debt_amount ?? 0) > 0;
-        const isCancelledOrChargeback = isCancelled || hasChargeback;
+      {selectedLiquidation &&
+        (() => {
+          const isCancelled = selectedLiquidation.status === "cancelled";
+          const hasChargeback =
+            Number(selectedLiquidation.chargeback_deduction_amount ?? 0) > 0 ||
+            Number(selectedLiquidation.chargeback_debt_amount ?? 0) > 0;
+          const isCancelledOrChargeback = isCancelled || hasChargeback;
 
-        const gross = Number(
-          selectedLiquidation.gross_amount ?? selectedLiquidation.amount ?? 0,
-        );
-        const originalFee = isCancelledOrChargeback
-          ? 0
-          : Number(
-              selectedLiquidation.platform_commission ??
-                selectedLiquidation.platform_fee ??
-                0,
-            );
-        const originalIva = isCancelledOrChargeback
-          ? 0
-          : Number(
-              selectedLiquidation.iva_amount ??
-                selectedLiquidation.tax_withholding ??
-                0,
-            );
-
-        const cancellationCommission = Number(
-          selectedLiquidation.cancellation_commission ??
-            selectedLiquidation.financial_adjustments?.reduce(
-              (acc, a) => acc + Number(a.cancellation_commission_amount ?? 0),
-              0,
-            ) ??
-            0,
-        );
-        const cancellationCommissionPct = Number(
-          selectedLiquidation.cancellation_commission_pct ??
-            selectedLiquidation.financial_adjustments?.find(
-              (a) => Number(a.cancellation_commission_pct ?? 0) > 0,
-            )?.cancellation_commission_pct ??
-            0,
-        );
-        const cancellationIva = Number(
-          selectedLiquidation.cancellation_iva_amount ??
-            selectedLiquidation.financial_adjustments?.reduce(
-              (acc, a) => acc + Number(a.cancellation_iva_amount ?? 0),
-              0,
-            ) ??
-            0,
-        );
-
-        const chargebackAmount = Math.max(
-          Number(selectedLiquidation.chargeback_debt_amount ?? 0),
-          Number(selectedLiquidation.chargeback_deduction_amount ?? 0),
-        );
-
-        const rawNet = Number(
-          selectedLiquidation.net_amount ?? gross - originalFee - originalIva,
-        );
-        const effectiveNet =
-          rawNet < 0
-            ? rawNet
-            : Math.max(
-                0,
-                rawNet - Number(selectedLiquidation.debt_offset_amount ?? 0),
+          const gross = Number(
+            selectedLiquidation.gross_amount ?? selectedLiquidation.amount ?? 0,
+          );
+          const originalFee = isCancelledOrChargeback
+            ? 0
+            : Number(
+                selectedLiquidation.platform_commission ??
+                  selectedLiquidation.platform_fee ??
+                  0,
+              );
+          const originalIva = isCancelledOrChargeback
+            ? 0
+            : Number(
+                selectedLiquidation.iva_amount ??
+                  selectedLiquidation.tax_withholding ??
+                  0,
               );
 
-        return (
-          <Modal
-            isOpen={Boolean(selectedLiquidation)}
-            onClose={() => setSelectedLiquidation(null)}
-            title={`Detalle de Liquidación #${selectedLiquidation.id.slice(0, 8)}`}
-          >
-            <div className="liquidation-detail-modal">
-              <div className="liq-detail-row">
-                <span>Estado:</span>
-                <span>{getStatusBadge(selectedLiquidation.status)}</span>
-              </div>
-              <div className="liq-detail-row">
-                <span>Importe bruto:</span>
-                <span>${gross.toLocaleString("es-AR")}</span>
-              </div>
-              <div className="liq-detail-row">
-                <span>Comisión Sercio:</span>
-                <span className="liq-detail-deduction">
-                  {originalFee > 0
-                    ? `-$${originalFee.toLocaleString("es-AR")}`
-                    : "$0"}
-                </span>
-              </div>
-              {Number(selectedLiquidation.payment_provider_fee ?? 0) > 0 && !['pending', 'batch_open', 'batch_closed_unpaid'].includes(selectedLiquidation.cancellation_fee_basis || '') && (
+          const cancellationCommission = Number(
+            selectedLiquidation.cancellation_commission ??
+              selectedLiquidation.financial_adjustments?.reduce(
+                (acc, a) => acc + Number(a.cancellation_commission_amount ?? 0),
+                0,
+              ) ??
+              0,
+          );
+          const cancellationCommissionPct = Number(
+            selectedLiquidation.cancellation_commission_pct ??
+              selectedLiquidation.financial_adjustments?.find(
+                (a) => Number(a.cancellation_commission_pct ?? 0) > 0,
+              )?.cancellation_commission_pct ??
+              0,
+          );
+          const cancellationIva = Number(
+            selectedLiquidation.cancellation_iva_amount ??
+              selectedLiquidation.financial_adjustments?.reduce(
+                (acc, a) => acc + Number(a.cancellation_iva_amount ?? 0),
+                0,
+              ) ??
+              0,
+          );
+
+          const chargebackAmount = Math.max(
+            Number(selectedLiquidation.chargeback_debt_amount ?? 0),
+            Number(selectedLiquidation.chargeback_deduction_amount ?? 0),
+          );
+
+          const rawNet = Number(
+            selectedLiquidation.net_amount ?? gross - originalFee - originalIva,
+          );
+          const effectiveNet =
+            rawNet < 0
+              ? rawNet
+              : Math.max(
+                  0,
+                  rawNet - Number(selectedLiquidation.debt_offset_amount ?? 0),
+                );
+
+          return (
+            <Modal
+              isOpen={Boolean(selectedLiquidation)}
+              onClose={() => setSelectedLiquidation(null)}
+              title={`Detalle de Liquidación #${selectedLiquidation.id.slice(0, 8)}`}
+            >
+              <div className="liquidation-detail-modal">
                 <div className="liq-detail-row">
-                  <span>Costo del medio de pago:</span>
+                  <span>Estado:</span>
+                  <span>{getStatusBadge(selectedLiquidation.status)}</span>
+                </div>
+                <div className="liq-detail-row">
+                  <span>Importe bruto:</span>
+                  <span>${gross.toLocaleString("es-AR")}</span>
+                </div>
+                <div className="liq-detail-row">
+                  <span>Comisión Sercio:</span>
                   <span className="liq-detail-deduction">
-                    -$
-                    {Number(
-                      selectedLiquidation.payment_provider_fee,
-                    ).toLocaleString("es-AR")}
+                    {originalFee > 0
+                      ? `-$${originalFee.toLocaleString("es-AR")}`
+                      : "$0"}
                   </span>
                 </div>
-              )}
-              <div className="liq-detail-row">
-                <span>IVA sobre comisión:</span>
-                <span className="liq-detail-deduction">
-                  {originalIva > 0
-                    ? `-$${originalIva.toLocaleString("es-AR")}`
-                    : "$0"}
-                </span>
-              </div>
-              {(isCancelled ||
-                cancellationCommission > 0 ||
-                cancellationIva > 0) && (
-                <>
+                {Number(selectedLiquidation.payment_provider_fee ?? 0) > 0 &&
+                  !["pending", "batch_open", "batch_closed_unpaid"].includes(
+                    selectedLiquidation.cancellation_fee_basis || "",
+                  ) && (
+                    <div className="liq-detail-row">
+                      <span>Costo del medio de pago:</span>
+                      <span className="liq-detail-deduction">
+                        -$
+                        {Number(
+                          selectedLiquidation.payment_provider_fee,
+                        ).toLocaleString("es-AR")}
+                      </span>
+                    </div>
+                  )}
+                <div className="liq-detail-row">
+                  <span>IVA sobre comisión:</span>
+                  <span className="liq-detail-deduction">
+                    {originalIva > 0
+                      ? `-$${originalIva.toLocaleString("es-AR")}`
+                      : "$0"}
+                  </span>
+                </div>
+                {(isCancelled ||
+                  cancellationCommission > 0 ||
+                  cancellationIva > 0) && (
+                  <>
+                    <div className="liq-detail-row">
+                      <span>
+                        {selectedLiquidation.cancellation_fee_basis ===
+                        "pending"
+                          ? "Cargo por cancelación pendiente de conciliación"
+                          : selectedLiquidation.cancellation_fee_basis ===
+                              "batch_closed_unpaid"
+                            ? "Cargo por IVA no reintegrado por la procesadora"
+                            : "Comisión por cancelación"}
+                        {cancellationCommissionPct > 0
+                          ? ` (${cancellationCommissionPct}%)`
+                          : ""}
+                        :
+                      </span>
+                      <span className="liq-detail-deduction">
+                        {cancellationCommission > 0
+                          ? `-$${cancellationCommission.toLocaleString("es-AR")}`
+                          : "$0"}
+                      </span>
+                    </div>
+                    <div className="liq-detail-row">
+                      <span>IVA de Sercio sobre el cargo por cancelación:</span>
+                      <span className="liq-detail-deduction">
+                        {cancellationIva > 0
+                          ? `-$${cancellationIva.toLocaleString("es-AR")}`
+                          : "$0"}
+                      </span>
+                    </div>
+                  </>
+                )}
+                {Number(selectedLiquidation.iibb_amount ?? 0) > 0 && (
                   <div className="liq-detail-row">
                     <span>
-                      {selectedLiquidation.cancellation_fee_basis === 'pending' ? 'Cargo por cancelación pendiente de conciliación' : selectedLiquidation.cancellation_fee_basis === 'batch_closed_unpaid' ? 'Cargo por IVA no reintegrado por la procesadora' : 'Comisión por cancelación'}
-                      {cancellationCommissionPct > 0
-                        ? ` (${cancellationCommissionPct}%)`
-                        : ""}
-                      :
+                      {[
+                        "pending",
+                        "batch_open",
+                        "batch_closed_unpaid",
+                      ].includes(
+                        selectedLiquidation.cancellation_fee_basis || "",
+                      )
+                        ? "IIBB informado (referencia; no incluido en el cargo):"
+                        : "Ingresos Brutos:"}
                     </span>
-                    <span className="liq-detail-deduction">
-                      {cancellationCommission > 0
-                        ? `-$${cancellationCommission.toLocaleString("es-AR")}`
-                        : "$0"}
+                    <span>
+                      {[
+                        "pending",
+                        "batch_open",
+                        "batch_closed_unpaid",
+                      ].includes(
+                        selectedLiquidation.cancellation_fee_basis || "",
+                      )
+                        ? "$"
+                        : "-$"}
+                      {Number(selectedLiquidation.iibb_amount).toLocaleString(
+                        "es-AR",
+                      )}
                     </span>
                   </div>
-                  <div className="liq-detail-row">
-                    <span>IVA de Sercio sobre el cargo por cancelación:</span>
-                    <span className="liq-detail-deduction">
-                      {cancellationIva > 0
-                        ? `-$${cancellationIva.toLocaleString("es-AR")}`
-                        : "$0"}
-                    </span>
-                  </div>
-                </>
-              )}
-              {Number(selectedLiquidation.iibb_amount ?? 0) > 0 && (
-                <div className="liq-detail-row">
-                  <span>{['pending', 'batch_open', 'batch_closed_unpaid'].includes(selectedLiquidation.cancellation_fee_basis || '') ? 'IIBB informado (referencia; no incluido en el cargo):' : 'Ingresos Brutos:'}</span>
-                  <span>
-                    {['pending', 'batch_open', 'batch_closed_unpaid'].includes(selectedLiquidation.cancellation_fee_basis || '') ? '$' : '-$'}
-                    {Number(selectedLiquidation.iibb_amount).toLocaleString(
-                      "es-AR",
-                    )}
-                  </span>
-                </div>
-              )}
-              {Number(selectedLiquidation.other_deductions ?? 0) > 0 && (
-                <div className="liq-detail-row">
-                  <span>Otras deducciones:</span>
-                  <span className="liq-detail-deduction">
-                    -$
-                    {Number(
-                      selectedLiquidation.other_deductions,
-                    ).toLocaleString("es-AR")}
-                  </span>
-                </div>
-              )}
-              {Number(selectedLiquidation.refunded_gross_amount ?? 0) > 0 && (
-                <div className="liq-detail-row">
-                  <span>Devuelto al comprador (referencia):</span>
-                  <span>
-                    $
-                    {Number(
-                      selectedLiquidation.refunded_gross_amount,
-                    ).toLocaleString("es-AR")}
-                  </span>
-                </div>
-              )}
-              {Number(selectedLiquidation.refund_deduction_amount ?? 0) > 0 && (
-                <div className="liq-detail-row">
-                  <span>Deducción por cancelación/devolución:</span>
-                  <span className="liq-detail-deduction">
-                    -$
-                    {Number(
-                      selectedLiquidation.refund_deduction_amount,
-                    ).toLocaleString("es-AR")}
-                  </span>
-                </div>
-              )}
-              {Number(selectedLiquidation.refund_debt_amount ?? 0) > 0 && (
-                <div className="liq-detail-row">
-                  <span>Total de deuda generada — incluye los cargos anteriores:</span>
-                  <span>
-                    $
-                    {Number(
-                      selectedLiquidation.refund_debt_amount,
-                    ).toLocaleString("es-AR")}
-                  </span>
-                </div>
-              )}
-              {chargebackAmount > 0 && (
-                <div className="liq-detail-row">
-                  <span>Contracargo por total de la venta:</span>
-                  <span className="liq-detail-deduction">
-                    -${chargebackAmount.toLocaleString("es-AR")}
-                  </span>
-                </div>
-              )}
-              {Number(selectedLiquidation.debt_offset_amount ?? 0) > 0 && (
-                <div className="liq-detail-row">
-                  <span>Deuda compensada:</span>
-                  <span className="liq-detail-deduction">
-                    -$
-                    {Number(
-                      selectedLiquidation.debt_offset_amount,
-                    ).toLocaleString("es-AR")}
-                  </span>
-                </div>
-              )}
-              <div className="liq-detail-row liq-detail-row--total">
-                <span>
-                  {effectiveNet < 0
-                    ? "Saldo negativo al comercio:"
-                    : selectedLiquidation.paid_to_merchant_at
-                      ? "Neto transferido al comercio:"
-                      : "Neto a transferir:"}
-                </span>
-                <span
-                  className={effectiveNet < 0 ? "liq-detail-deduction" : ""}
-                >
-                  {effectiveNet < 0
-                    ? `-$${Math.abs(effectiveNet).toLocaleString("es-AR")}`
-                    : `$${effectiveNet.toLocaleString("es-AR")}`}
-                </span>
-              </div>
-
-              <div className="liq-detail-orders-section">
-                <h4>Órdenes asociadas</h4>
-                {selectedLiquidation.orders &&
-                selectedLiquidation.orders.length > 0 ? (
-                  <div className="liq-orders-list">
-                    {selectedLiquidation.orders.map((o) => (
-                      <div key={o.id} className="liq-order-item">
-                        <div>
-                          <strong>#{o.order_number || o.id.slice(0, 8)}</strong>
-                          <p>
-                            {new Date(o.created_at).toLocaleDateString("es-AR")}
-                          </p>
-                        </div>
-                        <span className="liq-order-total">
-                          ${Number(o.total_amount ?? 0).toLocaleString("es-AR")}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="liq-orders-empty">
-                    Esta liquidación agrupa los pedidos liberados de la semana
-                    corriente.
-                  </p>
                 )}
+                {Number(selectedLiquidation.other_deductions ?? 0) > 0 && (
+                  <div className="liq-detail-row">
+                    <span>Otras deducciones:</span>
+                    <span className="liq-detail-deduction">
+                      -$
+                      {Number(
+                        selectedLiquidation.other_deductions,
+                      ).toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
+                {Number(selectedLiquidation.refunded_gross_amount ?? 0) > 0 && (
+                  <div className="liq-detail-row">
+                    <span>Devuelto al comprador (referencia):</span>
+                    <span>
+                      $
+                      {Number(
+                        selectedLiquidation.refunded_gross_amount,
+                      ).toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
+                {Number(selectedLiquidation.refund_deduction_amount ?? 0) >
+                  0 && (
+                  <div className="liq-detail-row">
+                    <span>Deducción por cancelación/devolución:</span>
+                    <span className="liq-detail-deduction">
+                      -$
+                      {Number(
+                        selectedLiquidation.refund_deduction_amount,
+                      ).toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
+                {Number(selectedLiquidation.refund_debt_amount ?? 0) > 0 && (
+                  <div className="liq-detail-row">
+                    <span>
+                      Total de deuda generada — incluye los cargos anteriores:
+                    </span>
+                    <span>
+                      $
+                      {Number(
+                        selectedLiquidation.refund_debt_amount,
+                      ).toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
+                {chargebackAmount > 0 && (
+                  <div className="liq-detail-row">
+                    <span>Contracargo por total de la venta:</span>
+                    <span className="liq-detail-deduction">
+                      -${chargebackAmount.toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
+                {Number(selectedLiquidation.debt_offset_amount ?? 0) > 0 && (
+                  <div className="liq-detail-row">
+                    <span>Deuda compensada:</span>
+                    <span className="liq-detail-deduction">
+                      -$
+                      {Number(
+                        selectedLiquidation.debt_offset_amount,
+                      ).toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
+                <div className="liq-detail-row liq-detail-row--total">
+                  <span>
+                    {effectiveNet < 0
+                      ? "Saldo negativo al comercio:"
+                      : selectedLiquidation.paid_to_merchant_at
+                        ? "Neto transferido al comercio:"
+                        : "Neto a transferir:"}
+                  </span>
+                  <span
+                    className={effectiveNet < 0 ? "liq-detail-deduction" : ""}
+                  >
+                    {effectiveNet < 0
+                      ? `-$${Math.abs(effectiveNet).toLocaleString("es-AR")}`
+                      : `$${effectiveNet.toLocaleString("es-AR")}`}
+                  </span>
+                </div>
+
+                <div className="liq-detail-orders-section">
+                  <h4>Órdenes asociadas</h4>
+                  {selectedLiquidation.orders &&
+                  selectedLiquidation.orders.length > 0 ? (
+                    <div className="liq-orders-list">
+                      {selectedLiquidation.orders.map((o) => (
+                        <div key={o.id} className="liq-order-item">
+                          <div>
+                            <strong>
+                              #{o.order_number || o.id.slice(0, 8)}
+                            </strong>
+                            <p>
+                              {new Date(o.created_at).toLocaleDateString(
+                                "es-AR",
+                              )}
+                            </p>
+                          </div>
+                          <span className="liq-order-total">
+                            $
+                            {Number(o.total_amount ?? 0).toLocaleString(
+                              "es-AR",
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="liq-orders-empty">
+                      Esta liquidación agrupa los pedidos liberados de la semana
+                      corriente.
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          </Modal>
-        );
-      })()}
+            </Modal>
+          );
+        })()}
 
       <Modal
         isOpen={reportsModalOpen}

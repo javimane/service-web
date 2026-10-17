@@ -57,6 +57,12 @@ describe("notificationNavigation", () => {
   });
 
   describe("getNotificationTargetUrl", () => {
+    it("dirige la oferta al comprador y el rechazo al comercio", () => {
+      expect(getNotificationTargetUrl({ type: "CLAIM_OFFERED", source_id: "order-1" },
+        { isProfessional: true })).toBe(`${ROUTES.dashboard}?view=purchases&orderId=order-1`);
+      expect(getNotificationTargetUrl({ type: "CLAIM_OFFER_REJECTED", source_id: "order-1" }))
+        .toBe(`${ROUTES.dashboard}?view=sales&orderId=order-1`);
+    });
     it("dirige ventas con source_id a /panel?view=sales&orderId=...", () => {
       const url = getNotificationTargetUrl({
         type: "PRODUCT_SALE",
@@ -93,6 +99,14 @@ describe("notificationNavigation", () => {
         { isProfessional: false }
       );
       expect(url).toBe(`${ROUTES.dashboard}?view=purchases&orderId=order-789`);
+    });
+
+    it("dirige el reclamo de un comprador profesional a sus compras", () => {
+      const url = getNotificationTargetUrl(
+        { type: "CLAIM_RESOLVED", source_id: "order-1", sender_id: "buyer-1" },
+        { isProfessional: true, currentUserId: "buyer-1" },
+      );
+      expect(url).toBe(`${ROUTES.dashboard}?view=purchases&orderId=order-1`);
     });
 
     it("dirige TRIP_OFFER a /panel?view=riders", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Clock,
@@ -22,6 +22,7 @@ import {
   Square,
   ToggleLeft,
   ToggleRight,
+  Upload,
 } from "lucide-react";
 import {
   commerceService,
@@ -81,7 +82,13 @@ export default function SalesSection() {
   const { sessionStatus, user } = useAuth();
   const { showSuccess, showError } = useAlert();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const orderIdParam = searchParams?.get("orderId");
+  const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!orderIdParam) setDismissedOrderId(null);
+  }, [orderIdParam]);
 
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
@@ -115,9 +122,75 @@ export default function SalesSection() {
   const [returnReceiptOpen, setReturnReceiptOpen] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
+  const [claimClock, setClaimClock] = useState(0);
+  useEffect(() => {
+    setClaimClock(Date.now());
+    const interval = window.setInterval(
+      () => setClaimClock(Date.now()),
+      60_000,
+    );
+    return () => window.clearInterval(interval);
+  }, []);
+  const [respondingClaimId, setRespondingClaimId] = useState<string | null>(
+    null,
+  );
+  const [claimAction, setClaimAction] = useState<
+    "full_refund_with_return" | "full_refund_no_return" | "partial_offer"
+  >("full_refund_with_return");
+  const [claimResponse, setClaimResponse] = useState("");
+  const [claimPercent, setClaimPercent] = useState(10);
+  const claimResponseMutation = useMutation({
+    mutationFn: ({ claimId }: { claimId: string }) =>
+      commerceService.respondToClaim(selectedOrder!.id, claimId, {
+        action: claimAction,
+        response: claimResponse.trim(),
+        ...(claimAction === "partial_offer" ? { percent: claimPercent } : {}),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["order-claims", selectedOrder?.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
+      setRespondingClaimId(null);
+      setClaimResponse("");
+      showSuccess("La respuesta al reclamo se registró.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo responder el reclamo."),
+  });
 
   // Auto-cargar orden si viene orderId por URL (ej. desde notificación)
-  const activeOrderId = selectedOrder?.id || orderIdParam || undefined;
+  const activeOrderId =
+    selectedOrder?.id ||
+    (orderIdParam !== dismissedOrderId ? orderIdParam : undefined) ||
+    undefined;
+  const {
+    data: orderClaims = [],
+    error: orderClaimsError,
+    refetch: refetchOrderClaims,
+  } = useQuery({
+    queryKey: ["order-claims", selectedOrder?.id],
+    queryFn: () => commerceService.orderClaims(selectedOrder!.id),
+    enabled: Boolean(selectedOrder?.id),
+    refetchInterval: (query) =>
+      query.state.data?.some((claim) =>
+        claim.media.some((item) => item.status === "processing"),
+      )
+        ? 15_000
+        : false,
+  });
+  const closeOrderDetail = () => {
+    if (orderIdParam) {
+      setDismissedOrderId(orderIdParam);
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.delete("orderId");
+      router.replace(
+        `${pathname}${params.size ? `?${params.toString()}` : ""}`,
+        { scroll: false },
+      );
+    }
+    setSelectedOrder(null);
+  };
   const { data: routeOrderDetail } = useQuery({
     queryKey: ["merchant-order-detail", activeOrderId],
     queryFn: () => commerceService.orderDetail(activeOrderId!),
@@ -133,7 +206,7 @@ export default function SalesSection() {
   const [cancelReason, setCancelReason] = useState("");
   const [pickupCode, setPickupCode] = useState("");
   const [pickupScannerOpen, setPickupScannerOpen] = useState(false);
-  const [invoiceUrlInput, setInvoiceUrlInput] = useState("");
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [packageImageFile, setPackageImageFile] = useState<File | null>(null);
   useEffect(() => setPackageImageFile(null), [selectedOrder?.id]);
   const [transportCarrier, setTransportCarrier] = useState("");
@@ -435,10 +508,16 @@ export default function SalesSection() {
   });
 
   const returnReceiptMutation = useMutation({
-    mutationFn: (code: string) => commerceService.receiveReturn(code),
+    mutationFn: ({
+      code,
+      conditionVerified,
+    }: {
+      code: string;
+      conditionVerified: boolean;
+    }) => commerceService.receiveReturn(code, conditionVerified),
     onSuccess: () =>
       showSuccess(
-        "Producto devuelto registrado como recibido. El reclamo sigue pendiente de resolución.",
+        "Producto recibido. Consultá el reclamo para ver el estado del reintegro.",
       ),
     onError: (error: Error) =>
       showError(error.message || "No se pudo registrar la devolución."),
@@ -528,14 +607,19 @@ export default function SalesSection() {
   });
 
   const invoiceMutation = useMutation({
-    mutationFn: ({ id, url }: { id: string; url: string }) =>
-      commerceService.uploadInvoice(id, url),
-    onSuccess: () => {
-      showSuccess("Comprobante de factura registrado.");
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      commerceService.uploadInvoice(id, file),
+    onSuccess: (result) => {
+      showSuccess("Factura subida al bucket y registrada.");
+      setInvoiceFile(null);
+      setSelectedOrder((current) =>
+        current ? { ...current, invoice_url: result.invoice_url } : current,
+      );
       queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
       refetch();
     },
-    onError: () => showError("No se pudo guardar la factura."),
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo subir la factura."),
   });
 
   const transportMutation = useMutation({
@@ -1186,12 +1270,256 @@ export default function SalesSection() {
       {selectedOrder && (
         <Modal
           isOpen={Boolean(selectedOrder)}
-          onClose={() => setSelectedOrder(null)}
+          onClose={closeOrderDetail}
           title={`Detalle de Venta #${
             selectedOrder.order_number || selectedOrder.id.slice(0, 8)
           }`}
         >
           <div className="order-detail-modal">
+            {orderClaimsError && (
+              <div className="order-detail-claim__load-error" role="alert">
+                <span>
+                  No se pudieron cargar los reclamos: {orderClaimsError.message}
+                </span>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => refetchOrderClaims()}
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+            {orderClaims.length > 0 && (
+              <section className="order-detail-section">
+                <h4 className="order-detail-section__title">
+                  Reclamos de esta compra
+                </h4>
+                {orderClaims.map((claim) => (
+                  <article className="order-detail-claim" key={claim.id}>
+                    <strong>{claim.reason}</strong>
+                    <span>
+                      Estado:{" "}
+                      {claim.status === "in_review"
+                        ? "En revisión por Sercio"
+                        : claim.status === "refunded"
+                          ? "Reembolsado"
+                          : claim.status === "resolved"
+                            ? "Resuelto"
+                            : claim.status === "open" &&
+                                claim.merchant_action ===
+                                  "full_refund_with_return"
+                              ? "Aceptado; esperando devolución del producto"
+                              : claim.status === "open"
+                                ? "Abierto"
+                                : claim.status}
+                    </span>
+                    <span>
+                      Enviado:{" "}
+                      {new Date(claim.created_at).toLocaleString("es-AR")}
+                    </span>
+                    {claim.due_date && (
+                      <span>
+                        Plazo para responder:{" "}
+                        {new Date(claim.due_date).toLocaleString("es-AR")}
+                      </span>
+                    )}
+                    {claim.merchant_response && (
+                      <p>Tu respuesta: {claim.merchant_response}</p>
+                    )}
+                    {claim.merchant_action === "full_refund_with_return" && (
+                      <p>
+                        El reintegro total se iniciará al registrar la recepción
+                        del producto.
+                      </p>
+                    )}
+                    {claim.merchant_action === "full_refund_no_return" && (
+                      <p>Devolución total sin retorno del producto.</p>
+                    )}
+                    {claim.status === "open" &&
+                      claim.merchant_action === "full_refund_no_return" && (
+                        <button
+                          type="button"
+                          className="order-detail-claim__respond"
+                          disabled={claimResponseMutation.isPending}
+                          onClick={async () => {
+                            try {
+                              await commerceService.respondToClaim(
+                                selectedOrder.id,
+                                claim.id,
+                                {
+                                  action: "full_refund_no_return",
+                                  response:
+                                    claim.merchant_response ||
+                                    "Reembolso total sin devolución física",
+                                },
+                              );
+                              await queryClient.invalidateQueries({
+                                queryKey: ["order-claims", selectedOrder.id],
+                              });
+                              showSuccess("Reintegro confirmado.");
+                            } catch (error) {
+                              showError(
+                                error instanceof Error
+                                  ? error.message
+                                  : "Sercio debe revisar el reintegro.",
+                              );
+                            }
+                          }}
+                        >
+                          Consultar o reintentar reintegro
+                        </button>
+                      )}
+                    {claim.merchant_action === "partial_offer" && (
+                      <p>
+                        Oferta: {claim.partial_offer_percent}% ($
+                        {claim.partial_offer_amount}).{" "}
+                        {claim.buyer_decision === "accepted"
+                          ? claim.status === "resolved"
+                            ? "Reintegro confirmado"
+                            : "Aceptada; reintegro en revisión"
+                          : claim.buyer_decision === "rejected"
+                            ? "Rechazada; Sercio decidirá el caso"
+                            : "Esperando al comprador"}
+                        .
+                      </p>
+                    )}
+                    {claim.status === "open" &&
+                      !claim.merchant_action &&
+                      !claim.merchant_response_at &&
+                      (!claim.due_date ||
+                        new Date(claim.due_date).getTime() > claimClock) &&
+                      (respondingClaimId === claim.id ? (
+                        <div className="order-detail-claim__response">
+                          <label htmlFor={`claim-action-${claim.id}`}>
+                            Solución
+                          </label>
+                          <select
+                            id={`claim-action-${claim.id}`}
+                            value={claimAction}
+                            onChange={(event) =>
+                              setClaimAction(
+                                event.target.value as typeof claimAction,
+                              )
+                            }
+                          >
+                            {!isServiceSale(selectedOrder) && (
+                              <option value="full_refund_with_return">
+                                Reembolso total al recibir el producto
+                              </option>
+                            )}
+                            <option value="full_refund_no_return">
+                              Reembolso total sin devolución física
+                            </option>
+                            <option value="partial_offer">
+                              Ofrecer reembolso parcial
+                            </option>
+                          </select>
+                          <p>
+                            El reintegro se hace por el medio de pago original.
+                            Si ya cobraste la liquidación, el saldo a descontar
+                            se registra y Sercio concilia los cargos que
+                            correspondan.
+                          </p>
+                          {claimAction === "partial_offer" && (
+                            <>
+                              <label htmlFor={`claim-percent-${claim.id}`}>
+                                Porcentaje a reintegrar
+                              </label>
+                              <input
+                                id={`claim-percent-${claim.id}`}
+                                type="number"
+                                min="0.01"
+                                max="99.99"
+                                step="0.01"
+                                value={claimPercent}
+                                onChange={(event) =>
+                                  setClaimPercent(Number(event.target.value))
+                                }
+                              />
+                            </>
+                          )}
+                          <label htmlFor={`claim-response-${claim.id}`}>
+                            Mensaje al comprador
+                          </label>
+                          <textarea
+                            id={`claim-response-${claim.id}`}
+                            rows={3}
+                            maxLength={1000}
+                            value={claimResponse}
+                            onChange={(event) =>
+                              setClaimResponse(event.target.value)
+                            }
+                          />
+                          <div className="order-detail-claim__actions">
+                            <button
+                              type="button"
+                              data-action-tone="cancel"
+                              onClick={() => setRespondingClaimId(null)}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              data-action-tone="add"
+                              disabled={
+                                claimResponse.trim().length < 10 ||
+                                claimResponseMutation.isPending
+                              }
+                              onClick={() =>
+                                claimResponseMutation.mutate({
+                                  claimId: claim.id,
+                                })
+                              }
+                            >
+                              {claimResponseMutation.isPending
+                                ? "Enviando..."
+                                : "Enviar propuesta"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="order-detail-claim__respond"
+                          onClick={() => {
+                            setClaimAction(
+                              isServiceSale(selectedOrder)
+                                ? "full_refund_no_return"
+                                : "full_refund_with_return",
+                            );
+                            setRespondingClaimId(claim.id);
+                          }}
+                        >
+                          Resolver reclamo
+                        </button>
+                      ))}
+                    {claim.status === "open" &&
+                      !claim.merchant_action &&
+                      claim.due_date &&
+                      new Date(claim.due_date).getTime() <= claimClock && (
+                        <p>El plazo venció. Sercio decidirá el caso.</p>
+                      )}
+                    {claim.media.map((item, index) =>
+                      item.url ? (
+                        <a
+                          key={item.id}
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {item.media_type === "video"
+                            ? "Ver video"
+                            : `Ver imagen ${index + 1}`}
+                        </a>
+                      ) : (
+                        <span key={item.id}>Video en procesamiento</span>
+                      ),
+                    )}
+                  </article>
+                ))}
+              </section>
+            )}
             {/* Buyer Info */}
             <div className="order-detail-section">
               <h4 className="order-detail-section__title">
@@ -1587,9 +1915,7 @@ export default function SalesSection() {
                       }
                     >
                       <Printer size={16} />
-                      <span>
-                        🖨️ Imprimir Ficha de Servicio (con Domicilio)
-                      </span>
+                      <span>🖨️ Imprimir Ficha de Servicio (con Domicilio)</span>
                     </button>
                   </div>
                 )}
@@ -1934,34 +2260,57 @@ export default function SalesSection() {
                   </strong>
                 </p>
                 {selectedOrder.invoice_url && (
-                  <a
-                    href={selectedOrder.invoice_url}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const tab = window.open("", "_blank");
+                      try {
+                        const { url } = await commerceService.getInvoiceUrl(selectedOrder.id);
+                        if (tab) tab.location.href = url;
+                        else window.location.href = url;
+                      } catch (error) {
+                        tab?.close();
+                        showError(error instanceof Error ? error.message : "No se pudo abrir la factura.");
+                      }
+                    }}
                     className="invoice-download-link"
                   >
                     <ExternalLink size={16} /> Ver factura actual
-                  </a>
+                  </button>
                 )}
                 <div className="pickup-verify-input-group">
                   <input
-                    type="url"
-                    placeholder="Enlace o PDF de la factura..."
-                    value={invoiceUrlInput}
-                    onChange={(e) => setInvoiceUrlInput(e.target.value)}
+                    key={selectedOrder.invoice_url ?? "new"}
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png,image/webp"
+                    aria-label="Archivo de la factura"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      if (file && file.size > 10 * 1024 * 1024) {
+                        showError("La factura no puede superar los 10 MB.");
+                        event.target.value = "";
+                        setInvoiceFile(null);
+                      } else {
+                        setInvoiceFile(file);
+                      }
+                    }}
                   />
                   <button
                     type="button"
+                    data-action-tone="upload"
                     className="btn-secondary"
-                    disabled={!invoiceUrlInput || invoiceMutation.isPending}
+                    disabled={!invoiceFile || invoiceMutation.isPending}
                     onClick={() =>
                       invoiceMutation.mutate({
                         id: selectedOrder.id,
-                        url: invoiceUrlInput,
+                        file: invoiceFile!,
                       })
                     }
                   >
-                    Cargar factura
+                    <Upload size={16} aria-hidden="true" />
+                    {invoiceMutation.isPending
+                      ? "Subiendo..."
+                      : "Subir factura"}
                   </button>
                 </div>
               </div>
@@ -2100,8 +2449,10 @@ export default function SalesSection() {
       {returnReceiptOpen && (
         <ReturnReceiptModal
           onClose={() => setReturnReceiptOpen(false)}
-          onReceive={(code) =>
-            returnReceiptMutation.mutateAsync(code).then(() => undefined)
+          onReceive={(code, conditionVerified) =>
+            returnReceiptMutation
+              .mutateAsync({ code, conditionVerified })
+              .then(() => undefined)
           }
         />
       )}

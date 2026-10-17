@@ -181,7 +181,7 @@ export default function Navbar() {
       return;
     }
 
-    const targetUrl = getNotificationTargetUrl(notif, { isProfessional });
+    const targetUrl = getNotificationTargetUrl(notif, { isProfessional, currentUserId: user?.id });
     router.push(targetUrl);
   };
 
