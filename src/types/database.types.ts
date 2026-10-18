@@ -416,6 +416,7 @@ export interface RoleRow {
 
 export interface ServiceRow {
   readonly id: number;
+  readonly service_location_ids?: string[];
   readonly professional_id: number;
   readonly category_services_id: number;
   readonly name: string;

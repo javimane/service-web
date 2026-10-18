@@ -312,6 +312,12 @@
   color: var(--error-color);
 }
 
+.sales-badge--partial-refund {
+  background: var(--surface-soft);
+  color: var(--amber-dark);
+  border: 1px solid var(--amber-dark);
+}
+
 .sales-badge--appointment-pending {
   background: rgba(251, 191, 36, 0.2);
   color: var(--amber-dark);
@@ -480,6 +486,24 @@
 .order-service-appointment-box {
   background: rgba(233, 72, 35, 0.04);
   border-color: rgba(233, 72, 35, 0.2);
+}
+
+.order-service-appointment-box__deadline {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.order-service-appointment-box__deadline svg {
+  flex: none;
+  color: var(--error-color);
 }
 
 .cancel-penalty-alert {

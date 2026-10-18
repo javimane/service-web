@@ -60,6 +60,7 @@ import DateRangeFilter, {
 import "./SalesSection.css";
 import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
 import { isServiceOrderSummary as isServiceSale } from "@/utils/orderKind";
+import { getSaleRefundStatus } from "./saleRefundStatus";
 
 const STATUS_FILTERS: Array<{ label: string; value: string }> = [
   { label: "Todas", value: "" },
@@ -664,15 +665,41 @@ export default function SalesSection() {
     );
   };
 
+  const isOrderDelivered = (order?: Partial<OrderSummary> | null) =>
+    Boolean(
+      order &&
+      (order.status === "delivered" ||
+        (order.status as string) === "settled" ||
+        Boolean(order.delivered_at) ||
+        order.shipment_status === "delivered" ||
+        order.appointment_status === "completed" ||
+        (order.appointment as { status?: string } | undefined)?.status ===
+          "completed"),
+    );
+
   const getStatusBadge = (
     status: OrderStatus,
     order?: Partial<OrderSummary> | null,
   ) => {
+    const refundStatus = getSaleRefundStatus({
+      status,
+      refunded_amount: order?.refunded_amount,
+      total_amount: order?.total_amount ?? null,
+    });
+    if (refundStatus === "full") {
+      return (
+        <span className="sales-badge sales-badge--refunded">Reembolsado</span>
+      );
+    }
+    if (refundStatus === "partial") {
+      return (
+        <span className="sales-badge sales-badge--partial-refund">Reembolso parcial</span>
+      );
+    }
     if (
       status === "delivered" ||
       (status as string) === "settled" ||
-      Boolean(order?.delivered_at) ||
-      order?.shipment_status === "delivered"
+      isOrderDelivered(order)
     ) {
       return (
         <span className="sales-badge sales-badge--delivered">Entregado</span>
@@ -737,12 +764,6 @@ export default function SalesSection() {
       case "cancelled":
         return (
           <span className="sales-badge sales-badge--cancelled">Cancelado</span>
-        );
-      case "refunded":
-        return (
-          <span className="sales-badge sales-badge--cancelled">
-            Reembolsado
-          </span>
         );
       default:
         return <span className="sales-badge">{status}</span>;
@@ -1132,7 +1153,11 @@ export default function SalesSection() {
                           <div className="sales-table__article-col">
                             <span>{article}</span>
                             {(order.service_id || order.service) &&
-                              (order.appointment_status ===
+                              (isOrderDelivered(order) ? (
+                                <span className="sales-badge sales-badge--appointment-scheduled">
+                                  ✅ Turno realizado
+                                </span>
+                              ) : order.appointment_status ===
                               "pending_appointment" ? (
                                 <span className="sales-badge sales-badge--appointment-pending">
                                   ⚠️ Turno Pendiente
@@ -1142,6 +1167,15 @@ export default function SalesSection() {
                                   📅 Turno Asignado
                                 </span>
                               ))}
+                            {isServiceSale(order) &&
+                              ['paid', 'confirmed'].includes(order.status) &&
+                              !isOrderDelivered(order) &&
+                              order.appointment_status !== 'completed' &&
+                              order.paid_at && (
+                                <span className="sales-badge sales-badge--appointment-pending">
+                                  Validar código antes del {new Date(new Date(order.paid_at).getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('es-AR')}
+                                </span>
+                              )}
                           </div>
                         </div>
                       </td>
@@ -1202,6 +1236,7 @@ export default function SalesSection() {
                           </button>
 
                           {(order.service_id || order.service) &&
+                            !isOrderDelivered(order) &&
                             order.appointment_status ===
                               "pending_appointment" && (
                               <button
@@ -1305,7 +1340,9 @@ export default function SalesSection() {
                         : claim.status === "refunded"
                           ? "Reembolsado"
                           : claim.status === "resolved"
-                            ? "Resuelto"
+                            ? claim.resolution === "partial_refund"
+                              ? "Reembolso parcial"
+                              : "Resuelto"
                             : claim.status === "open" &&
                                 claim.merchant_action ===
                                   "full_refund_with_return"
@@ -1566,6 +1603,9 @@ export default function SalesSection() {
                   </span>
                   <span className="order-detail-value">
                     {isServiceSale(selectedOrder) &&
+                    (selectedOrder.branch || selectedOrder.origin_address)
+                      ? "En sucursal del comercio"
+                      : isServiceSale(selectedOrder) &&
                     selectedOrder.delivery_type === "coordinate_with_merchant"
                       ? "A coordinar con el profesional"
                       : getDeliveryLabel(selectedOrder.delivery_type)}
@@ -1620,7 +1660,15 @@ export default function SalesSection() {
                 )}
               </div>
 
-              {(selectedOrder.delivery_address ||
+              {isServiceSale(selectedOrder) && (selectedOrder.branch || selectedOrder.origin_address) && (
+                <div className="order-detail-address">
+                  <span className="order-detail-label">Sucursal del servicio:</span>
+                  <p className="order-detail-address__text">
+                    {selectedOrder.branch?.name ?? "Sucursal principal"} — {selectedOrder.branch?.street_name ?? selectedOrder.origin_address?.street_name} {selectedOrder.branch?.street_number ?? selectedOrder.origin_address?.street_number ?? ""}
+                  </p>
+                </div>
+              )}
+              {!isServiceSale(selectedOrder) && (selectedOrder.delivery_address ||
                 selectedOrder.shipping_address) && (
                 <div className="order-detail-address">
                   <span className="order-detail-label">
@@ -1817,7 +1865,38 @@ export default function SalesSection() {
               {isServiceSale(selectedOrder) && (
                 <div className="order-service-appointment-box">
                   <h5>Turno del Servicio</h5>
-                  {selectedOrder.appointment_status ===
+                  {['paid', 'confirmed'].includes(selectedOrder.status) &&
+                    !isOrderDelivered(selectedOrder) &&
+                    selectedOrder.appointment_status !== 'completed' && (
+                      <div className="order-service-appointment-box__deadline" role="alert">
+                        <AlertTriangle size={20} aria-hidden="true" />
+                        <span>
+                          Debés realizar el servicio y validar el código del comprador dentro de los 15 días posteriores al pago.
+                          Si no se valida, la compra se cancela y el dinero se devuelve automáticamente.
+                          {selectedOrder.paid_at && (
+                            <> Fecha límite: <strong>{new Date(new Date(selectedOrder.paid_at).getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleString('es-AR')}</strong>.</>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                  {isOrderDelivered(selectedOrder) ? (
+                    <div className="appointment-scheduled-banner">
+                      <CheckCircle2 size={20} className="icon-green" />
+                      <div className="appointment-scheduled-details">
+                        <strong>
+                          Turno realizado
+                          {selectedOrder.appointment
+                            ? `: ${selectedOrder.appointment.appointment_date} a las ${selectedOrder.appointment.appointment_time} hs`
+                            : ""}
+                        </strong>
+                        {selectedOrder.appointment?.notes && (
+                          <p className="appointment-notes">
+                            Indicaciones: {selectedOrder.appointment.notes}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : selectedOrder.appointment_status ===
                   "pending_appointment" ? (
                     <div className="appointment-pending-banner">
                       <div className="appointment-pending-text">
@@ -2018,7 +2097,8 @@ export default function SalesSection() {
 
               {/* Pickup Verification */}
               {(isServiceSale(selectedOrder)
-                ? selectedOrder.status === "confirmed"
+                ? selectedOrder.status === "confirmed" &&
+                  !isOrderDelivered(selectedOrder)
                 : isOrderPickupReady(selectedOrder)) && (
                 <div className="pickup-verify-box">
                   <h5>

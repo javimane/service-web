@@ -27,6 +27,7 @@ import "./PersonalInfoSection.css";
 
 interface PersonalInfoSectionProps {
   userId: string;
+  isSocialAccount: boolean;
   initialData: {
     displayName: string;
     email: string;
@@ -35,6 +36,7 @@ interface PersonalInfoSectionProps {
 
 export default function PersonalInfoSection({
   userId,
+  isSocialAccount,
   initialData,
 }: PersonalInfoSectionProps) {
   const queryClient = useQueryClient();
@@ -220,6 +222,7 @@ export default function PersonalInfoSection({
   };
 
   const handleUpdatePassword = () => {
+    if (isSocialAccount) return;
     const validationErrors = validatePassword(password);
     if (validationErrors.length > 0) {
       setNotification({
@@ -460,6 +463,7 @@ export default function PersonalInfoSection({
             </div>
 
             {/* Password Field */}
+            {!isSocialAccount && (
             <div className="personal-field-row personal-field-row--column">
               <div className="personal-field-content">
                 <span className="personal-field-label">
@@ -547,6 +551,8 @@ export default function PersonalInfoSection({
                 )}
               </div>
             </div>
+
+            )}
 
             {/* Notifications */}
             <div className="personal-field-row">

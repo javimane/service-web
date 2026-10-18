@@ -70,6 +70,14 @@ export default function SettingsPage() {
     sessionStatus?.subscription?.professional_id ??
     sessionStatus?.professional_id;
   const isProfessional = Boolean(professionalId);
+  const primaryProvider = user?.app_metadata?.provider?.toLowerCase();
+  const linkedProviders: string[] = user?.app_metadata?.providers ?? [];
+  const isSocialAccount =
+    primaryProvider === "google" ||
+    primaryProvider === "apple" ||
+    (!primaryProvider &&
+      !linkedProviders.includes("email") &&
+      (linkedProviders.includes("google") || linkedProviders.includes("apple")));
 
   const { data: apiSubscription } = useQuery({
     queryKey: ["professional-subscription"],
@@ -517,6 +525,7 @@ export default function SettingsPage() {
               {/* Always show personal info */}
               <PersonalInfoSection
                 userId={user?.id}
+                isSocialAccount={isSocialAccount}
                 initialData={{
                   displayName:
                     user?.user_metadata?.full_name || user?.display_name || "",

@@ -659,6 +659,7 @@ export type CartItem = {
     id: string;
     name: string;
     price: number;
+    service_location_ids?: string[];
     installments_enabled?: boolean;
     max_installments?: number;
     category?: { no_installments?: boolean } | null;

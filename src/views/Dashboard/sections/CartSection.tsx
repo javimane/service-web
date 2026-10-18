@@ -113,6 +113,16 @@ export default function CartSection() {
   const hasService = items.some((item) =>
     Boolean(item.service_id || item.service),
   );
+  const serviceLocationGroups = items
+    .filter((item) => item.service?.service_location_ids?.length)
+    .map((item) => item.service!.service_location_ids!);
+  const requiresServiceLocation = serviceLocationGroups.length > 0;
+  const allowedServiceLocationIds = requiresServiceLocation
+    ? serviceLocationGroups.reduce(
+        (common, ids) => common.filter((id) => ids.includes(id)),
+        serviceLocationGroups[0],
+      )
+    : [];
   const { data: merchant } = useQuery({
     queryKey: ["cart-merchant", merchantId],
     queryFn: async () => {
@@ -158,7 +168,7 @@ export default function CartSection() {
   const { data: rawBranches } = useQuery({
     queryKey: ["merchant-branches", merchantId],
     queryFn: () => commerceService.professionalLocations(merchantId!),
-    enabled: Boolean(merchantId) && !hasService,
+    enabled: Boolean(merchantId) && (!hasService || requiresServiceLocation),
   });
 
   const branches = useMemo<Branch[]>(() => {
@@ -171,6 +181,9 @@ export default function CartSection() {
     }
     return [];
   }, [rawBranches]);
+  const serviceBranches = requiresServiceLocation
+    ? branches.filter((branch) => allowedServiceLocationIds.includes(branch.id))
+    : [];
 
   const { data: userAddresses = [] } = useQuery<UserAddress[]>({
     queryKey: ["user-addresses", user?.id],
@@ -256,6 +269,12 @@ export default function CartSection() {
   }, [queryClient, showError, user?.id]);
 
   useEffect(() => {
+    if (hasService) {
+      if (requiresServiceLocation && selectedBranchId && !serviceBranches.some((branch) => branch.id === selectedBranchId)) {
+        setSelectedBranchId("");
+      }
+      return;
+    }
     const current = branches.find((branch) => branch.id === selectedBranchId);
     const canUse = (branch: Branch) =>
       deliveryType === "pickup"
@@ -265,7 +284,7 @@ export default function CartSection() {
       const available = branches.find(canUse);
       setSelectedBranchId(available?.id || "");
     }
-  }, [branches, selectedBranchId, deliveryType]);
+  }, [branches, selectedBranchId, deliveryType, hasService, requiresServiceLocation, serviceBranches]);
   useEffect(() => {
     setScheduleForNextDay(false);
   }, [selectedBranchId, deliveryType]);
@@ -440,7 +459,7 @@ export default function CartSection() {
           })),
           delivery_type: activeDeliveryType,
           billing_address_id: paymentAddressId,
-          ...(!hasService ? originSelection : {}),
+          ...(!hasService || requiresServiceLocation ? originSelection : {}),
           delivery_address_id:
             activeDeliveryType === "shipment" || activeDeliveryType === "coordinate_with_merchant"
               ? selectedAddressId || undefined
@@ -613,6 +632,10 @@ export default function CartSection() {
           !selectedBranch.own_riders_available))
     ) {
       showError("Seleccioná una sucursal disponible para el retiro o envío.");
+      return;
+    }
+    if (requiresServiceLocation && (!selectedBranch || !serviceBranches.some((branch) => branch.id === selectedBranch.id))) {
+      showError("Seleccioná una sucursal disponible para realizar el servicio.");
       return;
     }
     if (activeDeliveryType === "shipment" && quotedFor !== quoteKey) {
@@ -865,17 +888,46 @@ export default function CartSection() {
                 >
                   <Clock size={20} />
                   <div>
-                    <strong>Acordar con vendedor</strong>
+                    <strong>{hasService && requiresServiceLocation ? "Servicio en sucursal" : "Acordar con vendedor"}</strong>
                     <p>
                       {hasService
-                        ? "El profesional se comunicará para coordinar el servicio"
+                        ? requiresServiceLocation
+                          ? "Elegí la sucursal donde se realizará el servicio"
+                          : "El profesional se comunicará para coordinar el servicio"
                         : "Para coordinar logística particular"}
                     </p>
                   </div>
                 </button>
               </div>
 
-              {deliveryType === "coordinate_with_merchant" && (
+              {hasService && requiresServiceLocation && (
+                <div className="delivery-details-subbox">
+                  <label className="commercial-label" htmlFor="service-branch">
+                    Sucursal donde se realizará el servicio
+                  </label>
+                  {serviceBranches.length === 0 ? (
+                    <p className="no-branches-warning">
+                      Los servicios del carrito no tienen una sucursal disponible en común.
+                    </p>
+                  ) : (
+                    <select
+                      id="service-branch"
+                      className="branch-select"
+                      value={selectedBranchId}
+                      onChange={(event) => setSelectedBranchId(event.target.value)}
+                    >
+                      <option value="">Seleccionar sucursal</option>
+                      {serviceBranches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name} — {branch.street_name} {branch.street_number}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {deliveryType === "coordinate_with_merchant" && !requiresServiceLocation && (
                 <div className="delivery-details-subbox">
                   <label className="commercial-label">Dirección del destinatario</label>
                   <select

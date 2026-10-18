@@ -61,6 +61,15 @@ export default function ServicePaymentModal({
 
   // Quantity
   const [quantity, setQuantity] = useState<number>(1);
+  const [selectedLocationId, setSelectedLocationId] = useState("");
+  const allowedLocationIds: string[] = service?.service_location_ids ?? [];
+  const { data: professionalLocations = [] } = useQuery({
+    queryKey: ["service-locations", professionalId],
+    queryFn: () => commerceService.professionalLocations(Number(professionalId)),
+    enabled: isOpen && allowedLocationIds.length > 0 && Number(professionalId) > 0,
+  });
+  const availableLocations = professionalLocations.filter((location) =>
+    allowedLocationIds.includes(location.id));
 
   // Payment states
   const [paymentMethod, setPaymentMethod] = useState<
@@ -110,6 +119,7 @@ export default function ServicePaymentModal({
       setActiveQr(null);
       setQuantity(1);
       setInstallments(1);
+      setSelectedLocationId("");
     }
   }, [isOpen]);
 
@@ -194,6 +204,10 @@ export default function ServicePaymentModal({
       requestIdentityVerification();
       return;
     }
+    if (allowedLocationIds.length && !availableLocations.some((location) => location.id === selectedLocationId)) {
+      showError("Elegí la sucursal donde se realizará el servicio.");
+      return;
+    }
 
     if (totalToPay <= 0) {
       showError("El monto del servicio debe ser mayor a $0.");
@@ -259,6 +273,9 @@ export default function ServicePaymentModal({
         service_id: String(service.id),
         quantity: quantity,
         delivery_type: "coordinate_with_merchant",
+        ...(selectedLocationId.startsWith("main:")
+          ? { origin_address_id: availableLocations.find((location) => location.id === selectedLocationId)?.address_id ?? undefined }
+          : selectedLocationId ? { branch_id: selectedLocationId } : {}),
         billing_address_id: providerMethod === 'payway_card' ? billingAddressId : undefined,
         shipping_cost: 0,
         payment_method:
@@ -521,6 +538,22 @@ export default function ServicePaymentModal({
             </div>
 
             {/* Quantity Selector */}
+            {allowedLocationIds.length > 0 && (
+              <div className="service-payment-modal__field">
+                <label className="service-payment-modal__label" htmlFor="service-location">
+                  Sucursal donde se realizará el servicio *
+                </label>
+                <select id="service-location" className="service-payment-modal__select" value={selectedLocationId}
+                  onChange={(event) => setSelectedLocationId(event.target.value)} required>
+                  <option value="">Elegí una sucursal</option>
+                  {availableLocations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name} — {location.street_name} {location.street_number ?? ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="service-payment-modal__field">
               <label className="service-payment-modal__label">
                 Cantidad de servicios:

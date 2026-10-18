@@ -29,6 +29,7 @@ import {
   updateServiceAction,
 } from "../../../app/actions/services";
 import { getAccessToken } from "../../../utils/auth";
+import { commerceService } from "../../../services/commerceService";
 import CommissionsModal from "../../../components/CommissionsModal/CommissionsModal";
 import "./DashboardServices.css";
 
@@ -57,6 +58,7 @@ export default function DashboardServices() {
     price: "",
     installmentsEnabled: false,
     maxInstallments: 3,
+    serviceLocationIds: [] as string[],
   });
 
   // Delete confirmation
@@ -133,6 +135,11 @@ export default function DashboardServices() {
       const result = await getServiceCategoriesAction();
       return result?.data ?? [];
     },
+  });
+  const { data: serviceLocations = [] } = useQuery({
+    queryKey: ["professional-locations", professionalId],
+    queryFn: () => commerceService.professionalLocations(Number(professionalId)),
+    enabled: Boolean(professionalId),
   });
 
   // Mutations
@@ -223,6 +230,7 @@ export default function DashboardServices() {
       price: "",
       installmentsEnabled: false,
       maxInstallments: 3,
+      serviceLocationIds: [],
     });
     setErrorMessage(null);
     setModalOpen(true);
@@ -238,6 +246,7 @@ export default function DashboardServices() {
       price: String(service.base_price || ""),
       installmentsEnabled: Boolean(service.installments_enabled),
       maxInstallments: Math.max(1, Number(service.max_installments || 3)),
+      serviceLocationIds: service.service_location_ids ?? [],
     });
     setErrorMessage(null);
     setModalOpen(true);
@@ -267,6 +276,7 @@ export default function DashboardServices() {
       max_installments: currentService.installmentsEnabled
         ? currentService.maxInstallments
         : 1,
+      service_location_ids: currentService.serviceLocationIds,
     };
 
     if (isEditing && currentService.id) {
@@ -540,6 +550,42 @@ export default function DashboardServices() {
                     })
                   }
                 />
+              </div>
+              <div className="dash-services__field">
+                <label className="dash-services__checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={currentService.serviceLocationIds.length > 0}
+                    onChange={(e) => setCurrentService({
+                      ...currentService,
+                      serviceLocationIds: e.target.checked && serviceLocations.length
+                        ? [serviceLocations[0].id] : [],
+                    })}
+                  />
+                  Se realiza en una sucursal del comercio
+                </label>
+                {serviceLocations.length === 0 && (
+                  <p>Agregá una sucursal con dirección antes de ofrecer el servicio en el comercio.</p>
+                )}
+                {currentService.serviceLocationIds.length > 0 && (
+                  <div>
+                    <p>Elegí las sucursales donde atendés este servicio:</p>
+                    {serviceLocations.map((location) => (
+                      <label key={location.id} className="dash-services__checkbox-label">
+                        <input type="checkbox"
+                          checked={currentService.serviceLocationIds.includes(location.id)}
+                          onChange={(e) => setCurrentService({
+                            ...currentService,
+                            serviceLocationIds: e.target.checked
+                              ? [...currentService.serviceLocationIds, location.id]
+                              : currentService.serviceLocationIds.filter((id) => id !== location.id),
+                          })}
+                        />
+                        {location.name} — {location.street_name} {location.street_number ?? ""}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="dash-services__field">
                 <label className="dash-services__checkbox-label">

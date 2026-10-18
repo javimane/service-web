@@ -616,7 +616,8 @@ export default function ProductPaymentModal({
             ? originSelection
             : {}),
           delivery_address_id:
-            deliveryType === "shipment" || deliveryType === "coordinate_with_merchant"
+            deliveryType === "shipment" ||
+            deliveryType === "coordinate_with_merchant"
               ? selectedAddressId || undefined
               : undefined,
           schedule_for_next_day:
@@ -1084,14 +1085,16 @@ export default function ProductPaymentModal({
                 {deliveryType === "pickup" && <PickupDeadlineWarning />}
 
                 {/* Dirección guardada para envío */}
-                {(deliveryType === "shipment" || deliveryType === "coordinate_with_merchant" || isOutsideDeliveryRange) && (
+                {(deliveryType === "shipment" ||
+                  deliveryType === "coordinate_with_merchant" ||
+                  isOutsideDeliveryRange) && (
                   <div className="product-payment-modal__address-fields">
                     <label className="product-payment-modal__input-label">
                       {deliveryType === "coordinate_with_merchant"
                         ? "Dirección del destinatario"
                         : isOutsideDeliveryRange
-                        ? "Cambiar dirección para comprobar cobertura"
-                        : "Dirección de entrega"}
+                          ? "Cambiar dirección para comprobar cobertura"
+                          : "Dirección de entrega"}
                     </label>
                     <select
                       className="product-payment-modal__select"
@@ -1103,8 +1106,10 @@ export default function ProductPaymentModal({
                       <option value="">Seleccionar dirección guardada</option>
                       {userAddresses
                         .filter(
-                          (address) => deliveryType === "coordinate_with_merchant" ||
-                            (address.latitude != null && address.longitude != null),
+                          (address) =>
+                            deliveryType === "coordinate_with_merchant" ||
+                            (address.latitude != null &&
+                              address.longitude != null),
                         )
                         .map((address) => (
                           <option key={address.id} value={address.id}>
@@ -1115,15 +1120,16 @@ export default function ProductPaymentModal({
                           </option>
                         ))}
                     </select>
-                    {deliveryType === "shipment" && !userAddresses.some(
-                      (address) =>
-                        address.latitude != null && address.longitude != null,
-                    ) && (
-                      <p>
-                        Guardá una dirección con ubicación en el mapa para pedir
-                        el envío.
-                      </p>
-                    )}
+                    {deliveryType === "shipment" &&
+                      !userAddresses.some(
+                        (address) =>
+                          address.latitude != null && address.longitude != null,
+                      ) && (
+                        <p>
+                          Guardá una dirección con ubicación en el mapa para
+                          pedir el envío.
+                        </p>
+                      )}
 
                     {/* Automated Shipping Calculation & Vehicle Box */}
                     {deliveryType === "shipment" && (
@@ -1687,8 +1693,13 @@ export default function ProductPaymentModal({
               </div>
 
               <div className="product-payment-modal__security-note">
-                <ShieldCheck size={16} />
-                <span>Transacción cifrada y protegida</span>
+                <div className="product-payment-modal__security-row">
+                  <ShieldCheck size={16} />
+                  <span>Transacción cifrada y protegida</span>
+                </div>
+                <span className="product-payment-modal__security-subtext">
+                  Compra Protegida o te devolvemos el dinero
+                </span>
               </div>
             </div>
           </div>

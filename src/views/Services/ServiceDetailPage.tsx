@@ -97,44 +97,48 @@ export default function ServiceDetailPage({
     (typeof svc?.category === "string" ? svc.category : undefined);
 
   // Query: Servicios Similares (misma categoría o recomendados)
-  const { data: similarServicesData, isLoading: isLoadingSimilarServices } = useQuery({
-    queryKey: ["similar-services", categoryId],
-    queryFn: async () => {
-      let result = await getServicesAction({
-        categoryId: categoryId ? Number(categoryId) : undefined,
-        limit: 20,
-      });
-
-      let items = Array.isArray(result?.data?.items)
-        ? result.data.items
-        : Array.isArray(result?.data)
-          ? result.data
-          : Array.isArray((result?.data as any)?.data)
-            ? (result?.data as any).data
-            : [];
-
-      // Fallback si la categoría tiene pocos resultados
-      if (items.length <= 1) {
-        result = await getServicesAction({
+  const { data: similarServicesData, isLoading: isLoadingSimilarServices } =
+    useQuery({
+      queryKey: ["similar-services", categoryId],
+      queryFn: async () => {
+        let result = await getServicesAction({
+          categoryId: categoryId ? Number(categoryId) : undefined,
           limit: 20,
         });
-        items = Array.isArray(result?.data?.items)
+
+        let items = Array.isArray(result?.data?.items)
           ? result.data.items
           : Array.isArray(result?.data)
             ? result.data
             : Array.isArray((result?.data as any)?.data)
               ? (result?.data as any).data
               : [];
-      }
 
-      return items;
-    },
-    enabled: Boolean(service?.id || id),
-    staleTime: 1000 * 60 * 5,
-  });
+        // Fallback si la categoría tiene pocos resultados
+        if (items.length <= 1) {
+          result = await getServicesAction({
+            limit: 20,
+          });
+          items = Array.isArray(result?.data?.items)
+            ? result.data.items
+            : Array.isArray(result?.data)
+              ? result.data
+              : Array.isArray((result?.data as any)?.data)
+                ? (result?.data as any).data
+                : [];
+        }
+
+        return items;
+      },
+      enabled: Boolean(service?.id || id),
+      staleTime: 1000 * 60 * 5,
+    });
 
   // Query: Más Servicios del mismo Profesional
-  const { data: professionalServicesData, isLoading: isLoadingProfessionalServices } = useQuery({
+  const {
+    data: professionalServicesData,
+    isLoading: isLoadingProfessionalServices,
+  } = useQuery({
     queryKey: ["professional-services", professionalId],
     queryFn: async () => {
       if (!professionalId) return [];
@@ -195,6 +199,7 @@ export default function ServiceDetailPage({
               id: serviceId,
               name: service.name,
               price: basePrice,
+              service_location_ids: svc?.service_location_ids ?? [],
               professional: {
                 id: Number(professionalId) || 0,
                 name: professionalName,
@@ -215,9 +220,7 @@ export default function ServiceDetailPage({
     },
     onError: (err: any) => {
       const rawMsg =
-        err?.response?.data?.message ||
-        err?.data?.message ||
-        err?.message;
+        err?.response?.data?.message || err?.data?.message || err?.message;
       const msg = Array.isArray(rawMsg)
         ? rawMsg.join(". ")
         : rawMsg || "No se pudo agregar el servicio al carrito.";
@@ -403,7 +406,7 @@ export default function ServiceDetailPage({
 
               <div className="service-detail__section">
                 <h2 className="service-detail__section-title">Precio</h2>
-                <p className="service-detail__price-large">{price}</p>
+                <p className="service-detail__price-large">${price}</p>
 
                 {basePrice > 1 && (
                   <div className="service-detail__installments-box">
