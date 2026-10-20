@@ -17,18 +17,38 @@ type IncomingNotification = {
 const recentNotifications = new Map<string, number>();
 
 export function desktopNotificationUrl(payload: IncomingNotification): string {
+  const type = String(payload.type ?? payload.data?.type ?? "").toUpperCase();
+  const title = payload.title ?? payload.notification?.title ?? payload.data?.title ?? "";
+  const legacyOrderId = title.match(
+    /\bPedido #([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i,
+  )?.[1];
+  if (type.startsWith("ORDER_CHAT") ||
+      ((type === "MESSAGE" || type === "CHAT") && legacyOrderId)) {
+    const orderId = type.startsWith("ORDER_CHAT")
+      ? payload.data?.source_id
+      : legacyOrderId;
+    const view = type === "ORDER_CHAT_SALE" ||
+      (Boolean(legacyOrderId) && /^Cliente\b/i.test(title))
+      ? "sales"
+      : "purchases";
+    return orderId
+      ? `/panel?view=${view}&orderId=${encodeURIComponent(orderId)}&openChat=1`
+      : "/panel?view=notifications";
+  }
+
   const requestedUrl = payload.data?.url;
   if (requestedUrl && requestedUrl.startsWith("/") && !requestedUrl.startsWith("//")) {
     return requestedUrl;
   }
 
-  switch (payload.type ?? payload.data?.type) {
-    case "message":
+  switch (type) {
+    case "MESSAGE":
+    case "CHAT":
       return "/mensajes";
-    case "proposal":
-    case "propossal":
+    case "PROPOSAL":
+    case "PROPOSSAL":
       return "/panel?view=proposals-view";
-    case "promotion":
+    case "PROMOTION":
       return "/panel?view=promotions-all";
     default:
       return "/panel?view=notifications";

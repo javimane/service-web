@@ -150,10 +150,10 @@ describe("OrderChatModal", () => {
       expect(sendNotificationAction).toHaveBeenCalledWith({
         user_id: "buyer-user-456",
         sender_id: "seller-user-789",
-        type: "message",
+        type: "ORDER_CHAT_PURCHASE",
         title: "Ferretería Central (Pedido #V-98765)",
         content: "Hola Juan, sale hoy por la tarde!",
-        source_id: "msg-2",
+        source_id: "order-12345",
         token: "fake-token",
       });
     });

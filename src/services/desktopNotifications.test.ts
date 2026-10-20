@@ -34,4 +34,17 @@ describe("desktop notifications", () => {
     expect(desktopNotificationUrl({ type: "message" })).toBe("/mensajes");
     expect(desktopNotificationUrl({ data: { url: "//external.example/path" } })).toBe("/panel?view=notifications");
   });
+
+  it("opens the sale chat from order notifications, including older titles", () => {
+    const orderId = "944bd971-43d5-4f06-8781-686df090076b";
+    const target = `/panel?view=sales&orderId=${orderId}&openChat=1`;
+    expect(desktopNotificationUrl({
+      data: { type: "ORDER_CHAT_SALE", source_id: orderId, url: "/mensajes" },
+    })).toBe(target);
+    expect(desktopNotificationUrl({
+      type: "message",
+      title: `Cliente (Pedido #${orderId})`,
+      data: { source_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+    })).toBe(target);
+  });
 });

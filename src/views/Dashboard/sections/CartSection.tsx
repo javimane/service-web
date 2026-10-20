@@ -40,6 +40,8 @@ import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDe
 import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
 import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
 import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
+import QrPaymentConfirmedModal from "@/components/QrPaymentConfirmedModal/QrPaymentConfirmedModal";
+import { isQrPaymentConfirmed, useQrPaymentStatus } from "@/hooks/useQrPaymentStatus";
 import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
 import { ROUTES } from "@/routes/paths";
 import { getAccessToken } from "@/utils/auth";
@@ -94,18 +96,36 @@ export default function CartSection() {
     null,
   );
   const [qrTimerSeconds, setQrTimerSeconds] = useState(900); // 15 min
+  const [qrPaymentConfirmed, setQrPaymentConfirmed] = useState(false);
+  const { data: qrOrder } = useQrPaymentStatus(activeQrData?.order_id, qrModalOpen);
+
+  useEffect(() => {
+    if (!qrModalOpen || !activeQrData || !isQrPaymentConfirmed(qrOrder?.status)) return;
+    setQrModalOpen(false);
+    setActiveQrData(null);
+    setQrPaymentConfirmed(true);
+    if (user) {
+      commerceService.clearCart().catch(() => undefined);
+    } else {
+      clearGuestCart();
+    }
+    queryClient.invalidateQueries({ queryKey: ["user-cart"] });
+  }, [activeQrData, qrModalOpen, qrOrder?.status, queryClient, user]);
   const isMigratingGuestCart = useRef(false);
   const checkoutStartedRef = useRef(false);
 
   const {
     data: cart,
     isLoading: isCartLoading,
+    isFetching: isCartFetching,
     isError,
     refetch: refetchCart,
   } = useQuery<Cart>({
     queryKey: ["user-cart", user?.id ?? "guest"],
     queryFn: () => (user ? commerceService.cart() : getGuestCart()),
     enabled: !isAuthLoading,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const items = useMemo(() => cart?.items ?? [], [cart?.items]);
@@ -323,7 +343,12 @@ export default function CartSection() {
     onSuccess: (updatedCart) => {
       showSuccess("Artículo eliminado del carrito.");
       queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
+      if (user) {
+        void queryClient.invalidateQueries({ queryKey: ["user-cart", user.id] });
+      }
     },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo eliminar el artículo del carrito."),
   });
 
   const clearCartMutation = useMutation({
@@ -331,8 +356,14 @@ export default function CartSection() {
       user ? commerceService.clearCart() : Promise.resolve(clearGuestCart()),
     onSuccess: (updatedCart) => {
       showSuccess("Carrito vaciado.");
-      queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
+      if (user) {
+        void queryClient.invalidateQueries({ queryKey: ["user-cart", user.id] });
+      } else {
+        queryClient.setQueryData(["user-cart", "guest"], updatedCart);
+      }
     },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo vaciar el carrito."),
   });
 
   const calculateShippingMutation = useMutation({
@@ -697,7 +728,7 @@ export default function CartSection() {
       </header>
 
       {/* Cart Content or States */}
-      {isCartLoading ? (
+      {isCartLoading || (isCartFetching && items.length === 0) ? (
         <div className="cart-state cart-state--loading">
           <Clock className="cart-state__spinner" size={32} />
           <p>Cargando carrito...</p>
@@ -827,6 +858,7 @@ export default function CartSection() {
                         type="button"
                         className="cart-item-delete"
                         title="Eliminar"
+                        disabled={removeMutation.isPending}
                         onClick={() => removeMutation.mutate(item.id)}
                       >
                         <Trash2 size={16} />
@@ -1496,11 +1528,20 @@ export default function CartSection() {
                 router.push(`${ROUTES.dashboard}?view=purchases`);
               }}
             >
-              Ya realicé el pago
+              Consultar en Mis Compras
             </button>
             <ReturnsPolicyLink />
           </div>
         </Modal>
+      )}
+      {qrPaymentConfirmed && (
+        <QrPaymentConfirmedModal
+          isOpen
+          onContinue={() => {
+            setQrPaymentConfirmed(false);
+            router.push(`${ROUTES.dashboard}?view=purchases`);
+          }}
+        />
       )}
     </div>
   );

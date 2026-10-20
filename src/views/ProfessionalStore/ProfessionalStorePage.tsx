@@ -250,6 +250,7 @@ export default function ProfessionalStorePage() {
         wholesale: myEntry?.wholesale,
         wholesale_price: myEntry?.wholesale_price,
         wholesale_unit: myEntry?.wholesale_unit,
+        hasLastUnit: myEntry?.stock != null && Number(myEntry.stock) === 1,
         _original: item,
       };
     });
@@ -361,6 +362,7 @@ export default function ProfessionalStorePage() {
         wholesale: myEntry?.wholesale,
         wholesale_price: myEntry?.wholesale_price,
         wholesale_unit: myEntry?.wholesale_unit,
+        hasLastUnit: myEntry?.stock != null && Number(myEntry.stock) === 1,
       };
     });
   }, [normalized, id]);
@@ -565,6 +567,12 @@ export default function ProfessionalStorePage() {
                         alt={product.title}
                         draggable="false"
                       />
+                      {product.hasLastUnit && (
+                        <span className="store-offer-card__last-unit">
+                          <Flame size={13} />
+                          Última unidad
+                        </span>
+                      )}
                       <div className="store-offer-card__favorite-wrap">
                         <FavoriteButton
                           type="product"
@@ -924,6 +932,12 @@ export default function ProfessionalStorePage() {
                   >
                     <div className="store-product-card__image">
                       <img src={product.image} alt={product.title} />
+                      {product.hasLastUnit && (
+                        <span className="store-product-card__last-unit">
+                          <Flame size={13} />
+                          Última unidad
+                        </span>
+                      )}
                       {product.is_foreign && (
                         <span className="store-badge store-badge--foreign">
                           <Globe size={10} /> EXTERNO

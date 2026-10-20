@@ -352,6 +352,23 @@
   border-radius: var(--radius-sm);
 }
 
+.product-card__badge-last-unit {
+  position: absolute;
+  bottom: var(--space-2);
+  left: var(--space-2);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--accent-color);
+  color: var(--white);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-extrabold);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
 /* Loading */
 .products-page__loading {
   grid-column: 1 / -1;

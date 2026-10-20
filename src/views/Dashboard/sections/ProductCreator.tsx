@@ -149,6 +149,7 @@ export default function ProductCreator({
   );
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [missingFieldsModalMessage, setMissingFieldsModalMessage] = useState<string | null>(null);
 
   const [eanLoading, setEanLoading] = useState(false);
   const [eanMatch, setEanMatch] = useState<any>(null);
@@ -613,7 +614,11 @@ export default function ProductCreator({
 
   const handleAddFromEan = async () => {
     if (!eanMatch) return;
-    if (!newProduct.product_condition) { showError("Elegí la condición del producto."); return; }
+    if (!newProduct.product_condition) {
+      setMissingFieldsModalMessage("Falta agregar: la condición del producto.");
+      showError("Elegí la condición del producto.");
+      return;
+    }
     try {
       if (eanMatch.isAlreadyAssigned && variantParent) {
         await commerceService.linkVariant(
@@ -703,6 +708,26 @@ export default function ProductCreator({
 
       if (Object.keys(e).length > 0) {
         setErrors(e);
+        const fieldLabels: Record<string, string> = {
+          name: "el nombre del producto",
+          attributes: "las características del producto",
+          ean: "el código de barras (EAN)",
+          price: "el precio",
+          product_condition: "la condición del producto",
+          categoryId: "la categoría",
+          stock: "el stock",
+          weight: "el peso",
+          width: "el ancho",
+          height: "el alto",
+          depth: "la profundidad",
+          image: "al menos una imagen",
+        };
+        const missingList = Object.keys(e).map(
+          (key) => fieldLabels[key] || e[key],
+        );
+        setMissingFieldsModalMessage(
+          `Falta agregar: ${missingList.join(", ")}.`,
+        );
         setIsSubmitting(false);
         return;
       }
@@ -942,6 +967,13 @@ export default function ProductCreator({
       }
     } catch (err) {
       console.error("Error submitting product:", err);
+      const errMessage =
+        err instanceof Error ? err.message : "No se pudo guardar el producto.";
+      setMissingFieldsModalMessage(
+        errMessage.toLowerCase().startsWith("falta agregar")
+          ? errMessage
+          : `Falta agregar o revisar: ${errMessage}`,
+      );
       showError(
         err instanceof Error ? err.message : "No se pudo guardar el producto.",
       );
@@ -2360,6 +2392,38 @@ export default function ProductCreator({
         )}
       </div>
       {/* end product-creator__body */}
+
+      {/* ── Modal flotante de validación / campos faltantes ── */}
+      {missingFieldsModalMessage && (
+        <div
+          className="dash-products__floating-overlay"
+          role="alertdialog"
+          aria-modal="true"
+        >
+          <div className="dash-products__floating-screen dash-products__floating-screen--danger">
+            <div className="dash-products__floating-icon dash-products__floating-icon--danger">
+              <AlertTriangle size={28} />
+            </div>
+            <div className="dash-products__floating-content">
+              <span className="dash-products__floating-title">
+                Datos obligatorios pendientes
+              </span>
+              <p className="dash-products__floating-desc">
+                {missingFieldsModalMessage}
+              </p>
+            </div>
+            <div className="dash-products__floating-actions">
+              <button
+                type="button"
+                className="dash-products__floating-btn dash-products__floating-btn--primary"
+                onClick={() => setMissingFieldsModalMessage(null)}
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal de éxito ── */}
       {showSuccessModal && (

@@ -50,6 +50,8 @@ import "./ProductPaymentModal.css";
 import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
 import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
 import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
+import QrPaymentConfirmedModal from "@/components/QrPaymentConfirmedModal/QrPaymentConfirmedModal";
+import { isQrPaymentConfirmed, useQrPaymentStatus } from "@/hooks/useQrPaymentStatus";
 
 interface ProductPaymentModalProps {
   isOpen: boolean;
@@ -203,6 +205,29 @@ export default function ProductPaymentModal({
     staleTime: 1000 * 60 * 5,
   });
 
+  const productQuoteRequest = {
+    professional_product_id: professionalProductId || "",
+    quantity,
+    installments: paymentMethod === "card" ? installments : 1,
+    delivery_type: deliveryType,
+    delivery_address_id:
+      deliveryType === "shipment" ? selectedAddressId || undefined : undefined,
+    ...(deliveryType !== "coordinate_with_merchant" ? originSelection : {}),
+  };
+  const {
+    data: productQuote,
+    isLoading: productQuoteLoading,
+    isError: productQuoteError,
+    refetch: refreshProductQuote,
+  } = useQuery({
+    queryKey: ["product-checkout-quote", productQuoteRequest],
+    queryFn: () => commerceService.calculateProductCheckoutQuote(productQuoteRequest),
+    enabled: isOpen && Boolean(user) && Boolean(professionalProductId) &&
+      (deliveryType !== "shipment" || Boolean(selectedAddressId && selectedBranchId)),
+    staleTime: 0,
+    retry: false,
+  });
+
   const { data: savedCards = [] } = useQuery<UserPaymentMethod[]>({
     queryKey: ["user-payment-methods"],
     queryFn: async () => {
@@ -242,13 +267,22 @@ export default function ProductPaymentModal({
   const submittingRef = useRef(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [activeQr, setActiveQr] = useState<PayCloudQrResponse | null>(null);
+  const [qrPaymentConfirmed, setQrPaymentConfirmed] = useState(false);
   const [qrSecondsLeft, setQrSecondsLeft] = useState<number>(900);
+  const { data: qrOrder } = useQrPaymentStatus(activeQr?.order_id, isOpen);
+
+  useEffect(() => {
+    if (!activeQr || !isQrPaymentConfirmed(qrOrder?.status)) return;
+    setActiveQr(null);
+    setQrPaymentConfirmed(true);
+  }, [activeQr, qrOrder?.status]);
 
   // Reset when opened
   useEffect(() => {
     if (isOpen) {
       setCompletedOrder(null);
       setActiveQr(null);
+      setQrPaymentConfirmed(false);
       setQuantity(Math.max(1, Math.min(initialQuantity, availableStock)));
     }
   }, [isOpen, initialQuantity, availableStock]);
@@ -384,7 +418,8 @@ export default function ProductPaymentModal({
     financingQuote
       ? financingQuote.totalAmount - subtotal
       : 0;
-  const totalToPay = subtotal + financingAmount + calculatedShippingFee;
+  const totalToPay = productQuote?.total_amount ??
+    subtotal + financingAmount + calculatedShippingFee;
   const installmentAmount = Number((totalToPay / installments).toFixed(2));
 
   // Available installment choices
@@ -541,6 +576,12 @@ export default function ProductPaymentModal({
     submittingRef.current = true;
     setIsSubmitting(true);
     try {
+      const freshQuote = await commerceService.calculateProductCheckoutQuote(productQuoteRequest);
+      if (Math.abs(Math.round((freshQuote.total_amount - totalToPay) * 100)) > 1) {
+        await refreshProductQuote();
+        showError("El precio cambió. Revisá el nuevo total antes de pagar.");
+        return;
+      }
       let token: string;
       let cardLastFour: string;
       let cardholderName: string;
@@ -763,7 +804,7 @@ export default function ProductPaymentModal({
               }}
             >
               <CheckCircle2 size={18} />
-              <span>Ya realicé el pago</span>
+              <span>Consultar en Mis Compras</span>
             </button>
           </div>
           <ReturnsPolicyLink />
@@ -1597,7 +1638,7 @@ export default function ProductPaymentModal({
                   <div className="product-payment-modal__summary-row">
                     <span>
                       Precio mayorista aplicado desde {pricing.wholesaleMinimum}{" "}
-                      unidades
+                      unidades. No se acumula con oferta, 2x1 ni 3x2.
                     </span>
                   </div>
                 )}
@@ -1663,6 +1704,8 @@ export default function ProductPaymentModal({
                     isSubmitting ||
                     availableStock === 0 ||
                     quantity > availableStock ||
+                    (Boolean(user) && (productQuoteLoading ||
+                      productQuoteError || !productQuote)) ||
                     (isAgeRestricted && !canPurchase) ||
                     (paymentMethod === "card" &&
                       installments > 1 &&
@@ -1707,11 +1750,23 @@ export default function ProductPaymentModal({
       )}
     </div>
   );
-  return pageMode ? (
-    content
-  ) : (
-    <Modal isOpen={isOpen} onClose={onClose} title="Finalizar Compra">
-      {content}
-    </Modal>
+  return (
+    <>
+      {pageMode ? content : (
+        <Modal isOpen={isOpen} onClose={onClose} title="Finalizar Compra">
+          {content}
+        </Modal>
+      )}
+      {qrPaymentConfirmed && (
+        <QrPaymentConfirmedModal
+          isOpen
+          onContinue={() => {
+            setQrPaymentConfirmed(false);
+            if (!pageMode) onClose();
+            router.push("/panel?view=purchases");
+          }}
+        />
+      )}
+    </>
   );
 }

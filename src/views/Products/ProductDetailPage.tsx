@@ -321,9 +321,7 @@ export default function ProductDetailPage({
     },
     onSuccess: (updatedCart) => {
       queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
-      showSuccess(
-        `${quantity} ${quantity === 1 ? "producto agregado" : "productos agregados"} al carrito.`,
-      );
+      showSuccess("Producto listo en el carrito. Ya podés continuar la compra.");
     },
     onError: (err: any) => {
       const rawMsg =

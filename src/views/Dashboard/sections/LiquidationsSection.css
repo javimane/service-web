@@ -4,6 +4,16 @@
   gap: var(--space-6);
 }
 
+.liquidations-debt { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: var(--space-5); }
+.liquidations-debt__heading, .liquidations-debt__item, .liquidations-debt__pages { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); }
+.liquidations-debt__heading strong { color: #b91c1c; font-size: 1.4rem; white-space: nowrap; }
+.liquidations-debt p, .liquidations-debt span, .liquidations-debt small { color: var(--text-secondary); }
+.liquidations-debt__item { border-top: 1px solid var(--border-color); padding: var(--space-4) 0; }
+.liquidations-debt__item > div { display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.liquidations-debt__item > strong { white-space: nowrap; color: #b91c1c; }
+.liquidations-debt__pages { align-items: center; justify-content: center; }
+@media (max-width: 640px) { .liquidations-debt__heading, .liquidations-debt__item { flex-direction: column; } }
+
 .liquidations-section__header {
   display: flex;
   justify-content: space-between;

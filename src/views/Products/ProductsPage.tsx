@@ -8,6 +8,7 @@ import {
   Globe,
   Filter,
   Loader2,
+  Flame,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getProductsAction } from "../../app/actions/products";
@@ -411,6 +412,19 @@ export default function ProductsPage() {
         offer_2x1: firstSeller.offer_2x1,
         offer_3x2: firstSeller.offer_3x2,
         sellers: sellers,
+        hasLastUnit:
+          (visibleSellers.length > 0 ? visibleSellers : sellers).some(
+            (seller: any) =>
+              seller &&
+              seller.is_active !== false &&
+              seller.stock !== null &&
+              seller.stock !== undefined &&
+              Number(seller.stock) === 1,
+          ) ||
+          (sellers.length === 0 &&
+            product?.stock !== null &&
+            product?.stock !== undefined &&
+            Number(product.stock) === 1),
         _original: item,
       };
     });
@@ -663,6 +677,12 @@ export default function ProductsPage() {
                   >
                     <div className="product-card__image">
                       <img src={product.image} alt={product.title} />
+                      {product.hasLastUnit && (
+                        <span className="product-card__badge-last-unit">
+                          <Flame size={13} />
+                          Última unidad
+                        </span>
+                      )}
                       <div className="product-card__favorite-wrap">
                         <FavoriteButton
                           type="product"

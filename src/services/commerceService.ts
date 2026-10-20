@@ -32,6 +32,31 @@ export type DeliveryType = "pickup" | "shipment" | "coordinate_with_merchant";
 
 export type LiquidationsReportType = "settlement" | "sale" | "full";
 
+export type MerchantBalance = {
+  available_amount: number;
+  debt_amount: number;
+  balance: number;
+};
+
+export type MerchantDebt = {
+  id: string;
+  source_kind: "refund" | "chargeback";
+  original_amount: number;
+  remaining_amount: number;
+  recovered_amount: number;
+  created_at: string;
+  adjustment: {
+    order_id: string;
+    charge_concept: string | null;
+    reason: string | null;
+    amount: number;
+    cancellation_commission_amount: number;
+    cancellation_iva_amount: number;
+    provider_fee_loss_amount: number;
+    processor_unreturned_iva_amount: number;
+  } | null;
+};
+
 export type GeneratedReportNotification = {
   id: string;
   type: string;
@@ -132,8 +157,10 @@ export type OrderSummary = {
     id: string;
     name: string;
     price?: number;
+    service_location_ids?: string[] | null;
   } | null;
   service_id?: string | null;
+  service_location_kind?: "branch" | "home" | "coordinate" | null;
   appointment_status?:
     | "pending_appointment"
     | "scheduled"
@@ -979,6 +1006,12 @@ export const commerceService = {
   orderDetail: (id: string) =>
     apiClient<OrderSummary>(API_ENDPOINTS.orders.detail(id)),
 
+  syncPaycloudPayment: (id: string) =>
+    apiClient<{ order_id: string; status: "paid" | "pending_verification" }>(
+      API_ENDPOINTS.orders.syncPaycloudPayment(id),
+      { method: "POST" },
+    ),
+
   confirmOrder: (id: string) =>
     apiClient<OrderSummary>(API_ENDPOINTS.orders.confirm(id), {
       method: "POST",
@@ -1129,6 +1162,22 @@ export const commerceService = {
       },
     ),
 
+  calculateProductCheckoutQuote: (data: {
+    professional_product_id: string;
+    quantity: number;
+    installments: number;
+    delivery_type: DeliveryType;
+    delivery_address_id?: string;
+    branch_id?: string;
+    origin_address_id?: number;
+  }) =>
+    apiClient<{
+      items_subtotal: number;
+      financing_surcharge_amount: number;
+      shipping_cost: number;
+      total_amount: number;
+    }>(API_ENDPOINTS.orders.productCheckoutQuote, { method: "POST", body: data }),
+
   calculateServiceCheckout: (
     serviceId: string,
     quantity: number,
@@ -1274,7 +1323,7 @@ export const commerceService = {
       }
       if (
         typeof window !== "undefined" &&
-        ["QR_GENERATION_REJECTED", "CHECKOUT_FAILED", "CHECKOUT_NOT_SUBMITTED"].includes(
+        ["QR_GENERATION_REJECTED", "CHECKOUT_FAILED", "CHECKOUT_CANCELLED", "CHECKOUT_NOT_SUBMITTED"].includes(
           error.data?.error_code ?? "",
         )
       ) {
@@ -1286,8 +1335,9 @@ export const commerceService = {
     const response = await send().catch(async (error: CheckoutError) => {
       // A 409 only reports a previously failed attempt: this request did not charge.
       // A new provider rejection (400) must remain visible, without an automatic charge loop.
-      if (error.statusCode === 409 && error.data?.error_code === 'CHECKOUT_FAILED' &&
-          error.data.retryable === true && error.data.requires_new_attempt === true &&
+      if (error.statusCode === 409 &&
+          ['CHECKOUT_FAILED', 'CHECKOUT_CANCELLED'].includes(error.data?.error_code ?? '') &&
+          error.data?.retryable === true && error.data?.requires_new_attempt === true &&
           (data.payment_method !== 'payway_card' || options.refreshPayment)) {
         if (typeof window !== 'undefined') {
           window.sessionStorage.removeItem(storageKey);
@@ -1434,6 +1484,14 @@ export const commerceService = {
     }),
 
   // Liquidations
+  merchantBalance: () =>
+    apiClient<MerchantBalance>(`${API_ENDPOINTS.liquidations.base}/balance`),
+
+  merchantDebts: (page = 1, limit = 20) =>
+    apiClient<PageResponse<MerchantDebt>>(
+      `${API_ENDPOINTS.liquidations.base}/debts${query({ page, limit })}`,
+    ),
+
   liquidations: (
     page = 1,
     limit = 10,

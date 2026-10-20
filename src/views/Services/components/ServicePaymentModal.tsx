@@ -34,6 +34,8 @@ import { requestIdentityVerification } from "@/utils/identityVerification";
 import "./ServicePaymentModal.css";
 import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
 import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
+import QrPaymentConfirmedModal from "@/components/QrPaymentConfirmedModal/QrPaymentConfirmedModal";
+import { isQrPaymentConfirmed, useQrPaymentStatus } from "@/hooks/useQrPaymentStatus";
 
 interface ServicePaymentModalProps {
   isOpen: boolean;
@@ -93,7 +95,15 @@ export default function ServicePaymentModal({
   const submittingRef = useRef(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [activeQr, setActiveQr] = useState<PayCloudQrResponse | null>(null);
+  const [qrPaymentConfirmed, setQrPaymentConfirmed] = useState(false);
   const [qrSecondsLeft, setQrSecondsLeft] = useState<number>(900);
+  const { data: qrOrder } = useQrPaymentStatus(activeQr?.order_id, isOpen);
+
+  useEffect(() => {
+    if (!activeQr || !isQrPaymentConfirmed(qrOrder?.status)) return;
+    setActiveQr(null);
+    setQrPaymentConfirmed(true);
+  }, [activeQr, qrOrder?.status]);
   const { data: commissionRates = [] } = useQuery({
     queryKey: ["public-marketplace-commissions"],
     queryFn: commerceService.publicCommissions,
@@ -117,6 +127,7 @@ export default function ServicePaymentModal({
     if (isOpen) {
       setCompletedOrder(null);
       setActiveQr(null);
+      setQrPaymentConfirmed(false);
       setQuantity(1);
       setInstallments(1);
       setSelectedLocationId("");
@@ -390,14 +401,12 @@ export default function ServicePaymentModal({
                 type="button"
                 className="service-payment-modal__btn-primary"
                 onClick={() => {
-                  setCompletedOrder({
-                    id: activeQr.order_id || `ORD-${Date.now()}`,
-                  });
-                  setActiveQr(null);
+                  if (!pageMode) onClose();
+                  router.push("/panel?view=purchases");
                 }}
               >
                 <CheckCircle2 size={18} />
-                <span>Ya realicé el pago</span>
+                <span>Consultar en Mis Compras</span>
               </button>
             </div>
             <ReturnsPolicyLink />
@@ -830,7 +839,21 @@ export default function ServicePaymentModal({
         )}
       </div>
   );
-  return pageMode ? content : (
-    <Modal isOpen={isOpen} onClose={onClose} title="Contratar Servicio">{content}</Modal>
+  return (
+    <>
+      {pageMode ? content : (
+        <Modal isOpen={isOpen} onClose={onClose} title="Contratar Servicio">{content}</Modal>
+      )}
+      {qrPaymentConfirmed && (
+        <QrPaymentConfirmedModal
+          isOpen
+          onContinue={() => {
+            setQrPaymentConfirmed(false);
+            if (!pageMode) onClose();
+            router.push("/panel?view=purchases");
+          }}
+        />
+      )}
+    </>
   );
 }

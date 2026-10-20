@@ -20,7 +20,8 @@ export function calculateProductPricing(
   const unitPrice = Math.max(0, (wholesaleApplied ? wholesalePrice
     : Number(product.offer_price || 0) > 0 ? Number(product.offer_price)
     : Number(product.price || 0)));
-  const promotion = product.offer_2x1 ? "2x1" : product.offer_3x2 ? "3x2" : null;
+  const promotion = wholesaleApplied ? null
+    : product.offer_2x1 ? "2x1" : product.offer_3x2 ? "3x2" : null;
   const paidUnits = promotion === "2x1" ? quantity - Math.floor(quantity / 2)
     : promotion === "3x2" ? quantity - Math.floor(quantity / 3) : quantity;
   return {

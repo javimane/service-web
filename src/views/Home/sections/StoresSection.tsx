@@ -15,7 +15,7 @@ import { getProfessionalsAction } from "@/app/actions/professionals";
 
 export default function StoresSection({
   userProvince = "Buenos Aires",
-  userProvinceId
+  userProvinceId,
 }: {
   userProvince?: string;
   userProvinceId?: number;

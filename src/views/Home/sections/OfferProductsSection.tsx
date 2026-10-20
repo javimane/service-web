@@ -132,6 +132,19 @@ export default function OfferProductsSection({
         seller: sellerName,
         image: primaryImage,
         seo_path: product.seo_path,
+        hasLastUnit:
+          (Array.isArray(sellers) && sellers.length > 0
+            ? sellers.some(
+                (seller: any) =>
+                  seller &&
+                  seller.is_active !== false &&
+                  seller.stock !== null &&
+                  seller.stock !== undefined &&
+                  Number(seller.stock) === 1,
+              )
+            : product?.stock !== null &&
+              product?.stock !== undefined &&
+              Number(product.stock) === 1),
         _original: item,
       };
     });
@@ -221,6 +234,12 @@ export default function OfferProductsSection({
                         alt={product.title}
                         draggable="false"
                       />
+                      {product.hasLastUnit && (
+                        <span className="offer-product-card__badge-last-unit">
+                          <Flame size={13} />
+                          Última unidad
+                        </span>
+                      )}
                       <div className="offer-product-card__favorite-wrap">
                         <FavoriteButton
                           type="product"

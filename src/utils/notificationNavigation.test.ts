@@ -54,6 +54,15 @@ describe("notificationNavigation", () => {
       expect(meta.category).toBe("system");
       expect(meta.color).toBe("orange");
     });
+
+    it("mapea PRODUCT_OUT_OF_STOCK a alerta naranja en categoría sales", () => {
+      const meta = getNotificationMeta("PRODUCT_OUT_OF_STOCK");
+      expect(meta.category).toBe("sales");
+      expect(meta.color).toBe("orange");
+      expect(getNotificationTargetUrl({ type: "PRODUCT_OUT_OF_STOCK", source_id: "listing-1" })).toBe(
+        `${ROUTES.dashboard}?view=products`,
+      );
+    });
   });
 
   describe("getNotificationTargetUrl", () => {
@@ -122,6 +131,31 @@ describe("notificationNavigation", () => {
         sender_id: "user-abc",
       });
       expect(url).toBe(`${ROUTES.messages}?userId=user-abc`);
+    });
+
+    it("abre el chat de un pedido desde su notificación", () => {
+      const orderId = "944bd971-43d5-4f06-8781-686df090076b";
+      expect(getNotificationTargetUrl({
+        type: "ORDER_CHAT_SALE",
+        source_id: orderId,
+      })).toBe(`${ROUTES.dashboard}?view=sales&orderId=${orderId}&openChat=1`);
+      expect(getNotificationTargetUrl({
+        type: "ORDER_CHAT_PURCHASE",
+        source_id: orderId,
+      })).toBe(`${ROUTES.dashboard}?view=purchases&orderId=${orderId}&openChat=1`);
+      expect(getNotificationMeta("ORDER_CHAT_SALE").category).toBe("messages");
+    });
+
+    it("usa el ID del pedido del título en avisos anteriores que guardaban el ID del mensaje", () => {
+      const orderId = "944bd971-43d5-4f06-8781-686df090076b";
+      expect(getNotificationTargetUrl({
+        type: "message",
+        source_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        sender_id: "buyer-1",
+        title: `Cliente (Pedido #${orderId})`,
+      }, { isProfessional: true })).toBe(
+        `${ROUTES.dashboard}?view=sales&orderId=${orderId}&openChat=1`,
+      );
     });
 
     it("dirige ERROR_REPORT a /panel?view=report-errors", () => {

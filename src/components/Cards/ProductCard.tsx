@@ -1,4 +1,5 @@
 import React from "react";
+import { Flame } from "lucide-react";
 import FavoriteButton from "../FavoriteButton/FavoriteButton";
 import "./ProductCard.css";
 
@@ -59,6 +60,29 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   const has2x1 = Boolean(product?.offer_2x1 ?? info.offer_2x1);
   const has3x2 = Boolean(product?.offer_3x2 ?? info.offer_3x2);
+  const hasLastUnit = (() => {
+    const list =
+      (Array.isArray(product?.ProfessionalProducts) && product.ProfessionalProducts) ||
+      (Array.isArray(product?.professional_products) && product.professional_products) ||
+      (Array.isArray(info?.ProfessionalProducts) && info.ProfessionalProducts) ||
+      (Array.isArray(info?.professional_products) && info.professional_products) ||
+      (Array.isArray(product?.sellers) && product.sellers) ||
+      (Array.isArray(product?._original?.ProfessionalProducts) && product._original.ProfessionalProducts) ||
+      (Array.isArray(product?._original?.professional_products) && product._original.professional_products) ||
+      null;
+    if (list && list.length > 0) {
+      return list.some(
+        (pp: any) =>
+          pp &&
+          pp.is_active !== false &&
+          pp.stock !== null &&
+          pp.stock !== undefined &&
+          Number(pp.stock) === 1,
+      );
+    }
+    const directStock = product?.stock ?? info?.stock;
+    return directStock !== null && directStock !== undefined && Number(directStock) === 1;
+  })();
 
   return (
     <div
@@ -69,6 +93,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div className="nearby-product-card__image">
         <img src={primaryImage} alt={name} loading="lazy" draggable="false" />
+        {hasLastUnit && (
+          <span className="nearby-product-card__last-unit">
+            <Flame size={13} />
+            Última unidad
+          </span>
+        )}
         <div className="nearby-product-card__favorite-wrap">
           <FavoriteButton type="product" targetId={productId} size={16} />
         </div>

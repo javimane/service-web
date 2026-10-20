@@ -490,6 +490,24 @@
   flex-shrink: 0;
 }
 
+.store-product-card__last-unit,
+.store-offer-card__last-unit {
+  position: absolute;
+  bottom: var(--space-2);
+  left: var(--space-2);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--accent-color);
+  color: var(--white);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-extrabold);
+  box-shadow: var(--shadow-sm);
+}
+
 .store-product-card--list .store-product-card__image {
   width: 140px;
   aspect-ratio: 1;

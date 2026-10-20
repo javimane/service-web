@@ -86,6 +86,7 @@ export default function SalesSection() {
   const router = useRouter();
   const pathname = usePathname();
   const orderIdParam = searchParams?.get("orderId");
+  const openOrderChat = searchParams?.get("openChat") === "1";
   const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
   useEffect(() => {
     if (!orderIdParam) setDismissedOrderId(null);
@@ -162,12 +163,13 @@ export default function SalesSection() {
 
   // Auto-cargar orden si viene orderId por URL (ej. desde notificación)
   const activeOrderId =
-    selectedOrder?.id ||
+    (openOrderChat && orderIdParam ? orderIdParam : selectedOrder?.id) ||
     (orderIdParam !== dismissedOrderId ? orderIdParam : undefined) ||
     undefined;
   const {
     data: orderClaims = [],
     error: orderClaimsError,
+    isSuccess: orderClaimsLoaded,
     refetch: refetchOrderClaims,
   } = useQuery({
     queryKey: ["order-claims", selectedOrder?.id],
@@ -185,6 +187,7 @@ export default function SalesSection() {
       setDismissedOrderId(orderIdParam);
       const params = new URLSearchParams(searchParams?.toString() || "");
       params.delete("orderId");
+      params.delete("openChat");
       router.replace(
         `${pathname}${params.size ? `?${params.toString()}` : ""}`,
         { scroll: false },
@@ -195,14 +198,14 @@ export default function SalesSection() {
   const { data: routeOrderDetail } = useQuery({
     queryKey: ["merchant-order-detail", activeOrderId],
     queryFn: () => commerceService.orderDetail(activeOrderId!),
-    enabled: Boolean(activeOrderId && !selectedOrder),
+    enabled: Boolean(activeOrderId && selectedOrder?.id !== activeOrderId),
   });
 
   useEffect(() => {
-    if (routeOrderDetail && !selectedOrder) {
+    if (routeOrderDetail && routeOrderDetail.id === activeOrderId && selectedOrder?.id !== activeOrderId) {
       setSelectedOrder(routeOrderDetail);
     }
-  }, [routeOrderDetail, selectedOrder]);
+  }, [routeOrderDetail, selectedOrder?.id, activeOrderId]);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [pickupCode, setPickupCode] = useState("");
@@ -233,6 +236,22 @@ export default function SalesSection() {
   const [selectedOrderForServiceVoucher, setSelectedOrderForServiceVoucher] =
     useState<OrderSummary | null>(null);
   const [isOrderChatOpen, setIsOrderChatOpen] = useState(false);
+  useEffect(() => {
+    if (openOrderChat && orderIdParam && selectedOrder?.id === orderIdParam) {
+      setIsOrderChatOpen(true);
+    }
+  }, [openOrderChat, orderIdParam, selectedOrder?.id]);
+
+  const closeOrderChat = () => {
+    setIsOrderChatOpen(false);
+    if (openOrderChat) {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.delete("openChat");
+      router.replace(`${pathname}${params.size ? `?${params.toString()}` : ""}`, {
+        scroll: false,
+      });
+    }
+  };
   const [whatsAppWarningOpen, setWhatsAppWarningOpen] = useState(false);
 
   // Fetch branches
@@ -676,6 +695,16 @@ export default function SalesSection() {
         (order.appointment as { status?: string } | undefined)?.status ===
           "completed"),
     );
+
+  const isClosedServiceAppointment = (order?: Partial<OrderSummary> | null) => {
+    if (!order?.status) return false;
+    return order.status === "cancelled" ||
+      getSaleRefundStatus({
+        status: order.status,
+        refunded_amount: order.refunded_amount,
+        total_amount: order.total_amount ?? null,
+      }) === "full";
+  };
 
   const getStatusBadge = (
     status: OrderStatus,
@@ -1153,6 +1182,7 @@ export default function SalesSection() {
                           <div className="sales-table__article-col">
                             <span>{article}</span>
                             {(order.service_id || order.service) &&
+                              !isClosedServiceAppointment(order) &&
                               (isOrderDelivered(order) ? (
                                 <span className="sales-badge sales-badge--appointment-scheduled">
                                   ✅ Turno realizado
@@ -1236,6 +1266,7 @@ export default function SalesSection() {
                           </button>
 
                           {(order.service_id || order.service) &&
+                            !isClosedServiceAppointment(order) &&
                             !isOrderDelivered(order) &&
                             order.appointment_status ===
                               "pending_appointment" && (
@@ -1850,19 +1881,28 @@ export default function SalesSection() {
                   >
                     Confirmar pedido
                   </button>
-                  <button
-                    data-action-tone="cancel"
-                    type="button"
-                    className="btn-danger"
-                    onClick={() => setCancelModalOpen(true)}
-                  >
-                    Cancelar pedido
-                  </button>
+                  {!selectedOrder.has_return &&
+                    !selectedOrder.has_chargeback &&
+                    Number(selectedOrder.refunded_amount ?? 0) === 0 &&
+                    !selectedOrder.claim_requested &&
+                    !selectedOrder.withdrawal_requested &&
+                    orderClaimsLoaded &&
+                    orderClaims.length === 0 && (
+                      <button
+                        data-action-tone="cancel"
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => setCancelModalOpen(true)}
+                      >
+                        Cancelar pedido
+                      </button>
+                    )}
                 </div>
               )}
 
               {/* Service Appointment assignment if order has service */}
-              {isServiceSale(selectedOrder) && (
+              {isServiceSale(selectedOrder) &&
+                !isClosedServiceAppointment(selectedOrder) && (
                 <div className="order-service-appointment-box">
                   <h5>Turno del Servicio</h5>
                   {['paid', 'confirmed'].includes(selectedOrder.status) &&
@@ -2400,7 +2440,15 @@ export default function SalesSection() {
       )}
 
       {/* Cancel Order Modal */}
-      {cancelModalOpen && selectedOrder && (
+      {cancelModalOpen &&
+        selectedOrder?.status === "paid" &&
+        !selectedOrder.has_return &&
+        !selectedOrder.has_chargeback &&
+        Number(selectedOrder.refunded_amount ?? 0) === 0 &&
+        !selectedOrder.claim_requested &&
+        !selectedOrder.withdrawal_requested &&
+        orderClaimsLoaded &&
+        orderClaims.length === 0 && (
         <Modal
           isOpen={cancelModalOpen}
           onClose={() => setCancelModalOpen(false)}
@@ -2555,7 +2603,7 @@ export default function SalesSection() {
                   Aviso de Seguridad
                 </strong>
                 <p className="whatsapp-warning-alert__text">
-                  Sercio no se hace responsable de los acuerdos por fuera de la
+                  Sercio no recomienda los acuerdos por fuera de la
                   plataforma, mejor contactar por chat para poder tener
                   evidencia de los reclamos ante cualquier improvisto.
                 </p>
@@ -2615,10 +2663,11 @@ export default function SalesSection() {
       )}
 
       {/* Order-scoped Chat Modal */}
-      {isOrderChatOpen && selectedOrder && (
+      {isOrderChatOpen && selectedOrder &&
+        (!openOrderChat || selectedOrder.id === orderIdParam) && (
         <OrderChatModal
           isOpen={isOrderChatOpen}
-          onClose={() => setIsOrderChatOpen(false)}
+          onClose={closeOrderChat}
           order={selectedOrder}
           currentUserId={String(user?.id || sessionStatus?.user_id || "")}
         />

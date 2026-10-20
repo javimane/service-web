@@ -15,6 +15,10 @@ export default function SpecialistShowcase() {
     portfolio,
     testimonials,
   } = showcasedSpecialist;
+  const specialtyCategories = specialty.split(",").map((category) => category.trim()).filter(Boolean);
+  const visibleSpecialty = specialtyCategories.length > 2
+    ? `${specialtyCategories.slice(0, 2).join(", ")}, ...`
+    : specialty;
 
   return (
     <section className="showcase">
@@ -31,7 +35,7 @@ export default function SpecialistShowcase() {
           </Link>
           <div className="showcase__identity">
             <h2 className="showcase__name">{name}</h2>
-            <p className="showcase__specialty">{specialty}</p>
+            <p className="showcase__specialty" title={specialty}>{visibleSpecialty}</p>
             <p className="showcase__bio">{bio}</p>
           </div>
 

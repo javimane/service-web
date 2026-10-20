@@ -123,10 +123,10 @@ export default function OrderChatModal({
         await sendNotificationAction({
           user_id: targetReceiverId,
           sender_id: currentUserId,
-          type: "message",
+          type: isBuyer ? "ORDER_CHAT_SALE" : "ORDER_CHAT_PURCHASE",
           title: `${senderDisplayName} (Pedido #${orderRef})`,
           content: text.trim(),
-          source_id: String(res?.data?.id || order.id),
+          source_id: order.id,
           token,
         });
       } catch (notifErr) {

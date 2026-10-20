@@ -46,6 +46,10 @@ import "./BuyerOrdersSection.css";
 import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
 import { compressDocumentImage } from "@/services/storageUploads";
 import { isServiceOrderSummary as isServiceOrder } from "@/utils/orderKind";
+import {
+  getPurchaseDeliveryText,
+  isServiceAtBranch,
+} from "./purchaseDeliveryText";
 import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
 
 const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
@@ -90,6 +94,26 @@ const serviceProgressStep = (order?: Partial<OrderSummary> | null) => {
   return order.paid_at || order.status === "paid" ? 1 : 0;
 };
 
+const hasOrderReview = (order?: Partial<OrderSummary> | null) =>
+  Boolean(
+    order?.review &&
+    (Array.isArray(order.review) ? order.review.length > 0 : true),
+  );
+
+const canReviewOrder = (order?: Partial<OrderSummary> | null) => {
+  if (
+    !order ||
+    ["pending", "pending_payment", "cancelled", "refunded"].includes(
+      order.status || "",
+    )
+  ) {
+    return false;
+  }
+  return isServiceOrder(order)
+    ? serviceProgressStep(order) >= 3
+    : isOrderDelivered(order);
+};
+
 export default function BuyerOrdersSection() {
   const token = getAccessToken();
   setApiAccessToken(token);
@@ -100,6 +124,7 @@ export default function BuyerOrdersSection() {
   const router = useRouter();
   const pathname = usePathname();
   const orderIdParam = searchParams?.get("orderId");
+  const openOrderChat = searchParams?.get("openChat") === "1";
   const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
   useEffect(() => {
     if (!orderIdParam) setDismissedOrderId(null);
@@ -134,6 +159,22 @@ export default function BuyerOrdersSection() {
     };
   }, [selectedOrder?.pickup_code]);
   const [chatOrder, setChatOrder] = useState<OrderSummary | null>(null);
+  useEffect(() => {
+    if (openOrderChat && orderIdParam && selectedOrder?.id === orderIdParam) {
+      setChatOrder(selectedOrder);
+    }
+  }, [openOrderChat, orderIdParam, selectedOrder]);
+
+  const closeOrderChat = () => {
+    setChatOrder(null);
+    if (openOrderChat) {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.delete("openChat");
+      router.replace(`${pathname}${params.size ? `?${params.toString()}` : ""}`, {
+        scroll: false,
+      });
+    }
+  };
   const [reviewOrder, setReviewOrder] = useState<OrderSummary | null>(null);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
   const [withdrawalReason, setWithdrawalReason] = useState("");
@@ -164,7 +205,7 @@ export default function BuyerOrdersSection() {
   const totalPages = ordersData?.totalPages ?? (Math.ceil(total / 10) || 1);
 
   const activeOrderId =
-    selectedOrder?.id ||
+    (openOrderChat && orderIdParam ? orderIdParam : selectedOrder?.id) ||
     (orderIdParam !== dismissedOrderId ? orderIdParam : undefined) ||
     undefined;
 
@@ -198,6 +239,7 @@ export default function BuyerOrdersSection() {
       setDismissedOrderId(orderIdParam);
       const params = new URLSearchParams(searchParams?.toString() || "");
       params.delete("orderId");
+      params.delete("openChat");
       router.replace(
         `${pathname}${params.size ? `?${params.toString()}` : ""}`,
         { scroll: false },
@@ -525,19 +567,6 @@ export default function BuyerOrdersSection() {
     }
   };
 
-  const getDeliveryText = (type: string) => {
-    switch (type) {
-      case "pickup":
-        return "Retiro en sucursal";
-      case "shipment":
-        return "Envío a domicilio";
-      case "coordinate_with_merchant":
-        return "Acordar con vendedor";
-      default:
-        return type;
-    }
-  };
-
   const buildGoogleCalendarUrl = (
     title: string,
     dateStr: string,
@@ -663,7 +692,7 @@ export default function BuyerOrdersSection() {
                     <div>
                       <h3 className="buyer-order-title">{article}</h3>
                       <span className="buyer-order-delivery">
-                        {getDeliveryText(order.delivery_type)}
+                        {getPurchaseDeliveryText(order)}
                       </span>
                       {order.delivery_type === "pickup" &&
                         !isServiceOrder(order) &&
@@ -797,8 +826,7 @@ export default function BuyerOrdersSection() {
                     <span>Chat</span>
                   </button>
 
-                  {(order.status === "delivered" ||
-                    isOrderDelivered(order)) && (
+                  {(hasOrderReview(order) || canReviewOrder(order)) && (
                     <button
                       type="button"
                       className="buyer-review-btn"
@@ -806,10 +834,7 @@ export default function BuyerOrdersSection() {
                     >
                       <Star size={15} />
                       <span>
-                        {order.review &&
-                        (Array.isArray(order.review)
-                          ? order.review.length > 0
-                          : true)
+                        {hasOrderReview(order)
                           ? "Ver mi calificación"
                           : "Calificar compra"}
                       </span>
@@ -976,9 +1001,7 @@ export default function BuyerOrdersSection() {
                 </div>
                 <div>
                   <span>Forma de entrega</span>
-                  <strong>
-                    {getDeliveryText(selectedOrder.delivery_type)}
-                  </strong>
+                  <strong>{getPurchaseDeliveryText(selectedOrder)}</strong>
                 </div>
                 {(selectedOrder.delivery_type === "pickup" ||
                   isServiceOrder(selectedOrder)) &&
@@ -1274,7 +1297,7 @@ export default function BuyerOrdersSection() {
                   </h4>
                   <p>
                     {isServiceOrder(selectedOrder)
-                      ? "Entregá este código al profesional cuando termine el servicio. Sin él no podrá confirmar que se realizó."
+                      ? "Entregá este código al profesional para iniciar el servicio. Sin él no podrá confirmar que se realizó."
                       : "Presentá este código de 7 caracteres o mostrá la pantalla al llegar al comercio:"}
                   </p>
                   <div className="pickup-code-display">
@@ -1326,7 +1349,7 @@ export default function BuyerOrdersSection() {
                 </div>
               )}
 
-            {isServiceOrder(selectedOrder) &&
+            {isServiceAtBranch(selectedOrder) &&
               (selectedOrder.branch || selectedOrder.origin_address) && (
                 <div className="buyer-shipment-tracking-card">
                   <h4>Lugar del servicio</h4>
@@ -1477,8 +1500,8 @@ export default function BuyerOrdersSection() {
               )}
 
             {/* Review Purchase Action */}
-            {(selectedOrder.status === "delivered" ||
-              isOrderDelivered(selectedOrder)) && (
+            {(hasOrderReview(selectedOrder) ||
+              canReviewOrder(selectedOrder)) && (
               <div className="buyer-review-action-row">
                 <button
                   type="button"
@@ -1487,10 +1510,7 @@ export default function BuyerOrdersSection() {
                 >
                   <Star size={16} />
                   <span>
-                    {selectedOrder.review &&
-                    (Array.isArray(selectedOrder.review)
-                      ? selectedOrder.review.length > 0
-                      : true)
+                    {hasOrderReview(selectedOrder)
                       ? "Ver mi calificación"
                       : "Dejar reseña sobre esta compra"}
                   </span>
@@ -1756,8 +1776,12 @@ export default function BuyerOrdersSection() {
               <div className="buyer-order-modal__withdrawal">
                 <p>
                   {isServiceOrder(selectedOrder)
-                    ? "Si el servicio no se realizó, fue distinto de lo acordado o tuviste otro problema, iniciá un reclamo. El profesional podrá proponer una solución y Sercio revisará el caso si no se resuelve."
-                    : "Si el producto tiene un problema, necesitás garantía o querés informar otra incidencia, iniciá un reclamo. Si estás lejos de la sucursal, contactá también al comercio para coordinar cómo devolverlo."}
+                    ? serviceProgressStep(selectedOrder) >= 3
+                      ? "Si el servicio realizado fue distinto de lo acordado o tuviste otro problema, iniciá un reclamo. El profesional podrá proponer una solución y Sercio revisará el caso si no se resuelve."
+                      : "Si el servicio todavía no se realizó y tenés un problema, podés informar que no se prestó."
+                    : isOrderDelivered(selectedOrder)
+                      ? "Si el producto entregado tiene un problema, necesitás garantía o querés informar otra incidencia, iniciá un reclamo. Si estás lejos de la sucursal, contactá también al comercio para coordinar cómo devolverlo."
+                      : "Si todavía no recibiste el producto y hay un problema con la entrega, podés informarlo."}
                 </p>
                 {selectedOrder.claim_requested ||
                 selectedOrder.withdrawal_requested ? (
@@ -1771,13 +1795,25 @@ export default function BuyerOrdersSection() {
                     onClick={() => {
                       setClaimType(
                         isServiceOrder(selectedOrder)
-                          ? "Servicio no realizado"
-                          : "Reclamo",
+                          ? serviceProgressStep(selectedOrder) >= 3
+                            ? "Servicio diferente"
+                            : "Servicio no realizado"
+                          : isOrderDelivered(selectedOrder)
+                            ? "Reclamo"
+                            : "Producto no entregado",
                       );
                       setClaimOpen(true);
                     }}
                   >
-                    Iniciar reclamo
+                    {(
+                      isServiceOrder(selectedOrder)
+                        ? serviceProgressStep(selectedOrder) >= 3
+                        : isOrderDelivered(selectedOrder)
+                    )
+                      ? "Iniciar reclamo"
+                      : isServiceOrder(selectedOrder)
+                        ? "Informar servicio no realizado"
+                        : "Informar problema de entrega"}
                   </button>
                 )}
                 {selectedOrder.claim_resolution_confirmable && (
@@ -1900,13 +1936,25 @@ export default function BuyerOrdersSection() {
         <Modal
           isOpen
           onClose={() => setClaimOpen(false)}
-          title="Iniciar reclamo"
+          title={
+            (
+              isServiceOrder(selectedOrder)
+                ? serviceProgressStep(selectedOrder) >= 3
+                : isOrderDelivered(selectedOrder)
+            )
+              ? "Iniciar reclamo"
+              : "Informar problema con la compra"
+          }
         >
           <div className="buyer-order-modal__withdrawal-form">
             <p>
               {isServiceOrder(selectedOrder)
-                ? "Contanos qué ocurrió con el servicio y adjuntá evidencia si la tenés. Si no se realizó, elegí esa opción para solicitar el reintegro."
-                : "Contanos qué ocurrió. Para garantía o devolución desde lejos, coordiná con el comercio antes de enviar el producto."}
+                ? serviceProgressStep(selectedOrder) >= 3
+                  ? "Contanos qué ocurrió con el servicio realizado y adjuntá evidencia si la tenés."
+                  : "Contanos por qué el servicio no se realizó y adjuntá evidencia si la tenés."
+                : isOrderDelivered(selectedOrder)
+                  ? "Contanos qué ocurrió. Para garantía o devolución desde lejos, coordiná con el comercio antes de enviar el producto."
+                  : "Contanos qué pasó con la entrega y adjuntá evidencia si la tenés."}
             </p>
             <label htmlFor="buyer-claim-type">Tipo de reclamo</label>
             <select
@@ -1914,16 +1962,22 @@ export default function BuyerOrdersSection() {
               value={claimType}
               onChange={(event) => setClaimType(event.target.value)}
             >
-              {isServiceOrder(selectedOrder) ? (
+              {isServiceOrder(selectedOrder) &&
+              serviceProgressStep(selectedOrder) < 3 ? (
+                <option value="Servicio no realizado">
+                  El servicio no se realizó
+                </option>
+              ) : isServiceOrder(selectedOrder) ? (
                 <>
-                  <option value="Servicio no realizado">
-                    El servicio no se realizó
-                  </option>
                   <option value="Servicio diferente">
                     Servicio distinto de lo acordado
                   </option>
                   <option value="Reclamo">Otro problema con el servicio</option>
                 </>
+              ) : !isOrderDelivered(selectedOrder) ? (
+                <option value="Producto no entregado">
+                  El producto no se entregó
+                </option>
               ) : (
                 <>
                   <option value="Reclamo">Problema con la compra</option>
@@ -2074,10 +2128,10 @@ export default function BuyerOrdersSection() {
         }}
       />
 
-      {chatOrder && (
+      {chatOrder && (!openOrderChat || chatOrder.id === orderIdParam) && (
         <OrderChatModal
           isOpen={Boolean(chatOrder)}
-          onClose={() => setChatOrder(null)}
+          onClose={closeOrderChat}
           order={chatOrder}
           currentUserId={String(user?.id || "")}
         />

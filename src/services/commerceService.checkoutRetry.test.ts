@@ -18,6 +18,16 @@ describe('checkout payment retries', () => {
     expect(calls[1][1].body.card_token).toBe('token-two');
     expect(calls[1][1].body.idempotency_key).not.toBe(calls[0][1].body.idempotency_key);
   });
+  it('creates a fresh QR checkout after the previous unpaid order was cancelled', async () => {
+    vi.mocked(apiClient).mockRejectedValueOnce({ statusCode: 409, data: {
+      error_code: 'CHECKOUT_CANCELLED', retryable: true, requires_new_attempt: true,
+    } }).mockResolvedValueOnce({ order_id: 'new-order', payment_method: 'paycloud_qr',
+      total_amount: 100, qr_code: 'new-qr', status: 'pending_payment' });
+    await expect(commerceService.checkout({ ...purchase, payment_method: 'paycloud_qr', card_token: undefined }))
+      .resolves.toMatchObject({ order: { id: 'new-order' } });
+    const calls = vi.mocked(apiClient).mock.calls;
+    expect(calls[1][1].body.idempotency_key).not.toBe(calls[0][1].body.idempotency_key);
+  });
   it('does not loop if recovery also fails', async () => {
     vi.mocked(apiClient).mockRejectedValue(staleFailure);
     const refreshPayment = vi.fn().mockResolvedValue({ card_token: 'token-two' });

@@ -12,11 +12,24 @@ self.addEventListener("push", function (event) {
   const notification = payload.notification || {};
   const title = notification.title || data.title || "Nueva notificación";
   const body = notification.body || data.body || data.content || "";
-  function resolveNotificationUrl(data) {
-    if (data.url) return data.url;
+  function resolveNotificationUrl(data, title) {
     var type = String(data.type || "").trim().toUpperCase();
     var sourceId = data.source_id ? encodeURIComponent(String(data.source_id).trim()) : "";
     var senderId = data.sender_id ? encodeURIComponent(String(data.sender_id).trim()) : "";
+    var legacyOrder = String(title || "").match(/\bPedido #([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i);
+    if (type.indexOf("ORDER_CHAT") === 0 ||
+        ((type === "MESSAGE" || type === "CHAT") && legacyOrder)) {
+      var orderId = type.indexOf("ORDER_CHAT") === 0
+        ? sourceId
+        : encodeURIComponent(legacyOrder[1]);
+      var view = type === "ORDER_CHAT_SALE" ||
+        (legacyOrder && /^Cliente\b/i.test(title)) ? "sales" : "purchases";
+      return orderId
+        ? "/panel?view=" + view + "&orderId=" + orderId + "&openChat=1"
+        : "/panel?view=notifications";
+    }
+
+    if (data.url) return data.url;
 
     switch (type) {
       case "PRODUCT_SALE":
@@ -72,7 +85,7 @@ self.addEventListener("push", function (event) {
     }
   }
 
-  const rawUrl = resolveNotificationUrl(data);
+  const rawUrl = resolveNotificationUrl(data, title);
   const url = rawUrl.startsWith("/") && !rawUrl.startsWith("//")
     ? new URL(rawUrl, self.location.origin).href
     : new URL("/panel?view=notifications", self.location.origin).href;

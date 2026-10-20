@@ -8,8 +8,14 @@
 .listing-report__submit { padding: var(--space-2) var(--space-4); border: 0; border-radius: var(--radius-sm); background: var(--brand-blue); color: var(--white); cursor: pointer; }
 .listing-report__submit:disabled { opacity: .6; cursor: not-allowed; }
 .listing-report__merchant { margin: var(--space-4) 0; padding: var(--space-4); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); }
-.listing-report__merchant h2 { font-size: var(--text-lg); }
+.listing-report__merchant-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-1); }
+.listing-report__merchant h2 { font-size: var(--text-lg); margin: 0; }
+.listing-report__merchant-close,
+.listing-report__merchant-item-close { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease; flex-shrink: 0; }
+.listing-report__merchant-close:hover,
+.listing-report__merchant-item-close:hover { background: var(--surface-soft); color: var(--text-primary); border-color: var(--border-color); }
 .listing-report__merchant p, .listing-report__merchant article { font-size: var(--text-base); }
 .listing-report__merchant article { padding: var(--space-3) 0; border-top: 1px solid var(--border-color); }
+.listing-report__merchant-item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
 .listing-report__admin-notes { margin-top: var(--space-2); padding: var(--space-2) var(--space-3); background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.2); border-radius: var(--radius-md); font-size: var(--text-sm); line-height: 1.4; }
 .listing-report__admin-notes strong { color: var(--brand-blue); margin-right: var(--space-1); }

@@ -71,6 +71,10 @@ export function getNotificationMeta(rawType?: string): NotificationMeta {
     case "SERVICE_SALE":
       return { icon: ShoppingBag, color: "green", category: "sales" };
 
+    case "PRODUCT_OUT_OF_STOCK":
+    case "OUT_OF_STOCK":
+      return { icon: AlertTriangle, color: "orange", category: "sales" };
+
     case "SHIPMENT_DRIVER_AT_STORE":
       return { icon: Truck, color: "blue", category: "sales" };
 
@@ -130,6 +134,8 @@ export function getNotificationMeta(rawType?: string): NotificationMeta {
     // ── Chat / Mensajes ──
     case "MESSAGE":
     case "CHAT":
+    case "ORDER_CHAT_SALE":
+    case "ORDER_CHAT_PURCHASE":
     case "COMMENT":
       return { icon: MessageSquare, color: "green", category: "messages" };
 
@@ -172,6 +178,20 @@ export function getNotificationTargetUrl(
   const sourceId = notif.source_id ? String(notif.source_id).trim() : "";
   const senderId = notif.sender_id ? String(notif.sender_id).trim() : "";
   const isProfessional = Boolean(options?.isProfessional);
+  const legacyOrderId = String(notif.title || "").match(
+    /\bPedido #([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i,
+  )?.[1];
+
+  if (type === "ORDER_CHAT_SALE" || type === "ORDER_CHAT_PURCHASE" ||
+      ((type === "MESSAGE" || type === "CHAT") && legacyOrderId)) {
+    const orderId = type.startsWith("ORDER_CHAT_") ? sourceId : legacyOrderId;
+    const view = type === "ORDER_CHAT_SALE" ? "sales" :
+      type === "ORDER_CHAT_PURCHASE" ? "purchases" :
+      isProfessional ? "sales" : "purchases";
+    return orderId
+      ? `${ROUTES.dashboard}?view=${view}&orderId=${encodeURIComponent(orderId)}&openChat=1`
+      : `${ROUTES.dashboard}?view=${view}`;
+  }
 
   switch (type) {
     // ── Destino Vendedor: /panel?view=sales&orderId=... ──
@@ -183,6 +203,11 @@ export function getNotificationTargetUrl(
       return sourceId
         ? `${ROUTES.dashboard}?view=sales&orderId=${encodeURIComponent(sourceId)}`
         : `${ROUTES.dashboard}?view=sales`;
+
+    // ── Destino Vendedor: /panel?view=products ──
+    case "PRODUCT_OUT_OF_STOCK":
+    case "OUT_OF_STOCK":
+      return `${ROUTES.dashboard}?view=products`;
 
     // ── Destino Comprador: /panel?view=purchases&orderId=... ──
     case "PAYMENT_CONFIRMED":
