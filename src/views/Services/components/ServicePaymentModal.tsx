@@ -59,7 +59,7 @@ export default function ServicePaymentModal({
   const router = useRouter();
   const { data: cardConfig } = useCardPaymentConfig();
   const { user, isAgeVerified } = useAuth();
-  const { showSuccess, showError } = useAlert();
+  const { showSuccess, showError, showAlert } = useAlert();
 
   // Quantity
   const [quantity, setQuantity] = useState<number>(1);
@@ -317,9 +317,21 @@ export default function ServicePaymentModal({
         showSuccess(res.payment_status === 'approved' ? '¡Pago procesado con éxito!' : 'Estamos verificando tu pago. Consultá Mis Compras sin volver a pagar.');
       }
     } catch (err: any) {
-      showError(
-        err?.message || "No se pudo procesar el pago. Intenta nuevamente.",
-      );
+      if (err?.data?.error_code === "CHECKOUT_REQUIRES_VERIFICATION") {
+        const orderId = err.data.order_id;
+        showAlert({
+          type: "warning",
+          title: "Estamos verificando tu pago",
+          message: "Consultá el estado de tu pedido en Mis Compras. No vuelvas a pagar mientras se confirma.",
+          confirmText: "Ir a Mis Compras",
+          onConfirm: () => {
+            if (!pageMode) onClose();
+            router.push(`/panel?view=purchases${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`);
+          },
+        });
+      } else {
+        showError(err?.message || "No se pudo procesar el pago. Intenta nuevamente.");
+      }
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);

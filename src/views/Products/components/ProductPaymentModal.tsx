@@ -86,7 +86,7 @@ export default function ProductPaymentModal({
   const router = useRouter();
   const { data: cardConfig } = useCardPaymentConfig();
   const { user, isAgeVerified } = useAuth();
-  const { showSuccess, showError } = useAlert();
+  const { showSuccess, showError, showAlert } = useAlert();
   const availableStock = Math.max(
     0,
     Math.trunc(Number(product?.stock ?? 0) || 0),
@@ -179,12 +179,16 @@ export default function ProductPaymentModal({
   const [shippingCalc, setShippingCalc] =
     useState<CalculateShippingResponse | null>(null);
   const [quotedFor, setQuotedFor] = useState("");
+  const [deliveryCapacityError, setDeliveryCapacityError] = useState<{ key: string; message: string } | null>(null);
   const shippingQuoteKey = JSON.stringify({
     professionalProductId,
     quantity,
     selectedAddressId,
     selectedBranchId,
   });
+  const currentCapacityError = deliveryCapacityError?.key === shippingQuoteKey
+    ? deliveryCapacityError.message
+    : null;
   const [isCalculatingShipping, setIsCalculatingShipping] =
     useState<boolean>(false);
 
@@ -332,9 +336,18 @@ export default function ProductPaymentModal({
         if (isMounted) {
           setShippingCalc(res);
           setQuotedFor(shippingQuoteKey);
+          setDeliveryCapacityError(null);
         }
       } catch (err) {
-        if (isMounted) setShippingCalc(null);
+        if (isMounted) {
+          setShippingCalc(null);
+          const details = err as { data?: { error_code?: string; message?: string }; response?: { data?: { error_code?: string; message?: string } } };
+          const problem = details.data ?? details.response?.data;
+          if (problem?.error_code === "DELIVERY_CAPACITY_UNAVAILABLE") {
+            setDeliveryCapacityError({ key: shippingQuoteKey, message: problem.message || "Este pedido supera la capacidad de los vehículos disponibles." });
+            setDeliveryType(hasPickupBranch ? "pickup" : "coordinate_with_merchant");
+          }
+        }
         console.warn("Shipping calculation error:", err);
       } finally {
         if (isMounted) {
@@ -358,6 +371,7 @@ export default function ProductPaymentModal({
     selectedBranch?.address_id,
     isOutsideDeliveryRange,
     shippingQuoteKey,
+    hasPickupBranch,
   ]);
 
   if (!isOpen) return null;
@@ -737,9 +751,21 @@ export default function ProductPaymentModal({
         );
       }
     } catch (err: any) {
-      showError(
-        err?.message || "No se pudo procesar el pago. Intenta nuevamente.",
-      );
+      if (err?.data?.error_code === "CHECKOUT_REQUIRES_VERIFICATION") {
+        const orderId = err.data.order_id;
+        showAlert({
+          type: "warning",
+          title: "Estamos verificando tu pago",
+          message: "Consultá el estado de tu pedido en Mis Compras. No vuelvas a pagar mientras se confirma.",
+          confirmText: "Ir a Mis Compras",
+          onConfirm: () => {
+            if (!pageMode) onClose();
+            router.push(`/panel?view=purchases${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`);
+          },
+        });
+      } else {
+        showError(err?.message || "No se pudo procesar el pago. Intenta nuevamente.");
+      }
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
@@ -1009,7 +1035,7 @@ export default function ProductPaymentModal({
 
                   <button
                     type="button"
-                    disabled={!hasShippingBranch}
+                    disabled={!hasShippingBranch || Boolean(currentCapacityError)}
                     className={`product-payment-modal__delivery-card ${
                       deliveryType === "shipment"
                         ? "product-payment-modal__delivery-card--active"
@@ -1023,7 +1049,9 @@ export default function ProductPaymentModal({
                     <div>
                       <strong>Envío a domicilio</strong>
                       <p>
-                        {!branches.some((branch) => branch.delivery_available)
+                        {currentCapacityError
+                          ? "No disponible para este peso o volumen"
+                          : !branches.some((branch) => branch.delivery_available)
                           ? "No hay riders autónomos disponibles en esta zona"
                           : isOutsideDeliveryRange
                             ? "Fuera del rango de la sucursal seleccionada"
@@ -1052,6 +1080,12 @@ export default function ProductPaymentModal({
                     </div>
                   </button>
                 </div>
+
+                {currentCapacityError && (
+                  <p className="product-payment-modal__coverage-notice" role="status">
+                    {currentCapacityError}
+                  </p>
+                )}
 
                 {isOutsideDeliveryRange && (
                   <p

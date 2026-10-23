@@ -20,6 +20,7 @@ import { getSubscriptionPricesAction } from "../../app/actions/plans";
 import { createProfessionalMeAction } from "../../app/actions/professionals";
 import { useAuth } from "../../context/AuthContext";
 import { getAccessToken } from "../../utils/auth";
+import ProfessionalRequirementsDialog from "../ProfessionalRequirementsDialog/ProfessionalRequirementsDialog";
 import "./PlansModal.css";
 
 import { useQuery } from "@tanstack/react-query";
@@ -42,6 +43,7 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
   const [displayPlans, setDisplayPlans] = useState<Plan[]>(plans);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<Plan | null>(null);
   const { refreshSession, sessionStatus } = useAuth();
 
   const { data: mpPlans } = useQuery({
@@ -79,13 +81,16 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
 
   if (!isOpen) return null;
 
-  const handleSelectPlan = async (plan: Plan) => {
+  const handleSelectPlan = (plan: Plan) => {
     if (!sessionStatus) {
       onClose();
       router.push(ROUTES.register);
       return;
     }
+    setPendingPlan(plan);
+  };
 
+  const activatePlan = async (plan: Plan) => {
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
@@ -138,6 +143,7 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
   };
 
   return (
+    <>
     <div className="plans-modal-overlay" onClick={onClose}>
       <div className="plans-modal" onClick={(e) => e.stopPropagation()}>
         <button className="plans-modal__close" onClick={onClose}>
@@ -249,5 +255,15 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
         </div>
       </div>
     </div>
+    <ProfessionalRequirementsDialog
+      open={pendingPlan !== null}
+      onBack={() => setPendingPlan(null)}
+      onContinue={() => {
+        const plan = pendingPlan;
+        setPendingPlan(null);
+        if (plan) void activatePlan(plan);
+      }}
+    />
+    </>
   );
 }

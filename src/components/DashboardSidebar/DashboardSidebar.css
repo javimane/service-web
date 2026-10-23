@@ -307,6 +307,39 @@
   background: var(--brand-blue-soft);
 }
 
+.dashboard-sidebar__support-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.dashboard-sidebar__support-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  min-height: 42px;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+.dashboard-sidebar__support-action--whatsapp {
+  color: var(--whatsapp-color);
+  background: var(--whatsapp-bg-soft);
+  border-color: var(--whatsapp-color);
+}
+
+.dashboard-sidebar__support-action--whatsapp:hover {
+  color: var(--white);
+  background: var(--whatsapp-hover);
+  border-color: var(--whatsapp-hover);
+}
+
 .logout-btn:hover {
   color: var(--error-color);
   background: rgba(250, 82, 82, 0.08);

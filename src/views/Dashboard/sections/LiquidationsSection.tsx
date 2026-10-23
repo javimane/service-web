@@ -70,6 +70,7 @@ export default function LiquidationsSection() {
   setApiAccessToken(token);
   const [page, setPage] = useState(1);
   const [debtPage, setDebtPage] = useState(1);
+  const [debtOpen, setDebtOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [listBranchId, setListBranchId] = useState("");
   const [listDateRange, setListDateRange] = useState<DateRangeValue>({
@@ -125,7 +126,9 @@ export default function LiquidationsSection() {
     queryFn: () => commerceService.merchantBalance(),
     refetchInterval: 30_000,
   });
-  const { data: debts, isError: debtsError } = useQuery<PageResponse<MerchantDebt>>({
+  const { data: debts, isError: debtsError } = useQuery<
+    PageResponse<MerchantDebt>
+  >({
     queryKey: ["merchant-debts", debtPage],
     queryFn: () => commerceService.merchantDebts(debtPage),
     refetchInterval: 30_000,
@@ -254,7 +257,11 @@ export default function LiquidationsSection() {
           <div className="liquidations-card__info">
             <span className="liquidations-card__label">SALDO DISPONIBLE</span>
             <span className="liquidations-card__value">
-              ${Number(merchantBalance?.available_amount ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+              $
+              {Number(merchantBalance?.available_amount ?? 0).toLocaleString(
+                "es-AR",
+                { minimumFractionDigits: 2 },
+              )}
             </span>
           </div>
         </div>
@@ -276,9 +283,7 @@ export default function LiquidationsSection() {
             <ShieldCheck size={20} />
           </div>
           <div className="liquidations-card__info">
-            <span className="liquidations-card__label">
-              LIQUIDADO (PÁGINA)
-            </span>
+            <span className="liquidations-card__label">LIQUIDADO (PÁGINA)</span>
             <span className="liquidations-card__value">
               ${historicalSettled.toLocaleString("es-AR")}
             </span>
@@ -300,31 +305,149 @@ export default function LiquidationsSection() {
         </div>
       </div>
 
-      <section className="liquidations-debt" aria-labelledby="liquidations-debt-title">
-        <div className="liquidations-debt__heading">
+      <section
+        className="liquidations-debt"
+        aria-labelledby="liquidations-debt-title"
+      >
+        <button
+          type="button"
+          className="liquidations-debt__heading"
+          aria-expanded={debtOpen}
+          aria-controls="liquidations-debt-content"
+          onClick={() => setDebtOpen((v) => !v)}
+        >
           <div>
             <h2 id="liquidations-debt-title">Deuda pendiente del comercio</h2>
-            <p>Incluye cargos por cancelaciones, devoluciones y contracargos. Los ingresos futuros se aplican para reducir este saldo.</p>
+            <p>
+              Incluye cargos por cancelaciones, devoluciones y contracargos. Los
+              ingresos futuros se aplican para reducir este saldo.
+            </p>
           </div>
-          <strong>${Number(merchantBalance?.debt_amount ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</strong>
-        </div>
-        {merchantBalance && <p>Disponible para liberar: ${Number(merchantBalance.available_amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })} · Saldo neto: ${Number(merchantBalance.balance).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</p>}
-        {debtsError && <p>No se pudo cargar el detalle de deuda.</p>}
-        {debts?.items?.length === 0 && <p>No tenés deuda pendiente.</p>}
-        {(debts?.items ?? []).map((debt) => (
-          <div className="liquidations-debt__item" key={debt.id}>
-            <div>
-              <b>{debt.source_kind === "chargeback" ? "Contracargo" : debt.adjustment?.charge_concept === "cancellation" ? "Cancelación / devolución" : "Devolución"}</b>
-              <span>Venta {debt.adjustment?.order_id ?? "—"} · {new Date(debt.created_at).toLocaleDateString("es-AR")}</span>
-              {debt.adjustment?.reason && <span>{debt.adjustment.reason}</span>}
-              <small>Origen: ${Number(debt.original_amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })} · Compensado o reservado: ${Number(debt.recovered_amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</small>
-              {(Number(debt.adjustment?.cancellation_commission_amount ?? 0) > 0 || Number(debt.adjustment?.cancellation_iva_amount ?? 0) > 0) && <small>Comisión por cancelación: ${Number(debt.adjustment?.cancellation_commission_amount ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })} · IVA: ${Number(debt.adjustment?.cancellation_iva_amount ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</small>}
-              {(Number(debt.adjustment?.provider_fee_loss_amount ?? 0) > 0 || Number(debt.adjustment?.processor_unreturned_iva_amount ?? 0) > 0) && <small>Costo procesadora: ${Number(debt.adjustment?.provider_fee_loss_amount ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })} · IVA no recuperado: ${Number(debt.adjustment?.processor_unreturned_iva_amount ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</small>}
-            </div>
-            <strong>Pendiente ${Number(debt.remaining_amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</strong>
+          <strong>
+            $
+            {Number(merchantBalance?.debt_amount ?? 0).toLocaleString("es-AR", {
+              minimumFractionDigits: 2,
+            })}
+          </strong>
+          <ChevronRight
+            size={20}
+            className={`liquidations-debt__chevron ${debtOpen ? "liquidations-debt__chevron--open" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
+        {debtOpen && (
+          <div
+            id="liquidations-debt-content"
+            className="liquidations-debt__content"
+          >
+            {merchantBalance && (
+              <p>
+                Disponible para liberar: $
+                {Number(merchantBalance.available_amount).toLocaleString(
+                  "es-AR",
+                  { minimumFractionDigits: 2 },
+                )}{" "}
+                · Saldo neto: $
+                {Number(merchantBalance.balance).toLocaleString("es-AR", {
+                  minimumFractionDigits: 2,
+                })}
+              </p>
+            )}
+            {debtsError && <p>No se pudo cargar el detalle de deuda.</p>}
+            {debts?.items?.length === 0 && <p>No tenés deuda pendiente.</p>}
+            {(debts?.items ?? []).map((debt) => (
+              <div className="liquidations-debt__item" key={debt.id}>
+                <div>
+                  <b>
+                    {debt.source_kind === "chargeback"
+                      ? "Contracargo"
+                      : debt.adjustment?.charge_concept === "cancellation"
+                        ? "Cancelación / devolución"
+                        : "Devolución"}
+                  </b>
+                  <span>
+                    Venta {debt.adjustment?.order_id ?? "—"} ·{" "}
+                    {new Date(debt.created_at).toLocaleDateString("es-AR")}
+                  </span>
+                  {debt.adjustment?.reason && (
+                    <span>{debt.adjustment.reason}</span>
+                  )}
+                  <small>
+                    Origen: $
+                    {Number(debt.original_amount).toLocaleString("es-AR", {
+                      minimumFractionDigits: 2,
+                    })}{" "}
+                    · Compensado o reservado: $
+                    {Number(debt.recovered_amount).toLocaleString("es-AR", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </small>
+                  {(Number(
+                    debt.adjustment?.cancellation_commission_amount ?? 0,
+                  ) > 0 ||
+                    Number(debt.adjustment?.cancellation_iva_amount ?? 0) >
+                      0) && (
+                    <small>
+                      Comisión por cancelación: $
+                      {Number(
+                        debt.adjustment?.cancellation_commission_amount ?? 0,
+                      ).toLocaleString("es-AR", {
+                        minimumFractionDigits: 2,
+                      })}{" "}
+                      · IVA: $
+                      {Number(
+                        debt.adjustment?.cancellation_iva_amount ?? 0,
+                      ).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                    </small>
+                  )}
+                  {(Number(debt.adjustment?.provider_fee_loss_amount ?? 0) >
+                    0 ||
+                    Number(
+                      debt.adjustment?.processor_unreturned_iva_amount ?? 0,
+                    ) > 0) && (
+                    <small>
+                      Costo procesadora: $
+                      {Number(
+                        debt.adjustment?.provider_fee_loss_amount ?? 0,
+                      ).toLocaleString("es-AR", {
+                        minimumFractionDigits: 2,
+                      })}{" "}
+                      · IVA no recuperado: $
+                      {Number(
+                        debt.adjustment?.processor_unreturned_iva_amount ?? 0,
+                      ).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                    </small>
+                  )}
+                </div>
+                <strong>
+                  Pendiente $
+                  {Number(debt.remaining_amount).toLocaleString("es-AR", {
+                    minimumFractionDigits: 2,
+                  })}
+                </strong>
+              </div>
+            ))}
+            {Number(debts?.totalPages ?? 0) > 1 && (
+              <div className="liquidations-debt__pages">
+                <button
+                  disabled={debtPage === 1}
+                  onClick={() => setDebtPage((value) => value - 1)}
+                >
+                  Anterior
+                </button>
+                <span>
+                  {debtPage} / {debts?.totalPages}
+                </span>
+                <button
+                  disabled={!debts?.hasNext}
+                  onClick={() => setDebtPage((value) => value + 1)}
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
           </div>
-        ))}
-        {Number(debts?.totalPages ?? 0) > 1 && <div className="liquidations-debt__pages"><button disabled={debtPage === 1} onClick={() => setDebtPage((value) => value - 1)}>Anterior</button><span>{debtPage} / {debts?.totalPages}</span><button disabled={!debts?.hasNext} onClick={() => setDebtPage((value) => value + 1)}>Siguiente</button></div>}
+        )}
       </section>
 
       <section
@@ -528,7 +651,7 @@ export default function LiquidationsSection() {
                   <th>Fecha de corte</th>
                   <th>Monto Bruto</th>
                   <th>Comisión Sercio</th>
-                  <th>Retenciones</th>
+                  <th>IVA</th>
                   <th>Monto Neto</th>
                   <th>Estado</th>
                   <th>Fecha Acreditación</th>

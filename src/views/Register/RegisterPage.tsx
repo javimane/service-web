@@ -10,6 +10,7 @@ import Modal from "../../components/Modal/Modal";
 import { supabase } from "../../services/supabaseClient";
 import { API_BASE_URL } from "../../services/api.config";
 import RegisterPlanSelection from "./RegisterPlanSelection";
+import ProfessionalRequirementsDialog from "../../components/ProfessionalRequirementsDialog/ProfessionalRequirementsDialog";
 import { useAuth } from "../../context/AuthContext";
 import "../Login/LoginPage.css";
 import "./RegisterPage.css";
@@ -46,6 +47,8 @@ export default function RegisterPage({
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [requirementsAction, setRequirementsAction] = useState<"register" | "google" | null>(null);
+  const [requirementsConfirmed, setRequirementsConfirmed] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const { refreshSession } = useAuth();
@@ -106,10 +109,7 @@ export default function RegisterPage({
     setAuthError("");
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-
+  const submitRegistration = async () => {
     setIsLoading(true);
     setAuthError("");
 
@@ -166,6 +166,16 @@ export default function RegisterPage({
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    if (role === "professional" && !requirementsConfirmed) {
+      setRequirementsAction("register");
+      return;
+    }
+    void submitRegistration();
+  };
+
   const handleGoogleRegister = () => {
     if (!acceptedTerms) {
       setErrors((prev) => ({
@@ -175,6 +185,14 @@ export default function RegisterPage({
       return;
     }
 
+    if (role === "professional" && !requirementsConfirmed) {
+      setRequirementsAction("google");
+      return;
+    }
+    startGoogleRegister();
+  };
+
+  const startGoogleRegister = () => {
     setIsLoading(true);
     setAuthError("");
     try {
@@ -187,6 +205,14 @@ export default function RegisterPage({
       setAuthError(err.message || "Error al registrarse con Google.");
       setIsLoading(false);
     }
+  };
+
+  const continueAfterRequirements = () => {
+    const action = requirementsAction;
+    setRequirementsAction(null);
+    setRequirementsConfirmed(true);
+    if (action === "register") void submitRegistration();
+    if (action === "google") startGoogleRegister();
   };
 
   const handleModalClose = () => {
@@ -269,7 +295,10 @@ export default function RegisterPage({
               name="role"
               value="normal"
               checked={role === "normal"}
-              onChange={() => setRole("normal")}
+              onChange={() => {
+                setRole("normal");
+                setRequirementsConfirmed(false);
+              }}
               style={{ display: "none" }}
             />
             <span
@@ -519,6 +548,11 @@ export default function RegisterPage({
           </button>
         </div>
       </Modal>
+      <ProfessionalRequirementsDialog
+        open={requirementsAction !== null}
+        onBack={() => setRequirementsAction(null)}
+        onContinue={continueAfterRequirements}
+      />
     </div>
   );
 

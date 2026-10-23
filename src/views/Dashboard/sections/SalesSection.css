@@ -204,17 +204,20 @@
 }
 
 .sales-action-btn {
+  box-sizing: border-box;
   background: var(--surface-soft);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  height: 42px;
+  min-height: 42px;
+  line-height: 1;
   white-space: nowrap;
   gap: var(--space-2);
   cursor: pointer;
@@ -222,6 +225,12 @@
 }
 
 .sales-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.shipment-rider-actions { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); }
+.shipment-rider-actions__assigned { margin: 0; color: var(--text-primary); font-size: var(--text-base); }
+.shipment-rider-actions label { color: var(--text-secondary); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.shipment-rider-actions__row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.shipment-rider-actions__row input, .shipment-rider-actions__row select { flex: 1 1 220px; min-width: 0; height: 42px; padding: 0 var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text-primary); }
+.shipment-rider-actions__row button { height: 42px; min-height: 42px; box-sizing: border-box; border: 1px solid transparent; }
 .sales-return-receipt-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); white-space: nowrap; }
 .sales-order-items { display: flex; flex-direction: column; gap: var(--space-3); }
 .sales-order-items__item { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--surface-soft); }
@@ -232,6 +241,40 @@
 .sales-action-btn:hover {
   border-color: var(--accent-color);
   color: var(--accent-color);
+}
+
+.sales-action-btn--confirm {
+  background: var(--action-add-bg);
+  border-color: var(--success-color);
+  color: var(--text-primary);
+}
+
+.sales-action-btn--confirm:hover {
+  background: var(--action-add-hover);
+  border-color: var(--success-color);
+  color: var(--text-primary);
+}
+
+.sales-action-btn--confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sales-action-btn--preparing {
+  background: var(--action-add-bg);
+  border-color: var(--success-color);
+  color: var(--text-primary);
+}
+
+.sales-action-btn--preparing:hover {
+  background: var(--action-add-hover);
+  border-color: var(--success-color);
+  color: var(--text-primary);
+}
+
+.sales-action-btn--preparing:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .sales-action-btn--appointment {
@@ -323,6 +366,17 @@
   color: var(--amber-dark);
   border: 1px solid rgba(245, 158, 11, 0.4);
   font-weight: var(--weight-bold);
+}
+
+.sales-badge--active-claim {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: max-content;
+  margin-top: var(--space-2);
+  background: var(--surface-soft);
+  color: var(--amber-dark);
+  border: 1px solid var(--amber-dark);
 }
 
 .sales-badge--appointment-scheduled {

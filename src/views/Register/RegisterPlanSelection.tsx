@@ -18,6 +18,7 @@ import { getAccessToken } from "@/utils/auth";
 import { ROUTES } from "../../routes/paths";
 
 import { useAuth } from "../../context/AuthContext";
+import ProfessionalRequirementsDialog from "../../components/ProfessionalRequirementsDialog/ProfessionalRequirementsDialog";
 import "./RegisterPlanSelection.css";
 import "../Dashboard/sections/SubscriptionSection.css";
 
@@ -28,6 +29,7 @@ export default function RegisterPlanSelection() {
   const [mpPlans, setMpPlans] = useState<any>({});
   const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
   const [planError, setPlanError] = useState("");
+  const [pendingPlanId, setPendingPlanId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -52,7 +54,7 @@ export default function RegisterPlanSelection() {
     loadData();
   }, []);
 
-  const handleSelectPlan = async (planId: string) => {
+  const activatePlan = async (planId: string) => {
     setSubmittingPlanId(planId);
     setPlanError("");
     try {
@@ -106,6 +108,8 @@ export default function RegisterPlanSelection() {
       setSubmittingPlanId(null);
     }
   };
+
+  const handleSelectPlan = (planId: string) => setPendingPlanId(planId);
 
   return (
     <div
@@ -210,6 +214,15 @@ export default function RegisterPlanSelection() {
           Políticas de Privacidad
         </Link>.
       </div>
+      <ProfessionalRequirementsDialog
+        open={pendingPlanId !== null}
+        onBack={() => setPendingPlanId(null)}
+        onContinue={() => {
+          const planId = pendingPlanId;
+          setPendingPlanId(null);
+          if (planId) void activatePlan(planId);
+        }}
+      />
     </div>
   );
 }

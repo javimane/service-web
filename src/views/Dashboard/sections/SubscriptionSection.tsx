@@ -36,6 +36,7 @@ import {
   cancelMercadoPagoSubscriptionAction,
 } from "@/app/actions/mercadopago";
 import { getAccessToken } from "@/utils/auth";
+import ProfessionalRequirementsDialog from "@/components/ProfessionalRequirementsDialog/ProfessionalRequirementsDialog";
 
 // Mapeo de los nombres de plan del API a los IDs internos
 const planNameToId: Record<string, string> = {
@@ -127,6 +128,7 @@ export default function SubscriptionSection() {
     text: string;
   } | null>(null);
   const [submittingPlanId, setSubmittingPlanId] = useState<string | null>(null);
+  const [pendingPlanId, setPendingPlanId] = useState<string | null>(null);
   const isSubmittingAny = submittingPlanId !== null;
   const plansRef = useRef<HTMLDivElement>(null);
 
@@ -259,7 +261,7 @@ export default function SubscriptionSection() {
     }
   };
 
-  const handleSelectPlan = async (planId: string) => {
+  const activatePlan = async (planId: string) => {
     setSubmittingPlanId(planId);
     try {
       if (planId === "free" || planId === "gratuito") {
@@ -300,6 +302,8 @@ export default function SubscriptionSection() {
       setSubmittingPlanId(null);
     }
   };
+
+  const handleSelectPlan = (planId: string) => setPendingPlanId(planId);
 
   const StatusIcon = statusIcons[currentStatus];
 
@@ -707,6 +711,15 @@ export default function SubscriptionSection() {
           </div>
         </div>
       )}
+      <ProfessionalRequirementsDialog
+        open={pendingPlanId !== null}
+        onBack={() => setPendingPlanId(null)}
+        onContinue={() => {
+          const planId = pendingPlanId;
+          setPendingPlanId(null);
+          if (planId) void activatePlan(planId);
+        }}
+      />
     </div>
   );
 }

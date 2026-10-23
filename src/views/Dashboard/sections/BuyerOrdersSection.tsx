@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -51,6 +51,8 @@ import {
   isServiceAtBranch,
 } from "./purchaseDeliveryText";
 import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
+import BuyerShipmentMap from "./BuyerShipmentMap";
+import BuyerRiderReview from "./BuyerRiderReview";
 
 const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
   if (!order) return false;
@@ -125,6 +127,7 @@ export default function BuyerOrdersSection() {
   const pathname = usePathname();
   const orderIdParam = searchParams?.get("orderId");
   const openOrderChat = searchParams?.get("openChat") === "1";
+  const openOrderMap = searchParams?.get("openMap") === "1";
   const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
   useEffect(() => {
     if (!orderIdParam) setDismissedOrderId(null);
@@ -132,6 +135,15 @@ export default function BuyerOrdersSection() {
 
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
+  const [showShipmentMap, setShowShipmentMap] = useState(false);
+  const shipmentMapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showShipmentMap || !selectedOrder) return;
+    const frame = requestAnimationFrame(() =>
+      shipmentMapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [showShipmentMap, selectedOrder]);
   const [claimClock, setClaimClock] = useState(0);
   useEffect(() => {
     setClaimClock(Date.now());
@@ -142,6 +154,38 @@ export default function BuyerOrdersSection() {
     return () => window.clearInterval(interval);
   }, []);
   const [pickupQrUrl, setPickupQrUrl] = useState<string | null>(null);
+  const { data: buyerShipment } = useQuery({
+    queryKey: ["buyer-order-shipment", selectedOrder?.id],
+    queryFn: () => commerceService.orderShipment(selectedOrder!.id),
+    enabled:
+      selectedOrder?.delivery_type === "shipment" &&
+      !["pending_payment", "cancelled", "refunded"].includes(
+        selectedOrder.status,
+      ),
+    refetchInterval: 15_000,
+  });
+  const shipmentDelivered = isOrderDelivered(selectedOrder) || buyerShipment?.status === "delivered";
+  const deliveryCode = buyerShipment?.buyer_security_code as string | undefined;
+  const [deliveryQrUrl, setDeliveryQrUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setDeliveryQrUrl(null);
+    if (deliveryCode && buyerShipment?.id) {
+      QRCode.toDataURL(`SERCIO-DELIVERY:${buyerShipment.id}:${deliveryCode}`, {
+        width: 200,
+        margin: 1,
+      })
+        .then((url) => {
+          if (active) setDeliveryQrUrl(url);
+        })
+        .catch(() => {
+          if (active) setDeliveryQrUrl(null);
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [deliveryCode, buyerShipment?.id]);
   useEffect(() => {
     let active = true;
     setPickupQrUrl(null);
@@ -170,13 +214,17 @@ export default function BuyerOrdersSection() {
     if (openOrderChat) {
       const params = new URLSearchParams(searchParams?.toString() || "");
       params.delete("openChat");
-      router.replace(`${pathname}${params.size ? `?${params.toString()}` : ""}`, {
-        scroll: false,
-      });
+      router.replace(
+        `${pathname}${params.size ? `?${params.toString()}` : ""}`,
+        {
+          scroll: false,
+        },
+      );
     }
   };
   const [reviewOrder, setReviewOrder] = useState<OrderSummary | null>(null);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
+  const [selectedReturnItems, setSelectedReturnItems] = useState<Record<string, number>>({});
   const [withdrawalReason, setWithdrawalReason] = useState("");
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -200,7 +248,25 @@ export default function BuyerOrdersSection() {
     queryFn: () => commerceService.buyerOrders(page, 10),
   });
 
-  const orders = ordersData?.items ?? ordersData?.data ?? [];
+  const orders = React.useMemo(
+    () => ordersData?.items ?? ordersData?.data ?? [],
+    [ordersData],
+  );
+  const { data: activeOrdersData } = useQuery<PageResponse<OrderSummary>>({
+    queryKey: ["buyer-active-shipments"],
+    queryFn: () => commerceService.buyerOrders(1, 30),
+    refetchInterval: 30_000,
+  });
+  const activeOrders = React.useMemo(
+    () => activeOrdersData?.items ?? activeOrdersData?.data ?? orders,
+    [activeOrdersData, orders],
+  );
+  const activeShipment = activeOrders.find((order) =>
+    order.delivery_type === "shipment" &&
+    (order.shipment_status === "in_transit" ||
+      (Array.isArray(order.shipments) ? order.shipments[0]?.status : order.shipments?.status) === "in_transit" ||
+      order.status === "in_transit")
+  );
   const total = ordersData?.total ?? orders.length;
   const totalPages = ordersData?.totalPages ?? (Math.ceil(total / 10) || 1);
 
@@ -240,12 +306,14 @@ export default function BuyerOrdersSection() {
       const params = new URLSearchParams(searchParams?.toString() || "");
       params.delete("orderId");
       params.delete("openChat");
+      params.delete("openMap");
       router.replace(
         `${pathname}${params.size ? `?${params.toString()}` : ""}`,
         { scroll: false },
       );
     }
     setSelectedOrder(null);
+    setShowShipmentMap(false);
     setWithdrawalOpen(false);
   };
 
@@ -261,17 +329,60 @@ export default function BuyerOrdersSection() {
   });
 
   useEffect(() => {
+    if (
+      orderIdParam &&
+      (!selectedOrder || selectedOrder.id !== orderIdParam) &&
+      orderIdParam !== dismissedOrderId
+    ) {
+      const match =
+        orders.find((o) => o.id === orderIdParam) ||
+        activeOrders.find((o) => o.id === orderIdParam);
+      if (match) {
+        setSelectedOrder(match);
+      }
+    }
+  }, [orderIdParam, selectedOrder, orders, activeOrders, dismissedOrderId]);
+
+  useEffect(() => {
     if (detailedOrder && detailedOrder.id === activeOrderId) {
       setSelectedOrder(detailedOrder);
     }
   }, [detailedOrder, activeOrderId]);
 
+  useEffect(() => {
+    if (
+      openOrderMap &&
+      selectedOrder &&
+      (!orderIdParam || selectedOrder.id === orderIdParam) &&
+      selectedOrder.delivery_type === "shipment"
+    ) {
+      setShowShipmentMap(true);
+    }
+  }, [openOrderMap, selectedOrder, orderIdParam]);
+
   const withdrawalMutation = useMutation({
-    mutationFn: () =>
-      commerceService.requestWithdrawal(
-        selectedOrder!.id,
+    mutationFn: () => {
+      if (!selectedOrder) throw new Error("No hay orden seleccionada");
+      const items = (selectedOrder.items || []).filter((item) => item.product_id)
+        .map((item) => ({ order_item_id: item.id, quantity: selectedReturnItems[item.id] || 0 }))
+        .filter((item) => item.quantity > 0);
+      if ((selectedOrder.items || []).some((item) => item.product_id) && !items.length)
+        throw new Error("Elegí al menos un producto para devolver.");
+      if (
+        isServiceOrder(selectedOrder) &&
+        (serviceProgressStep(selectedOrder) >= 3 ||
+          isOrderDelivered(selectedOrder))
+      ) {
+        throw new Error(
+          "El servicio ya fue realizado. Podés iniciar un reclamo si tuviste algún problema.",
+        );
+      }
+      return commerceService.requestWithdrawal(
+        selectedOrder.id,
         withdrawalReason || undefined,
-      ),
+        items.length ? items : undefined,
+      );
+    },
     onSuccess: async () => {
       showSuccess(
         "Aceptamos tu solicitud. Si ya recibiste el producto, entregalo al comercio para completar el reembolso.",
@@ -337,6 +448,11 @@ export default function BuyerOrdersSection() {
 
   const claimMutation = useMutation({
     mutationFn: async () => {
+      const items = (selectedOrder!.items || []).filter((item) => item.product_id)
+        .map((item) => ({ order_item_id: item.id, quantity: selectedReturnItems[item.id] || 0 }))
+        .filter((item) => item.quantity > 0);
+      if ((selectedOrder!.items || []).some((item) => item.product_id) && !items.length)
+        throw new Error("Elegí al menos un producto del reclamo.");
       const compressedImages = await Promise.all(
         claimImages.map(compressDocumentImage),
       );
@@ -344,6 +460,7 @@ export default function BuyerOrdersSection() {
         selectedOrder!.id,
         `${claimType}: ${claimReason.trim()}`,
         [...compressedImages, ...(claimVideo ? [claimVideo] : [])],
+        items.length ? items : undefined,
       );
     },
     onSuccess: async () => {
@@ -390,7 +507,8 @@ export default function BuyerOrdersSection() {
   };
 
   const confirmReceiptMutation = useMutation({
-    mutationFn: (orderId: string) => commerceService.confirmReceipt(orderId),
+    mutationFn: ({ shipmentId, code }: { shipmentId: string; code: string }) =>
+      commerceService.confirmReceipt(shipmentId, code),
     onSuccess: () => {
       showSuccess("Recepción confirmada. ¡Gracias por tu compra!");
       queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
@@ -462,6 +580,12 @@ export default function BuyerOrdersSection() {
         ))
     )
       return false;
+    if (
+      isServiceOrder(order) &&
+      (serviceProgressStep(order) >= 3 || isOrderDelivered(order))
+    ) {
+      return false;
+    }
     return order.withdrawal_eligible === true;
   };
 
@@ -542,6 +666,10 @@ export default function BuyerOrdersSection() {
             Listo para enviar
           </span>
         );
+      case "returning_to_store":
+        return <span className="buyer-badge buyer-badge--cancelled">Cancelado · regresa al comercio</span>;
+      case "returned":
+        return <span className="buyer-badge buyer-badge--cancelled">Devuelto al comercio</span>;
       case "dispatched":
       case "in_transit":
         return (
@@ -597,8 +725,50 @@ export default function BuyerOrdersSection() {
     }
   };
 
+  const renderProductSelection = (withdrawal: boolean) => {
+    const products = (selectedOrder?.items || []).filter((item) => item.product_id);
+    if (!products.length) return null;
+    const eligible = selectedOrder?.withdrawal_eligible_items || products.map((item) => item.id);
+    return <fieldset className="buyer-order-modal__product-selection">
+      <legend>Productos y cantidades {withdrawal ? "a devolver" : "del reclamo"}</legend>
+      {products.map((item) => {
+        const allowed = !withdrawal || eligible.includes(item.id);
+        const quantity = selectedReturnItems[item.id] || 0;
+        return <div className="buyer-order-modal__product-choice" key={item.id}>
+          <label>
+            <input type="checkbox" checked={quantity > 0} disabled={!allowed}
+              onChange={(event) => setSelectedReturnItems((current) => ({
+                ...current, [item.id]: event.target.checked ? item.quantity : 0,
+              }))} />
+            {item.product?.name || item.product_name || "Producto"} ({item.quantity} comprado{item.quantity === 1 ? "" : "s"})
+          </label>
+          {quantity > 0 && <input type="number" min={1} max={item.quantity} value={quantity}
+            aria-label={`Cantidad de ${item.product?.name || "producto"}`}
+            onChange={(event) => setSelectedReturnItems((current) => ({
+              ...current, [item.id]: Math.max(1, Math.min(item.quantity, Number(event.target.value) || 1)),
+            }))} />}
+          {!allowed && <small>Para este producto corresponde iniciar un reclamo.</small>}
+        </div>;
+      })}
+      <small>En una devolución parcial se reintegra el precio pagado por las unidades elegidas.</small>
+    </fieldset>;
+  };
+
   return (
     <div className="buyer-orders-section">
+      {activeShipment && !selectedOrder && (
+        <button
+          type="button"
+          className="buyer-orders-section__tracking-shortcut"
+          onClick={() => {
+            setSelectedOrder(activeShipment);
+            setShowShipmentMap(true);
+          }}
+        >
+          <MapPin size={19} />
+          Seguir envío
+        </button>
+      )}
       <header className="buyer-orders-section__header">
         <div>
           <span className="buyer-orders-section__subtitle">Mis Compras</span>
@@ -767,7 +937,7 @@ export default function BuyerOrdersSection() {
                     )}
                     {order.has_return && (
                       <span className="buyer-order-refund">
-                        Devolución recibida por el comercio
+                        Devolución registrada por el comercio
                       </span>
                     )}
                     {order.has_chargeback && (
@@ -918,7 +1088,6 @@ export default function BuyerOrdersSection() {
                 <div
                   className={`tracker-step ${
                     selectedOrder.status === "preparing" ||
-                    selectedOrder.status === "confirmed" ||
                     selectedOrder.status === "ready_for_pickup" ||
                     selectedOrder.status === "ready_for_dispatch" ||
                     selectedOrder.status === "dispatched" ||
@@ -948,7 +1117,10 @@ export default function BuyerOrdersSection() {
                   <span>
                     {selectedOrder.delivery_type === "pickup"
                       ? "Listo retiro"
-                      : "En camino"}
+                      : selectedOrder.delivery_type === "shipment" &&
+                          selectedOrder.status === "ready_for_dispatch"
+                        ? "Listo para despacho"
+                        : "En camino"}
                   </span>
                 </div>
                 <div
@@ -1340,11 +1512,62 @@ export default function BuyerOrdersSection() {
                       .
                     </p>
                   )}
-                  <p>
-                    Tu pedido se encuentra asignado a la red de logística local.
-                  </p>
-                  {selectedOrder.shipment_status && (
-                    <p>Estado del envío: {selectedOrder.shipment_status}</p>
+                  <p>{shipmentDelivered
+                    ? "El pedido fue entregado. Ya podés calificar al rider."
+                    : "Tu pedido se encuentra asignado a la red de logística local."}</p>
+                  {(shipmentDelivered || selectedOrder.shipment_status) && (
+                    <p>
+                      Estado del envío:{" "}
+                      {shipmentDelivered
+                        ? "Entregado"
+                        : selectedOrder.shipment_status === "ready_for_pickup"
+                          ? "Listo para que lo retire el rider"
+                        : selectedOrder.shipment_status === "returning_to_store"
+                          ? "Cancelado · el rider regresa al comercio"
+                        : selectedOrder.shipment_status === "returned_to_store"
+                          ? "Devuelto al comercio"
+                        : selectedOrder.shipment_status === "in_transit"
+                          ? "En camino"
+                          : selectedOrder.shipment_status === "preparing"
+                            ? "En preparación"
+                            : selectedOrder.shipment_status}
+                    </p>
+                  )}
+                  {deliveryCode &&
+                    buyerShipment?.id &&
+                    !shipmentDelivered &&
+                    !["returning_to_store", "returned"].includes(selectedOrder.status) &&
+                    buyerShipment.status !== "returning_to_store" && (
+                      <div className="buyer-delivery-code">
+                        <h4>Código para confirmar la entrega</h4>
+                        <p>
+                          Mostrá el QR al rider o dictale el código solo antes
+                          de recibir el paquete.
+                        </p>
+                        <strong>{deliveryCode}</strong>
+                        {deliveryQrUrl && (
+                          <img
+                            src={deliveryQrUrl}
+                            alt="QR para confirmar la entrega al rider"
+                          />
+                        )}
+                      </div>
+                    )}
+                  {!shipmentDelivered && !["returning_to_store", "returned"].includes(selectedOrder.status) && buyerShipment?.status !== "returning_to_store" && <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setShowShipmentMap((value) => !value)}
+                  >
+                    <MapPin size={16} />{" "}
+                    {showShipmentMap ? "Ocultar mapa" : "Ver mapa del envío"}
+                  </button>}
+                  {showShipmentMap && !shipmentDelivered && !["returning_to_store", "returned"].includes(selectedOrder.status) && buyerShipment?.status !== "returning_to_store" && (
+                    <div ref={shipmentMapRef}>
+                      <BuyerShipmentMap orderId={selectedOrder.id} orderNumber={selectedOrder.order_number} currentUserId={String(user?.id || "")} />
+                    </div>
+                  )}
+                  {shipmentDelivered && buyerShipment?.delivery_driver_id && (
+                    <BuyerRiderReview orderId={selectedOrder.id} />
                   )}
                 </div>
               )}
@@ -1481,9 +1704,10 @@ export default function BuyerOrdersSection() {
             )}
 
             {/* Confirm Receipt Action */}
-            {["dispatched", "in_transit"].includes(selectedOrder.status) &&
+            {buyerShipment?.status === "in_transit" &&
               !isOrderDelivered(selectedOrder) &&
-              selectedOrder.shipment_id && (
+              (selectedOrder.shipment_id || buyerShipment?.id) &&
+              deliveryCode && (
                 <div className="buyer-confirm-receipt-box">
                   <p>¿Ya recibiste tu producto en tus manos y está en orden?</p>
                   <button
@@ -1491,7 +1715,11 @@ export default function BuyerOrdersSection() {
                     className="btn-primary"
                     disabled={confirmReceiptMutation.isPending}
                     onClick={() =>
-                      confirmReceiptMutation.mutate(selectedOrder.shipment_id!)
+                      confirmReceiptMutation.mutate({
+                        shipmentId: (selectedOrder.shipment_id ||
+                          buyerShipment.id) as string,
+                        code: deliveryCode,
+                      })
                     }
                   >
                     Confirmar recepción del producto
@@ -1574,7 +1802,14 @@ export default function BuyerOrdersSection() {
                 <button
                   type="button"
                   className="btn-secondary"
-                  onClick={() => setWithdrawalOpen(true)}
+                  onClick={() => {
+                    setSelectedReturnItems(Object.fromEntries(
+                      (selectedOrder.items || []).filter((item) => item.product_id &&
+                        (selectedOrder.withdrawal_eligible_items || []).includes(item.id))
+                        .map((item) => [item.id, item.quantity]),
+                    ));
+                    setWithdrawalOpen(true);
+                  }}
                 >
                   {isServiceOrder(selectedOrder)
                     ? "Cancelar servicio"
@@ -1592,13 +1827,15 @@ export default function BuyerOrdersSection() {
             {selectedOrder.withdrawal_requested && (
               <div className="buyer-order-modal__withdrawal">
                 <p className="buyer-order-modal__withdrawal-status">
-                  {orderClaims.some(
-                    (claim) =>
-                      claim.status === "open" &&
-                      claim.merchant_action === "full_refund_with_return",
-                  )
-                    ? "Tu devolución fue aceptada. Entregá el producto para completar el reembolso."
-                    : "Tu solicitud está en proceso."}
+                  {selectedOrder.status === "refunded" && ["returning_to_store", "returned_to_store"].includes(selectedOrder.shipment_status ?? "")
+                    ? "El reintegro fue confirmado. El rider devolverá el paquete al comercio si aún lo tiene."
+                    : selectedOrder.status === "refunded"
+                      ? "El reintegro fue confirmado."
+                    : selectedOrder.status === "returning_to_store" || selectedOrder.shipment_status === "returning_to_store"
+                      ? "Tu cancelación fue aceptada y el reintegro se tramita automáticamente. El rider llevará el paquete al comercio."
+                      : orderClaims.some((claim) => claim.status === "open" && claim.merchant_action === "full_refund_with_return")
+                        ? "Tu devolución fue aceptada. Entregá el producto para completar el reembolso."
+                        : "Tu solicitud está en proceso."}
                 </p>
                 {selectedOrder.return_ticket_available && (
                   <>
@@ -1639,6 +1876,7 @@ export default function BuyerOrdersSection() {
                 {orderClaims.map((claim) => (
                   <article className="buyer-order-modal__claim" key={claim.id}>
                     <strong>{claim.reason}</strong>
+                    {!!claim.items?.length && <span>Productos: {claim.items.map((item) => `${item.quantity} × ${item.name}`).join(", ")}</span>}
                     <span>
                       Estado:{" "}
                       {claim.status === "open" &&
@@ -1654,7 +1892,12 @@ export default function BuyerOrdersSection() {
                     {claim.merchant_response && (
                       <p>Respuesta del comercio: {claim.merchant_response}</p>
                     )}
-                    {claim.merchant_action === "full_refund_with_return" && (
+                    {claim.merchant_action === "full_refund_with_return" &&
+                      selectedOrder.status !== "returning_to_store" &&
+                      selectedOrder.status !== "returned" &&
+                      selectedOrder.status !== "refunded" &&
+                      selectedOrder.shipment_status !== "returning_to_store" &&
+                      selectedOrder.shipment_status !== "returned_to_store" && (
                       <>
                         <p>
                           El comercio aceptó el reembolso total al recibir el
@@ -1670,6 +1913,12 @@ export default function BuyerOrdersSection() {
                         </button>
                       </>
                     )}
+                    {claim.merchant_action === "full_refund_with_return" &&
+                      (selectedOrder.status === "returned" ||
+                        selectedOrder.status === "returning_to_store" ||
+                        selectedOrder.shipment_status === "returning_to_store") && (
+                        <p>El rider devolverá el paquete al comercio. No necesitás imprimir un comprobante.</p>
+                      )}
                     {claim.merchant_action === "full_refund_no_return" && (
                       <p>
                         {isServiceOrder(selectedOrder)
@@ -1802,6 +2051,10 @@ export default function BuyerOrdersSection() {
                             ? "Reclamo"
                             : "Producto no entregado",
                       );
+                      setSelectedReturnItems(Object.fromEntries(
+                        (selectedOrder.items || []).filter((item) => item.product_id)
+                          .map((item) => [item.id, item.quantity]),
+                      ));
                       setClaimOpen(true);
                     }}
                   >
@@ -1852,6 +2105,7 @@ export default function BuyerOrdersSection() {
                 ? "Si el servicio aún no se prestó y cumple el plazo de cancelación, tramitaremos el reintegro por el medio de pago original. Podés indicar un motivo, pero no es obligatorio."
                 : "Aceptaremos la solicitud si la compra cumple las condiciones de arrepentimiento. Si ya recibiste el producto, coordiná la entrega con el comercio: el reembolso se hará al registrar su recepción. Podés indicar un motivo, pero no es obligatorio."}
             </p>
+            {renderProductSelection(true)}
             <label htmlFor="buyer-withdrawal-reason">Motivo (opcional)</label>
             <select
               id="buyer-withdrawal-reason"
@@ -1956,6 +2210,7 @@ export default function BuyerOrdersSection() {
                   ? "Contanos qué ocurrió. Para garantía o devolución desde lejos, coordiná con el comercio antes de enviar el producto."
                   : "Contanos qué pasó con la entrega y adjuntá evidencia si la tenés."}
             </p>
+            {renderProductSelection(false)}
             <label htmlFor="buyer-claim-type">Tipo de reclamo</label>
             <select
               id="buyer-claim-type"

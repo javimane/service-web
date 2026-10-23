@@ -29,6 +29,7 @@ import {
   getProductsByProfessionalAction,
 } from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
+import ProfessionalReputation from "@/components/ProfessionalReputation/ProfessionalReputation";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
@@ -818,6 +819,7 @@ export default function ProductDetailPage({
                     <MapPin size={14} />
                     <span>{sellerProvince}</span>
                   </div>
+                  <ProfessionalReputation professionalId={professionalId} />
                   <p>Condición: {({ original: "Original", replica: "Réplica", used: "Usado", alternative: "Alternativo" } as Record<string, string>)[professionalProduct?.product_condition || ""] || "No informada"}</p>
                   {professionalProduct?.id && <ListingReportButton targetType="professional_product" targetId={String(professionalProduct.id)} />}
 

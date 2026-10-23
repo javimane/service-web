@@ -21,7 +21,7 @@ import { useAlert } from "@/context/AlertContext";
 import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
 import { useAuth } from "@/context/AuthContext";
-import { getCardConfig } from '@/services/cardPayments';
+import { getCardConfig } from "@/services/cardPayments";
 import "./PaymentMethodsSection.css";
 
 // Helper para detectar marca de tarjeta según el BIN
@@ -103,7 +103,9 @@ export default function PaymentMethodsSection() {
       return await commerceService.createUserPaymentMethod(dto);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-payment-methods", user?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["user-payment-methods", user?.id],
+      });
       showSuccess("Tarjeta guardada exitosamente");
       handleCloseModal();
     },
@@ -118,7 +120,9 @@ export default function PaymentMethodsSection() {
       return await commerceService.deleteUserPaymentMethod(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-payment-methods", user?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["user-payment-methods", user?.id],
+      });
       showSuccess("Tarjeta eliminada correctamente");
       setDeleteConfirmId(null);
     },
@@ -133,7 +137,9 @@ export default function PaymentMethodsSection() {
       return await commerceService.setDefaultPaymentMethod(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-payment-methods", user?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["user-payment-methods", user?.id],
+      });
       showSuccess("Tarjeta establecida como predeterminada");
     },
     onError: (err: any) => {
@@ -143,18 +149,27 @@ export default function PaymentMethodsSection() {
 
   const handleOpenModal = async () => {
     try {
-      if ((await getCardConfig()).provider === 'payway') {
-        showSuccess('Para guardar una tarjeta Payway, usala en una compra y marcá “Guardar tarjeta después del pago”.');
+      if ((await getCardConfig()).provider === "payway") {
+        showSuccess(
+          "Para guardar una tarjeta, usala en una compra y marcá “Guardar tarjeta después del pago”.",
+        );
         return;
       }
-    } catch { showError('No se pudo consultar el proveedor de tarjetas.'); return; }
+    } catch {
+      showError("No se pudo consultar el proveedor de tarjetas.");
+      return;
+    }
     const { data: currentStatus } = await refetchIdentity();
     if (!currentStatus?.purchase_eligible) {
-      showError("Verificá tu identidad y edad en la app de Sercio antes de registrar una tarjeta.");
+      showError(
+        "Verificá tu identidad y edad en la app de Sercio antes de registrar una tarjeta.",
+      );
       return;
     }
     if (process.env.NODE_ENV !== "development") {
-      showError("El registro de tarjetas requiere tokenización de Getnet y todavía no está disponible.");
+      showError(
+        "El registro de tarjetas requiere tokenización de Getnet y todavía no está disponible.",
+      );
       return;
     }
     setCardNumber("");
@@ -255,7 +270,8 @@ export default function PaymentMethodsSection() {
             y contrataciones.
           </p>
         </div>
-        <button data-action-tone="add"
+        <button
+          data-action-tone="add"
           type="button"
           className="payment-methods__add-btn"
           onClick={handleOpenModal}
@@ -280,22 +296,17 @@ export default function PaymentMethodsSection() {
           </p>
           {!identityStatus?.purchase_eligible && (
             <div className="payment-methods__verification-actions">
-              <button type="button" onClick={() => void refetchIdentity()} className="payment-methods__btn-secondary" disabled={isLoadingIdentity}>
+              <button
+                type="button"
+                onClick={() => void refetchIdentity()}
+                className="payment-methods__btn-secondary"
+                disabled={isLoadingIdentity}
+              >
                 Actualizar estado
               </button>
             </div>
           )}
         </div>
-      </div>
-
-      {/* Security Banner */}
-      <div className="payment-methods__security-banner">
-        <ShieldCheck className="payment-methods__security-icon" size={20} />
-        <span>
-          El registro de tarjetas requiere un token real de Getnet. Hasta integrar esa tokenización,
-          la carga de tarjetas solo está disponible para pruebas locales; no ingreses tarjetas reales.
-          La coincidencia de nombre y DNI con Didit no confirma la titularidad bancaria.
-        </span>
       </div>
 
       {/* Content */}
@@ -327,7 +338,8 @@ export default function PaymentMethodsSection() {
             Agrega tus tarjetas de crédito o débito para comprar y contratar
             servicios en 1 clic de forma segura.
           </p>
-          <button data-action-tone="add"
+          <button
+            data-action-tone="add"
             type="button"
             className="payment-methods__add-btn"
             onClick={handleOpenModal}
@@ -373,7 +385,8 @@ export default function PaymentMethodsSection() {
                       </span>
                     </div>
                     <span className="payment-methods__card-brand-badge">
-                      {brandName} · {method.provider === 'payway' ? 'Payway' : 'Getnet'}
+                      {brandName} ·{" "}
+                      {method.provider === "payway" ? "Payway" : "Getnet"}
                     </span>
                   </div>
 
@@ -477,7 +490,8 @@ export default function PaymentMethodsSection() {
             <form onSubmit={handleSubmitCard}>
               <div className="payment-methods__modal-body">
                 <p className="payment-methods__demo-notice">
-                  Modo de prueba local: no ingreses los datos de una tarjeta real.
+                  Modo de prueba local: no ingreses los datos de una tarjeta
+                  real.
                 </p>
                 {/* Número de Tarjeta */}
                 <div className="payment-methods__form-group">
@@ -511,7 +525,10 @@ export default function PaymentMethodsSection() {
                 </div>
 
                 <div className="payment-methods__form-group">
-                  <label className="payment-methods__label" htmlFor="payment-card-holder-dni">
+                  <label
+                    className="payment-methods__label"
+                    htmlFor="payment-card-holder-dni"
+                  >
                     DNI del titular
                   </label>
                   <input
@@ -521,7 +538,11 @@ export default function PaymentMethodsSection() {
                     autoComplete="off"
                     placeholder="Solo números"
                     value={cardHolderDni}
-                    onChange={(e) => setCardHolderDni(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                    onChange={(e) =>
+                      setCardHolderDni(
+                        e.target.value.replace(/\D/g, "").slice(0, 9),
+                      )
+                    }
                     className="payment-methods__input"
                     minLength={7}
                     maxLength={9}
@@ -637,7 +658,8 @@ export default function PaymentMethodsSection() {
               </div>
 
               <div className="payment-methods__modal-footer">
-                <button data-action-tone="cancel"
+                <button
+                  data-action-tone="cancel"
                   type="button"
                   className="payment-methods__btn-secondary"
                   onClick={handleCloseModal}

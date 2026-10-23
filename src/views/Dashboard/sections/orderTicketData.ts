@@ -143,8 +143,8 @@ export function getOrderLines(order: OrderSummary) {
   ];
 }
 
-export function getDeliveryAddress(order: OrderSummary): string {
-  if (order.delivery_type === "pickup") return "Retiro en sucursal";
+export function getDeliveryAddress(order: OrderSummary, skipPickup = false): string {
+  if (!skipPickup && order.delivery_type === "pickup") return "Retiro en sucursal";
   const address = order.delivery_address || order.shipping_address;
   if (!address) return "Dirección del comprador no informada";
   const street = [
@@ -170,12 +170,44 @@ export function getDeliveryAddress(order: OrderSummary): string {
   );
 }
 
+export function getTicketDelivery(order: OrderSummary): {
+  label: string;
+  location: string | null;
+} {
+  const isService = Boolean(order.service_id || order.service || order.items?.some((item) => item.service_id || item.service || item.item_type === "service"));
+  if (isService) {
+    const kind = order.service_location_kind || (order.delivery_type === "pickup" ? "branch" : order.delivery_type === "shipment" ? "home" : "coordinate");
+    if (kind === "branch") {
+      const branch = getSaleLocation(order);
+      return {
+        label: "En sucursal",
+        location: `${branch.name}: ${branch.address}`,
+      };
+    }
+    if (kind === "home") {
+      return { label: "En domicilio del cliente", location: getDeliveryAddress(order, true) };
+    }
+    return { label: "A coordinar", location: null };
+  }
+  return {
+    label: order.delivery_type === "pickup" ? "Retiro en sucursal" : order.delivery_type === "shipment" ? "Envío a domicilio" : "A convenir",
+    location: null,
+  };
+}
+
 export const getOrderNumber = (order: OrderSummary) =>
   order.order_number || `#ORD-${order.id.slice(0, 8).toUpperCase()}`;
 
-export const getOrderQrPayload = (order: OrderSummary) =>
-  JSON.stringify({
+export const getOrderQrPayload = (order: OrderSummary) => {
+  const shipment = Array.isArray(order.shipments) ? order.shipments[0] : order.shipments;
+  return JSON.stringify({
     order_id: order.id,
     order_number: getOrderNumber(order),
-    security_code: order.pickup_code || "",
+    ...(order.delivery_type === "shipment" && shipment?.id
+      ? { shipment_id: shipment.id }
+      : {}),
+    security_code: order.delivery_type === "shipment"
+      ? shipment?.seller_security_code || ""
+      : order.pickup_code || "",
   });
+};

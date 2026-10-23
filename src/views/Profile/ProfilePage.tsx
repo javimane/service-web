@@ -2,6 +2,7 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import WhatsAppContactButton from "@/components/WhatsAppContactButton/WhatsAppContactButton";
+import ProfessionalReputation from "@/components/ProfessionalReputation/ProfessionalReputation";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAuth } from "../../context/AuthContext";
 import { useAlert } from "../../context/AlertContext";
@@ -913,6 +914,7 @@ export default function ProfilePage({
               {professional.specialty?.slice(0, 50) ||
                 "Servicios Profesionales"}
             </p>
+            <ProfessionalReputation professionalId={professionalId} />
             {professional.professional_categories &&
               professional.professional_categories.length > 0 && (
                 <div className="profile-sidebar__categories">

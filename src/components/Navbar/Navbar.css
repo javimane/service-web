@@ -844,3 +844,118 @@
     gap: 2px;
   }
 }
+
+/* ===== LIVE DELIVERY TRACKING BUTTON ===== */
+.navbar__live-delivery-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--brand-blue-soft);
+  border: 1px solid var(--brand-blue-border);
+  color: var(--brand-blue);
+  text-decoration: none;
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.navbar__live-delivery-btn:hover {
+  background: var(--brand-blue);
+  color: var(--white);
+  border-color: var(--brand-blue);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.navbar__live-delivery-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.navbar__live-delivery-btn:hover .navbar__live-delivery-icon {
+  transform: translateX(2px);
+}
+
+.navbar__live-delivery-pulse {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--success-color);
+  flex-shrink: 0;
+}
+
+.navbar__live-delivery-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--success-color);
+  animation: navbarDeliveryPulse 1.8s ease-out infinite;
+}
+
+@keyframes navbarDeliveryPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.navbar__live-delivery-btn--mobile {
+  display: none;
+}
+
+.navbar__mobile-link--highlight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--brand-blue);
+  font-weight: var(--weight-bold);
+  background: var(--brand-blue-soft);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  text-decoration: none;
+}
+
+.dropdown__item--highlight {
+  color: var(--brand-blue);
+  font-weight: var(--weight-bold);
+  background: var(--brand-blue-soft);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-1);
+}
+
+.dropdown__item--highlight:hover {
+  background: var(--brand-blue);
+  color: var(--white);
+}
+
+@media (max-width: 1024px) {
+  .navbar__live-delivery-btn--desktop {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar__live-delivery-btn--mobile {
+    display: inline-flex;
+    width: 100%;
+    margin-bottom: var(--space-2);
+  }
+}

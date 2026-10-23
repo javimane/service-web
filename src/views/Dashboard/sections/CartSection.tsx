@@ -40,6 +40,7 @@ import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDe
 import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
 import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
 import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
+import WithdrawalReviewNotice from "@/components/WithdrawalReviewNotice/WithdrawalReviewNotice";
 import QrPaymentConfirmedModal from "@/components/QrPaymentConfirmedModal/QrPaymentConfirmedModal";
 import { isQrPaymentConfirmed, useQrPaymentStatus } from "@/hooks/useQrPaymentStatus";
 import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
@@ -64,7 +65,7 @@ export default function CartSection() {
   const queryClient = useQueryClient();
   const { user, isAgeVerified, loading: isAuthLoading } = useAuth();
   const { openAuth } = useAuthModal();
-  const { showSuccess, showError } = useAlert();
+  const { showSuccess, showError, showAlert } = useAlert();
 
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("pickup");
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
@@ -77,6 +78,7 @@ export default function CartSection() {
     useState<CalculateShippingResponse | null>(null);
   const [scheduleForNextDay, setScheduleForNextDay] = useState(false);
   const [quotedFor, setQuotedFor] = useState("");
+  const [deliveryCapacityError, setDeliveryCapacityError] = useState<{ key: string; message: string } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "paycloud_qr">(
     "paycloud_qr",
   );
@@ -320,6 +322,9 @@ export default function CartSection() {
     selectedAddressId,
     selectedBranchId,
   });
+  const currentCapacityError = deliveryCapacityError?.key === quoteKey
+    ? deliveryCapacityError.message
+    : null;
   const latestQuoteKey = useRef(quoteKey);
   latestQuoteKey.current = quoteKey;
 
@@ -384,17 +389,27 @@ export default function CartSection() {
     },
     onSuccess: (res, requestedKey) => {
       if (requestedKey !== latestQuoteKey.current) return;
+      setDeliveryCapacityError(null);
       setShippingCost(res.shippingCost);
       setEstimatedTime(res.delivery_estimate || "");
       setShippingQuote(res);
       setQuotedFor(requestedKey);
       showSuccess("Costo de envío calculado.");
     },
-    onError: (_error, requestedKey) => {
+    onError: (error, requestedKey) => {
       if (requestedKey !== latestQuoteKey.current) return;
       setQuotedFor("");
       setShippingQuote(null);
-      showError("No se pudo calcular el envío para esta dirección.");
+      const details = error as { data?: { error_code?: string; message?: string }; response?: { data?: { error_code?: string; message?: string } } };
+      const problem = details.data ?? details.response?.data;
+      if (problem?.error_code === "DELIVERY_CAPACITY_UNAVAILABLE") {
+        const message = problem.message || "Este pedido supera la capacidad de los vehículos disponibles.";
+        setDeliveryCapacityError({ key: requestedKey, message });
+        setDeliveryType("pickup");
+        showError(message);
+      } else {
+        showError("No se pudo calcular el envío para esta dirección.");
+      }
     },
   });
 
@@ -435,10 +450,17 @@ export default function CartSection() {
         setEstimatedTime(quote.delivery_estimate || "");
         setShippingQuote(quote);
         setQuotedFor(quoteKey);
-      } catch {
+        setDeliveryCapacityError(null);
+      } catch (error) {
         if (!active) return;
         setQuotedFor("");
         setShippingQuote(null);
+        const details = error as { data?: { error_code?: string; message?: string }; response?: { data?: { error_code?: string; message?: string } } };
+        const problem = details.data ?? details.response?.data;
+        if (problem?.error_code === "DELIVERY_CAPACITY_UNAVAILABLE") {
+          setDeliveryCapacityError({ key: quoteKey, message: problem.message || "Este pedido supera la capacidad de los vehículos disponibles." });
+          setDeliveryType("pickup");
+        }
       }
     }, 400);
 
@@ -548,6 +570,20 @@ export default function CartSection() {
     },
     onError: (error) => {
       checkoutStartedRef.current = false;
+      const checkoutError = error as Error & { data?: { error_code?: string; order_id?: string } };
+      if (checkoutError.data?.error_code === "CHECKOUT_REQUIRES_VERIFICATION") {
+        const orderId = checkoutError.data.order_id;
+        showAlert({
+          type: "warning",
+          title: "Estamos verificando tu pago",
+          message: "Consultá el estado de tu pedido en Mis Compras. No vuelvas a pagar mientras se confirma.",
+          confirmText: "Ir a Mis Compras",
+          onConfirm: () => router.push(
+            `${ROUTES.dashboard}?view=purchases${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`,
+          ),
+        });
+        return;
+      }
       showError(error.message || "No se pudo procesar el pago.");
     },
   });
@@ -893,6 +929,7 @@ export default function CartSection() {
 
                     <button
                       type="button"
+                      disabled={Boolean(currentCapacityError)}
                       className={`delivery-option ${
                         deliveryType === "shipment"
                           ? "delivery-option--active"
@@ -903,7 +940,7 @@ export default function CartSection() {
                       <Truck size={20} />
                       <div>
                         <strong>Envío a domicilio</strong>
-                        <p>Por rider o transporte asignado</p>
+                        <p>{currentCapacityError ? "No disponible para este peso o volumen" : "Por rider o transporte asignado"}</p>
                       </div>
                     </button>
                   </>
@@ -931,6 +968,10 @@ export default function CartSection() {
                   </div>
                 </button>
               </div>
+
+              {currentCapacityError && !hasService && (
+                <p className="no-branches-warning" role="status">{currentCapacityError}</p>
+              )}
 
               {hasService && requiresServiceLocation && (
                 <div className="delivery-details-subbox">
@@ -1455,6 +1496,7 @@ export default function CartSection() {
               )}
 
               <ReturnsPolicyLink />
+              <WithdrawalReviewNotice />
               <button
                 type="button"
                 className="btn-primary cart-checkout-btn"

@@ -6,6 +6,12 @@
 
 .liquidations-debt { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: var(--space-5); }
 .liquidations-debt__heading, .liquidations-debt__item, .liquidations-debt__pages { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); }
+.liquidations-debt__heading { width: 100%; padding: 0; background: none; border: 0; text-align: left; font-family: inherit; cursor: pointer; align-items: center; }
+.liquidations-debt__heading > div { flex: 1; }
+.liquidations-debt__heading h2 { margin: 0; }
+.liquidations-debt__chevron { flex-shrink: 0; color: var(--text-secondary); transition: transform 0.2s ease; }
+.liquidations-debt__chevron--open { transform: rotate(90deg); }
+.liquidations-debt__content { margin-top: var(--space-4); }
 .liquidations-debt__heading strong { color: #b91c1c; font-size: 1.4rem; white-space: nowrap; }
 .liquidations-debt p, .liquidations-debt span, .liquidations-debt small { color: var(--text-secondary); }
 .liquidations-debt__item { border-top: 1px solid var(--border-color); padding: var(--space-4) 0; }

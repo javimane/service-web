@@ -136,7 +136,8 @@
 .fleet-map-controls {
   position: absolute;
   bottom: var(--space-4);
-  right: var(--space-4);
+  left: var(--space-4);
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -424,6 +425,25 @@
 
 .status-circle--offline {
   background: var(--slate-500);
+}
+
+.fleet-shipment-card__connection {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.fleet-shipment-card__connection--available {
+  color: var(--green-dark);
+}
+
+.fleet-shipment-card__connection--on_trip {
+  color: var(--brand-blue);
+}
+
+.fleet-shipment-card__connection--offline {
+  color: var(--text-secondary);
 }
 
 .vehicle-pill {

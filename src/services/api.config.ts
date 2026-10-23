@@ -46,6 +46,8 @@ export const API_ENDPOINTS = {
     serviceAppointment: (id: string) => `${API_BASE_URL}/api/orders/${id}/service-appointment`,
     transportShipment: (id: string) => `${API_BASE_URL}/api/orders/${id}/transport-shipment`,
     dispatchEvidence: (id: string) => `${API_BASE_URL}/api/orders/${id}/dispatch-evidence`,
+    dispatchEvidenceUploadUrl: (id: string) => `${API_BASE_URL}/api/orders/${id}/dispatch-evidence/upload-url`,
+    dispatchEvidenceComplete: (id: string) => `${API_BASE_URL}/api/orders/${id}/dispatch-evidence/complete`,
     confirm: (id: string) => `${API_BASE_URL}/api/orders/${id}/confirm`,
     coordinatedPreparing: (id: string) => `${API_BASE_URL}/api/orders/${id}/coordinated-preparing`,
     coordinatedDispatched: (id: string) => `${API_BASE_URL}/api/orders/${id}/coordinated-dispatched`,
@@ -90,14 +92,18 @@ export const API_ENDPOINTS = {
   },
   shipments: {
     merchant: `${API_BASE_URL}/api/shipments/merchant`,
+    receiveReturn: `${API_BASE_URL}/api/shipments/return/scan`,
     carrier: `${API_BASE_URL}/api/shipments/carrier`,
     byOrder: (orderId: string) => `${API_BASE_URL}/api/shipments/order/${orderId}`,
+    riderReview: (orderId: string) => `${API_BASE_URL}/api/shipments/order/${orderId}/rider-review`,
     confirmReceipt: (id: string) => `${API_BASE_URL}/api/shipments/${id}/confirm-receipt`,
     uploadImage: (id: string) => `${API_BASE_URL}/api/shipments/${id}/upload-image`,
     handToCarrier: (id: string) => `${API_BASE_URL}/api/shipments/${id}/hand-to-carrier`,
+    merchantPickupCode: (id: string) => `${API_BASE_URL}/api/shipments/${id}/merchant-pickup-code`,
     inTransit: (id: string) => `${API_BASE_URL}/api/shipments/${id}/in-transit`,
     delivered: (id: string) => `${API_BASE_URL}/api/shipments/${id}/delivered`,
     assign: (id: string) => `${API_BASE_URL}/api/shipments/${id}/assign`,
+    assignOwnRider: (id: string) => `${API_BASE_URL}/api/shipments/${id}/assign-own-rider`,
     scan: (id: string) => `${API_BASE_URL}/api/shipments/scan/${id}`,
     startTrip: (id: string) => `${API_BASE_URL}/api/shipments/${id}/start-trip`,
     location: (id: string) => `${API_BASE_URL}/api/shipments/${id}/location`,
@@ -330,6 +336,7 @@ export const API_ENDPOINTS = {
   },
   scoring: {
     professional: (id: string | number) => `${API_BASE_URL}/api/scoring/professionals/${id}`,
+    professionalPublic: (id: string | number) => `${API_BASE_URL}/api/scoring/professionals/${id}/public`,
     rider: (id: string) => `${API_BASE_URL}/api/scoring/riders/${id}`,
     transport: (companyName: string) =>
       `${API_BASE_URL}/api/scoring/transport/${encodeURIComponent(companyName)}`,
@@ -354,5 +361,8 @@ export const API_ENDPOINTS = {
   },
   googleCalendar: {
     events: `${API_BASE_URL}/api/google-calendar/events`,
+  },
+  banners: {
+    base: `${API_BASE_URL}/api/banners`,
   },
 };

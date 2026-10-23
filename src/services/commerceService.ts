@@ -1,6 +1,7 @@
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./api.config";
 import { requestIdentityVerification } from "@/utils/identityVerification";
+import { multimediaService } from "./multimediaService";
 
 export type PageResponse<T> = {
   data?: T[];
@@ -13,6 +14,14 @@ export type PageResponse<T> = {
   hasNext?: boolean;
 };
 
+export type RiderReview = {
+  id: string;
+  order_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string | null;
+};
+
 export type OrderStatus =
   | "pending"
   | "pending_payment"
@@ -23,6 +32,8 @@ export type OrderStatus =
   | "ready_for_dispatch"
   | "dispatched"
   | "in_transit"
+  | "returning_to_store"
+  | "returned"
   | "delivered"
   | "settled"
   | "cancelled"
@@ -80,6 +91,7 @@ export type OrderPricingSnapshot = {
 
 export type OrderSummary = {
   id: string;
+  dispatch?: { dispatched: boolean; message?: string } | null;
   review?: PurchaseReview | PurchaseReview[] | null;
   order_number?: string | null;
   status: OrderStatus;
@@ -106,13 +118,16 @@ export type OrderSummary = {
   card_type?: string | null;
   installments?: number | null;
   withdrawal_eligible?: boolean;
+  withdrawal_eligible_items?: string[];
   withdrawal_requested?: boolean;
   claim_requested?: boolean;
+  has_active_claim?: boolean;
   claim_resolution_confirmable?: boolean;
   return_ticket_available?: boolean;
   shipment_id?: string | null;
   shipment_status?: string | null;
-  shipments?: Array<{ id: string; status: string }> | { id: string; status: string } | null;
+  uses_merchant_riders?: boolean | null;
+  shipments?: Array<{ id: string; status: string; delivery_driver_id?: string | null; seller_security_code?: string | null }> | { id: string; status: string; delivery_driver_id?: string | null; seller_security_code?: string | null } | null;
   user_id?: string;
   professional_id?: number;
   buyer?: {
@@ -269,6 +284,7 @@ export type PurchaseReview = {
 
 export type ReturnTicket = {
   id: string;
+  return_code: string;
   order_id: string;
   created_at: string;
   status: string;
@@ -419,7 +435,10 @@ export type ProfessionalScore = {
   average_rating?: number;
   total_reviews?: number;
   penalties_count?: number;
-  next_tier_score?: number;
+  next_tier_score?: number | null;
+  current_tier_score?: number;
+  next_tier_medal?: string | null;
+  points_to_next_tier?: number | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -568,19 +587,20 @@ export type FleetTrackingItem = {
   driver_phone?: string;
   driver_status: "available" | "on_trip" | "offline";
   vehicle_type: string;
-  current_lat: number;
-  current_lng: number;
+  current_lat: number | null;
+  current_lng: number | null;
+  last_location_update?: string | null;
   current_shipment?: {
     id: string;
     order_id: string;
     merchant_name: string;
-    origin_lat: number;
-    origin_lng: number;
+    origin_lat: number | null;
+    origin_lng: number | null;
     destination_address: string;
-    destination_lat: number;
-    destination_lng: number;
+    destination_lat: number | null;
+    destination_lng: number | null;
     status: string;
-    eta_minutes?: number;
+    eta_minutes?: number | null;
   } | null;
   route_polyline?: Array<[number, number]>;
 };
@@ -1030,11 +1050,19 @@ export const commerceService = {
   markPickupReady: (id: string) =>
     apiClient<OrderSummary>(API_ENDPOINTS.orders.pickupReady(id), { method: 'POST' }),
 
-  uploadDispatchEvidence: (id: string, file: File) => {
-    const form = new FormData();
-    form.append('file', file);
+  uploadDispatchEvidence: async (id: string, file: File) => {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+        file.size === 0 || file.size > 8 * 1024 * 1024) {
+      throw new Error("Elegí una foto JPG, PNG o WebP de hasta 8 MB.");
+    }
+    const { signedUrl, path } = await apiClient<{ signedUrl: string; path: string }>(
+      API_ENDPOINTS.orders.dispatchEvidenceUploadUrl(id),
+      { method: "POST", body: { contentType: file.type } },
+    );
+    await multimediaService.uploadToPresignedUrl(signedUrl, file, file.type);
     return apiClient<{ id: string; dispatch_evidence_path: string }>(
-      API_ENDPOINTS.orders.dispatchEvidence(id), { method: 'POST', body: form },
+      API_ENDPOINTS.orders.dispatchEvidenceComplete(id),
+      { method: "POST", body: { path } },
     );
   },
 
@@ -1058,15 +1086,16 @@ export const commerceService = {
       body: { reason },
     }),
 
-  requestWithdrawal: (id: string, reason?: string) =>
+  requestWithdrawal: (id: string, reason?: string, items?: Array<{ order_item_id: string; quantity: number }>) =>
     apiClient<{ id: string }>(API_ENDPOINTS.orders.withdrawal(id), {
       method: "POST",
-      body: { reason },
+      body: { reason, items },
     }),
 
-  createClaim: (id: string, reason: string, files: File[] = []) => {
+  createClaim: (id: string, reason: string, files: File[] = [], items?: Array<{ order_item_id: string; quantity: number }>) => {
     const body = new FormData();
     body.append("reason", reason);
+    if (items?.length) body.append("items", JSON.stringify(items));
     files.forEach((file) => body.append("files", file));
     return apiClient<{ id: string }>(API_ENDPOINTS.orders.claim(id), {
       method: "POST",
@@ -1089,6 +1118,7 @@ export const commerceService = {
       partial_offer_percent?: number | null;
       partial_offer_amount?: number | null;
       buyer_decision?: "accepted" | "rejected" | null;
+      items?: Array<{ order_item_id: string; quantity: number; name: string }>;
       media: Array<{ id: string; media_type: "image" | "video"; url: string | null; status: "ready" | "processing" }>;
     }>>(API_ENDPOINTS.orders.claims(id)),
 
@@ -1116,11 +1146,20 @@ export const commerceService = {
   returnTicket: (id: string) =>
     apiClient<ReturnTicket>(API_ENDPOINTS.orders.returnTicket(id)),
 
-  receiveReturn: (code: string, conditionVerified: boolean) =>
-    apiClient<{ id: string; order_id: string; return_received_at: string }>(
-      API_ENDPOINTS.orders.receiveReturn(code),
-      { method: "POST", body: JSON.stringify({ condition_verified: conditionVerified }) },
-    ),
+  receiveReturn: async (code: string, conditionVerified: boolean) => {
+    try {
+      return await apiClient<{ id: string; order_id: string; return_received_at: string }>(
+        API_ENDPOINTS.orders.receiveReturn(code),
+        { method: "POST", body: JSON.stringify({ condition_verified: conditionVerified }) },
+      );
+    } catch (error) {
+      if ((error as Error & { statusCode?: number }).statusCode !== 404) throw error;
+      return apiClient<{ id: string; order_id: string; return_received_at: string }>(
+        API_ENDPOINTS.shipments.receiveReturn,
+        { method: "POST", body: JSON.stringify({ scan_code: code, condition_verified: conditionVerified }) },
+      );
+    }
+  },
 
   verifyPickup: (id: string, code: string) =>
     apiClient<{ success: boolean; message: string }>(
@@ -1395,6 +1434,15 @@ export const commerceService = {
   orderShipment: (orderId: string) =>
     apiClient<any>(API_ENDPOINTS.shipments.byOrder(orderId)),
 
+  riderReview: (orderId: string) =>
+    apiClient<RiderReview | null>(API_ENDPOINTS.shipments.riderReview(orderId)),
+
+  submitRiderReview: (orderId: string, rating: number, comment: string) =>
+    apiClient<RiderReview>(API_ENDPOINTS.shipments.riderReview(orderId), {
+      method: "POST",
+      body: { rating, comment },
+    }),
+
   preparingShipment: (shipmentId: string) =>
     apiClient<any>(API_ENDPOINTS.shipments.preparing(shipmentId), {
       method: "PATCH",
@@ -1411,9 +1459,21 @@ export const commerceService = {
       body: { image_url: imageUrl },
     }),
 
-  handToCarrier: (shipmentId: string) =>
+  handToCarrier: (shipmentId: string, sellerCode: string) =>
     apiClient<any>(API_ENDPOINTS.shipments.handToCarrier(shipmentId), {
-      method: "POST",
+      method: "PATCH",
+      body: { seller_code: sellerCode },
+    }),
+
+  merchantPickupCode: (shipmentId: string) =>
+    apiClient<{ seller_code: string }>(
+      API_ENDPOINTS.shipments.merchantPickupCode(shipmentId),
+    ),
+
+  assignOwnRider: (shipmentId: string, riderId: string) =>
+    apiClient<any>(API_ENDPOINTS.shipments.assignOwnRider(shipmentId), {
+      method: "PATCH",
+      body: { delivery_driver_id: riderId },
     }),
 
   inTransitShipment: (shipmentId: string) =>
@@ -1426,9 +1486,10 @@ export const commerceService = {
       method: "POST",
     }),
 
-  confirmReceipt: (shipmentId: string) =>
+  confirmReceipt: (shipmentId: string, code: string) =>
     apiClient<any>(API_ENDPOINTS.shipments.confirmReceipt(shipmentId), {
       method: "POST",
+      body: JSON.stringify({ code }),
     }),
 
   // Branches
@@ -1856,6 +1917,11 @@ export const commerceService = {
   getProfessionalScore: (professionalId: number | string) =>
     apiClient<ProfessionalScore>(
       API_ENDPOINTS.scoring.professional(professionalId),
+    ),
+
+  getProfessionalReputation: (professionalId: number | string) =>
+    apiClient<{ medal: string; sales_count: number }>(
+      API_ENDPOINTS.scoring.professionalPublic(professionalId),
     ),
 
   getProfessionalReviews: (professionalId: number | string) =>

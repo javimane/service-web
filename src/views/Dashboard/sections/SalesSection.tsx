@@ -58,6 +58,7 @@ import DateRangeFilter, {
   toUtcDateRange,
 } from "./DateRangeFilter";
 import "./SalesSection.css";
+import MerchantShipmentPickupCode from "./MerchantShipmentPickupCode";
 import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
 import { isServiceOrderSummary as isServiceSale } from "@/utils/orderKind";
 import { getSaleRefundStatus } from "./saleRefundStatus";
@@ -69,12 +70,15 @@ const STATUS_FILTERS: Array<{ label: string; value: string }> = [
   { label: "Pagadas", value: "paid" },
   { label: "Confirmadas", value: "confirmed" },
   { label: "En preparación", value: "preparing" },
+  { label: "Listas para despacho", value: "ready_for_dispatch" },
   { label: "Listas para retiro", value: "ready_for_pickup" },
   { label: "Despachadas", value: "dispatched" },
   { label: "Entregadas", value: "delivered" },
   { label: "Canceladas", value: "cancelled" },
   { label: "Reembolsadas", value: "refunded" },
 ];
+
+const SERVICE_COMPLETION_WINDOW_DAYS = 30;
 
 export default function SalesSection() {
   const token = getAccessToken();
@@ -202,7 +206,11 @@ export default function SalesSection() {
   });
 
   useEffect(() => {
-    if (routeOrderDetail && routeOrderDetail.id === activeOrderId && selectedOrder?.id !== activeOrderId) {
+    if (
+      routeOrderDetail &&
+      routeOrderDetail.id === activeOrderId &&
+      selectedOrder?.id !== activeOrderId
+    ) {
       setSelectedOrder(routeOrderDetail);
     }
   }, [routeOrderDetail, selectedOrder?.id, activeOrderId]);
@@ -213,6 +221,43 @@ export default function SalesSection() {
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [packageImageFile, setPackageImageFile] = useState<File | null>(null);
   useEffect(() => setPackageImageFile(null), [selectedOrder?.id]);
+  const [ownRiderId, setOwnRiderId] = useState("");
+  const [sellerCode, setSellerCode] = useState("");
+  const assignedOwnRiderId = Array.isArray(selectedOrder?.shipments)
+    ? (selectedOrder.shipments[0]?.delivery_driver_id ?? null)
+    : (selectedOrder?.shipments?.delivery_driver_id ?? null);
+  useEffect(() => {
+    setOwnRiderId(assignedOwnRiderId ?? "");
+    setSellerCode("");
+  }, [selectedOrder?.id, assignedOwnRiderId]);
+  const { data: ownRiders = [] } = useQuery({
+    queryKey: ["logistics-employees"],
+    queryFn: commerceService.employees,
+    enabled: Boolean(selectedOrder?.uses_merchant_riders),
+  });
+  const assignedOwnRider = ownRiders.find(
+    (rider) => rider.id === assignedOwnRiderId,
+  );
+  const assignedOwnRiderName = assignedOwnRider
+    ? [assignedOwnRider.first_name, assignedOwnRider.last_name]
+        .filter(Boolean)
+        .join(" ") ||
+      assignedOwnRider.username ||
+      assignedOwnRider.id
+    : assignedOwnRiderId;
+  const { data: selectedOrderDetail } = useQuery({
+    queryKey: ["merchant-selected-order-detail", selectedOrder?.id],
+    queryFn: () => commerceService.orderDetail(selectedOrder!.id),
+    enabled: Boolean(selectedOrder?.id),
+    staleTime: 15_000,
+  });
+  useEffect(() => {
+    if (selectedOrderDetail) {
+      setSelectedOrder((current) =>
+        current?.id === selectedOrderDetail.id ? selectedOrderDetail : current,
+      );
+    }
+  }, [selectedOrderDetail]);
   const [transportCarrier, setTransportCarrier] = useState("");
   const [transportTrackingNumber, setTransportTrackingNumber] = useState("");
   const [transportTrackingUrl, setTransportTrackingUrl] = useState("");
@@ -247,9 +292,12 @@ export default function SalesSection() {
     if (openOrderChat) {
       const params = new URLSearchParams(searchParams?.toString() || "");
       params.delete("openChat");
-      router.replace(`${pathname}${params.size ? `?${params.toString()}` : ""}`, {
-        scroll: false,
-      });
+      router.replace(
+        `${pathname}${params.size ? `?${params.toString()}` : ""}`,
+        {
+          scroll: false,
+        },
+      );
     }
   };
   const [whatsAppWarningOpen, setWhatsAppWarningOpen] = useState(false);
@@ -360,7 +408,13 @@ export default function SalesSection() {
   ).length;
 
   const readyForDispatchCount = orders.filter(
-    (o) => o.status === "ready_for_pickup" || o.status === "ready_for_dispatch",
+    (o) =>
+      o.status === "ready_for_pickup" ||
+      o.status === "ready_for_dispatch" ||
+      (o.delivery_type === "shipment" &&
+        (Array.isArray(o.shipments)
+          ? o.shipments[0]?.status
+          : o.shipments?.status) === "ready_for_pickup"),
   ).length;
 
   const monthlyBilling = orders
@@ -503,14 +557,21 @@ export default function SalesSection() {
     queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
     await refetch();
     const updated = await commerceService.orderDetail(id);
+    queryClient.setQueryData(["merchant-selected-order-detail", id], updated);
     setSelectedOrder((current) => (current?.id === id ? updated : current));
   };
 
   const confirmMutation = useMutation({
     mutationFn: (id: string) => commerceService.confirmOrder(id),
-    onSuccess: async (_, id) => {
+    onSuccess: async (result, id) => {
       await refreshSelectedOrder(id);
-      showSuccess("Pedido confirmado con éxito.");
+      if (result?.dispatch?.dispatched === false) {
+        showError(
+          `Venta confirmada, pero ${result.dispatch.message || "no se encontró un rider disponible"}`,
+        );
+      } else {
+        showSuccess("Pedido confirmado con éxito.");
+      }
     },
     onError: () => showError("No se pudo confirmar el pedido."),
   });
@@ -556,7 +617,8 @@ export default function SalesSection() {
       await refreshSelectedOrder(id);
       showSuccess("Pedido marcado en preparación.");
     },
-    onError: () => showError("Error al actualizar estado."),
+    onError: (error: Error) =>
+      showError(error.message || "Error al actualizar estado."),
   });
 
   const readyMutation = useMutation({
@@ -570,9 +632,59 @@ export default function SalesSection() {
     },
     onSuccess: async (_, id) => {
       await refreshSelectedOrder(id);
-      showSuccess("Pedido marcado listo.");
+      showSuccess("Pedido listo para retirar por el rider.");
     },
-    onError: () => showError("Error al actualizar estado."),
+    onError: (error: Error) =>
+      showError(error.message || "Error al actualizar estado."),
+  });
+
+  const assignOwnRiderMutation = useMutation({
+    mutationFn: async ({
+      orderId,
+      riderId,
+    }: {
+      orderId: string;
+      riderId: string;
+    }) => {
+      const order = await commerceService.orderDetail(orderId);
+      const shipmentId = Array.isArray(order.shipments)
+        ? order.shipments[0]?.id
+        : (order.shipments?.id ?? order.shipment_id);
+      if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
+      return commerceService.assignOwnRider(shipmentId, riderId);
+    },
+    onSuccess: async (_, { orderId }) => {
+      await refreshSelectedOrder(orderId);
+      showSuccess("Rider actualizado en el envío.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo asignar el rider."),
+  });
+
+  const handToRiderMutation = useMutation({
+    mutationFn: async ({
+      orderId,
+      code,
+    }: {
+      orderId: string;
+      code: string;
+    }) => {
+      const order = await commerceService.orderDetail(orderId);
+      const shipmentId = Array.isArray(order.shipments)
+        ? order.shipments[0]?.id
+        : (order.shipments?.id ?? order.shipment_id);
+      if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
+      return commerceService.handToCarrier(shipmentId, code);
+    },
+    onSuccess: async (_, { orderId }) => {
+      setSellerCode("");
+      await refreshSelectedOrder(orderId);
+      showSuccess(
+        "Retiro del paquete confirmado. El rider ya puede iniciar el viaje.",
+      );
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo confirmar el retiro."),
   });
 
   const pickupReadyMutation = useMutation({
@@ -698,12 +810,14 @@ export default function SalesSection() {
 
   const isClosedServiceAppointment = (order?: Partial<OrderSummary> | null) => {
     if (!order?.status) return false;
-    return order.status === "cancelled" ||
+    return (
+      order.status === "cancelled" ||
       getSaleRefundStatus({
         status: order.status,
         refunded_amount: order.refunded_amount,
         total_amount: order.total_amount ?? null,
-      }) === "full";
+      }) === "full"
+    );
   };
 
   const getStatusBadge = (
@@ -722,7 +836,9 @@ export default function SalesSection() {
     }
     if (refundStatus === "partial") {
       return (
-        <span className="sales-badge sales-badge--partial-refund">Reembolso parcial</span>
+        <span className="sales-badge sales-badge--partial-refund">
+          Reembolso parcial
+        </span>
       );
     }
     if (
@@ -739,6 +855,63 @@ export default function SalesSection() {
       return (
         <span className="sales-badge sales-badge--ready">
           Listo para retiro
+        </span>
+      );
+    }
+
+    const shipmentStatus = Array.isArray(order?.shipments)
+      ? order.shipments[0]?.status
+      : order?.shipments?.status;
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      shipmentStatus === "in_transit"
+    ) {
+      return (
+        <span className="sales-badge sales-badge--transit">En camino</span>
+      );
+    }
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      shipmentStatus === "picked_up"
+    ) {
+      return (
+        <span className="sales-badge sales-badge--transit">
+          Retirado por rider
+        </span>
+      );
+    }
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      shipmentStatus === "driver_at_store"
+    ) {
+      return (
+        <span className="sales-badge sales-badge--ready">
+          Rider en sucursal
+        </span>
+      );
+    }
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      shipmentStatus === "driver_assigned"
+    ) {
+      return (
+        <span className="sales-badge sales-badge--ready">Rider asignado</span>
+      );
+    }
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      ["ready_for_pickup", "ready", "ready_for_dispatch"].includes(
+        shipmentStatus ?? "",
+      )
+    ) {
+      return (
+        <span className="sales-badge sales-badge--ready">Listo despacho</span>
+      );
+    }
+    if (status === "preparing" && shipmentStatus === "preparing") {
+      return (
+        <span className="sales-badge sales-badge--preparing">
+          En preparación
         </span>
       );
     }
@@ -785,6 +958,18 @@ export default function SalesSection() {
       case "in_transit":
         return (
           <span className="sales-badge sales-badge--transit">En tránsito</span>
+        );
+      case "returning_to_store":
+        return (
+          <span className="sales-badge sales-badge--cancelled">
+            Cancelado · rider regresa
+          </span>
+        );
+      case "returned":
+        return (
+          <span className="sales-badge sales-badge--cancelled">
+            Devuelto al comercio
+          </span>
         );
       case "settled":
         return (
@@ -853,13 +1038,31 @@ export default function SalesSection() {
   const selectedShipmentStatus = Array.isArray(selectedOrder?.shipments)
     ? selectedOrder.shipments[0]?.status
     : selectedOrder?.shipments?.status;
+  const selectedShipmentId = Array.isArray(selectedOrder?.shipments)
+    ? selectedOrder.shipments[0]?.id
+    : selectedOrder?.shipments?.id;
+  const canChangeOwnRider = Boolean(
+    selectedOrder &&
+    ["confirmed", "preparing", "ready_for_dispatch"].includes(
+      selectedOrder.status,
+    ) &&
+    [
+      "pending",
+      "created",
+      "confirmed",
+      "preparing",
+      "ready_for_pickup",
+      "driver_assigned",
+      "driver_at_store",
+    ].includes(selectedShipmentStatus ?? ""),
+  );
   const canUploadSelectedEvidence = Boolean(
     selectedOrder &&
     !isServiceSale(selectedOrder) &&
     ((selectedOrder.delivery_type === "coordinate_with_merchant" &&
       ["confirmed", "preparing"].includes(selectedOrder.status)) ||
       (selectedOrder.delivery_type === "shipment" &&
-        selectedOrder.status === "confirmed" &&
+        ["confirmed", "preparing"].includes(selectedOrder.status) &&
         ["pending", "created", "confirmed", "preparing"].includes(
           selectedShipmentStatus ?? "",
         ))),
@@ -1136,6 +1339,40 @@ export default function SalesSection() {
               </thead>
               <tbody>
                 {orders.map((order) => {
+                  const shipmentStatus = Array.isArray(order.shipments)
+                    ? order.shipments[0]?.status
+                    : order.shipments?.status;
+                  const ownRiderRequired =
+                    order.delivery_type === "shipment" &&
+                    Boolean(order.uses_merchant_riders) &&
+                    !(Array.isArray(order.shipments)
+                      ? order.shipments[0]?.delivery_driver_id
+                      : order.shipments?.delivery_driver_id);
+                  const canMarkPreparing =
+                    ["confirmed", "preparing"].includes(order.status) &&
+                    !isServiceSale(order) &&
+                    ((order.delivery_type === "shipment" &&
+                      (!shipmentStatus ||
+                        ["pending", "created", "confirmed"].includes(
+                          shipmentStatus,
+                        ) ||
+                        (order.status === "confirmed" &&
+                          [
+                            "preparing",
+                            "driver_assigned",
+                            "driver_at_store",
+                          ].includes(shipmentStatus ?? "")))) ||
+                      (order.status === "confirmed" &&
+                        order.delivery_type === "coordinate_with_merchant"));
+                  const canMarkShipmentReady =
+                    order.status === "preparing" &&
+                    !isServiceSale(order) &&
+                    order.delivery_type === "shipment" &&
+                    (shipmentStatus === "preparing" ||
+                      (order.status === "preparing" &&
+                        ["driver_assigned", "driver_at_store"].includes(
+                          shipmentStatus ?? "",
+                        )));
                   const article =
                     order.professional_product?.product?.name ||
                     order.service?.name ||
@@ -1188,7 +1425,7 @@ export default function SalesSection() {
                                   ✅ Turno realizado
                                 </span>
                               ) : order.appointment_status ===
-                              "pending_appointment" ? (
+                                "pending_appointment" ? (
                                 <span className="sales-badge sales-badge--appointment-pending">
                                   ⚠️ Turno Pendiente
                                 </span>
@@ -1198,12 +1435,20 @@ export default function SalesSection() {
                                 </span>
                               ))}
                             {isServiceSale(order) &&
-                              ['paid', 'confirmed'].includes(order.status) &&
+                              ["paid", "confirmed"].includes(order.status) &&
                               !isOrderDelivered(order) &&
-                              order.appointment_status !== 'completed' &&
+                              order.appointment_status !== "completed" &&
                               order.paid_at && (
                                 <span className="sales-badge sales-badge--appointment-pending">
-                                  Validar código antes del {new Date(new Date(order.paid_at).getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('es-AR')}
+                                  Validar código antes del{" "}
+                                  {new Date(
+                                    new Date(order.paid_at).getTime() +
+                                      SERVICE_COMPLETION_WINDOW_DAYS *
+                                        24 *
+                                        60 *
+                                        60 *
+                                        1000,
+                                  ).toLocaleDateString("es-AR")}
                                 </span>
                               )}
                           </div>
@@ -1229,7 +1474,15 @@ export default function SalesSection() {
                           </span>
                         )}
                       </td>
-                      <td>{getStatusBadge(order.status, order)}</td>
+                      <td>
+                        {getStatusBadge(order.status, order)}
+                        {order.has_active_claim && (
+                          <span className="sales-badge sales-badge--active-claim">
+                            <AlertTriangle size={13} aria-hidden="true" />
+                            Reclamo activo
+                          </span>
+                        )}
+                      </td>
                       <td className="sales-table__total">
                         $
                         {Number(order.total_amount ?? 0).toLocaleString(
@@ -1245,7 +1498,7 @@ export default function SalesSection() {
                         )}
                         {order.has_return && (
                           <small className="sales-table__refund">
-                            Producto devuelto recibido
+                            Devolución registrada por el comercio
                           </small>
                         )}
                         {order.has_chargeback && (
@@ -1256,6 +1509,85 @@ export default function SalesSection() {
                       </td>
                       <td>
                         <div className="sales-row-actions">
+                          {canMarkPreparing && (
+                            <button
+                              type="button"
+                              className="sales-action-btn sales-action-btn--preparing"
+                              disabled={
+                                preparingMutation.isPending ||
+                                coordinatedPreparingMutation.isPending
+                              }
+                              onClick={() => {
+                                if (ownRiderRequired) {
+                                  showError(
+                                    "Asigna un Rider para cambiar el estado del pedido.",
+                                  );
+                                  return;
+                                }
+                                if (order.delivery_type === "shipment") {
+                                  preparingMutation.mutate(order.id);
+                                } else {
+                                  coordinatedPreparingMutation.mutate(order.id);
+                                }
+                              }}
+                            >
+                              <PackageCheck size={15} aria-hidden="true" />
+                              <span>
+                                {(preparingMutation.isPending &&
+                                  preparingMutation.variables === order.id) ||
+                                (coordinatedPreparingMutation.isPending &&
+                                  coordinatedPreparingMutation.variables ===
+                                    order.id)
+                                  ? "Actualizando..."
+                                  : "En preparación"}
+                              </span>
+                            </button>
+                          )}
+                          {canMarkShipmentReady && (
+                            <button
+                              type="button"
+                              className="sales-action-btn sales-action-btn--preparing"
+                              disabled={readyMutation.isPending}
+                              onClick={() => {
+                                if (!order.dispatch_evidence_path) {
+                                  setSelectedOrder(order);
+                                  showError(
+                                    "Subí una foto del paquete en el detalle antes de avisar al rider.",
+                                  );
+                                  return;
+                                }
+                                readyMutation.mutate(order.id);
+                              }}
+                            >
+                              <PackageCheck size={15} aria-hidden="true" />
+                              <span>
+                                {readyMutation.isPending &&
+                                readyMutation.variables === order.id
+                                  ? "Actualizando..."
+                                  : "Listo para retirar"}
+                              </span>
+                            </button>
+                          )}
+                          {order.status === "paid" &&
+                            !order.has_return &&
+                            !order.has_chargeback &&
+                            Number(order.refunded_amount ?? 0) === 0 && (
+                              <button
+                                type="button"
+                                className="sales-action-btn sales-action-btn--confirm"
+                                disabled={confirmMutation.isPending}
+                                onClick={() => confirmMutation.mutate(order.id)}
+                                aria-label={`Confirmar venta ${order.order_number || order.id.slice(0, 8)}`}
+                              >
+                                <CheckCircle2 size={15} aria-hidden="true" />
+                                <span>
+                                  {confirmMutation.isPending &&
+                                  confirmMutation.variables === order.id
+                                    ? "Confirmando..."
+                                    : "Confirmar venta"}
+                                </span>
+                              </button>
+                            )}
                           <button
                             type="button"
                             className="sales-action-btn"
@@ -1364,6 +1696,14 @@ export default function SalesSection() {
                 {orderClaims.map((claim) => (
                   <article className="order-detail-claim" key={claim.id}>
                     <strong>{claim.reason}</strong>
+                    {!!claim.items?.length && (
+                      <span>
+                        Productos:{" "}
+                        {claim.items
+                          .map((item) => `${item.quantity} × ${item.name}`)
+                          .join(", ")}
+                      </span>
+                    )}
                     <span>
                       Estado:{" "}
                       {claim.status === "in_review"
@@ -1602,6 +1942,16 @@ export default function SalesSection() {
                     {getStatusBadge(selectedOrder.status, selectedOrder)}
                   </span>
                 </div>
+                {selectedOrder.has_return && (
+                  <div>
+                    <span className="order-detail-label">
+                      Estado de la devolución:
+                    </span>
+                    <span className="order-detail-value">
+                      Devolución registrada por el comercio
+                    </span>
+                  </div>
+                )}
                 <div>
                   <span className="order-detail-label">Fecha de compra:</span>
                   <span className="order-detail-value">
@@ -1637,9 +1987,10 @@ export default function SalesSection() {
                     (selectedOrder.branch || selectedOrder.origin_address)
                       ? "En sucursal del comercio"
                       : isServiceSale(selectedOrder) &&
-                    selectedOrder.delivery_type === "coordinate_with_merchant"
-                      ? "A coordinar con el profesional"
-                      : getDeliveryLabel(selectedOrder.delivery_type)}
+                          selectedOrder.delivery_type ===
+                            "coordinate_with_merchant"
+                        ? "A coordinar con el profesional"
+                        : getDeliveryLabel(selectedOrder.delivery_type)}
                   </span>
                 </div>
                 {selectedOrder.scheduled_delivery_date && (
@@ -1691,32 +2042,41 @@ export default function SalesSection() {
                 )}
               </div>
 
-              {isServiceSale(selectedOrder) && (selectedOrder.branch || selectedOrder.origin_address) && (
-                <div className="order-detail-address">
-                  <span className="order-detail-label">Sucursal del servicio:</span>
-                  <p className="order-detail-address__text">
-                    {selectedOrder.branch?.name ?? "Sucursal principal"} — {selectedOrder.branch?.street_name ?? selectedOrder.origin_address?.street_name} {selectedOrder.branch?.street_number ?? selectedOrder.origin_address?.street_number ?? ""}
-                  </p>
-                </div>
-              )}
-              {!isServiceSale(selectedOrder) && (selectedOrder.delivery_address ||
-                selectedOrder.shipping_address) && (
-                <div className="order-detail-address">
-                  <span className="order-detail-label">
-                    {isServiceSale(selectedOrder)
-                      ? "Lugar del servicio:"
-                      : "Dirección de entrega:"}
-                  </span>
-                  <p className="order-detail-address__text">
-                    {getDeliveryAddress(selectedOrder)}
-                  </p>
-                  {selectedOrder.delivery_address?.notes && (
+              {isServiceSale(selectedOrder) &&
+                (selectedOrder.branch || selectedOrder.origin_address) && (
+                  <div className="order-detail-address">
+                    <span className="order-detail-label">
+                      Sucursal del servicio:
+                    </span>
                     <p className="order-detail-address__text">
-                      Indicaciones: {selectedOrder.delivery_address.notes}
+                      {selectedOrder.branch?.name ?? "Sucursal principal"} —{" "}
+                      {selectedOrder.branch?.street_name ??
+                        selectedOrder.origin_address?.street_name}{" "}
+                      {selectedOrder.branch?.street_number ??
+                        selectedOrder.origin_address?.street_number ??
+                        ""}
                     </p>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              {!isServiceSale(selectedOrder) &&
+                (selectedOrder.delivery_address ||
+                  selectedOrder.shipping_address) && (
+                  <div className="order-detail-address">
+                    <span className="order-detail-label">
+                      {isServiceSale(selectedOrder)
+                        ? "Lugar del servicio:"
+                        : "Dirección de entrega:"}
+                    </span>
+                    <p className="order-detail-address__text">
+                      {getDeliveryAddress(selectedOrder)}
+                    </p>
+                    {selectedOrder.delivery_address?.notes && (
+                      <p className="order-detail-address__text">
+                        Indicaciones: {selectedOrder.delivery_address.notes}
+                      </p>
+                    )}
+                  </div>
+                )}
             </div>
 
             {/* Billing Data Info for Invoice */}
@@ -1903,106 +2263,126 @@ export default function SalesSection() {
               {/* Service Appointment assignment if order has service */}
               {isServiceSale(selectedOrder) &&
                 !isClosedServiceAppointment(selectedOrder) && (
-                <div className="order-service-appointment-box">
-                  <h5>Turno del Servicio</h5>
-                  {['paid', 'confirmed'].includes(selectedOrder.status) &&
-                    !isOrderDelivered(selectedOrder) &&
-                    selectedOrder.appointment_status !== 'completed' && (
-                      <div className="order-service-appointment-box__deadline" role="alert">
-                        <AlertTriangle size={20} aria-hidden="true" />
-                        <span>
-                          Debés realizar el servicio y validar el código del comprador dentro de los 15 días posteriores al pago.
-                          Si no se valida, la compra se cancela y el dinero se devuelve automáticamente.
-                          {selectedOrder.paid_at && (
-                            <> Fecha límite: <strong>{new Date(new Date(selectedOrder.paid_at).getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleString('es-AR')}</strong>.</>
-                          )}
-                        </span>
-                      </div>
-                    )}
-                  {isOrderDelivered(selectedOrder) ? (
-                    <div className="appointment-scheduled-banner">
-                      <CheckCircle2 size={20} className="icon-green" />
-                      <div className="appointment-scheduled-details">
-                        <strong>
-                          Turno realizado
-                          {selectedOrder.appointment
-                            ? `: ${selectedOrder.appointment.appointment_date} a las ${selectedOrder.appointment.appointment_time} hs`
-                            : ""}
-                        </strong>
-                        {selectedOrder.appointment?.notes && (
-                          <p className="appointment-notes">
-                            Indicaciones: {selectedOrder.appointment.notes}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ) : selectedOrder.appointment_status ===
-                  "pending_appointment" ? (
-                    <div className="appointment-pending-banner">
-                      <div className="appointment-pending-text">
-                        <AlertTriangle size={20} className="icon-amber" />
-                        <div>
+                  <div className="order-service-appointment-box">
+                    <h5>Turno del Servicio</h5>
+                    {["paid", "confirmed"].includes(selectedOrder.status) &&
+                      !isOrderDelivered(selectedOrder) &&
+                      selectedOrder.appointment_status !== "completed" && (
+                        <div
+                          className="order-service-appointment-box__deadline"
+                          role="alert"
+                        >
+                          <AlertTriangle size={20} aria-hidden="true" />
+                          <span>
+                            Debés realizar el servicio y validar el código del
+                            comprador dentro de los{" "}
+                            {SERVICE_COMPLETION_WINDOW_DAYS} días posteriores al
+                            pago. Si no se valida, el caso pasa a revisión para
+                            gestionar el reintegro.
+                            {selectedOrder.paid_at && (
+                              <>
+                                {" "}
+                                Fecha límite:{" "}
+                                <strong>
+                                  {new Date(
+                                    new Date(selectedOrder.paid_at).getTime() +
+                                      SERVICE_COMPLETION_WINDOW_DAYS *
+                                        24 *
+                                        60 *
+                                        60 *
+                                        1000,
+                                  ).toLocaleString("es-AR")}
+                                </strong>
+                                .
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                    {isOrderDelivered(selectedOrder) ? (
+                      <div className="appointment-scheduled-banner">
+                        <CheckCircle2 size={20} className="icon-green" />
+                        <div className="appointment-scheduled-details">
                           <strong>
-                            ⚠️ Turno Pendiente de Asignación Obligatoria
+                            Turno realizado
+                            {selectedOrder.appointment
+                              ? `: ${selectedOrder.appointment.appointment_date} a las ${selectedOrder.appointment.appointment_time} hs`
+                              : ""}
                           </strong>
-                          <p>
-                            El cliente espera que le programes la fecha y hora
-                            de atención para este servicio.
-                          </p>
+                          {selectedOrder.appointment?.notes && (
+                            <p className="appointment-notes">
+                              Indicaciones: {selectedOrder.appointment.notes}
+                            </p>
+                          )}
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        className="btn-primary"
-                        onClick={() =>
-                          setSelectedOrderForAppointment(selectedOrder)
-                        }
-                      >
-                        <Calendar size={15} />
-                        <span>Asignar Turno al Cliente</span>
-                      </button>
-                    </div>
-                  ) : selectedOrder.appointment ? (
-                    <div className="appointment-scheduled-banner">
-                      <CheckCircle2 size={20} className="icon-green" />
-                      <div className="appointment-scheduled-details">
-                        <strong>
-                          Turno Programado:{" "}
-                          {selectedOrder.appointment.appointment_date} a las{" "}
-                          {selectedOrder.appointment.appointment_time} hs
-                        </strong>
-                        {selectedOrder.appointment.notes && (
-                          <p className="appointment-notes">
-                            Indicaciones: {selectedOrder.appointment.notes}
-                          </p>
-                        )}
+                    ) : selectedOrder.appointment_status ===
+                      "pending_appointment" ? (
+                      <div className="appointment-pending-banner">
+                        <div className="appointment-pending-text">
+                          <AlertTriangle size={20} className="icon-amber" />
+                          <div>
+                            <strong>
+                              ⚠️ Turno Pendiente de Asignación Obligatoria
+                            </strong>
+                            <p>
+                              El cliente espera que le programes la fecha y hora
+                              de atención para este servicio.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() =>
+                            setSelectedOrderForAppointment(selectedOrder)
+                          }
+                        >
+                          <Calendar size={15} />
+                          <span>Asignar Turno al Cliente</span>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() =>
-                          setSelectedOrderForAppointment(selectedOrder)
-                        }
-                      >
-                        Reprogramar
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="appointment-pending-banner">
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() =>
-                          setSelectedOrderForAppointment(selectedOrder)
-                        }
-                      >
-                        <Calendar size={15} />
-                        <span>Gestionar Turno</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+                    ) : selectedOrder.appointment ? (
+                      <div className="appointment-scheduled-banner">
+                        <CheckCircle2 size={20} className="icon-green" />
+                        <div className="appointment-scheduled-details">
+                          <strong>
+                            Turno Programado:{" "}
+                            {selectedOrder.appointment.appointment_date} a las{" "}
+                            {selectedOrder.appointment.appointment_time} hs
+                          </strong>
+                          {selectedOrder.appointment.notes && (
+                            <p className="appointment-notes">
+                              Indicaciones: {selectedOrder.appointment.notes}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() =>
+                            setSelectedOrderForAppointment(selectedOrder)
+                          }
+                        >
+                          Reprogramar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="appointment-pending-banner">
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() =>
+                            setSelectedOrderForAppointment(selectedOrder)
+                          }
+                        >
+                          <Calendar size={15} />
+                          <span>Gestionar Turno</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
               {/* Thermal Label Print button for product orders */}
               {isPrintableOrder(selectedOrder) &&
@@ -2039,23 +2419,178 @@ export default function SalesSection() {
                   </div>
                 )}
 
-              {selectedOrder.status === "confirmed" &&
+              {["confirmed", "preparing"].includes(selectedOrder.status) &&
                 selectedOrder.delivery_type === "shipment" &&
-                ["pending", "created", "confirmed"].includes(
-                  (Array.isArray(selectedOrder.shipments)
-                    ? selectedOrder.shipments[0]?.status
-                    : selectedOrder.shipments?.status) ?? "",
-                ) &&
+                ((selectedOrder.uses_merchant_riders &&
+                  !selectedShipmentStatus) ||
+                  ["pending", "created", "confirmed"].includes(
+                    (Array.isArray(selectedOrder.shipments)
+                      ? selectedOrder.shipments[0]?.status
+                      : selectedOrder.shipments?.status) ?? "",
+                  ) ||
+                  (selectedOrder.status === "confirmed" &&
+                    [
+                      "preparing",
+                      "driver_assigned",
+                      "driver_at_store",
+                    ].includes(
+                      (Array.isArray(selectedOrder.shipments)
+                        ? selectedOrder.shipments[0]?.status
+                        : selectedOrder.shipments?.status) ?? "",
+                    ))) &&
                 !isServiceSale(selectedOrder) && (
                   <div className="order-actions-group">
                     <button
                       type="button"
                       className="btn-primary"
                       disabled={preparingMutation.isPending}
-                      onClick={() => preparingMutation.mutate(selectedOrder.id)}
+                      onClick={() => {
+                        if (
+                          selectedOrder.uses_merchant_riders &&
+                          !assignedOwnRiderId
+                        ) {
+                          showError(
+                            "Asigna un Rider para cambiar el estado del pedido.",
+                          );
+                          return;
+                        }
+                        preparingMutation.mutate(selectedOrder.id);
+                      }}
                     >
                       Marcar en preparación
                     </button>
+                  </div>
+                )}
+
+              {selectedOrder.delivery_type === "shipment" &&
+                selectedOrder.uses_merchant_riders &&
+                (assignedOwnRiderId || canChangeOwnRider) && (
+                  <div className="shipment-rider-actions">
+                    {assignedOwnRiderId && (
+                      <p className="shipment-rider-actions__assigned">
+                        Rider asignado:{" "}
+                        <strong>
+                          {assignedOwnRiderName || assignedOwnRiderId}
+                        </strong>
+                      </p>
+                    )}
+                    {canChangeOwnRider && !assignedOwnRiderId && (
+                      <p>
+                        Asigná un rider de tu flota antes de pasar a
+                        preparación.
+                      </p>
+                    )}
+                    {canChangeOwnRider && (
+                      <>
+                        <label htmlFor="sale-own-rider">
+                          {assignedOwnRiderId
+                            ? "Cambiar rider de flota"
+                            : "Rider propio para retirar el pedido"}
+                        </label>
+                        <div className="shipment-rider-actions__row">
+                          <select
+                            id="sale-own-rider"
+                            value={ownRiderId}
+                            onChange={(event) =>
+                              setOwnRiderId(event.target.value)
+                            }
+                          >
+                            <option value="">Seleccioná un rider</option>
+                            {ownRiders
+                              .filter(
+                                (rider) =>
+                                  rider.activation?.is_active ||
+                                  rider.id === assignedOwnRiderId,
+                              )
+                              .map((rider) => (
+                                <option key={rider.id} value={rider.id}>
+                                  {[rider.first_name, rider.last_name]
+                                    .filter(Boolean)
+                                    .join(" ") ||
+                                    rider.username ||
+                                    rider.id}
+                                </option>
+                              ))}
+                          </select>
+                          <button
+                            type="button"
+                            data-action-tone={
+                              assignedOwnRiderId ? undefined : "add"
+                            }
+                            className={
+                              assignedOwnRiderId
+                                ? "btn-secondary"
+                                : "btn-primary"
+                            }
+                            disabled={
+                              !ownRiderId ||
+                              ownRiderId === assignedOwnRiderId ||
+                              assignOwnRiderMutation.isPending
+                            }
+                            onClick={() =>
+                              assignOwnRiderMutation.mutate({
+                                orderId: selectedOrder.id,
+                                riderId: ownRiderId,
+                              })
+                            }
+                          >
+                            {assignedOwnRiderId
+                              ? "Cambiar rider"
+                              : "Asignar rider"}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+              {selectedOrder.delivery_type === "shipment" &&
+                Boolean(
+                  Array.isArray(selectedOrder.shipments)
+                    ? selectedOrder.shipments[0]?.delivery_driver_id
+                    : selectedOrder.shipments?.delivery_driver_id,
+                ) &&
+                ["ready_for_pickup"].includes(
+                  Array.isArray(selectedOrder.shipments)
+                    ? (selectedOrder.shipments[0]?.status ?? "")
+                    : (selectedOrder.shipments?.status ?? ""),
+                ) && (
+                  <div className="shipment-rider-actions">
+                    {selectedShipmentId && (
+                      <MerchantShipmentPickupCode
+                        shipmentId={selectedShipmentId}
+                      />
+                    )}
+                    <label htmlFor="sale-seller-code">
+                      Código de entrega al rider
+                    </label>
+                    <div className="shipment-rider-actions__row">
+                      <input
+                        id="sale-seller-code"
+                        type="text"
+                        value={sellerCode}
+                        onChange={(event) =>
+                          setSellerCode(event.target.value.toUpperCase())
+                        }
+                        placeholder="Ingresá el código del retiro"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={
+                          !sellerCode.trim() || handToRiderMutation.isPending
+                        }
+                        onClick={() =>
+                          handToRiderMutation.mutate({
+                            orderId: selectedOrder.id,
+                            code: sellerCode.trim(),
+                          })
+                        }
+                      >
+                        Confirmar entrega al rider
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -2077,11 +2612,17 @@ export default function SalesSection() {
                   </div>
                 )}
 
-              {selectedOrder.status === "confirmed" &&
+              {selectedOrder.status === "preparing" &&
                 selectedOrder.delivery_type === "shipment" &&
-                (Array.isArray(selectedOrder.shipments)
+                ((Array.isArray(selectedOrder.shipments)
                   ? selectedOrder.shipments[0]?.status
-                  : selectedOrder.shipments?.status) === "preparing" &&
+                  : selectedOrder.shipments?.status) === "preparing" ||
+                  (selectedOrder.status === "preparing" &&
+                    ["driver_assigned", "driver_at_store"].includes(
+                      (Array.isArray(selectedOrder.shipments)
+                        ? selectedOrder.shipments[0]?.status
+                        : selectedOrder.shipments?.status) ?? "",
+                    ))) &&
                 !isServiceSale(selectedOrder) && (
                   <div className="order-actions-group">
                     <button
@@ -2385,12 +2926,18 @@ export default function SalesSection() {
                     onClick={async () => {
                       const tab = window.open("", "_blank");
                       try {
-                        const { url } = await commerceService.getInvoiceUrl(selectedOrder.id);
+                        const { url } = await commerceService.getInvoiceUrl(
+                          selectedOrder.id,
+                        );
                         if (tab) tab.location.href = url;
                         else window.location.href = url;
                       } catch (error) {
                         tab?.close();
-                        showError(error instanceof Error ? error.message : "No se pudo abrir la factura.");
+                        showError(
+                          error instanceof Error
+                            ? error.message
+                            : "No se pudo abrir la factura.",
+                        );
                       }
                     }}
                     className="invoice-download-link"
@@ -2449,61 +2996,66 @@ export default function SalesSection() {
         !selectedOrder.withdrawal_requested &&
         orderClaimsLoaded &&
         orderClaims.length === 0 && (
-        <Modal
-          isOpen={cancelModalOpen}
-          onClose={() => setCancelModalOpen(false)}
-          title="Cancelar Pedido"
-        >
-          <div className="cancel-order-modal">
-            <div className="cancel-penalty-alert" role="alert">
-              <AlertTriangle size={24} className="cancel-penalty-alert__icon" />
-              <div className="cancel-penalty-alert__content">
-                <strong>Penalización en tu Reputación</strong>
-                <p>
-                  Atención: Cancelar este pedido afectará negativamente tu
-                  puntuación de reputación <strong>(-20 pts)</strong> y tu
-                  visibilidad en el catálogo. ¿Deseas continuar?
-                </p>
+          <Modal
+            isOpen={cancelModalOpen}
+            onClose={() => setCancelModalOpen(false)}
+            title="Cancelar Pedido"
+          >
+            <div className="cancel-order-modal">
+              <div className="cancel-penalty-alert" role="alert">
+                <AlertTriangle
+                  size={24}
+                  className="cancel-penalty-alert__icon"
+                />
+                <div className="cancel-penalty-alert__content">
+                  <strong>Penalización en tu Reputación</strong>
+                  <p>
+                    Atención: Cancelar este pedido afectará negativamente tu
+                    puntuación de reputación <strong>(-20 pts)</strong> y tu
+                    visibilidad en el catálogo. ¿Deseas continuar?
+                  </p>
+                </div>
+              </div>
+
+              <p>
+                ¿Estás seguro de que deseás cancelar este pedido? Esta acción no
+                se puede deshacer.
+              </p>
+              <label className="order-detail-label">
+                Motivo de cancelación:
+              </label>
+              <textarea
+                className="cancel-textarea"
+                rows={3}
+                placeholder="Indica el motivo al cliente (ej: falta de stock, dirección inaccesible)..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+              <div className="modal-actions-row">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setCancelModalOpen(false)}
+                >
+                  Volver
+                </button>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  disabled={cancelMutation.isPending}
+                  onClick={() =>
+                    cancelMutation.mutate({
+                      id: selectedOrder.id,
+                      reason: cancelReason,
+                    })
+                  }
+                >
+                  Confirmar cancelación
+                </button>
               </div>
             </div>
-
-            <p>
-              ¿Estás seguro de que deseás cancelar este pedido? Esta acción no
-              se puede deshacer.
-            </p>
-            <label className="order-detail-label">Motivo de cancelación:</label>
-            <textarea
-              className="cancel-textarea"
-              rows={3}
-              placeholder="Indica el motivo al cliente (ej: falta de stock, dirección inaccesible)..."
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-            />
-            <div className="modal-actions-row">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setCancelModalOpen(false)}
-              >
-                Volver
-              </button>
-              <button
-                type="button"
-                className="btn-danger"
-                disabled={cancelMutation.isPending}
-                onClick={() =>
-                  cancelMutation.mutate({
-                    id: selectedOrder.id,
-                    reason: cancelReason,
-                  })
-                }
-              >
-                Confirmar cancelación
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        )}
 
       {/* Assign Service Appointment Modal */}
       {selectedOrderForAppointment && (
@@ -2603,9 +3155,9 @@ export default function SalesSection() {
                   Aviso de Seguridad
                 </strong>
                 <p className="whatsapp-warning-alert__text">
-                  Sercio no recomienda los acuerdos por fuera de la
-                  plataforma, mejor contactar por chat para poder tener
-                  evidencia de los reclamos ante cualquier improvisto.
+                  Sercio no recomienda los acuerdos por fuera de la plataforma,
+                  mejor contactar por chat para poder tener evidencia de los
+                  reclamos ante cualquier improvisto.
                 </p>
               </div>
             </div>
@@ -2663,15 +3215,16 @@ export default function SalesSection() {
       )}
 
       {/* Order-scoped Chat Modal */}
-      {isOrderChatOpen && selectedOrder &&
+      {isOrderChatOpen &&
+        selectedOrder &&
         (!openOrderChat || selectedOrder.id === orderIdParam) && (
-        <OrderChatModal
-          isOpen={isOrderChatOpen}
-          onClose={closeOrderChat}
-          order={selectedOrder}
-          currentUserId={String(user?.id || sessionStatus?.user_id || "")}
-        />
-      )}
+          <OrderChatModal
+            isOpen={isOrderChatOpen}
+            onClose={closeOrderChat}
+            order={selectedOrder}
+            currentUserId={String(user?.id || sessionStatus?.user_id || "")}
+          />
+        )}
     </div>
   );
 }

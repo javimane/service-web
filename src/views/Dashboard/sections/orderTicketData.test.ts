@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { OrderSummary } from "@/services/commerceService";
-import { getBuyerName, getDeliveryAddress, getOrderLines, getProductImage, getSaleLocation, isPrintableOrder } from "./orderTicketData";
+import { getBuyerName, getDeliveryAddress, getOrderLines, getOrderQrPayload, getProductImage, getSaleLocation, getTicketDelivery, isPrintableOrder } from "./orderTicketData";
 
 const baseOrder = {
   id: "abc12345",
@@ -13,6 +13,11 @@ const baseOrder = {
 } as OrderSummary;
 
 describe("datos para tickets de venta", () => {
+  it("imprime en el QR del envío el código del comercio y el ID del envío", () => {
+    const payload = JSON.parse(getOrderQrPayload({ ...baseOrder, shipments: [{ id: "shipment-1", status: "ready_for_pickup", seller_security_code: "AZYGP5V" }] }));
+    expect(payload).toMatchObject({ order_id: baseOrder.id, shipment_id: "shipment-1", security_code: "AZYGP5V" });
+    expect(JSON.parse(getOrderQrPayload({ ...baseOrder, pickup_code: "BUYER12" } as OrderSummary)).security_code).toBe("");
+  });
   it("omite las ventas sin pago y canceladas", () => {
     expect(isPrintableOrder(baseOrder)).toBe(true);
     expect(isPrintableOrder({ ...baseOrder, paid_at: null })).toBe(false);
@@ -82,5 +87,20 @@ describe("datos para tickets de venta", () => {
     expect(getSaleLocation({ ...baseOrder,
       origin_address: { id: 9, street_name: "Belgrano", street_number: "18" },
     })).toMatchObject({ name: "Sucursal Principal", address: "Belgrano 18" });
+  });
+
+  it("muestra el lugar elegido para un servicio sin inferirlo del tipo de envío", () => {
+    const serviceOrder = { ...baseOrder, service_id: "service-1", delivery_type: "coordinate_with_merchant" as const };
+    expect(getTicketDelivery({ ...serviceOrder, service_location_kind: "coordinate" })).toEqual({ label: "A coordinar", location: null });
+    expect(getTicketDelivery({
+      ...serviceOrder,
+      service_location_kind: "branch",
+      branch: { id: "b1", company_id: 1, name: "Centro", is_pickup_point: true, street_name: "San Martín", street_number: "100" },
+    })).toEqual({ label: "En sucursal", location: "Centro: San Martín 100" });
+    expect(getTicketDelivery({
+      ...serviceOrder,
+      service_location_kind: "home",
+      delivery_address: { id: "a1", street_name: "Belgrano", street_number: "123" },
+    })).toEqual({ label: "En domicilio del cliente", location: "Belgrano 123" });
   });
 });

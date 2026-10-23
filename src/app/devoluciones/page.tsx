@@ -1,9 +1,9 @@
 import ReturnsPolicyPage from "@/views/ReturnsPolicy/ReturnsPolicyPage";
 
 export const metadata = {
-  title: "Políticas de devolución y arrepentimiento | Sercio",
+  title: "Política de Devoluciones, Arrepentimiento y Cancelación | Sercio",
   description:
-    "Condiciones de devolución de productos, reclamos gastronómicos y arrepentimiento de servicios contratados en Sercio.",
+    "Conocé las condiciones de devolución de productos, derecho de arrepentimiento, régimen de servicios y reclamos gastronómicos en Sercio.",
 };
 
 export default function Page() {

@@ -23,6 +23,7 @@ import {
   getServicesByProfessionalAction,
 } from "../../app/actions/services";
 import Navbar from "../../components/Navbar/Navbar";
+import ProfessionalReputation from "@/components/ProfessionalReputation/ProfessionalReputation";
 import Footer from "../../components/Footer/Footer";
 import ProductInstallmentsModal from "../Products/components/ProductInstallmentsModal";
 import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
@@ -381,6 +382,7 @@ export default function ServiceDetailPage({
                   <MapPin size={16} />
                   {locationName}
                 </span>
+                <ProfessionalReputation professionalId={professionalId} />
                 {rating > 0 && (
                   <span className="service-detail__rating">
                     <Star

@@ -14,7 +14,11 @@ import { supabase } from "../../services/supabaseClient";
 import { ROUTES } from "../../routes/paths";
 import { useAuth } from "../../context/AuthContext";
 import { useAuthModal } from "../../context/AuthModalContext";
-import { commerceService } from "../../services/commerceService";
+import {
+  commerceService,
+  type OrderSummary,
+  type PageResponse,
+} from "../../services/commerceService";
 import {
   Bell,
   User,
@@ -146,6 +150,43 @@ export default function Navbar() {
     if (!street && !num) return "Elegir dirección";
     return `${street} ${num}`.trim();
   }, [defaultAddress]);
+
+  // Consulta compras activas para acceso directo al mapa de seguimiento
+  const { data: activeDeliveryOrdersData } = useQuery<
+    PageResponse<OrderSummary>
+  >({
+    queryKey: ["navbar-active-delivery-orders", user?.id],
+    queryFn: () => commerceService.buyerOrders(1, 10),
+    enabled: Boolean(user?.id),
+    refetchInterval: 20_000,
+  });
+
+  const activeDeliveryOrder = useMemo(() => {
+    if (!user?.id) return null;
+    const orders =
+      activeDeliveryOrdersData?.items ??
+      activeDeliveryOrdersData?.data ??
+      [];
+    return (
+      orders.find((order) => {
+        if (order.delivery_type !== "shipment") return false;
+        const status = (order.status as string)?.toLowerCase();
+        if (
+          ["delivered", "cancelled", "refunded", "pending_payment"].includes(
+            status,
+          )
+        ) {
+          return false;
+        }
+        if (order.delivered_at) return false;
+        const shipmentStatus = (order.shipment_status as string)?.toLowerCase();
+        if (shipmentStatus === "delivered" || shipmentStatus === "cancelled") {
+          return false;
+        }
+        return true;
+      }) ?? null
+    );
+  }, [user?.id, activeDeliveryOrdersData]);
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
@@ -585,6 +626,16 @@ export default function Navbar() {
 
             {isMobileMenuOpen && (
               <div className="navbar__mobile-dropdown">
+                {activeDeliveryOrder && (
+                  <Link
+                    href={`${ROUTES.dashboard}?view=purchases&orderId=${activeDeliveryOrder.id}&openMap=1`}
+                    className="navbar__mobile-link navbar__mobile-link--highlight"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Truck size={18} />
+                    <span>Seguir mi envío en mapa</span>
+                  </Link>
+                )}
                 <div className="navbar__mobile-section-label">Explorar</div>
                 {navLinks.map((link) => (
                   <Link
@@ -632,6 +683,26 @@ export default function Navbar() {
           <div className="navbar__search navbar__search--desktop">
             <SearchBar />
           </div>
+
+          {/* Live Delivery Tracking Button (Desktop) */}
+          {activeDeliveryOrder && (
+            <Link
+              href={`${ROUTES.dashboard}?view=purchases&orderId=${activeDeliveryOrder.id}&openMap=1`}
+              className="navbar__live-delivery-btn navbar__live-delivery-btn--desktop"
+              title="Ver mapa de tu compra en camino"
+            >
+              <span
+                className="navbar__live-delivery-pulse"
+                aria-hidden="true"
+              />
+              <Truck
+                size={18}
+                className="navbar__live-delivery-icon"
+                aria-hidden="true"
+              />
+              <span>Seguir envío</span>
+            </Link>
+          )}
 
           {/* Plans button */}
           {!hasProfessionalSubscription && (
@@ -828,6 +899,16 @@ export default function Navbar() {
                         : "Mi Cuenta"}
                     </div>
                     <div className="dropdown__body dropdown__body--scroll">
+                      {activeDeliveryOrder && (
+                        <Link
+                          href={`${ROUTES.dashboard}?view=purchases&orderId=${activeDeliveryOrder.id}&openMap=1`}
+                          className="dropdown__item dropdown__item--highlight"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <Truck size={16} />
+                          <span>Seguir envío en camino</span>
+                        </Link>
+                      )}
                       {(sessionStatus?.is_professional
                         ? dashboardLinks
                         : clientLinks
@@ -882,6 +963,24 @@ export default function Navbar() {
 
         {/* Mobile-only search bar row */}
         <div className="navbar__search-mobile">
+          {activeDeliveryOrder && (
+            <Link
+              href={`${ROUTES.dashboard}?view=purchases&orderId=${activeDeliveryOrder.id}&openMap=1`}
+              className="navbar__live-delivery-btn navbar__live-delivery-btn--mobile"
+              title="Ver mapa de tu compra en camino"
+            >
+              <span
+                className="navbar__live-delivery-pulse"
+                aria-hidden="true"
+              />
+              <Truck
+                size={17}
+                className="navbar__live-delivery-icon"
+                aria-hidden="true"
+              />
+              <span>Tu compra está en camino · Ver mapa</span>
+            </Link>
+          )}
           <button
             type="button"
             className="navbar__deliver-btn navbar__deliver-btn--mobile"

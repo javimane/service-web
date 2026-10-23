@@ -27,7 +27,6 @@ import "./ReputationSection.css";
 interface TierInfo {
   name: string;
   min: number;
-  max: number;
   badgeClass: string;
   label: string;
 }
@@ -36,57 +35,53 @@ const TIERS: TierInfo[] = [
   {
     name: "Novato",
     min: 0,
-    max: 49,
     badgeClass: "reputation-tier--novice",
     label: "Nivel Inicial",
   },
   {
     name: "Bronce",
-    min: 50,
-    max: 149,
+    min: 5000,
     badgeClass: "reputation-tier--bronze",
     label: "Nivel Bronce",
   },
   {
     name: "Plata",
-    min: 150,
-    max: 299,
+    min: 25000,
     badgeClass: "reputation-tier--silver",
     label: "Nivel Plata",
   },
   {
     name: "Oro",
-    min: 300,
-    max: 599,
+    min: 150000,
     badgeClass: "reputation-tier--gold",
     label: "Nivel Oro",
   },
   {
     name: "Platino",
-    min: 600,
-    max: 999,
+    min: 250000,
     badgeClass: "reputation-tier--platinum",
     label: "Nivel Platino",
   },
   {
     name: "Mercado Líder",
-    min: 1000,
-    max: 1999,
+    min: 600000,
     badgeClass: "reputation-tier--leader",
     label: "Mercado Líder",
   },
   {
     name: "Supremo",
-    min: 2000,
-    max: Infinity,
+    min: 3000000,
     badgeClass: "reputation-tier--supreme",
     label: "Nivel Supremo",
   },
 ];
 
 function getTierByScore(score: number): TierInfo {
-  return TIERS.find((t) => score >= t.min && score <= t.max) || TIERS[0];
+  return [...TIERS].reverse().find((tier) => score >= tier.min) || TIERS[0];
 }
+
+const formatPoints = (points: number) =>
+  new Intl.NumberFormat("es-AR").format(points);
 
 interface ReputationSectionProps {
   professionalIdProp?: string | number;
@@ -125,19 +120,41 @@ export default function ReputationSection({
   });
 
   const score = scoreData?.score ?? 0;
-  const tier = getTierByScore(score);
-  const nextTier =
-    TIERS[TIERS.findIndex((t) => t.name === tier.name) + 1] || null;
+  const tier =
+    TIERS.find(
+      (item) =>
+        item.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") ===
+        scoreData?.medal,
+    ) ?? getTierByScore(score);
+  const nextTier = scoreData?.next_tier_medal
+    ? (TIERS.find(
+        (item) =>
+          item.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") ===
+          scoreData.next_tier_medal,
+      ) ?? null)
+    : scoreData?.next_tier_score === null
+      ? null
+      : TIERS[TIERS.findIndex((item) => item.name === tier.name) + 1] || null;
+  const currentTierScore = scoreData?.current_tier_score ?? tier.min;
+  const nextTierScore = scoreData?.next_tier_score ?? nextTier?.min ?? null;
+  const pointsToNextTier =
+    scoreData?.points_to_next_tier ??
+    (nextTierScore === null ? null : Math.max(0, nextTierScore - score));
 
-  const progress = nextTier
-    ? Math.min(
-        100,
-        Math.max(
-          0,
-          Math.round(((score - tier.min) / (nextTier.min - tier.min)) * 100),
-        ),
-      )
-    : 100;
+  const progress =
+    nextTierScore !== null
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round(
+              ((score - currentTierScore) /
+                (nextTierScore - currentTierScore)) *
+                100,
+            ),
+          ),
+        )
+      : 100;
 
   const reviews = Array.isArray(reviewsData) ? reviewsData : [];
   const averageRating =
@@ -184,7 +201,7 @@ export default function ReputationSection({
               </span>
               <div className="reputation-score-details__value-row">
                 <span className="reputation-score-number">
-                  {isLoadingScore ? "--" : score}
+                  {isLoadingScore ? "--" : formatPoints(score)}
                 </span>
                 <span className="reputation-score-unit">pts</span>
               </div>
@@ -223,8 +240,8 @@ export default function ReputationSection({
           <div className="reputation-progress-labels">
             <span>Nivel actual: {tier.name}</span>
             <span>
-              {nextTier
-                ? `Próximo nivel: ${nextTier.name} (${nextTier.min} pts)`
+              {nextTier && nextTierScore !== null
+                ? `Próximo nivel: ${nextTier.name} (${formatPoints(nextTierScore)} pts). Faltan ${formatPoints(pointsToNextTier ?? 0)} pts`
                 : "¡Has alcanzado el nivel máximo!"}
             </span>
           </div>
@@ -401,17 +418,13 @@ export default function ReputationSection({
                 <span className="reputation-rule-tag reputation-rule-tag--pos">
                   +10 pts
                 </span>
-                <span>
-                  Por cada venta liquidada.
-                </span>
+                <span>Por cada venta liquidada.</span>
               </li>
               <li className="reputation-rule-item">
                 <span className="reputation-rule-tag reputation-rule-tag--pos">
                   +5 pts
                 </span>
-                <span>
-                  Por cada opinión de 4 o 5 estrellas.
-                </span>
+                <span>Por cada opinión de 4 o 5 estrellas.</span>
               </li>
               <li className="reputation-rule-item">
                 <span className="reputation-rule-tag reputation-rule-tag--pos">
@@ -429,15 +442,15 @@ export default function ReputationSection({
                 <span className="reputation-rule-tag reputation-rule-tag--neg">
                   −10 pts
                 </span>
-                <span>Por un reclamo de venta que sigue abierto después de 7 días.</span>
+                <span>
+                  Por un reclamo de venta que sigue abierto después de 7 días.
+                </span>
               </li>
               <li className="reputation-rule-item">
                 <span className="reputation-rule-tag reputation-rule-tag--neg">
                   −20 pts
                 </span>
-                <span>
-                  Por un reclamo resuelto por Sercio con reembolso.
-                </span>
+                <span>Por un reclamo resuelto por Sercio con reembolso.</span>
               </li>
             </ul>
             <p>
@@ -468,15 +481,6 @@ export default function ReputationSection({
                 </span>
                 <span>
                   Insignia y medalla de distinción visible en tu perfil público.
-                </span>
-              </li>
-              <li className="reputation-rule-item">
-                <span className="reputation-rule-tag reputation-rule-tag--pos">
-                  Prioridad
-                </span>
-                <span>
-                  Prioridad en la asignación de pedidos con envíos y nuevos
-                  clientes.
                 </span>
               </li>
             </ul>

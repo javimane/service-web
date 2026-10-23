@@ -4,6 +4,31 @@
   gap: var(--space-6);
 }
 
+.buyer-orders-section__tracking-shortcut {
+  position: fixed;
+  z-index: 40;
+  right: var(--space-5);
+  bottom: var(--space-5);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--brand-blue);
+  color: var(--white);
+  box-shadow: var(--shadow-xl);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .buyer-orders-section__tracking-shortcut {
+    right: var(--space-4);
+    bottom: calc(var(--space-6) + 64px);
+  }
+}
+
 .buyer-orders-section__header {
   display: flex;
   justify-content: space-between;
@@ -263,6 +288,11 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+.buyer-order-modal__product-selection { border: 1px solid var(--border-color); border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); }
+.buyer-order-modal__product-choice { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.buyer-order-modal__product-choice label { display: inline-flex; align-items: center; gap: var(--space-2); flex: 1; }
+.buyer-order-modal__product-choice input[type="number"] { width: 76px; }
+.buyer-order-modal__product-choice small { color: var(--text-secondary); width: 100%; }
 
 .buyer-order-modal__withdrawal-status {
   color: var(--brand-blue);
@@ -484,6 +514,9 @@
   width: fit-content;
 }
 
+.buyer-shipment-map { width: 100%; text-align: left; }
+.buyer-shipment-map > p { margin: 0 0 var(--space-3); }
+
 .buyer-order-pickup-code-chip {
   display: inline-flex;
   align-items: center;
@@ -671,6 +704,30 @@
   gap: var(--space-3);
   font-size: var(--text-sm);
   color: var(--green-dark);
+}
+
+.buyer-delivery-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  text-align: center;
+}
+
+.buyer-delivery-code strong {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  letter-spacing: 0.15em;
+  color: var(--brand-blue);
+}
+
+.buyer-delivery-code img {
+  width: 200px;
+  height: 200px;
 }
 
 @media (max-width: 640px) {

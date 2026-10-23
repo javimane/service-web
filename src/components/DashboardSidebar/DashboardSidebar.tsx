@@ -126,6 +126,9 @@ export default function DashboardSidebar({
     staleTime: 5 * 60 * 1000,
   });
 
+  const isProfessionalAccount = Boolean(
+    sessionStatus?.is_professional || hasProfessionalSubscription,
+  );
   const isProfessionalActive = Boolean(
     sessionStatus?.is_professional &&
     (sessionStatus?.professional_active || hasProfessionalSubscription)
@@ -144,18 +147,21 @@ export default function DashboardSidebar({
     setExpandedMenus((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Basic buyer / general menus allowed for role 2 (or non-professional users)
-  const userAllowedItems = new Set([
+  // Accounts without a professional profile only see buyer actions.
+  const buyerVisibleItems = new Set([
     "dashboard",
-    "overview",
     "purchases",
     "favorites",
     "payment-methods",
     "cart",
+    "proposals",
+    "proposals-view",
+    "referrals",
     "messages",
     "notifications",
     "subscription",
     "settings",
+    "help",
     "faq",
     "report-errors",
   ]);
@@ -170,7 +176,7 @@ export default function DashboardSidebar({
 
     // Role 2 (or any user without active professional subscription) has professional and company menus disabled
     if (!isProfessionalActive) {
-      return !userAllowedItems.has(key);
+      return !buyerVisibleItems.has(key);
     }
 
     if (isFreePlan) {
@@ -245,14 +251,16 @@ export default function DashboardSidebar({
     sessionStatus?.full_name ||
     user?.user_metadata?.full_name ||
     user?.email?.split("@")[0] ||
-    "Profesional";
+    "Usuario";
 
-  const mobileUserRole = hasProfessionalSubscription
-    ? "Cuenta profesional activa"
-    : "Cuenta en configuracion";
+  const mobileUserRole = !isProfessionalAccount
+    ? "Cuenta personal"
+    : hasProfessionalSubscription
+      ? "Cuenta profesional activa"
+      : "Cuenta profesional en configuración";
 
   const mobileUserInitial =
-    mobileUserName.trim().charAt(0).toUpperCase() || "P";
+    mobileUserName.trim().charAt(0).toUpperCase() || "U";
 
   const navItems = [
     {
@@ -469,14 +477,20 @@ export default function DashboardSidebar({
       onClick: () => router.push(ROUTES.settings),
     },
     {
-      key: "faq",
+      key: "help",
       label: "AYUDA",
+      icon: HelpCircle,
+      onClick: handleSupport,
+    },
+    {
+      key: "faq",
+      label: "PREGUNTAS FRECUENTES",
       icon: HelpCircle,
       onClick: () => goToDashboardView("faq"),
     },
     {
       key: "report-errors",
-      label: "REPORTAR ERROR",
+      label: "REPORTAR PROBLEMA",
       icon: AlertTriangle,
       onClick:
         onReportErrorsClick ?? (() => goToDashboardView("report-errors")),
@@ -484,7 +498,10 @@ export default function DashboardSidebar({
   ];
 
   const renderNavItems = () => {
-    return navItems.map((item) => {
+    const visibleItems = isProfessionalAccount
+      ? navItems
+      : navItems.filter((item) => buyerVisibleItems.has(item.key));
+    return visibleItems.map((item) => {
       const Icon = item.icon;
       const isLocked = isItemLocked(item.key);
       const isExpanded = expandedMenus[item.key];
@@ -493,6 +510,9 @@ export default function DashboardSidebar({
         (item.subItems && item.subItems.some((sub) => activeItem === sub.key));
 
       if (item.expandable && item.subItems) {
+        const visibleSubItems = isProfessionalAccount
+          ? item.subItems
+          : item.subItems.filter((subItem) => buyerVisibleItems.has(subItem.key));
         return (
           <div key={item.key} className="nav-group">
             <button
@@ -519,7 +539,7 @@ export default function DashboardSidebar({
             </button>
             {isExpanded && (
               <div className="sub-menu">
-                {item.subItems.map((subItem) => {
+                {visibleSubItems.map((subItem) => {
                   const isSubLocked = isItemLocked(subItem.key);
                   const isSubActive = activeItem === subItem.key;
                   return (
@@ -593,6 +613,38 @@ export default function DashboardSidebar({
     );
   };
 
+  const supportModal = (
+    <Modal
+      isOpen={isSupportModalOpen}
+      onClose={() => setIsSupportModalOpen(false)}
+      title="Opciones de Soporte"
+    >
+      <div className="dashboard-sidebar__support-actions">
+        <button
+          type="button"
+          className="btn-primary dashboard-sidebar__support-action"
+          onClick={handleEmailSupport}
+        >
+          <Mail size={18} />
+          <span>Enviar Email</span>
+        </button>
+        <button
+          type="button"
+          className="btn-secondary dashboard-sidebar__support-action dashboard-sidebar__support-action--whatsapp"
+          onClick={handleWhatsAppSupport}
+          disabled={isLoadingWhatsApp}
+        >
+          {isLoadingWhatsApp ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <MessageCircle size={18} />
+          )}
+          <span>Mensaje por WhatsApp</span>
+        </button>
+      </div>
+    </Modal>
+  );
+
   if (isMobile) {
     return (
       <>
@@ -641,6 +693,7 @@ export default function DashboardSidebar({
             {renderSupportActions()}
           </nav>
         </aside>
+        {supportModal}
       </>
     );
   }
@@ -693,58 +746,7 @@ export default function DashboardSidebar({
         </nav>
       </aside>
 
-      <Modal
-        isOpen={isSupportModalOpen}
-        onClose={() => setIsSupportModalOpen(false)}
-        title="Opciones de Soporte"
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            padding: "8px 0",
-          }}
-        >
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleEmailSupport}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-            }}
-          >
-            <Mail size={18} />
-            <span>Enviar Email</span>
-          </button>
-
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={handleWhatsAppSupport}
-            disabled={isLoadingWhatsApp}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              borderColor: "#25D366",
-              color: "#25D366",
-              background: "rgba(37, 211, 102, 0.05)",
-            }}
-          >
-            {isLoadingWhatsApp ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <MessageCircle size={18} />
-            )}
-            <span>Mensaje por WhatsApp</span>
-          </button>
-        </div>
-      </Modal>
+      {supportModal}
     </>
   );
 }

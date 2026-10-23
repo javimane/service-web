@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, QrCode } from "lucide-react";
 import Modal from "@/components/Modal/Modal";
+import { normalizeReturnReceiptCode } from "./returnReceiptCode";
 import "./ReturnReceiptModal.css";
 
 type Props = { onClose: () => void; onReceive: (code: string, conditionVerified: boolean) => Promise<void> };
@@ -58,19 +59,19 @@ export default function ReturnReceiptModal({ onClose, onReceive }: Props) {
   }, [cameraActive]);
 
   const submit = async () => {
-    const match = code.trim().match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-    if (!match) { setCameraError("Ingresá un código QR de devolución válido."); return; }
+    const normalizedCode = normalizeReturnReceiptCode(code);
+    if (!normalizedCode) { setCameraError("Ingresá el código de devolución de 10 caracteres que figura en el comprobante."); return; }
     if (conditionVerified === null) { setCameraError("Indicá si el producto cumple las condiciones de devolución."); return; }
-    try { setSaving(true); await onReceive(match[0], conditionVerified); onClose(); }
+    try { setSaving(true); await onReceive(normalizedCode, conditionVerified); onClose(); }
     catch (error) { setCameraError((error as Error).message || "No se pudo registrar la recepción."); }
     finally { setSaving(false); }
   };
 
   return <Modal isOpen onClose={onClose} title="Registrar devolución recibida">
     <div className="return-receipt-modal">
-      <p>Escaneá el QR del comprobante cuando el producto llegue a la sucursal. También podés ingresar el código que figura debajo del QR.</p>
+      <p>Escaneá el QR o ingresá el código de 10 caracteres que figura en el comprobante de devolución.</p>
       <label htmlFor="return-receipt-code">Código de devolución</label>
-      <input id="return-receipt-code" value={code} onChange={(event) => setCode(event.target.value)} placeholder="UUID del comprobante" autoFocus />
+      <input id="return-receipt-code" value={code} onChange={(event) => { setCode(event.target.value.toUpperCase()); setCameraError(""); }} placeholder="Código de 10 caracteres" autoFocus />
       <label htmlFor="return-receipt-condition">Estado del producto recibido</label>
       <select id="return-receipt-condition" value={conditionVerified === null ? "" : String(conditionVerified)}
         onChange={(event) => setConditionVerified(event.target.value === "" ? null : event.target.value === "true")}

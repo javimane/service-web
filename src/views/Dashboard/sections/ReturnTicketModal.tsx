@@ -27,11 +27,11 @@ export default function ReturnTicketModal({ ticket, onClose }: Props) {
 
   useEffect(() => {
     let active = true;
-    QRCode.toDataURL(ticket.id, { width: 240, margin: 1 })
+    QRCode.toDataURL(ticket.return_code || ticket.id, { width: 240, margin: 1 })
       .then((image) => { if (active) setQr(image); })
       .catch(() => { if (active) setQr(""); });
     return () => { active = false; };
-  }, [ticket.id]);
+  }, [ticket.id, ticket.return_code]);
 
   const download = async () => {
     try {
@@ -63,7 +63,7 @@ export default function ReturnTicketModal({ ticket, onClose }: Props) {
           <div className="return-ticket__code">
             {qr && <img src={qr} alt="QR de recepción de la devolución" />}
             <span>El comercio escanea este QR al recibir el producto</span>
-            <strong>{ticket.id}</strong>
+            <strong>{ticket.return_code || ticket.id}</strong>
             <span>Solicitud: {new Date(ticket.created_at).toLocaleDateString("es-AR")}</span>
             {ticket.received_at && <span>Recibido: {new Date(ticket.received_at).toLocaleString("es-AR")}</span>}
           </div>

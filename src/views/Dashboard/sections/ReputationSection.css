@@ -201,9 +201,16 @@
 .reputation-progress-labels {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   color: var(--text-secondary);
+}
+
+.reputation-progress-labels span:last-child {
+  text-align: right;
 }
 
 .reputation-progress-bar-bg {

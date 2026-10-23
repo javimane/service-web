@@ -8,6 +8,7 @@ import Footer from "@/components/Footer/Footer";
 import { useAuth } from "@/context/AuthContext";
 import ProductPaymentModal from "@/views/Products/components/ProductPaymentModal";
 import ServicePaymentModal from "@/views/Services/components/ServicePaymentModal";
+import WithdrawalReviewNotice from "@/components/WithdrawalReviewNotice/WithdrawalReviewNotice";
 import "./CheckoutPage.css";
 
 const AGE_RESTRICTED_SUBCATEGORIES = new Set([
@@ -58,6 +59,7 @@ export default function CheckoutPage({ kind, item, initialQuantity }: Props) {
           <h1>{kind === "producto" ? "Finalizar compra" : "Contratar servicio"}</h1>
           <p>Revisá el pedido y elegí cómo querés pagar.</p>
         </div>
+        <WithdrawalReviewNotice />
         {kind === "producto" ? (
           canPurchase ? <ProductPaymentModal
             pageMode isOpen onClose={() => router.push(backUrl)}
