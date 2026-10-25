@@ -1,7 +1,13 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PlusCircle, Building2, AlertTriangle, Lock, ExternalLink } from "lucide-react";
+import {
+  PlusCircle,
+  Building2,
+  AlertTriangle,
+  Lock,
+  ExternalLink,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Modal from "../../components/Modal/Modal";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
@@ -51,7 +57,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!searchParams) return;
     const isWelcomeParam = searchParams.get("welcome") === "true";
-    const isMissingCompanyParam = searchParams.get("missing_company") === "true";
+    const isMissingCompanyParam =
+      searchParams.get("missing_company") === "true";
     if (isWelcomeParam) {
       setShowWelcomeModal(true);
     }
@@ -61,7 +68,13 @@ export default function SettingsPage() {
   }, [searchParams]);
   const queryClient = useQueryClient();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
-  const { user, sessionStatus, logout, hasProfessionalSubscription, refreshSession } = useAuth();
+  const {
+    user,
+    sessionStatus,
+    logout,
+    hasProfessionalSubscription,
+    refreshSession,
+  } = useAuth();
   const { showAlert, showSuccess, showError } = useAlert();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -77,7 +90,8 @@ export default function SettingsPage() {
     primaryProvider === "apple" ||
     (!primaryProvider &&
       !linkedProviders.includes("email") &&
-      (linkedProviders.includes("google") || linkedProviders.includes("apple")));
+      (linkedProviders.includes("google") ||
+        linkedProviders.includes("apple")));
 
   const { data: apiSubscription } = useQuery({
     queryKey: ["professional-subscription"],
@@ -94,7 +108,11 @@ export default function SettingsPage() {
   const isSubscriptionActive = useMemo(() => {
     if (!subscriptionData && !hasProfessionalSubscription) return false;
     if (subStatus === "cancelled" || subStatus === "canceled") return false;
-    return subStatus === "active" || subStatus === "past_due" || Boolean(hasProfessionalSubscription);
+    return (
+      subStatus === "active" ||
+      subStatus === "past_due" ||
+      Boolean(hasProfessionalSubscription)
+    );
   }, [subscriptionData, subStatus, hasProfessionalSubscription]);
 
   const [isEditingCompany, setIsEditingCompany] = useState(false);
@@ -428,7 +446,9 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     if (!tradeName || tradeName.trim() === "") {
-      showError("Por favor, ingresa el nombre de la empresa o comercio (Campo obligatorio).");
+      showError(
+        "Por favor, ingresa el nombre de la empresa o comercio (Campo obligatorio).",
+      );
       return;
     }
     const cleanCuit = cuit.replace(/\D/g, "");
@@ -437,11 +457,15 @@ export default function SettingsPage() {
       return;
     }
     if (selectedCategories.length === 0) {
-      showError("Debes seleccionar al menos una categoría de servicio (Campo obligatorio).");
+      showError(
+        "Debes seleccionar al menos una categoría de servicio (Campo obligatorio).",
+      );
       return;
     }
     if (selectedProvinces.length === 0) {
-      showError("Debes indicar tu cobertura geográfica seleccionando al menos una provincia.");
+      showError(
+        "Debes indicar tu cobertura geográfica seleccionando al menos una provincia.",
+      );
       return;
     }
     if (
@@ -477,7 +501,9 @@ export default function SettingsPage() {
   return (
     <div className="dashboard-page-wrapper">
       <Navbar />
-      <div className={`dashboard-page settings-page-layout ${isMobileSidebarMode ? "dashboard-page--mobile" : ""}`}>
+      <div
+        className={`dashboard-page settings-page-layout ${isMobileSidebarMode ? "dashboard-page--mobile" : ""}`}
+      >
         {!isMobileSidebarMode && (
           <DashboardSidebar
             activeItem="settings"
@@ -491,7 +517,9 @@ export default function SettingsPage() {
             onNotificationsClick={() =>
               router.push(`${ROUTES.dashboard}?view=notifications`)
             }
-            onProfileClick={() => router.push(`${ROUTES.dashboard}?view=profile`)}
+            onProfileClick={() =>
+              router.push(`${ROUTES.dashboard}?view=profile`)
+            }
           />
         )}
 
@@ -563,13 +591,16 @@ export default function SettingsPage() {
                     <h4>Datos Comerciales y Fiscales</h4>
                     <p>
                       La información fiscal, razón social, CUIT, CBU de cobro y
-                      sucursales se gestionan de forma centralizada en la sección
+                      sucursales se gestionan de forma centralizada en la
+                      sección
                       <strong> Datos comerciales</strong> de tu panel.
                     </p>
                     <button
                       type="button"
                       className="btn-primary"
-                      onClick={() => router.push(`${ROUTES.dashboard}?view=commercial-data`)}
+                      onClick={() =>
+                        router.push(`${ROUTES.dashboard}?view=commercial-data`)
+                      }
                     >
                       <span>Ir a Datos Comerciales</span>
                       <ExternalLink size={14} />
@@ -580,27 +611,34 @@ export default function SettingsPage() {
 
               {/* Danger Zone */}
               <div className="settings-danger-zone">
-                <h3 className="settings-danger-zone__title">
-                  Zona de peligro
-                </h3>
+                <h3 className="settings-danger-zone__title">Zona de peligro</h3>
                 <p className="settings-danger-zone__desc">
-                  Una vez que elimines tu cuenta, no hay vuelta atrás. Por
+                  Una vez que desactivas tu cuenta, no hay vuelta atrás. Por
                   favor, tené cuidado.
                 </p>
 
                 {isSubscriptionActive && (
                   <div className="settings-danger-zone__warning">
                     <div className="settings-danger-zone__warning-header">
-                      <AlertTriangle size={20} className="settings-danger-zone__warning-icon" />
-                      <h4>No podés eliminar tu cuenta con una suscripción activa</h4>
+                      <AlertTriangle
+                        size={20}
+                        className="settings-danger-zone__warning-icon"
+                      />
+                      <h4>
+                        No podés dar de baja tu cuenta con una suscripción
+                        activa
+                      </h4>
                     </div>
                     <p>
-                      Para poder eliminar tu cuenta, primero debés cancelar tu suscripción desde el panel de suscripciones.
+                      Para poder dar de baja tu cuenta, primero debés cancelar
+                      tu suscripción desde el panel de suscripciones.
                     </p>
                     <button
                       type="button"
                       className="settings-danger-zone__sub-btn"
-                      onClick={() => router.push(`${ROUTES.dashboard}?view=subscription`)}
+                      onClick={() =>
+                        router.push(`${ROUTES.dashboard}?view=subscription`)
+                      }
                     >
                       <span>Ir a Mi Suscripción</span>
                       <ExternalLink size={14} />
@@ -617,7 +655,7 @@ export default function SettingsPage() {
                   {isSubscriptionActive ? (
                     <>
                       <Lock size={16} />
-                      <span>Eliminar cuenta (Suscripción activa)</span>
+                      <span>Dar de baja cuenta (Suscripción activa)</span>
                     </>
                   ) : isDeleting ? (
                     "Eliminando..."
@@ -655,7 +693,9 @@ export default function SettingsPage() {
               fontSize: "var(--text-md)",
             }}
           >
-            Para comenzar a recibir clientes y publicar tus servicios en la plataforma, por favor completá los datos comerciales obligatorios a continuación:
+            Para comenzar a recibir clientes y publicar tus servicios en la
+            plataforma, por favor completá los datos comerciales obligatorios a
+            continuación:
           </p>
           <ul
             style={{
@@ -678,7 +718,8 @@ export default function SettingsPage() {
                 ✅
               </span>
               <span>
-                <strong>Nombre Comercial y CUIT:</strong> Identificá tu empresa o servicio profesional.
+                <strong>Nombre Comercial y CUIT:</strong> Identificá tu empresa
+                o servicio profesional.
               </span>
             </li>
             <li
@@ -692,7 +733,8 @@ export default function SettingsPage() {
                 ✅
               </span>
               <span>
-                <strong>Categorías y Cobertura:</strong> Seleccioná qué servicios ofrecés y en qué provincias operás.
+                <strong>Categorías y Cobertura:</strong> Seleccioná qué
+                servicios ofrecés y en qué provincias operás.
               </span>
             </li>
             <li
@@ -706,13 +748,18 @@ export default function SettingsPage() {
                 ✅
               </span>
               <span>
-                <strong>Atención al público:</strong> Si atendés en local, marcá tu ubicación en el mapa.
+                <strong>Atención al público:</strong> Si atendés en local, marcá
+                tu ubicación en el mapa.
               </span>
             </li>
           </ul>
           <button
             className="btn-primary"
-            style={{ width: "100%", padding: "var(--space-4)", fontSize: "var(--text-md)" }}
+            style={{
+              width: "100%",
+              padding: "var(--space-4)",
+              fontSize: "var(--text-md)",
+            }}
             onClick={() => setShowWelcomeModal(false)}
           >
             Completar mi perfil
@@ -744,7 +791,9 @@ export default function SettingsPage() {
               fontSize: "var(--text-md)",
             }}
           >
-            Para que tu perfil sea visible en las búsquedas y puedas recibir clientes en la plataforma, es necesario que completes los siguientes datos comerciales obligatorios:
+            Para que tu perfil sea visible en las búsquedas y puedas recibir
+            clientes en la plataforma, es necesario que completes los siguientes
+            datos comerciales obligatorios:
           </p>
           <ul
             style={{
@@ -767,7 +816,8 @@ export default function SettingsPage() {
                 📌
               </span>
               <span>
-                <strong>Nombre Comercial:</strong> El nombre de tu marca, negocio o servicio profesional.
+                <strong>Nombre Comercial:</strong> El nombre de tu marca,
+                negocio o servicio profesional.
               </span>
             </li>
             <li
@@ -781,7 +831,8 @@ export default function SettingsPage() {
                 📌
               </span>
               <span>
-                <strong>CUIT / CUIL:</strong> Tu número de identificación tributaria.
+                <strong>CUIT / CUIL:</strong> Tu número de identificación
+                tributaria.
               </span>
             </li>
             <li
@@ -795,13 +846,18 @@ export default function SettingsPage() {
                 📌
               </span>
               <span>
-                <strong>Categorías y Cobertura:</strong> Rubro de servicio y provincias donde trabajás.
+                <strong>Categorías y Cobertura:</strong> Rubro de servicio y
+                provincias donde trabajás.
               </span>
             </li>
           </ul>
           <button
             className="btn-primary"
-            style={{ width: "100%", padding: "var(--space-4)", fontSize: "var(--text-md)" }}
+            style={{
+              width: "100%",
+              padding: "var(--space-4)",
+              fontSize: "var(--text-md)",
+            }}
             onClick={() => setShowMissingCompanyModal(false)}
           >
             Completar datos comerciales

@@ -42,7 +42,8 @@ const stepLabels: Record<SetupStep, string> = {
 
 export default function AccountSetupPage() {
   const router = useRouter();
-  const { user, sessionStatus, loading, isAgeVerified } = useAuth();
+  const { user, sessionStatus, loading, isAgeVerified, refreshSession } = useAuth();
+  const personalNameOnly = sessionStatus?.requires_personal_name === true;
   const isProfessional = Boolean(
     sessionStatus?.is_professional ||
       sessionStatus?.professional_id ||
@@ -63,16 +64,20 @@ export default function AccountSetupPage() {
   useEffect(() => {
     if (!user?.id) return;
     const savedStep = localStorage.getItem(`account_setup_step_${user.id}`) as SetupStep | null;
-    if (savedStep && steps.includes(savedStep)) setStep(savedStep);
+    if (personalNameOnly) setStep("personal");
+    else if (savedStep && steps.includes(savedStep)) setStep(savedStep);
     void getProfileAction({ id: user.id, token: getAccessToken() }).then((result) => {
       const profile = result?.data;
       if (!profile) return;
       const nameParts = String(profile.display_name || "").trim().split(/\s+/);
-      setFirstName(profile.first_name || nameParts[0] || "");
-      setLastName(profile.last_name || nameParts.slice(1).join(" ") || "");
+      const companyName = String(sessionStatus?.company_name || "").trim().toLocaleLowerCase();
+      const personalName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim().toLocaleLowerCase();
+      const businessNameEntered = Boolean(companyName && personalName === companyName);
+      setFirstName(personalNameOnly || businessNameEntered ? "" : profile.first_name || nameParts[0] || "");
+      setLastName(personalNameOnly || businessNameEntered ? "" : profile.last_name || nameParts.slice(1).join(" ") || "");
       setPhone(profile.phone || profile.phone_number || "");
     });
-  }, [user?.id, steps]);
+  }, [user?.id, steps, personalNameOnly, sessionStatus?.company_name]);
 
   const currentIndex = Math.max(0, steps.indexOf(step));
 
@@ -93,8 +98,14 @@ export default function AccountSetupPage() {
         const cleanFirst = firstName.trim();
         const cleanLast = lastName.trim();
         const cleanPhone = phone.trim();
-        if (!cleanFirst || !cleanLast || cleanPhone.replace(/\D/g, "").length < 8) {
-          throw new Error("Ingresá nombre, apellido y un teléfono válido de al menos 8 dígitos.");
+        if (!cleanFirst || !cleanLast || (!personalNameOnly && cleanPhone.replace(/\D/g, "").length < 8)) {
+          throw new Error(personalNameOnly
+            ? "Ingresá tu nombre y apellido personales tal como figuran en el DNI."
+            : "Ingresá nombre, apellido y un teléfono válido de al menos 8 dígitos.");
+        }
+        if (`${cleanFirst} ${cleanLast}`.replace(/\s+/g, " ").toLocaleLowerCase() ===
+            String(sessionStatus?.company_name || "").trim().replace(/\s+/g, " ").toLocaleLowerCase()) {
+          throw new Error("Ingresá tu nombre personal; el nombre de la empresa se guarda en los datos comerciales.");
         }
         const result = await updateProfileAction({
           id: user.id,
@@ -103,11 +114,21 @@ export default function AccountSetupPage() {
             first_name: cleanFirst,
             last_name: cleanLast,
             display_name: `${cleanFirst} ${cleanLast}`,
-            phone: cleanPhone,
-            phone_number: cleanPhone,
+            ...(cleanPhone ? { phone: cleanPhone, phone_number: cleanPhone } : {}),
           },
         });
         if (result?.serverError) throw new Error(result.serverError);
+        if (personalNameOnly) {
+          const updatedSession = await refreshSession();
+          if (!updatedSession || updatedSession.requires_personal_name) {
+            throw new Error("El nombre personal debe ser diferente del nombre de tu empresa y coincidir con tu DNI.");
+          }
+          if (localStorage.getItem("show_setup_on_login") !== "true" &&
+              !localStorage.getItem(`account_setup_step_${user.id}`)) {
+            router.replace(isProfessional ? ROUTES.dashboard : ROUTES.home);
+            return;
+          }
+        }
       }
       if (step === "address") {
         const addresses = await commerceService.getUserAddresses();
@@ -179,7 +200,9 @@ export default function AccountSetupPage() {
 
           {step === "personal" && (
             <form id="account-setup-personal" className="account-setup__form" onSubmit={continueSetup}>
-              <p>Usá tu nombre y apellido reales. Guardaremos el teléfono para entregas y contacto sobre tus compras.</p>
+              <p>{personalNameOnly
+                ? "Ingresá tu nombre y apellido personales tal como figuran en tu DNI. No uses el nombre comercial: Didit compara estos datos con el documento."
+                : "Usá tu nombre y apellido reales. Guardaremos el teléfono para entregas y contacto sobre tus compras."}</p>
               <div className="account-setup__field-row">
                 <label className="account-setup__field">Nombre
                   <input autoComplete="given-name" value={firstName} onChange={(event) => setFirstName(event.target.value)} required />
@@ -188,9 +211,9 @@ export default function AccountSetupPage() {
                   <input autoComplete="family-name" value={lastName} onChange={(event) => setLastName(event.target.value)} required />
                 </label>
               </div>
-              <label className="account-setup__field">Teléfono
+              {!personalNameOnly && <label className="account-setup__field">Teléfono
                 <input type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required />
-              </label>
+              </label>}
             </form>
           )}
           {step === "address" && (

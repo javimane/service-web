@@ -1208,6 +1208,10 @@ export default function BuyerOrdersSection() {
                               selectedOrder.payment_method === "getnet_card"
                             ? "Tarjeta"
                             : selectedOrder.payment_method || "Sin información"}
+                    {selectedOrder.payment_method !== "paycloud_qr" &&
+                      selectedOrder.card_brand
+                      ? ` · ${selectedOrder.card_brand}`
+                      : ""}
                   </strong>
                 </div>
                 <div>

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CreditCard,
+  Info,
   Plus,
   Trash2,
   Star,
@@ -71,6 +72,13 @@ export default function PaymentMethodsSection() {
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
   const [isDefault, setIsDefault] = useState(false);
+
+  const { data: cardConfig } = useQuery({
+    queryKey: ["card-payment-config"],
+    queryFn: getCardConfig,
+    staleTime: 1000 * 60,
+  });
+  const savesAfterPurchase = cardConfig?.provider === "payway";
 
   const {
     data: identityStatus,
@@ -270,16 +278,31 @@ export default function PaymentMethodsSection() {
             y contrataciones.
           </p>
         </div>
-        <button
-          data-action-tone="add"
-          type="button"
-          className="payment-methods__add-btn"
-          onClick={handleOpenModal}
-        >
-          <Plus size={18} />
-          Agregar nueva tarjeta
-        </button>
+        {!savesAfterPurchase && (
+          <button
+            data-action-tone="add"
+            type="button"
+            className="payment-methods__add-btn"
+            onClick={handleOpenModal}
+          >
+            <Plus size={18} />
+            Agregar nueva tarjeta
+          </button>
+        )}
       </div>
+
+      {savesAfterPurchase && (
+        <div className="payment-methods__purchase-banner" role="note">
+          <Info size={22} aria-hidden="true" />
+          <div>
+            <strong>Guardá tu tarjeta durante una compra</strong>
+            <p>
+              Primero realizá una compra con tarjeta y marcá «Guardar tarjeta
+              después del pago». Cuando el pago se apruebe, la tarjeta aparecerá acá.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="payment-methods__verification-banner" role="status">
         <ShieldCheck size={20} aria-hidden="true" />
@@ -292,7 +315,8 @@ export default function PaymentMethodsSection() {
                 ? "No pudimos consultar tu verificación. Intentá nuevamente."
                 : identityStatus?.purchase_eligible
                   ? "Tu identidad está verificada. El nombre y DNI declarados para cada tarjeta deben coincidir con los de tu verificación."
-                  : "Para registrar tarjetas y comprar, verificá tu DNI, rostro y mayoría de edad en la aplicación de Sercio con esta misma cuenta."}
+                  : identityStatus?.session?.rejection_reason ||
+                    "Para registrar tarjetas y comprar, verificá tu DNI, rostro y mayoría de edad en la aplicación de Sercio con esta misma cuenta."}
           </p>
           {!identityStatus?.purchase_eligible && (
             <div className="payment-methods__verification-actions">
@@ -335,18 +359,21 @@ export default function PaymentMethodsSection() {
             No tienes tarjetas guardadas
           </h3>
           <p className="payment-methods__state-desc">
-            Agrega tus tarjetas de crédito o débito para comprar y contratar
-            servicios en 1 clic de forma segura.
+            {savesAfterPurchase
+              ? "Las tarjetas que guardes durante una compra aparecerán acá."
+              : "Agregá tus tarjetas de crédito o débito para comprar y contratar servicios en 1 clic de forma segura."}
           </p>
-          <button
-            data-action-tone="add"
-            type="button"
-            className="payment-methods__add-btn"
-            onClick={handleOpenModal}
-          >
-            <Plus size={18} />
-            Agregar mi primera tarjeta
-          </button>
+          {!savesAfterPurchase && (
+            <button
+              data-action-tone="add"
+              type="button"
+              className="payment-methods__add-btn"
+              onClick={handleOpenModal}
+            >
+              <Plus size={18} />
+              Agregar mi primera tarjeta
+            </button>
+          )}
         </div>
       ) : (
         <div className="payment-methods__grid">

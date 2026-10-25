@@ -1,5 +1,4 @@
 import { MapPin, Star, ArrowRight, CheckCircle, Share2 } from "lucide-react";
-import FavoriteButton from "../FavoriteButton/FavoriteButton";
 import "./ServiceCard.css";
 
 export default function ServiceCard({ service, viewMode = "grid", onClick }) {
@@ -26,7 +25,7 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
     ? professional.address[0]
     : Array.isArray(professional?.Address)
       ? professional.Address[0]
-      : (professional?.address || professional?.Address);
+      : professional?.address || professional?.Address;
   const locationName =
     address?.province?.name ||
     address?.Province?.name ||
@@ -70,7 +69,6 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
           <span>{locationName.toUpperCase()}</span>
         </div>
         <div className="card-top-actions">
-          <FavoriteButton type="service" targetId={service.id} size={14} />
           <button
             className="card-share-btn"
             title="Compartir servicio"

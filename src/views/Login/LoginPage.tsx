@@ -77,6 +77,11 @@ export default function LoginPage({
         );
         return;
       }
+      if (sessionStatus.requires_personal_name) {
+        if (isModal) onClose?.();
+        router.push(ROUTES.accountSetup);
+        return;
+      }
       let isNewUser = false;
       const createdAt = sessionStatus.user_created_at
         ? new Date(sessionStatus.user_created_at).getTime()
@@ -313,6 +318,12 @@ export default function LoginPage({
         await refreshSession();
       } catch (refreshErr) {
         console.warn("refreshSession background warning:", refreshErr);
+      }
+
+      if (st?.requires_personal_name) {
+        if (isModal) onClose?.();
+        router.push(ROUTES.accountSetup);
+        return;
       }
 
       if (isProf) {

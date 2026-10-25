@@ -16,7 +16,6 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import ProductFilters from "./ProductFilters";
-import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 import "./ProductsPage.css";
 import {
   getProductCategoriesAction,
@@ -48,6 +47,8 @@ const defaultFilters = {
   ean: "",
   wholesale: "all",
   is_offer: "all",
+  interest_free_installments: "all",
+  free_shipping: "all",
   limit: "10",
   sortBy: "price-asc",
 };
@@ -69,6 +70,8 @@ export default function ProductsPage() {
   const urlBrand = searchParams?.get("brand");
   const urlIsOffer =
     searchParams?.get("is_offer") || searchParams?.get("has_offer");
+  const urlInterestFree = searchParams?.get("interest_free_installments");
+  const urlFreeShipping = searchParams?.get("free_shipping");
 
   const [filters, setFilters] = useState(() => ({
     ...defaultFilters,
@@ -81,6 +84,8 @@ export default function ProductsPage() {
     search: urlSearch || defaultFilters.search,
     wholesale: urlWholesale || defaultFilters.wholesale,
     is_offer: urlIsOffer || defaultFilters.is_offer,
+    interest_free_installments: urlInterestFree === "true" ? "true" : "all",
+    free_shipping: urlFreeShipping === "true" ? "true" : "all",
     brand: urlBrand || defaultFilters.brand,
   }));
 
@@ -152,6 +157,12 @@ export default function ProductsPage() {
     const ws = searchParams.get("wholesale");
     const ofr = searchParams.get("is_offer") || searchParams.get("has_offer");
     const br = searchParams.get("brand");
+    const interestFree =
+      searchParams.get("interest_free_installments") === "true"
+        ? "true"
+        : "all";
+    const freeShipping =
+      searchParams.get("free_shipping") === "true" ? "true" : "all";
 
     setFilters((prev) => {
       let nextCat = prev.categoryId;
@@ -183,6 +194,8 @@ export default function ProductsPage() {
         prev.search === nextSearch &&
         prev.wholesale === nextWs &&
         prev.is_offer === nextOfr &&
+        prev.interest_free_installments === interestFree &&
+        prev.free_shipping === freeShipping &&
         prev.brand === nextBr
       ) {
         return prev;
@@ -196,6 +209,8 @@ export default function ProductsPage() {
         search: nextSearch,
         wholesale: nextWs,
         is_offer: nextOfr,
+        interest_free_installments: interestFree,
+        free_shipping: freeShipping,
         brand: nextBr,
       };
     });
@@ -275,6 +290,12 @@ export default function ProductsPage() {
             : effectiveFilters.is_foreign === "external",
         wholesale: effectiveFilters.wholesale === "true" ? true : undefined,
         is_offer: effectiveFilters.is_offer === "true" ? true : undefined,
+        interest_free_installments:
+          effectiveFilters.interest_free_installments === "true"
+            ? true
+            : undefined,
+        free_shipping:
+          effectiveFilters.free_shipping === "true" ? true : undefined,
       };
       const result = await getProductsAction(params);
       return result?.data;
@@ -442,6 +463,15 @@ export default function ProductsPage() {
 
       return { ...prev, [key]: value };
     });
+    if (key === "interest_free_installments" || key === "free_shipping") {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      if (value === "true") params.set(key, "true");
+      else params.delete(key);
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`, {
+        scroll: false,
+      });
+    }
     setPage(1);
   };
 
@@ -491,6 +521,11 @@ export default function ProductsPage() {
 
   const clearFilters = () => {
     setFilters({ ...defaultFilters });
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    params.delete("interest_free_installments");
+    params.delete("free_shipping");
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
     setSearchInput("");
     setDebouncedTextFilters({
       search: "",
@@ -683,16 +718,9 @@ export default function ProductsPage() {
                           Última unidad
                         </span>
                       )}
-                      <div className="product-card__favorite-wrap">
-                        <FavoriteButton
-                          type="product"
-                          targetId={product._original?.id || product.id}
-                          size={16}
-                        />
-                      </div>
                       {product.discount > 0 && (
                         <span className="product-card__badge-discount">
-                          -{product.discount}%
+                          OFERTA
                         </span>
                       )}
                     </div>

@@ -2,11 +2,16 @@
 
 import { useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Flame, Loader2, Sparkles } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Flame,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getProductsAction } from "@/app/actions/products";
 import useCarouselDrag from "../../../hooks/useCarouselDrag";
-import FavoriteButton from "../../../components/FavoriteButton/FavoriteButton";
 import "./OfferProductsSection.css";
 
 function formatPrice(n: number) {
@@ -98,7 +103,9 @@ export default function OfferProductsSection({
       const firstSeller = sellers[0] || {};
 
       const price = Number(firstSeller.price || product.price || 0);
-      const offerPrice = Number(firstSeller.offer_price || product.offer_price || 0);
+      const offerPrice = Number(
+        firstSeller.offer_price || product.offer_price || 0,
+      );
       const percentDiscount = Number(
         product.percent_discount ||
           firstSeller.percent_discount ||
@@ -133,7 +140,7 @@ export default function OfferProductsSection({
         image: primaryImage,
         seo_path: product.seo_path,
         hasLastUnit:
-          (Array.isArray(sellers) && sellers.length > 0
+          Array.isArray(sellers) && sellers.length > 0
             ? sellers.some(
                 (seller: any) =>
                   seller &&
@@ -144,7 +151,7 @@ export default function OfferProductsSection({
               )
             : product?.stock !== null &&
               product?.stock !== undefined &&
-              Number(product.stock) === 1),
+              Number(product.stock) === 1,
         _original: item,
       };
     });
@@ -218,10 +225,7 @@ export default function OfferProductsSection({
                 onPointerLeave={handlePointerUp}
               >
                 {productsList.map((product) => (
-                  <article
-                    key={product.id}
-                    className="offer-product-card"
-                  >
+                  <article key={product.id} className="offer-product-card">
                     <button
                       type="button"
                       className="offer-product-card__open"
@@ -240,13 +244,6 @@ export default function OfferProductsSection({
                           Última unidad
                         </span>
                       )}
-                      <div className="offer-product-card__favorite-wrap">
-                        <FavoriteButton
-                          type="product"
-                          targetId={product.id}
-                          size={16}
-                        />
-                      </div>
                       <div className="offer-product-card__badges">
                         <span className="offer-product-card__badge-offer">
                           <Flame size={10} /> OFERTA

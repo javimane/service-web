@@ -116,6 +116,7 @@ export type OrderSummary = {
   payment_method?: string | null;
   payment_provider?: string | null;
   card_type?: string | null;
+  card_brand?: string | null;
   installments?: number | null;
   withdrawal_eligible?: boolean;
   withdrawal_eligible_items?: string[];
@@ -508,10 +509,13 @@ export type CreatePaymentMethodDto = {
 export type IdentityVerificationStatus = {
   is_age_verified: boolean;
   purchase_eligible: boolean;
+  verification_issues?: string[];
   session?: {
     status?: string;
     identity_verified?: boolean;
     age_verified?: boolean;
+    rejection_code?: string | null;
+    rejection_reason?: string | null;
   } | null;
 };
 

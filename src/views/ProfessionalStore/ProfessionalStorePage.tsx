@@ -28,7 +28,6 @@ import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
-import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 import useCarouselDrag from "../../hooks/useCarouselDrag";
 import "./ProfessionalStorePage.css";
 
@@ -573,13 +572,6 @@ export default function ProfessionalStorePage() {
                           Última unidad
                         </span>
                       )}
-                      <div className="store-offer-card__favorite-wrap">
-                        <FavoriteButton
-                          type="product"
-                          targetId={product.id}
-                          size={16}
-                        />
-                      </div>
                       <div className="store-offer-card__badges">
                         <span className="store-offer-card__badge-offer">
                           <Flame size={10} /> OFERTA

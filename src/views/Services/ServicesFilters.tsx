@@ -53,7 +53,7 @@ export default function ServicesFilters({
     {
       type: "price-select",
       label: "PRECIO",
-      filterKey: "price",
+      filterKey: "priceRange",
       options: priceRangeOptions,
     },
     { type: "reset" },

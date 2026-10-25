@@ -1,7 +1,6 @@
 import Link from "next/link";
 import "./SpecialistCard.css";
 import { ROUTES } from "../../routes/paths";
-import FavoriteButton from "../FavoriteButton/FavoriteButton";
 
 export interface ProfessionalCategory {
   Category: {
@@ -138,7 +137,10 @@ export default function SpecialistCard({ specialist }: SpecialistCardProps) {
         {categoryNames.length > 0 && (
           <div className="specialist-card__categories">
             {categoryNames.slice(0, 2).map((name, index) => (
-              <span key={`${name}-${index}`} className="specialist-card__category-tag">
+              <span
+                key={`${name}-${index}`}
+                className="specialist-card__category-tag"
+              >
                 {name}
               </span>
             ))}

@@ -25,6 +25,8 @@ const productListSchema = z.object({
   brand: z.string().optional(),
   ean: z.string().optional(),
   wholesale: z.boolean().optional(),
+  interest_free_installments: z.boolean().optional(),
+  free_shipping: z.boolean().optional(),
   is_offer: z.boolean().optional(),
   has_offer: z.boolean().optional(),
   offer_price: z.number().optional(),

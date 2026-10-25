@@ -89,7 +89,9 @@ export default function ReturnsPolicyPage() {
           <span className="returns-policy__eyebrow">
             Términos de Protección y Garantía
           </span>
-          <h1>Política de Devoluciones, Arrepentimiento y Cancelación - Sercio</h1>
+          <h1>
+            Política de Devoluciones, Arrepentimiento y Cancelación - Sercio
+          </h1>
           <p>
             En Sercio, tu tranquilidad es lo más importante. Podés devolver y
             cancelar tus productos sin costo según las pautas de esta política.
@@ -102,7 +104,7 @@ export default function ReturnsPolicyPage() {
             logísticos y operativos innecesarios a los comercios y profesionales
             independientes adheridos, Sercio establece un límite preventivo de{" "}
             <strong>
-              hasta 3 (tres) cancelaciones o devoluciones por mes calendario por
+              hasta 2 (dos) cancelaciones o devoluciones por mes calendario por
               usuario
             </strong>
             . Superado dicho umbral mensual, la plataforma se reserva el derecho
@@ -113,8 +115,8 @@ export default function ReturnsPolicyPage() {
           </div>
 
           <p className="returns-policy__intro-subnote">
-            Asimismo, existen productos que por su naturaleza quedan excluidos de
-            nuestro programa de protección, servicios que no admiten
+            Asimismo, existen productos que por su naturaleza quedan excluidos
+            de nuestro programa de protección, servicios que no admiten
             arrepentimiento una vez ejecutados, y otros artículos que solo se
             pueden devolver si cumplen con condiciones específicas según su
             categoría.
@@ -144,12 +146,12 @@ export default function ReturnsPolicyPage() {
             <div className="returns-policy__item-card">
               <h3>Productos Físicos</h3>
               <p>
-                Disponés de <strong>10 días corridos</strong> desde el momento en
-                que recibís o retirás tu producto para solicitar la devolución y
-                el reembolso total de tu dinero, sin necesidad de explicar el
-                motivo (conforme al Art. 34 de la Ley de Defensa del Consumidor
-                N° 24.240 y concordantes del Código Civil y Comercial de la
-                Nación).
+                Disponés de <strong>10 días corridos</strong> desde el momento
+                en que recibís o retirás tu producto para solicitar la
+                devolución y el reembolso total de tu dinero, sin necesidad de
+                explicar el motivo (conforme al Art. 34 de la Ley de Defensa del
+                Consumidor N° 24.240 y concordantes del Código Civil y Comercial
+                de la Nación).
               </p>
             </div>
 
@@ -157,16 +159,20 @@ export default function ReturnsPolicyPage() {
               <h3>Servicios Contratados y Prestados</h3>
               <p>
                 Conforme al marco legal vigente, el botón y derecho de
-                arrepentimiento <strong>no aplica a servicios que ya hayan sido
-                efectivamente prestados, ejecutados o consumidos</strong>, ni a
-                aquellos cuya ejecución haya comenzado con el consentimiento
-                expreso del usuario antes de vencer el plazo legal.
+                arrepentimiento{" "}
+                <strong>
+                  no aplica a servicios que ya hayan sido efectivamente
+                  prestados, ejecutados o consumidos
+                </strong>
+                , ni a aquellos cuya ejecución haya comenzado con el
+                consentimiento expreso del usuario antes de vencer el plazo
+                legal.
               </p>
               <p>
                 Una vez finalizada la labor técnica, profesional o comercial
-                pactada, no procede la cancelación ni la devolución de fondos por
-                mero cambio de opinión. Para servicios programados o turnos aún no
-                iniciados, la cancelación estará sujeta a los tiempos de
+                pactada, no procede la cancelación ni la devolución de fondos
+                por mero cambio de opinión. Para servicios programados o turnos
+                aún no iniciados, la cancelación estará sujeta a los tiempos de
                 preaviso propios de cada categoría o profesional para no
                 ocasionar el lucro cesante del prestador.
               </p>
@@ -174,7 +180,10 @@ export default function ReturnsPolicyPage() {
           </section>
 
           {/* SECCIÓN 2: Condiciones del Producto */}
-          <section id="condiciones-producto" className="returns-policy__section">
+          <section
+            id="condiciones-producto"
+            className="returns-policy__section"
+          >
             <span className="returns-policy__section-number">
               02 / Condiciones del Artículo
             </span>
@@ -186,8 +195,8 @@ export default function ReturnsPolicyPage() {
             <ul>
               <li>
                 <strong>
-                  Te arrepentiste de comprar el producto o es diferente de lo que
-                  pediste:
+                  Te arrepentiste de comprar el producto o es diferente de lo
+                  que pediste:
                 </strong>
                 <ul>
                   <li>Estar en perfecto estado y no tener marcas de uso.</li>
@@ -234,16 +243,16 @@ export default function ReturnsPolicyPage() {
               </p>
               <ol>
                 <li>
-                  <strong>Rechazar la devolución</strong> y enviar el producto de
-                  vuelta a tu domicilio.
+                  <strong>Rechazar la devolución</strong> y enviar el producto
+                  de vuelta a tu domicilio.
                 </li>
                 <li>
                   <strong>Descontar una parte del reembolso</strong> (reembolso
                   parcial) debido al daño o faltantes.
                 </li>
                 <li>
-                  <strong>Hacer un cargo por el valor de la compra</strong> en tu
-                  tarjeta de crédito/débito, en caso de que hayas recibido un
+                  <strong>Hacer un cargo por el valor de la compra</strong> en
+                  tu tarjeta de crédito/débito, en caso de que hayas recibido un
                   reembolso inmediato antes de la revisión física del artículo.
                 </li>
               </ol>
@@ -251,7 +260,10 @@ export default function ReturnsPolicyPage() {
           </section>
 
           {/* SECCIÓN 3: Logística de Devolución según el Tipo de Envío */}
-          <section id="logistica-devolucion" className="returns-policy__section">
+          <section
+            id="logistica-devolucion"
+            className="returns-policy__section"
+          >
             <span className="returns-policy__section-number">
               03 / Logística y Transporte
             </span>
@@ -260,31 +272,34 @@ export default function ReturnsPolicyPage() {
             <div className="returns-policy__logistics-block">
               <h3>🏪 Retiro en Tienda</h3>
               <p>
-                El comprador debe acercarse directamente a la sucursal física del
-                comercio para entregar el producto y validar su estado.
+                El comprador debe acercarse directamente a la sucursal física
+                del comercio para entregar el producto y validar su estado.
               </p>
             </div>
 
             <div className="returns-policy__logistics-block">
               <h3>
-                🛵 Envíos de Corta Distancia (Delivery Calculado por la Plataforma)
+                🛵 Envíos de Corta Distancia (Delivery Calculado por la
+                Plataforma)
               </h3>
               <p>
                 Para los envíos locales automáticos (donde Sercio ya calculó el
-                costo según peso, dimensiones y cantidad), el comprador tiene dos
-                opciones para el arrepentimiento:
+                costo según peso, dimensiones y cantidad), el comprador tiene
+                dos opciones para el arrepentimiento:
               </p>
               <ol>
                 <li>
-                  <strong>Llevarlo directamente al local físico del comercio:</strong>{" "}
+                  <strong>
+                    Llevarlo directamente al local físico del comercio:
+                  </strong>{" "}
                   opción recomendada para acelerar el reembolso.
                 </li>
                 <li>
                   <strong>Solicitar el retiro a domicilio:</strong> La logística
                   de retiro será coordinada de común acuerdo entre el comprador
                   y el vendedor, sujeta a que el comercio cuente con flota,
-                  riders o servicio de flete propio habilitado, sin costo para el
-                  comprador.
+                  riders o servicio de flete propio habilitado, sin costo para
+                  el comprador.
                 </li>
               </ol>
             </div>
@@ -293,8 +308,8 @@ export default function ReturnsPolicyPage() {
               <h3>📦 Envíos de Larga Distancia (Coordinación Directa)</h3>
               <p>
                 Para compras fuera del radio local que requirieron una logística
-                acordada previamente con la tienda (incluyendo cargas pesadas, de
-                gran volumen o que requirieron fletes/camiones completos), la
+                acordada previamente con la tienda (incluyendo cargas pesadas,
+                de gran volumen o que requirieron fletes/camiones completos), la
                 devolución también deberá coordinarse directamente entre el
                 comprador y el comercio:
               </p>
@@ -351,20 +366,24 @@ export default function ReturnsPolicyPage() {
               Alimentos – Sercio
             </h2>
             <p>
-              El presente documento regula las condiciones de operación, reclamos
-              y devoluciones para todos los comercios adheridos a Sercio que
-              comercialicen comida preparada, alimentos perecederos o productos
-              gastronómicos frescos.
+              El presente documento regula las condiciones de operación,
+              reclamos y devoluciones para todos los comercios adheridos a
+              Sercio que comercialicen comida preparada, alimentos perecederos o
+              productos gastronómicos frescos.
             </p>
 
             <h3>1. Inexistencia del Derecho de Arrepentimiento Comercial</h3>
             <p>
               En cumplimiento con la normativa vigente de salud pública e
-              higiene, los compradores <strong>no poseen derecho de arrepentimiento de
-              10 días sobre alimentos preparados, productos frescos o aquellos que
-              requieran cadena de frío</strong>. Una vez entregado el pedido de forma
-              correcta en tiempo y forma, la venta se considera final y no admite
-              devoluciones por insatisfacción subjetiva o cambio de opinión.
+              higiene, los compradores{" "}
+              <strong>
+                no poseen derecho de arrepentimiento de 10 días sobre alimentos
+                preparados, productos frescos o aquellos que requieran cadena de
+                frío
+              </strong>
+              . Una vez entregado el pedido de forma correcta en tiempo y forma,
+              la venta se considera final y no admite devoluciones por
+              insatisfacción subjetiva o cambio de opinión.
             </p>
 
             <h3>2. Causales Válidas para Reclamos de Clientes</h3>
@@ -398,28 +417,31 @@ export default function ReturnsPolicyPage() {
             </p>
             <ul>
               <li>
-                <strong>Plazo de Reporte del Cliente:</strong> El comprador tiene
-                un plazo máximo e improrrogable de <strong>dos (2) horas</strong> desde la
-                recepción del pedido para iniciar un reclamo en la plataforma.
+                <strong>Plazo de Reporte del Cliente:</strong> El comprador
+                tiene un plazo máximo e improrrogable de{" "}
+                <strong>dos (2) horas</strong> desde la recepción del pedido
+                para iniciar un reclamo en la plataforma.
               </li>
               <li>
                 <strong>Obligación de Evidencia:</strong> El cliente debe
                 adjuntar obligatoriamente fotografías legibles o videos que
-                demuestren la falla (ej. foto del plato erróneo, del ticket o del
-                producto afectado).
+                demuestren la falla (ej. foto del plato erróneo, del ticket o
+                del producto afectado).
               </li>
               <li>
                 <strong>Plazo de Respuesta del Comercio:</strong> Una vez
-                notificado el reclamo, el comercio dispondrá de <strong>veinticuatro
-                (24) horas corridas</strong> para presentar su descargo, aceptar el
-                error o rechazar la queja a través del panel de Sercio.
+                notificado el reclamo, el comercio dispondrá de{" "}
+                <strong>veinticuatro (24) horas corridas</strong> para presentar
+                su descargo, aceptar el error o rechazar la queja a través del
+                panel de Sercio.
               </li>
               <li>
-                <strong>Liberación o Reembolso:</strong> Si el comercio acepta el
-                reclamo o no responde dentro de las 24 horas, Sercio devolverá el
-                dinero al comprador de forma automática. Si el comercio rechaza el
-                reclamo con pruebas válidas, Sercio arbitrará el caso y liberará
-                los fondos retenidos al comercio si corresponde.
+                <strong>Liberación o Reembolso:</strong> Si el comercio acepta
+                el reclamo o no responde dentro de las 24 horas, Sercio
+                devolverá el dinero al comprador de forma automática. Si el
+                comercio rechaza el reclamo con pruebas válidas, Sercio
+                arbitrará el caso y liberará los fondos retenidos al comercio si
+                corresponde.
               </li>
             </ul>
 
@@ -431,9 +453,9 @@ export default function ReturnsPolicyPage() {
             </p>
             <ul>
               <li>
-                <strong>Consumo Parcial o Total:</strong> El cliente consumió más
-                de un 15% del plato o producto y aun así pretende la devolución
-                total del dinero.
+                <strong>Consumo Parcial o Total:</strong> El cliente consumió
+                más de un 15% del plato o producto y aun así pretende la
+                devolución total del dinero.
               </li>
               <li>
                 <strong>Manipulación Posterior:</strong> El desperfecto en el
@@ -441,8 +463,8 @@ export default function ReturnsPolicyPage() {
                 cliente posterior a la entrega.
               </li>
               <li>
-                <strong>Falta de Pruebas:</strong> El usuario no aporta evidencia
-                fotográfica clara dentro del plazo de 2 horas.
+                <strong>Falta de Pruebas:</strong> El usuario no aporta
+                evidencia fotográfica clara dentro del plazo de 2 horas.
               </li>
             </ul>
             <p>
@@ -457,7 +479,9 @@ export default function ReturnsPolicyPage() {
             </h3>
             <ul>
               <li>
-                <strong>Devolución por Alimentos Vencidos o en Mal Estado:</strong>{" "}
+                <strong>
+                  Devolución por Alimentos Vencidos o en Mal Estado:
+                </strong>{" "}
                 Si un producto perecedero o plato preparado llega vencido,
                 descompuesto o en condiciones no aptas para el consumo, el
                 comprador recibirá el reembolso del 100% del valor de dicho
@@ -477,11 +501,11 @@ export default function ReturnsPolicyPage() {
               <li>
                 <strong>Prohibición de Cancelación por Arrepentimiento:</strong>{" "}
                 El comprador no podrá cancelar el envío por mero cambio de
-                opinión una vez que el comercio haya aceptado la orden y cambiado
-                el estado a &quot;En Preparación&quot; o &quot;Despachado&quot;. La
-                única causa válida para cancelar o exigir la devolución una vez
-                enviado es que la comida llegue en mal estado, vencida o sea
-                incorrecta.
+                opinión una vez que el comercio haya aceptado la orden y
+                cambiado el estado a &quot;En Preparación&quot; o
+                &quot;Despachado&quot;. La única causa válida para cancelar o
+                exigir la devolución una vez enviado es que la comida llegue en
+                mal estado, vencida o sea incorrecta.
               </li>
             </ul>
           </section>
@@ -496,12 +520,13 @@ export default function ReturnsPolicyPage() {
               Sercio
             </h2>
             <p>
-              Para garantizar la seguridad, la higiene y el comercio justo dentro
-              de nuestra plataforma, no todos los productos admiten devoluciones
-              por el mero cambio de opinión (arrepentimiento). A continuación, se
-              detallan los productos que quedan excluidos del beneficio tras su
-              recepción y las condiciones estrictas que deben cumplir el resto de
-              las categorías para que Sercio apruebe el reembolso del dinero.
+              Para garantizar la seguridad, la higiene y el comercio justo
+              dentro de nuestra plataforma, no todos los productos admiten
+              devoluciones por el mero cambio de opinión (arrepentimiento). A
+              continuación, se detallan los productos que quedan excluidos del
+              beneficio tras su recepción y las condiciones estrictas que deben
+              cumplir el resto de las categorías para que Sercio apruebe el
+              reembolso del dinero.
             </p>
 
             <h3>
@@ -509,9 +534,10 @@ export default function ReturnsPolicyPage() {
             </h3>
             <p>
               Los siguientes artículos cuentan con la garantía de Sercio
-              únicamente hasta el momento de su entrega (en caso de pérdida o daño
-              en el traslado). Una vez recibidos por el comprador, quedan fuera
-              de la cobertura y <strong>no pueden ser devueltos ni reembolsados</strong>:
+              únicamente hasta el momento de su entrega (en caso de pérdida o
+              daño en el traslado). Una vez recibidos por el comprador, quedan
+              fuera de la cobertura y{" "}
+              <strong>no pueden ser devueltos ni reembolsados</strong>:
             </p>
             <ul>
               <li>
@@ -546,9 +572,9 @@ export default function ReturnsPolicyPage() {
             <h3>2. Tabla de Condiciones Estrictas por Categoría</h3>
             <p>
               Si un comprador desea arrepentirse de la compra de los siguientes
-              productos, la plataforma Sercio retendrá los fondos y solo aprobará
-              la devolución si el artículo cumple con la condición específica de
-              su categoría:
+              productos, la plataforma Sercio retendrá los fondos y solo
+              aprobará la devolución si el artículo cumple con la condición
+              específica de su categoría:
             </p>
 
             <div className="returns-policy__table-wrap">
@@ -577,23 +603,24 @@ export default function ReturnsPolicyPage() {
             </div>
 
             <h3>
-              3. Mecanismo de Reembolso Ante Incidencias (Faltantes o Mal Estado)
+              3. Mecanismo de Reembolso Ante Incidencias (Faltantes o Mal
+              Estado)
             </h3>
             <ul>
               <li>
                 <strong>Reembolso del 100% por Mal Estado:</strong> Si el
                 producto (sea comida o de cualquier otra categoría) llega
-                vencido, roto o es inutilizable, se le devolverá la totalidad del
-                dinero al comprador, impactando negativamente en la cuenta del
-                comercio.
+                vencido, roto o es inutilizable, se le devolverá la totalidad
+                del dinero al comprador, impactando negativamente en la cuenta
+                del comercio.
               </li>
               <li>
-                <strong>Reembolsos Parciales:</strong> Si la orden incluía varios
-                productos y solo uno presenta problemas o faltó en el paquete,
-                Sercio calculará y reintegrará al comprador el porcentaje exacto
-                correspondiente a ese artículo. Los fondos de las piezas
-                entregadas correctamente se liberarán de forma definitiva al
-                vendedor.
+                <strong>Reembolsos Parciales:</strong> Si la orden incluía
+                varios productos y solo uno presenta problemas o faltó en el
+                paquete, Sercio calculará y reintegrará al comprador el
+                porcentaje exacto correspondiente a ese artículo. Los fondos de
+                las piezas entregadas correctamente se liberarán de forma
+                definitiva al vendedor.
               </li>
             </ul>
           </section>

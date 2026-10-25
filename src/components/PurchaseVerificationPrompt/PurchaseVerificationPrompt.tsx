@@ -5,6 +5,7 @@ import { ShieldCheck } from "lucide-react";
 import Modal from "@/components/Modal/Modal";
 import { useAuth } from "@/context/AuthContext";
 import { IDENTITY_VERIFICATION_REQUIRED_EVENT } from "@/utils/identityVerification";
+import { commerceService } from "@/services/commerceService";
 import "./PurchaseVerificationPrompt.css";
 
 export default function PurchaseVerificationPrompt() {
@@ -58,11 +59,15 @@ export default function PurchaseVerificationPrompt() {
         setModalOpen(false);
         if (storageKey) window.sessionStorage.removeItem(storageKey);
       } else {
-        setMessage(
-          session
+        try {
+          const verification = await commerceService.getIdentityVerificationStatus();
+          setMessage(verification.session?.rejection_reason ||
+            "Todavía no figura verificada. Completá el proceso en la app y volvé a consultar.");
+        } catch {
+          setMessage(session
             ? "Todavía no figura verificada. Completá el proceso en la app y volvé a consultar."
-            : "No pudimos consultar la sesión. Intentá de nuevo en unos instantes.",
-        );
+            : "No pudimos consultar la sesión. Intentá de nuevo en unos instantes.");
+        }
       }
     } finally {
       setChecking(false);

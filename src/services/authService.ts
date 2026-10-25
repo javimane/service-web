@@ -91,6 +91,9 @@ export type LoginResponse = {
     has_days_left?: boolean;
     user_created_at?: string;
     user_last_sign_in_at?: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    requires_personal_name?: boolean;
   };
 };
 

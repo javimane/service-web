@@ -31,6 +31,10 @@ type SessionStatus = {
   blocked_reason?: string | null;
   paused_reason?: string | null;
   can_sell?: boolean;
+  sell_verification_required?: boolean;
+  identity_verified?: boolean;
+  arca_verified?: boolean;
+  cbu_verified?: boolean;
   can_accept_orders?: boolean;
   status?: boolean | string;
   is_professional?: boolean;
@@ -45,6 +49,9 @@ type SessionStatus = {
   email?: string | null;
   display_name?: string | null;
   company_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  requires_personal_name?: boolean;
   role_id?: number;
   is_age_verified?: boolean;
   subscription?: {
@@ -568,8 +575,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSessionStatus,
       }}
     >
-      {user && (sessionStatus?.is_blocked || sessionStatus?.is_paused) &&
+      {user && (sessionStatus?.is_blocked || sessionStatus?.is_paused || sessionStatus?.sell_verification_required) &&
         <AccountAccessNotice blocked={sessionStatus?.is_blocked === true}
+          verificationRequired={!sessionStatus?.is_blocked && !sessionStatus?.is_paused && sessionStatus?.sell_verification_required === true}
+          identityVerified={sessionStatus?.identity_verified === true}
+          arcaVerified={sessionStatus?.arca_verified === true}
+          cbuVerified={sessionStatus?.cbu_verified === true}
           reason={sessionStatus?.is_blocked ? sessionStatus?.blocked_reason : sessionStatus?.paused_reason}
           refresh={refreshSession} logout={logout} />}
       {!(user && sessionStatus?.is_blocked) && children}

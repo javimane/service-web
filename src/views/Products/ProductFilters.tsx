@@ -38,6 +38,24 @@ export default function ProductFilters({
       ],
     },
     {
+      type: "chips",
+      label: "Cuotas sin interés",
+      filterKey: "interest_free_installments",
+      options: [
+        { value: "all", label: "Todos" },
+        { value: "true", label: "Con cuotas sin interés" },
+      ],
+    },
+    {
+      type: "chips",
+      label: "Envío gratis",
+      filterKey: "free_shipping",
+      options: [
+        { value: "all", label: "Todos" },
+        { value: "true", label: "Con envío gratis" },
+      ],
+    },
+    {
       type: "select",
       label: "Provincia",
       filterKey: "provinceId",

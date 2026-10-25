@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { arcaVerifyAction } from "../../../app/actions/companies";
 import { getAccessToken } from "@/utils/auth";
+import { useAuth } from "@/context/AuthContext";
 
 type VerificationStatus = "idle" | "loading" | "success" | "error";
 
@@ -28,6 +29,7 @@ const ArcaVerificationSection = React.memo(
     loadingArca,
   }: ArcaVerificationSectionProps) => {
     const queryClient = useQueryClient();
+    const { refreshSession } = useAuth();
     const [cuit, setCuit] = useState("");
     const [companyName, setCompanyName] = useState("");
     const [showForm, setShowForm] = useState(false);
@@ -49,7 +51,9 @@ const ArcaVerificationSection = React.memo(
       normalizedArcaStatus?.verified ??
       normalizedArcaStatus?.CompanyArca?.[0]?.is_verified ??
       normalizedArcaStatus?.companies_arca?.[0]?.is_verified,
-    );
+    ) && normalizedArcaStatus?.is_active === true
+      && Boolean(normalizedArcaStatus?.valid_to)
+      && normalizedArcaStatus.valid_to.slice(0, 10) >= new Date().toISOString().slice(0, 10);
 
     const handleVerifyArca = async () => {
       if (!normalizedCuit || normalizedCuit.length < 11) {
@@ -90,6 +94,7 @@ const ArcaVerificationSection = React.memo(
 
         // Invalidate the consolidated query to refresh the status
         queryClient.invalidateQueries({ queryKey: ["professional-me"] });
+        await refreshSession();
 
         setTimeout(() => setShowForm(false), 2000);
       } catch (error: any) {

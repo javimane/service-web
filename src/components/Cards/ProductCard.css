@@ -197,3 +197,10 @@
   color: var(--text-secondary);
   font-weight: var(--weight-medium);
 }
+
+.nearby-product-card__free-shipping {
+  align-self: flex-start;
+  color: var(--success-color);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}

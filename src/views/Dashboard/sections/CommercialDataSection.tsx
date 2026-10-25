@@ -348,9 +348,10 @@ export default function CommercialDataSection() {
 
   const saveBankMutation = useMutation({
     mutationFn: (data: UserDataBank) => commerceService.saveUserBankData(data),
-    onSuccess: () => {
+    onSuccess: async () => {
       showSuccess("Datos de cobro bancario actualizados correctamente.");
       queryClient.invalidateQueries({ queryKey: ["user-bank-data"] });
+      await refreshSession();
       setEditBankModalOpen(false);
     },
     onError: (error: Error) =>
@@ -702,6 +703,11 @@ export default function CommercialDataSection() {
               <p className="commercial-card__subtitle">
                 Acá se acreditarán los fondos liberados de tus ventas
                 automáticamente.
+              </p>
+              <p className="commercial-card__subtitle" role="status">
+                {sessionStatus?.cbu_verified
+                  ? "CBU verificado para recibir ventas."
+                  : "CBU pendiente de verificación. Guardá nuevamente tu cuenta para validarla."}
               </p>
             </div>
             <button
