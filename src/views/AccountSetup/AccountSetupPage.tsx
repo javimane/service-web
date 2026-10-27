@@ -54,6 +54,7 @@ export default function AccountSetupPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [dni, setDni] = useState("");
   const [hasRegisteredName, setHasRegisteredName] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -83,6 +84,7 @@ export default function AccountSetupPage() {
       setFirstName(personalNameOnly || businessNameEntered ? "" : profile.first_name || nameParts[0] || "");
       setLastName(personalNameOnly || businessNameEntered ? "" : profile.last_name || nameParts.slice(1).join(" ") || "");
       setPhone(profile.phone || profile.phone_number || "");
+      setDni(String(profile.dni ?? "").replace(/\D/g, ""));
     }).catch(() => {
       if (active) setError("No pudimos cargar tus datos. Volvé a intentar antes de continuar.");
     }).finally(() => {
@@ -110,10 +112,14 @@ export default function AccountSetupPage() {
         const cleanFirst = firstName.trim();
         const cleanLast = lastName.trim();
         const cleanPhone = phone.trim();
+        const cleanDni = dni.replace(/\D/g, "");
         if (!cleanFirst || !cleanLast || (!personalNameOnly && cleanPhone.replace(/\D/g, "").length < 8)) {
           throw new Error(personalNameOnly
             ? "Ingresá tu nombre y apellido personales tal como figuran en el DNI."
             : "Ingresá nombre, apellido y un teléfono válido de al menos 8 dígitos.");
+        }
+        if (!personalNameOnly && !/^\d{7,8}$/.test(cleanDni)) {
+          throw new Error("Ingresá un DNI válido de 7 u 8 dígitos, sin puntos.");
         }
         if (`${cleanFirst} ${cleanLast}`.replace(/\s+/g, " ").toLocaleLowerCase() ===
             String(sessionStatus?.company_name || "").trim().replace(/\s+/g, " ").toLocaleLowerCase()) {
@@ -126,6 +132,7 @@ export default function AccountSetupPage() {
             first_name: cleanFirst,
             last_name: cleanLast,
             display_name: `${cleanFirst} ${cleanLast}`,
+            ...(!personalNameOnly ? { dni: cleanDni } : {}),
             ...(cleanPhone ? { phone: cleanPhone, phone_number: cleanPhone } : {}),
           },
         });
@@ -223,8 +230,8 @@ export default function AccountSetupPage() {
               <p>{personalNameOnly
                 ? "Ingresá tu nombre y apellido personales tal como figuran en tu DNI. No uses el nombre comercial: Didit compara estos datos con el documento."
                 : hasRegisteredName
-                  ? "Ya guardamos tu nombre y apellido durante el registro. Completá tu teléfono para entregas y contacto sobre tus compras."
-                  : "Usá tu nombre y apellido reales. Guardaremos el teléfono para entregas y contacto sobre tus compras."}</p>
+                  ? "Ya guardamos tu nombre y apellido durante el registro. Completá tu DNI y teléfono para identificar tu cuenta y contactarte sobre tus compras."
+                  : "Usá tu nombre y apellido reales. Completá también tu DNI y teléfono para identificar tu cuenta y contactarte sobre tus compras."}</p>
               {hasRegisteredName ? <p><strong>{firstName} {lastName}</strong></p> : <div className="account-setup__field-row">
                 <label className="account-setup__field">Nombre
                   <input autoComplete="given-name" value={firstName} onChange={(event) => setFirstName(event.target.value)} required />
@@ -233,6 +240,9 @@ export default function AccountSetupPage() {
                   <input autoComplete="family-name" value={lastName} onChange={(event) => setLastName(event.target.value)} required />
                 </label>
               </div>}
+              {!personalNameOnly && <label className="account-setup__field">DNI
+                <input type="text" inputMode="numeric" pattern="[0-9]{7,8}" minLength={7} maxLength={8} placeholder="Sin puntos ni espacios" value={dni} onChange={(event) => setDni(event.target.value.replace(/\D/g, "").slice(0, 8))} required />
+              </label>}
               {!personalNameOnly && <label className="account-setup__field">Teléfono
                 <input type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required />
               </label>}
@@ -267,6 +277,7 @@ export default function AccountSetupPage() {
               <ShieldCheck size={40} aria-hidden="true" />
               <h3>Verificá tu identidad desde la aplicación Sercio</h3>
               <p>Ya cargaste tus datos. Abrí la aplicación principal con esta misma cuenta y seguí el paso de verificación: te pedirá una foto de tu DNI y una foto de tu rostro. Esto confirma tu identidad y te permite usar tu cuenta para comprar.</p>
+              <p>Ingresá en la app a <strong>Menú - Configuración - Verificación de Identidad y Edad</strong>.</p>
               <p>Podés entrar al panel ahora y completar la verificación desde la app. La aprobación puede quedar pendiente mientras se revisan tus fotos.</p>
             </div>
           )}
@@ -279,6 +290,7 @@ export default function AccountSetupPage() {
               ) : (
                 <>
                   <p>Para comprar productos o contratar servicios, verificá tu identidad desde la aplicación de Sercio. Ingresá con esta misma cuenta y completá la verificación con tu DNI y una foto de tu rostro.</p>
+                  <p>Ingresá en la app a <strong>Menú - Configuración - Verificación de Identidad y Edad</strong>.</p>
                   <p>Los datos de tu cuenta deben coincidir con los del titular de la tarjeta que uses para pagar. Podés explorar la web mientras completás este paso.</p>
                 </>
               )}

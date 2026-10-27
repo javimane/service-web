@@ -46,6 +46,7 @@ export default function RegisterPage({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
+  const [registrationNextStep, setRegistrationNextStep] = useState<"login" | "setup" | "plans">("login");
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [requirementsAction, setRequirementsAction] = useState<
     "register" | "google" | null
@@ -118,6 +119,7 @@ export default function RegisterPage({
   const submitRegistration = async () => {
     setIsLoading(true);
     setAuthError("");
+    setRegistrationNextStep("login");
 
     try {
       await authService.register({
@@ -143,16 +145,9 @@ export default function RegisterPage({
           password: formData.password,
         });
 
-        // if login succeeds and role is professional, show plan modal
-        if (loginResp && role === "professional") {
+        if (loginResp) {
           await refreshSession();
-          setShowPlanModal(true);
-          return; // Skip the normal success modal
-        }
-        if (loginResp && role === "normal") {
-          await refreshSession();
-          router.push(ROUTES.accountSetup);
-          return;
+          setRegistrationNextStep(role === "professional" ? "plans" : "setup");
         }
       } catch (e) {
         console.warn("Auto-login failed:", e);
@@ -160,7 +155,7 @@ export default function RegisterPage({
 
       setModalTitle("Registro exitoso");
       setModalMessage(
-        "¡Cuenta creada exitosamente! Por favor revise su correo o inicie sesión.",
+        `¡Tu cuenta fue creada! Enviamos un email a ${formData.email.trim()} para verificar tu correo electrónico. Abrí el mensaje y seguí el enlace de verificación. Si no lo encontrás, revisá la carpeta de spam o correo no deseado.`,
       );
       setModalOpen(true);
     } catch (err: any) {
@@ -224,6 +219,15 @@ export default function RegisterPage({
 
   const handleModalClose = () => {
     setModalOpen(false);
+    if (registrationNextStep === "plans") {
+      setShowPlanModal(true);
+      return;
+    }
+    if (registrationNextStep === "setup") {
+      onClose?.();
+      router.push(ROUTES.accountSetup);
+      return;
+    }
     if (isModal) {
       onSwitchMode?.("login");
     } else {

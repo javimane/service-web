@@ -53,7 +53,7 @@ describe("AccountSetupPage", () => {
     auth.sessionStatus = { is_professional: false, professional_id: null };
     auth.refreshSession.mockResolvedValue({ arca_verified: true, cbu_verified: true });
     vi.mocked(getProfileAction).mockResolvedValue({
-      data: { first_name: "Ana", last_name: "Pérez", phone: "1123456789" },
+      data: { first_name: "Ana", last_name: "Pérez", dni: "30123456", phone: "1123456789" },
     } as any);
     vi.mocked(updateProfileAction).mockResolvedValue({ data: {} } as any);
   });
@@ -75,7 +75,7 @@ describe("AccountSetupPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
     expect(await screen.findByText("Formulario de facturación")).toBeInTheDocument();
     await waitFor(() => expect(updateProfileAction).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ first_name: "Ana", last_name: "Pérez" }) }),
+      expect.objectContaining({ data: expect.objectContaining({ first_name: "Ana", last_name: "Pérez", dni: "30123456", phone: "1123456789", phone_number: "1123456789" }) }),
     ));
   });
 
@@ -120,6 +120,23 @@ describe("AccountSetupPage", () => {
     render(<AccountSetupPage />);
     expect(await screen.findByRole("textbox", { name: "Nombre" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Apellido" })).toBeInTheDocument();
+  });
+
+  it("exige un DNI válido antes de guardar y permite completarlo junto al teléfono", async () => {
+    vi.mocked(getProfileAction).mockResolvedValue({ data: { first_name: "Ana", last_name: "Pérez", phone_number: "1123456789" } } as any);
+    render(<AccountSetupPage />);
+    await screen.findByText("Ana Pérez");
+    expect(screen.getByRole("textbox", { name: "Teléfono" })).toHaveValue("1123456789");
+    fireEvent.submit(screen.getByRole("textbox", { name: "DNI" }).closest("form")!);
+    expect(await screen.findByRole("alert")).toHaveTextContent("DNI válido de 7 u 8 dígitos");
+    expect(updateProfileAction).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole("textbox", { name: "DNI" }), { target: { value: "30.123.456" } });
+    expect(screen.getByRole("textbox", { name: "DNI" })).toHaveValue("30123456");
+    fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
+    expect(await screen.findByText("Formulario de direcciones")).toBeInTheDocument();
+    expect(updateProfileAction).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ dni: "30123456", phone: "1123456789", phone_number: "1123456789" }),
+    }));
   });
 
   it("quita el aviso de datos comerciales faltantes después de guardarlos correctamente", async () => {

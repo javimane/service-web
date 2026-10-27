@@ -4,14 +4,14 @@ import { describe, it, expect, vi } from "vitest";
 import RegisterPage from "./RegisterPage";
 import { supabase } from "../../services/supabaseClient";
 import { authService } from "../../services/authService";
+import { ROUTES } from "../../routes/paths";
+
+const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    back: vi.fn(),
-  }),
+  useRouter: () => router,
 }));
+vi.mock("./RegisterPlanSelection", () => ({ default: () => <div>Selección de planes</div> }));
 
 vi.mock("../../context/AuthContext", () => ({
   useAuth: () => ({
@@ -225,5 +225,33 @@ describe("RegisterPage", () => {
         acceptedTerms: true,
       });
     });
+    expect(await screen.findByRole("dialog", { name: "Registro exitoso" })).toHaveTextContent("Enviamos un email a juan@obsidian.pro");
+  });
+
+  it.each(["normal", "professional"])("muestra el aviso de email antes de continuar como %s aunque el inicio de sesión sea automático", async (role) => {
+    router.push.mockClear();
+    vi.mocked(authService.login).mockResolvedValueOnce({ user: { id: "new-user" } } as any);
+    render(<RegisterPage />);
+    fireEvent.change(screen.getByPlaceholderText("Ej. Juan"), { target: { value: "Juan" } });
+    fireEvent.change(screen.getByPlaceholderText("Ej. Pérez"), { target: { value: "Pérez" } });
+    fireEvent.change(screen.getByPlaceholderText("arquitecto@obsidian.pro"), { target: { value: "juan@example.com" } });
+    fireEvent.change(screen.getAllByPlaceholderText("••••••••")[0], { target: { value: "Password1!" } });
+    fireEvent.change(screen.getAllByPlaceholderText("••••••••")[1], { target: { value: "Password1!" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    if (role === "professional") fireEvent.click(screen.getByLabelText("Soy Profesional/Comercio"));
+    fireEvent.click(screen.getByRole("button", { name: /^Registrarse$/i }));
+    if (role === "professional") {
+      const requirements = screen.getByRole("dialog", { name: "Requisitos para una cuenta profesional" });
+      fireEvent.click(within(requirements).getByRole("checkbox"));
+      fireEvent.click(within(requirements).getByRole("button", { name: "Continuar" }));
+    }
+    const notice = await screen.findByRole("dialog", { name: "Registro exitoso" });
+    expect(notice).toHaveTextContent("Enviamos un email a juan@example.com");
+    expect(notice).toHaveTextContent("spam o correo no deseado");
+    expect(router.push).not.toHaveBeenCalled();
+    expect(screen.queryByText("Selección de planes")).not.toBeInTheDocument();
+    fireEvent.click(within(notice).getByRole("button", { name: "Cerrar" }));
+    if (role === "professional") expect(screen.getByText("Selección de planes")).toBeInTheDocument();
+    else expect(router.push).toHaveBeenCalledWith(ROUTES.accountSetup);
   });
 });
