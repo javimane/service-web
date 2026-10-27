@@ -1,4 +1,5 @@
 "use client";
+import ProductBranchStock from "@/components/ProductBranchStock/ProductBranchStock";
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -121,6 +122,7 @@ export default function ProductVariantsSection({
                 </p>
               </div>
               <div className="product-family__actions">
+                <ProductBranchStock listingId={child.professional_product_id || child.id} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["product-family", productId] }); }} />
                 <button
                   type="button"
                   onClick={() => {

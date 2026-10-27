@@ -1684,3 +1684,12 @@
   border-color: var(--brand-blue);
   box-shadow: var(--shadow-md);
 }
+.dashboard-welcome__benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.dashboard-welcome__benefit > span:first-child {
+  flex-shrink: 0;
+}

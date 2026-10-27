@@ -1,7 +1,7 @@
 .professional-requirements__overlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 11000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,6 +77,8 @@
   justify-content: center;
   box-sizing: border-box;
   min-height: 42px;
+  height: 42px;
+  line-height: 1;
   padding: 0 var(--space-4);
   border-radius: var(--radius-md);
   font: inherit;

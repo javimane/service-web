@@ -123,6 +123,8 @@ export type OrderSummary = {
   withdrawal_requested?: boolean;
   claim_requested?: boolean;
   has_active_claim?: boolean;
+  has_claim_history?: boolean;
+  withdrawal_claims?: Array<{ id?: string; status: string; reason?: string }>;
   claim_resolution_confirmable?: boolean;
   return_ticket_available?: boolean;
   shipment_id?: string | null;
@@ -998,6 +1000,9 @@ const query = (params: Record<string, string | number | undefined | null>) => {
 };
 
 export const commerceService = {
+  productBranchStock: (id: string) => apiClient<Array<{ branch_id: string | null; origin_address_id: number | null; stock: number }>>(`${API_ENDPOINTS.products.list}/professional-product/${encodeURIComponent(id)}/branch-stock`),
+  productStockLocations: (id: string) => apiClient<Array<Branch & { stock: number; assigned: boolean }>>(`${API_ENDPOINTS.products.list}/professional-product/${encodeURIComponent(id)}/stock-locations`),
+  saveProductBranchStock: (id: string, locations: Array<{ branch_id?: string; origin_address_id?: number; stock: number }>) => apiClient(`${API_ENDPOINTS.products.list}/professional-product/${encodeURIComponent(id)}/branch-stock`, { method: "PUT", body: JSON.stringify({ locations }) }),
   // Orders
   createPurchaseReview: (orderId: string, data: { rating: number; text: string; image_url?: string }) =>
     apiClient<PurchaseReview>(`${API_ENDPOINTS.orders.detail(orderId)}/review`, {

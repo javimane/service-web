@@ -327,6 +327,7 @@
 
 .commercial-form-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
   gap: var(--space-3);
@@ -338,6 +339,59 @@
   position: sticky;
   bottom: var(--space-4);
   z-index: 10;
+}
+
+.commercial-form-actions > button {
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  line-height: 1;
+  margin: 0;
+}
+
+.commercial-form-actions .commercial-data-section__save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-width: min(100%, calc(var(--space-16) * 4));
+  max-width: 100%;
+  padding: 0 var(--space-6);
+  background: var(--action-add-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--success-color);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.commercial-data-section__save svg {
+  flex-shrink: 0;
+}
+
+.commercial-data-section__save:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.commercial-data-section__save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .commercial-form-actions {
+    padding: var(--space-3);
+  }
+
+  .commercial-form-actions .commercial-data-section__save {
+    width: 100%;
+    padding: 0 var(--space-3);
+  }
 }
 
 .commercial-new-cta {
@@ -365,4 +419,25 @@
   font-size: var(--text-sm);
   line-height: 1.5;
   margin: 0;
+}
+.commercial-data-section__verification {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+}
+
+.commercial-data-section__verification svg {
+  flex-shrink: 0;
+  color: var(--brand-blue);
+}
+
+.commercial-data-section__verification p {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-base);
 }

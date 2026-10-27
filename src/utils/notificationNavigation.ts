@@ -87,6 +87,9 @@ export function getNotificationMeta(rawType?: string): NotificationMeta {
       return { icon: CreditCard, color: "green", category: "purchases" };
 
     case "SERVICE_APPOINTMENT_SCHEDULED":
+    case "SERVICE_APPOINTMENT_REMINDER":
+    case "SERVICE_APPOINTMENT_REMINDER_24H":
+    case "SERVICE_APPOINTMENT_REMINDER_3H":
       return { icon: CalendarCheck, color: "purple", category: "purchases" };
 
     case "ORDER_CONFIRMED":
@@ -212,6 +215,9 @@ export function getNotificationTargetUrl(
     // ── Destino Comprador: /panel?view=purchases&orderId=... ──
     case "PAYMENT_CONFIRMED":
     case "SERVICE_APPOINTMENT_SCHEDULED":
+    case "SERVICE_APPOINTMENT_REMINDER":
+    case "SERVICE_APPOINTMENT_REMINDER_24H":
+    case "SERVICE_APPOINTMENT_REMINDER_3H":
     case "ORDER_CONFIRMED":
     case "ORDER_PREPARING":
     case "ORDER_DISPATCHED":

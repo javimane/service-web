@@ -16,17 +16,56 @@
   overflow: auto;
 }
 .account-access__content { max-width: 640px; }
+.account-access__content--dialog { max-width: none; }
 .account-access h2 { font-size: var(--text-xl); margin-bottom: var(--space-2); }
 .account-access p { font-size: var(--text-base); margin-bottom: var(--space-2); overflow-wrap: anywhere; }
-.account-access__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
-.account-access__actions button, .account-access__actions a {
-  min-height: 42px;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--input-bg);
-  color: var(--text-primary);
-  cursor: pointer;
+.account-access__content--dialog p {
+  margin: 0 0 var(--space-5);
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
-.account-access__actions a { display: inline-flex; align-items: center; text-decoration: none; }
+.account-access__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.account-access__actions button, .account-access__actions a {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  min-height: 42px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+  background: var(--brand-blue);
+  color: var(--white);
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.account-access__actions button:hover, .account-access__actions a:hover {
+  transform: translateY(-1px);
+}
+.account-access__actions .account-access__close {
+  border-color: var(--error-color);
+  background: var(--action-cancel-bg);
+  color: var(--text-primary);
+}
+.account-access__actions .account-access__close:hover {
+  background: var(--action-cancel-hover);
+}
 .account-access__actions button:disabled { opacity: 0.6; cursor: wait; }
+
+@media (max-width: 640px) {
+  .account-access__actions > :is(button, a) { width: 100%; }
+}

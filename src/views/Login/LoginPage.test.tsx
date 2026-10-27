@@ -1,15 +1,14 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import LoginPage from "./LoginPage";
 import { supabase } from "../../services/supabaseClient";
 import { authService } from "../../services/authService";
 
+const loginNavigation = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    back: vi.fn(),
+    ...loginNavigation,
   }),
 }));
 
@@ -54,11 +53,17 @@ vi.mock("../../services/supabaseClient", () => ({
 const signInWithPasswordMock = vi.mocked(supabase.auth.signInWithPassword);
 
 describe("LoginPage", () => {
+  beforeEach(() => {
+    loginNavigation.push.mockClear();
+    loginNavigation.replace.mockClear();
+    window.history.replaceState({}, "", "/login");
+  });
   const renderWithRouter = (ui) => render(ui);
 
   it("se renderiza correctamente", () => {
     renderWithRouter(React.createElement(LoginPage));
     expect(screen.getByText("Bienvenido")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", "/");
     expect(screen.getByPlaceholderText("tu@email.com")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("••••••••")).toBeInTheDocument();
   });
@@ -138,5 +143,21 @@ describe("LoginPage", () => {
     });
 
     expect(authService.logout).toHaveBeenCalled();
+  });
+
+  it.each([false, true])("returns to the purchase after login (professional: %s)", async (professional) => {
+    const destination = "/pagar/producto/042fcecf-8fda-42ce-8ff9-04d729c6f843?quantity=3";
+    window.history.replaceState({}, "", `/login?redirect=${encodeURIComponent(destination)}`);
+    vi.mocked(authService.login).mockResolvedValueOnce({
+      data: { user: { id: "buyer-1", email: "buyer@example.com" } },
+      sessionStatus: { is_professional: professional },
+    } as any);
+    signInWithPasswordMock.mockResolvedValueOnce({ data: {}, error: null } as any);
+    render(<LoginPage />);
+    fireEvent.change(screen.getByPlaceholderText("tu@email.com"), { target: { value: "buyer@example.com" } });
+    fireEvent.change(screen.getByPlaceholderText("••••••••"), { target: { value: "Password1!" } });
+    fireEvent.click(screen.getByRole("button", { name: /^ingresar$/i }));
+    await waitFor(() => expect(loginNavigation.replace).toHaveBeenCalledWith(destination));
+    expect(loginNavigation.push).not.toHaveBeenCalled();
   });
 });

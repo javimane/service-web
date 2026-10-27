@@ -88,6 +88,22 @@ describe("notificationNavigation", () => {
       expect(url).toBe(`${ROUTES.dashboard}?view=purchases&orderId=order-456`);
     });
 
+    it("dirige recordatorios de turno de servicio a la compra del servicio", () => {
+      expect(
+        getNotificationTargetUrl({
+          type: "SERVICE_APPOINTMENT_REMINDER_24H",
+          source_id: "order-service-1",
+        }),
+      ).toBe(`${ROUTES.dashboard}?view=purchases&orderId=order-service-1`);
+      expect(
+        getNotificationTargetUrl({
+          type: "SERVICE_APPOINTMENT_REMINDER_3H",
+          source_id: "order-service-2",
+        }),
+      ).toBe(`${ROUTES.dashboard}?view=purchases&orderId=order-service-2`);
+      expect(getNotificationMeta("SERVICE_APPOINTMENT_REMINDER_24H").category).toBe("purchases");
+    });
+
     it("dirige eventos compartidos a sales si es profesional", () => {
       const url = getNotificationTargetUrl(
         {

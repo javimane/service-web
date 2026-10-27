@@ -23,15 +23,14 @@ import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
 import { useAuth } from "@/context/AuthContext";
 import { getCardConfig } from "@/services/cardPayments";
+import { detectPaymentCardBrand } from "@/utils/cardBrand";
 import "./PaymentMethodsSection.css";
 
 // Helper para detectar marca de tarjeta según el BIN
 function detectCardBrand(number: string): string {
   const clean = number.replace(/\D/g, "");
-  if (/^4/.test(clean)) return "visa";
-  if (/^(5[1-5]|2[2-7])/.test(clean)) return "mastercard";
-  if (/^3[47]/.test(clean)) return "amex";
-  if (/^(5896|6042|6043)/.test(clean)) return "cabal";
+  const brand = detectPaymentCardBrand(clean);
+  if (brand) return brand;
   if (/^(5031|5895|6011)/.test(clean)) return "naranja";
   return "tarjeta";
 }

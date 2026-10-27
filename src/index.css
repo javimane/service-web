@@ -5,6 +5,7 @@
   --bg-color: #ded9d9c1;
   --bg-card: #f8f9fa;
   --surface-soft: #f1f3f5;
+  --overlay-bg: color-mix(in srgb, var(--black) 60%, transparent);
   --surface-contrast: #151821;
   --surface-contrast-hover: #1c2230;
   --surface-contrast-border: #293244;

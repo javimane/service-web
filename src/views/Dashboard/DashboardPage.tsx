@@ -20,6 +20,7 @@ import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar
 import Modal from "../../components/Modal/Modal";
 import RegisterPlanSelection from "../Register/RegisterPlanSelection";
 import { useAuth } from "../../context/AuthContext";
+import { SELL_VERIFICATION_NOTICE_EVENT } from "../../context/sellVerificationNotice";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import { ROUTES } from "../../routes/paths";
 import { getProfessionalMeAction } from "../../app/actions/professionals";
@@ -318,6 +319,12 @@ export default function DashboardPage() {
     setView(routeView || "overview");
   }, [routeView]);
 
+  useEffect(() => {
+    if (sessionStatus?.sell_verification_required && (view === "products" || view === "services")) {
+      window.dispatchEvent(new Event(SELL_VERIFICATION_NOTICE_EVENT));
+    }
+  }, [view, sessionStatus?.sell_verification_required]);
+
   const [isUnverifiedBannerClosed, setIsUnverifiedBannerClosed] =
     useState(false);
   const [isUnverifiedModalOpen, setIsUnverifiedModalOpen] = useState(false);
@@ -352,7 +359,7 @@ export default function DashboardPage() {
 
   // Mostrar el modal de cuenta no verificada una vez por sesión de browser
   useEffect(() => {
-    if (!myProfessional || !isProfessionalUser) return;
+    if (!myProfessional || !isProfessionalUser || sessionStatus?.sell_verification_required) return;
 
     const isVerified =
       myProfessional?.companies_arca?.[0]?.is_verified ||
@@ -371,7 +378,7 @@ export default function DashboardPage() {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [myProfessional, isProfessionalUser]);
+  }, [myProfessional, isProfessionalUser, sessionStatus?.sell_verification_required]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -423,7 +430,7 @@ export default function DashboardPage() {
 
       {/* Modal flotante de verificación de cuenta */}
       <UnverifiedAccountModal
-        isOpen={isUnverifiedModalOpen}
+        isOpen={isUnverifiedModalOpen && !sessionStatus?.sell_verification_required}
         onClose={() => setIsUnverifiedModalOpen(false)}
       />
 
@@ -1081,6 +1088,18 @@ export default function DashboardPage() {
                   con tu portafolio de trabajos y reseñas de clientes.
                 </span>
               </li>
+              <li className="dashboard-welcome__benefit">
+                <span aria-hidden="true">✅</span>
+                <span>Ofrecé <strong>cuotas sin interés</strong> en tus productos y servicios.</span>
+              </li>
+              <li className="dashboard-welcome__benefit">
+                <span aria-hidden="true">✅</span>
+                <span>Ofrecé <strong>envíos gratis por delivery o a todo el país.</strong></span>
+              </li>
+              <li className="dashboard-welcome__benefit">
+                <span aria-hidden="true">✅</span>
+                <span>Integrá tu flota con tus propios <strong>deliverys y fleteros.</strong></span>
+              </li>
             </ul>
             <button
               className="btn-primary"
@@ -1100,33 +1119,7 @@ export default function DashboardPage() {
         </Modal>
       </div>
 
-      {isUnsubscribedProfessional && (
-        <div
-          className="subscription-confirm-overlay"
-          style={{
-            zIndex: 1000,
-            padding: "20px",
-            overflowY: "auto",
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.8)",
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              position: "relative",
-              maxWidth: "1000px",
-              width: "100%",
-              marginTop: "5vh",
-            }}
-          >
-            <RegisterPlanSelection />
-          </div>
-        </div>
-      )}
+      {isUnsubscribedProfessional && <RegisterPlanSelection />}
     </div>
   );
 }

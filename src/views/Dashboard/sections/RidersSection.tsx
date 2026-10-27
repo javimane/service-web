@@ -25,6 +25,7 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
+  Info,
 } from "lucide-react";
 import {
   commerceService,
@@ -124,7 +125,7 @@ export default function RidersSection() {
   const token = getAccessToken();
   setApiAccessToken(token);
   const queryClient = useQueryClient();
-  const { showSuccess, showError } = useAlert();
+  const { showSuccess, showError, showInfo } = useAlert();
 
   /* ── tabs state ── */
   const [activeTab, setActiveTab] = useState<"personal" | "vehicles" | "create">("personal");
@@ -426,7 +427,21 @@ export default function RidersSection() {
       <header className="riders-section__header">
         <div>
           <span className="riders-section__subtitle">Gestión de Logística</span>
-          <h1 className="riders-section__title">Riders y Fleteros</h1>
+          <div className="riders-section__title-row">
+            <h1 className="riders-section__title">Riders y Fleteros</h1>
+            <button
+              type="button"
+              className="riders-section__info"
+              aria-label="Información importante para riders y fleteros"
+              title="Los Riders o Fleteros deben descargarse la aplicación de Sercio Envíos."
+              onClick={() => showInfo(
+                "Los Riders o Fleteros deben descargarse la aplicación de Sercio Envíos.",
+                "Información importante",
+              )}
+            >
+              <Info size={22} aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <button
           type="button"

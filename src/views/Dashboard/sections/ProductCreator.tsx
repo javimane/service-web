@@ -1,4 +1,5 @@
 "use client";
+import ProductBranchStock from "@/components/ProductBranchStock/ProductBranchStock";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -941,7 +942,6 @@ export default function ProductCreator({
             product_condition: payload.product_condition,
             price: payload.price,
             sale_type: payload.sale_type,
-            stock: payload.stock,
             is_active: payload.is_active,
             offer_price: payload.offer_price,
             currency_code: payload.currency_code,
@@ -1818,6 +1818,7 @@ export default function ProductCreator({
                     min="0"
                     placeholder="0"
                     value={formStock}
+                    readOnly={Boolean(productToEdit)}
                     onChange={(e) => setFormStock(e.target.value)}
                   />
                   {errors.stock && (
@@ -1825,6 +1826,11 @@ export default function ProductCreator({
                       {errors.stock}
                     </span>
                   )}
+                  {productToEdit && <ProductBranchStock listingId={productToEdit.professional_product_id || productToEdit.id} onSaved={() => {
+                    commerceService.productBranchStock(productToEdit.professional_product_id || productToEdit.id)
+                      .then(rows => setFormStock(String(rows.reduce((sum, row) => sum + row.stock, 0))))
+                      .catch(() => {});
+                  }} />}
                 </div>
 
                 <div className="product-creator__field">

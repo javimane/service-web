@@ -488,6 +488,10 @@
   font-weight: var(--weight-medium);
 }
 
+.no-shipment-note--offline {
+  color: var(--text-secondary);
+}
+
 .fleet-card-actions {
   display: flex;
   justify-content: flex-end;

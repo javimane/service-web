@@ -37,11 +37,11 @@ export default function Modal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ '--modal-max-width': maxWidth } as React.CSSProperties}>
+      <div className="modal-container" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} style={{ '--modal-max-width': maxWidth } as React.CSSProperties}>
         {title && (
           <div className="modal-header">
             <h2>{title}</h2>
-            <button className="modal-close" onClick={onClose}>
+            <button type="button" className="modal-close" aria-label="Cerrar" onClick={onClose}>
               <X size={24} />
             </button>
           </div>

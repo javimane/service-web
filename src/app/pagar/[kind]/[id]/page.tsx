@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { API_ENDPOINTS } from "@/services/api.config";
 import { fetchWithApiKey } from "@/lib/serverFetch";
 import CheckoutPage from "@/views/Checkout/CheckoutPage";
+import CheckoutAccess from "@/views/Checkout/CheckoutAccess";
+import { apiCookieHeader } from "@/utils/apiAuth";
+import { checkoutLoginUrl } from "@/utils/checkoutAuth";
 import { isUuid } from "@/utils/utils";
 
 export const metadata: Metadata = {
@@ -21,6 +25,14 @@ export default async function Page({ params, searchParams }: Props) {
   if (!isUuid(id) ||
       (kind !== "producto" && kind !== "servicio")) notFound();
 
+  const requestedQuantity = Number(quantity);
+  const initialQuantity = Number.isSafeInteger(requestedQuantity) && requestedQuantity > 0
+    ? Math.min(requestedQuantity, 99) : 1;
+  const returnTo = `/pagar/${kind}/${id}${quantity !== undefined ? `?quantity=${initialQuantity}` : ""}`;
+  // Cookie-less guests go straight to login. CheckoutAccess waits for AuthProvider
+  // to validate or refresh cookie-backed sessions before mounting any payment form.
+  if (!apiCookieHeader((await cookies()).getAll())) redirect(checkoutLoginUrl(returnTo));
+
   const url = kind === "producto"
     ? API_ENDPOINTS.products.detail(id)
     : API_ENDPOINTS.services.detail(id);
@@ -30,11 +42,9 @@ export default async function Page({ params, searchParams }: Props) {
   const item = payload?.data ?? payload;
   if (!item?.id) notFound();
 
-  const requestedQuantity = Number(quantity);
-  return <CheckoutPage
+  return <CheckoutAccess returnTo={returnTo}><CheckoutPage
     kind={kind}
     item={item}
-    initialQuantity={Number.isSafeInteger(requestedQuantity) && requestedQuantity > 0
-      ? Math.min(requestedQuantity, 99) : 1}
-  />;
+    initialQuantity={initialQuantity}
+  /></CheckoutAccess>;
 }

@@ -13,6 +13,7 @@ const { router, auth } = vi.hoisted(() => ({
     sessionStatus: { is_professional: false, professional_id: null } as any,
     loading: false,
     isAgeVerified: false,
+    refreshSession: vi.fn(),
   },
 }));
 
@@ -26,7 +27,7 @@ vi.mock("@/views/Settings/sections/BillingDataSection", () => ({
   default: () => <div>Formulario de facturación</div>,
 }));
 vi.mock("@/views/Dashboard/sections/CommercialDataSection", () => ({
-  default: () => <div>Formulario comercial</div>,
+  default: ({ onSaved }: { onSaved?: () => void }) => <div>Formulario comercial<button onClick={onSaved}>Simular guardado comercial exitoso</button></div>,
 }));
 vi.mock("@/views/Dashboard/sections/ProfessionalProfileSection", () => ({
   default: () => <div>Formulario del perfil público</div>,
@@ -50,6 +51,7 @@ describe("AccountSetupPage", () => {
     localStorage.clear();
     vi.clearAllMocks();
     auth.sessionStatus = { is_professional: false, professional_id: null };
+    auth.refreshSession.mockResolvedValue({ arca_verified: true, cbu_verified: true });
     vi.mocked(getProfileAction).mockResolvedValue({
       data: { first_name: "Ana", last_name: "Pérez", phone: "1123456789" },
     } as any);
@@ -62,7 +64,7 @@ describe("AccountSetupPage", () => {
       .mockResolvedValueOnce([{ id: "address-1" }] as any);
     render(<AccountSetupPage />);
 
-    await screen.findByDisplayValue("Ana");
+    await screen.findByText("Ana Pérez");
     fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
     expect(await screen.findByText("Formulario de direcciones")).toBeInTheDocument();
 
@@ -81,7 +83,7 @@ describe("AccountSetupPage", () => {
     vi.mocked(commerceService.getUserAddresses).mockResolvedValue([{ id: "address-1" }] as any);
     render(<AccountSetupPage />);
 
-    await screen.findByDisplayValue("Ana");
+    await screen.findByText("Ana Pérez");
     fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
     await screen.findByText("Formulario de direcciones");
     fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
@@ -99,7 +101,9 @@ describe("AccountSetupPage", () => {
     vi.mocked(getProfessionalDetailAction).mockResolvedValue({ data: { bio: "Reparaciones y mantenimiento" } } as any);
     render(<AccountSetupPage />);
 
-    await screen.findByDisplayValue("Ana");
+    await screen.findByText("Ana Pérez");
+    expect(screen.queryByRole("textbox", { name: "Nombre" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Apellido" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
     await screen.findByText("Formulario de direcciones");
     fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
@@ -109,5 +113,41 @@ describe("AccountSetupPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
 
     expect(await screen.findByText(/foto de tu DNI y una foto de tu rostro/i)).toBeInTheDocument();
+  });
+
+  it("permite completar el nombre y apellido si no se guardaron en el registro", async () => {
+    vi.mocked(getProfileAction).mockResolvedValue({ data: { phone: "1123456789" } } as any);
+    render(<AccountSetupPage />);
+    expect(await screen.findByRole("textbox", { name: "Nombre" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Apellido" })).toBeInTheDocument();
+  });
+
+  it("quita el aviso de datos comerciales faltantes después de guardarlos correctamente", async () => {
+    auth.sessionStatus = { is_professional: true, professional_id: 82 };
+    localStorage.setItem("account_setup_step_user-1", "commercial");
+    vi.mocked(getProfessionalMeAction).mockResolvedValue({ data: { companies: null } } as any);
+    render(<AccountSetupPage />);
+    await screen.findByText("Formulario comercial");
+    fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Guardá el nombre comercial");
+    fireEvent.click(screen.getByRole("button", { name: "Simular guardado comercial exitoso" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText("Formulario comercial")).toBeInTheDocument();
+  });
+
+  it.each([
+    [{ arca_verified: false, cbu_verified: true }, "los datos fiscales en ARCA"],
+    [{ arca_verified: true, cbu_verified: false }, "el CBU de cobro"],
+    [null, "los datos fiscales en ARCA y el CBU de cobro"],
+  ])("no avanza de datos comerciales si falta verificar la cuenta (%j)", async (session, message) => {
+    auth.sessionStatus = { is_professional: true, professional_id: 82 };
+    localStorage.setItem("account_setup_step_user-1", "commercial");
+    auth.refreshSession.mockResolvedValue(session);
+    vi.mocked(getProfessionalMeAction).mockResolvedValue({ data: { companies: { name: "Mi negocio", tax_code: "20123456789" } } } as any);
+    render(<AccountSetupPage />);
+    await screen.findByText("Formulario comercial");
+    fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.queryByText("Formulario del perfil público")).not.toBeInTheDocument();
   });
 });

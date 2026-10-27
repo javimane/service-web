@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   GoogleMap,
@@ -43,8 +49,7 @@ const GOOGLE_MAPS_API_KEY =
 // Helper para calcular coordenadas válidas del chofer
 function getDriverCoords(
   item: FleetTrackingItem,
-  index: number,
-): { lat: number; lng: number } {
+): { lat: number; lng: number } | null {
   if (
     typeof item.current_lat === "number" &&
     typeof item.current_lng === "number" &&
@@ -54,27 +59,40 @@ function getDriverCoords(
   ) {
     return { lat: item.current_lat, lng: item.current_lng };
   }
-  // Fallback visual en caso de que no tenga coordenadas reales registradas
-  const latOffset = ((index % 5) - 2) * 0.012;
-  const lngOffset = (Math.floor(index / 5) - 1) * 0.015;
-  return {
-    lat: DEFAULT_CENTER.lat + latOffset,
-    lng: DEFAULT_CENTER.lng + lngOffset,
-  };
+  return null;
+}
+
+const LOCATION_FRESHNESS_MS = 120_000;
+
+function getLiveDriverStatus(
+  item: FleetTrackingItem,
+  now: number,
+): FleetTrackingItem["driver_status"] {
+  const locationTime = item.last_location_update
+    ? Date.parse(item.last_location_update)
+    : NaN;
+  const hasRecentLocation =
+    Number.isFinite(locationTime) &&
+    now >= locationTime &&
+    now - locationTime < LOCATION_FRESHNESS_MS;
+  return item.driver_status !== "offline" && hasRecentLocation
+    ? item.driver_status
+    : "offline";
 }
 
 export default function FleetMapSection() {
   const token = getAccessToken();
   setApiAccessToken(token);
-  const [selectedDriver, setSelectedDriver] =
-    useState<FleetTrackingItem | null>(null);
-  const [activeInfoDriver, setActiveInfoDriver] =
-    useState<FleetTrackingItem | null>(null);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [activeInfoDriverId, setActiveInfoDriverId] = useState<string | null>(
+    null,
+  );
   const [myLocation, setMyLocation] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const mapRef = useRef<google.maps.Map | null>(null);
   const { showSuccess, showError } = useAlert();
 
@@ -124,15 +142,31 @@ export default function FleetMapSection() {
     libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
-  const {
-    data: trackingItems = [],
-    isLoading,
-    refetch,
-  } = useQuery<FleetTrackingItem[]>({
+  const { data: fetchedTrackingItems = [], refetch } = useQuery<
+    FleetTrackingItem[]
+  >({
     queryKey: ["fleet-tracking"],
     queryFn: () => commerceService.fleetTracking(),
     refetchInterval: 15000, // auto poll every 15s
   });
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 15000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const trackingItems = useMemo(
+    () =>
+      fetchedTrackingItems.map((item) => ({
+        ...item,
+        driver_status: getLiveDriverStatus(item, now),
+      })),
+    [fetchedTrackingItems, now],
+  );
+  const selectedDriver =
+    trackingItems.find((item) => item.id === selectedDriverId) ?? null;
+  const activeInfoDriver =
+    trackingItems.find((item) => item.id === activeInfoDriverId) ?? null;
 
   const { data: metrics } = useQuery<FleetMetrics>({
     queryKey: ["fleet-metrics"],
@@ -155,15 +189,15 @@ export default function FleetMapSection() {
   const handleFitFleetBounds = useCallback(() => {
     if (!mapRef.current || typeof window === "undefined" || !window.google)
       return;
-    if (trackingItems.length === 0) {
-      mapRef.current.panTo(DEFAULT_CENTER);
-      mapRef.current.setZoom(12);
-      return;
-    }
-
     const bounds = new window.google.maps.LatLngBounds();
-    trackingItems.forEach((item, idx) => {
-      bounds.extend(getDriverCoords(item, idx));
+    let hasBounds = false;
+    trackingItems.forEach((item) => {
+      if (item.driver_status === "offline") return;
+      const coords = getDriverCoords(item);
+      if (coords) {
+        bounds.extend(coords);
+        hasBounds = true;
+      }
       if (item.current_shipment) {
         if (
           item.current_shipment.origin_lat &&
@@ -173,6 +207,7 @@ export default function FleetMapSection() {
             lat: item.current_shipment.origin_lat,
             lng: item.current_shipment.origin_lng,
           });
+          hasBounds = true;
         }
         if (
           item.current_shipment.destination_lat &&
@@ -182,9 +217,15 @@ export default function FleetMapSection() {
             lat: item.current_shipment.destination_lat,
             lng: item.current_shipment.destination_lng,
           });
+          hasBounds = true;
         }
       }
     });
+    if (!hasBounds) {
+      mapRef.current.panTo(DEFAULT_CENTER);
+      mapRef.current.setZoom(12);
+      return;
+    }
     mapRef.current.fitBounds(bounds, {
       top: 60,
       right: 60,
@@ -194,14 +235,16 @@ export default function FleetMapSection() {
   }, [trackingItems]);
 
   // Manejar selección de chofer
-  const handleSelectDriver = (item: FleetTrackingItem, index: number) => {
-    setSelectedDriver(item);
-    setActiveInfoDriver(item);
+  const handleSelectDriver = (item: FleetTrackingItem) => {
+    setSelectedDriverId(item.id);
+    setActiveInfoDriverId(item.id);
 
     if (mapRef.current) {
-      const coords = getDriverCoords(item, index);
-      mapRef.current.panTo(coords);
-      mapRef.current.setZoom(15);
+      const coords = getDriverCoords(item);
+      if (coords) {
+        mapRef.current.panTo(coords);
+        mapRef.current.setZoom(15);
+      }
     }
   };
 
@@ -210,26 +253,28 @@ export default function FleetMapSection() {
     if (!selectedDriver?.current_shipment) return null;
     const shipment = selectedDriver.current_shipment;
 
-    const sIndex = trackingItems.findIndex((t) => t.id === selectedDriver.id);
-    const driverPos = getDriverCoords(selectedDriver, sIndex >= 0 ? sIndex : 0);
+    const driverPos = getDriverCoords(selectedDriver);
+    if (!driverPos || selectedDriver.driver_status === "offline") return null;
 
     const originPos =
       shipment.origin_lat && shipment.origin_lng
         ? { lat: shipment.origin_lat, lng: shipment.origin_lng }
-        : { lat: driverPos.lat - 0.008, lng: driverPos.lng - 0.008 };
+        : null;
 
     const destPos =
       shipment.destination_lat && shipment.destination_lng
         ? { lat: shipment.destination_lat, lng: shipment.destination_lng }
-        : { lat: driverPos.lat + 0.012, lng: driverPos.lng + 0.01 };
+        : null;
 
     const polyline =
       selectedDriver.route_polyline && selectedDriver.route_polyline.length > 0
         ? selectedDriver.route_polyline.map(([lat, lng]) => ({ lat, lng }))
-        : [originPos, driverPos, destPos];
+        : [originPos, driverPos, destPos].filter(
+            (point): point is { lat: number; lng: number } => point !== null,
+          );
 
     return { originPos, driverPos, destPos, polyline, shipment };
-  }, [selectedDriver, trackingItems]);
+  }, [selectedDriver]);
 
   return (
     <div className="fleet-map-section">
@@ -258,21 +303,19 @@ export default function FleetMapSection() {
         <div className="fleet-metric-pill">
           <span className="fleet-metric-dot fleet-metric-dot--green" />
           <span className="fleet-metric-text">
-            Choferes activos:{" "}
-            <strong>{metrics?.active_drivers ?? activeCount}</strong>
+            Choferes activos: <strong>{activeCount}</strong>
           </span>
         </div>
         <div className="fleet-metric-pill">
           <span className="fleet-metric-dot fleet-metric-dot--blue" />
           <span className="fleet-metric-text">
-            Viajes en curso:{" "}
-            <strong>{metrics?.trips_in_progress ?? onTripCount}</strong>
+            Viajes en curso: <strong>{onTripCount}</strong>
           </span>
         </div>
         <div className="fleet-metric-pill">
           <span className="fleet-metric-dot fleet-metric-dot--teal" />
           <span className="fleet-metric-text">
-            Completados hoy: <strong>{metrics?.completed_today ?? 14}</strong>
+            Completados hoy: <strong>{metrics?.completed_today ?? "—"}</strong>
           </span>
         </div>
       </div>
@@ -340,26 +383,21 @@ export default function FleetMapSection() {
               }}
             >
               {/* Marcadores de Choferes */}
-              {trackingItems.map((item, idx) => {
-                const pos = getDriverCoords(item, idx);
+              {trackingItems.map((item) => {
+                if (item.driver_status === "offline") return null;
+                const pos = getDriverCoords(item);
+                if (!pos) return null;
                 const isSel = selectedDriver?.id === item.id;
-                const statusColor =
-                  item.driver_status === "available"
-                    ? "#40c057"
-                    : item.driver_status === "on_trip"
-                      ? "#1d5fbf"
-                      : "#808485";
 
                 return (
                   <MarkerF
-                    key={item.id || item.driver_id || idx}
+                    key={item.id || item.driver_id}
                     position={pos}
                     title={`${item.driver_name} (${item.driver_status})`}
-                    onClick={() => handleSelectDriver(item, idx)}
+                    onClick={() => handleSelectDriver(item)}
                     zIndex={isSel ? 99 : 10}
                     icon={
-                      typeof window !== "undefined" &&
-                      window.google?.maps?.Size
+                      typeof window !== "undefined" && window.google?.maps?.Size
                         ? {
                             url: "/Van.png",
                             scaledSize: isSel
@@ -379,97 +417,104 @@ export default function FleetMapSection() {
               {selectedShipmentRoute && (
                 <>
                   {/* Origen (Comercio) */}
-                  <MarkerF
-                    position={selectedShipmentRoute.originPos}
-                    title={`Comercio: ${selectedShipmentRoute.shipment.merchant_name}`}
-                    icon={
-                      typeof window !== "undefined" &&
-                      window.google?.maps?.SymbolPath
-                        ? {
-                            path: window.google.maps.SymbolPath.CIRCLE,
-                            scale: 8,
-                            fillColor: "#d97706",
-                            fillOpacity: 1,
-                            strokeColor: "#ffffff",
-                            strokeWeight: 2,
-                          }
-                        : undefined
-                    }
-                  />
+                  {selectedShipmentRoute.originPos && (
+                    <MarkerF
+                      position={selectedShipmentRoute.originPos}
+                      title={`Comercio: ${selectedShipmentRoute.shipment.merchant_name}`}
+                      icon={
+                        typeof window !== "undefined" &&
+                        window.google?.maps?.SymbolPath
+                          ? {
+                              path: window.google.maps.SymbolPath.CIRCLE,
+                              scale: 8,
+                              fillColor: "#d97706",
+                              fillOpacity: 1,
+                              strokeColor: "#ffffff",
+                              strokeWeight: 2,
+                            }
+                          : undefined
+                      }
+                    />
+                  )}
 
                   {/* Destino (Cliente) */}
-                  <MarkerF
-                    position={selectedShipmentRoute.destPos}
-                    title={`Destino: ${selectedShipmentRoute.shipment.destination_address}`}
-                    icon={
-                      typeof window !== "undefined" &&
-                      window.google?.maps?.SymbolPath
-                        ? {
-                            path: window.google.maps.SymbolPath
-                              .BACKWARD_CLOSED_ARROW,
-                            scale: 6,
-                            fillColor: "#e94823",
-                            fillOpacity: 1,
-                            strokeColor: "#ffffff",
-                            strokeWeight: 2,
-                          }
-                        : undefined
-                    }
-                  />
+                  {selectedShipmentRoute.destPos && (
+                    <MarkerF
+                      position={selectedShipmentRoute.destPos}
+                      title={`Destino: ${selectedShipmentRoute.shipment.destination_address}`}
+                      icon={
+                        typeof window !== "undefined" &&
+                        window.google?.maps?.SymbolPath
+                          ? {
+                              path: window.google.maps.SymbolPath
+                                .BACKWARD_CLOSED_ARROW,
+                              scale: 6,
+                              fillColor: "#e94823",
+                              fillOpacity: 1,
+                              strokeColor: "#ffffff",
+                              strokeWeight: 2,
+                            }
+                          : undefined
+                      }
+                    />
+                  )}
 
                   {/* Polyline de ruta */}
-                  <PolylineF
-                    path={selectedShipmentRoute.polyline}
-                    options={{
-                      strokeColor: "#1d5fbf",
-                      strokeOpacity: 0.85,
-                      strokeWeight: 4,
-                    }}
-                  />
+                  {selectedShipmentRoute.polyline.length > 1 && (
+                    <PolylineF
+                      path={selectedShipmentRoute.polyline}
+                      options={{
+                        strokeColor: "#1d5fbf",
+                        strokeOpacity: 0.85,
+                        strokeWeight: 4,
+                      }}
+                    />
+                  )}
                 </>
               )}
 
               {/* InfoWindow del Chofer Activo */}
-              {activeInfoDriver && (
-                <InfoWindowF
-                  position={getDriverCoords(
-                    activeInfoDriver,
-                    trackingItems.findIndex(
-                      (t) => t.id === activeInfoDriver.id,
-                    ),
-                  )}
-                  onCloseClick={() => setActiveInfoDriver(null)}
-                >
-                  <div className="fleet-map-infowindow">
-                    <h4 className="fleet-map-infowindow__title">
-                      <Truck size={15} />
-                      {activeInfoDriver.driver_name}
-                    </h4>
-                    <span
-                      className={`fleet-map-infowindow__status fleet-map-infowindow__status--${activeInfoDriver.driver_status}`}
-                    >
-                      {activeInfoDriver.driver_status === "on_trip"
-                        ? "En viaje"
-                        : activeInfoDriver.driver_status === "available"
-                          ? "Disponible"
-                          : "Desconectado"}
-                    </span>
-                    <p className="fleet-map-infowindow__desc">
-                      <strong>Vehículo:</strong> {activeInfoDriver.vehicle_type}
-                    </p>
-                    {activeInfoDriver.current_shipment && (
+              {activeInfoDriver &&
+                activeInfoDriver.driver_status !== "offline" &&
+                getDriverCoords(activeInfoDriver) && (
+                  <InfoWindowF
+                    position={getDriverCoords(activeInfoDriver)!}
+                    onCloseClick={() => setActiveInfoDriverId(null)}
+                  >
+                    <div className="fleet-map-infowindow">
+                      <h4 className="fleet-map-infowindow__title">
+                        <Truck size={15} />
+                        {activeInfoDriver.driver_name}
+                      </h4>
+                      <span
+                        className={`fleet-map-infowindow__status fleet-map-infowindow__status--${activeInfoDriver.driver_status}`}
+                      >
+                        {activeInfoDriver.driver_status === "on_trip"
+                          ? "En viaje"
+                          : activeInfoDriver.driver_status === "available"
+                            ? "Disponible"
+                            : "Desconectado"}
+                      </span>
                       <p className="fleet-map-infowindow__desc">
-                        <strong>Destino:</strong>{" "}
-                        {activeInfoDriver.current_shipment.destination_address}
-                        <br />
-                        <strong>ETA:</strong>{" "}
-                        {activeInfoDriver.current_shipment.eta_minutes ?? 15}{" "}
-                        min
+                        <strong>Vehículo:</strong>{" "}
+                        {activeInfoDriver.vehicle_type}
                       </p>
-                    )}
-                  </div>
-                </InfoWindowF>
-              )}
+                      {activeInfoDriver.current_shipment && (
+                        <p className="fleet-map-infowindow__desc">
+                          <strong>Destino:</strong>{" "}
+                          {
+                            activeInfoDriver.current_shipment
+                              .destination_address
+                          }
+                          <br />
+                          <strong>ETA:</strong>{" "}
+                          {activeInfoDriver.current_shipment.eta_minutes ?? 15}{" "}
+                          min
+                        </p>
+                      )}
+                    </div>
+                  </InfoWindowF>
+                )}
 
               {/* Marcador de Mi Ubicación Actual */}
               {myLocation && (
@@ -513,9 +558,7 @@ export default function FleetMapSection() {
         <aside className="fleet-shipments-panel">
           <div className="fleet-panel-header">
             <h3>Envíos y Choferes en Ruta</h3>
-            <span className="fleet-panel-count">
-              {trackingItems.length} conectados
-            </span>
+            <span className="fleet-panel-count">{activeCount} conectados</span>
           </div>
 
           <div className="fleet-shipments-list">
@@ -524,15 +567,15 @@ export default function FleetMapSection() {
                 <p>No hay choferes conectados en este momento.</p>
               </div>
             ) : (
-              trackingItems.map((item, idx) => (
+              trackingItems.map((item) => (
                 <div
-                  key={item.id || item.driver_id || idx}
+                  key={item.id || item.driver_id}
                   className={`fleet-shipment-card ${
                     selectedDriver?.id === item.id
                       ? "fleet-shipment-card--selected"
                       : ""
                   }`}
-                  onClick={() => handleSelectDriver(item, idx)}
+                  onClick={() => handleSelectDriver(item)}
                 >
                   <div className="fleet-shipment-card__top">
                     <div className="driver-name-wrap">
@@ -543,6 +586,16 @@ export default function FleetMapSection() {
                     </div>
                     <span className="vehicle-pill">{item.vehicle_type}</span>
                   </div>
+
+                  <span
+                    className={`fleet-shipment-card__connection fleet-shipment-card__connection--${item.driver_status}`}
+                  >
+                    {item.driver_status === "on_trip"
+                      ? "Conectado · en viaje"
+                      : item.driver_status === "available"
+                        ? "Conectado · disponible"
+                        : "Desconectado"}
+                  </span>
 
                   {item.current_shipment ? (
                     <div className="shipment-route-info">
@@ -562,8 +615,12 @@ export default function FleetMapSection() {
                       </div>
                     </div>
                   ) : (
-                    <p className="no-shipment-note">
-                      Disponible para asignación inmediata.
+                    <p
+                      className={`no-shipment-note${item.driver_status === "offline" ? " no-shipment-note--offline" : ""}`}
+                    >
+                      {item.driver_status === "available"
+                        ? "Disponible para asignación inmediata."
+                        : "No disponible para asignación inmediata."}
                     </p>
                   )}
 
@@ -592,7 +649,7 @@ export default function FleetMapSection() {
       {selectedDriver && (
         <Modal
           isOpen={Boolean(selectedDriver)}
-          onClose={() => setSelectedDriver(null)}
+          onClose={() => setSelectedDriverId(null)}
           title={`Chofer: ${selectedDriver.driver_name}`}
         >
           <div className="driver-modal-detail">
@@ -637,7 +694,7 @@ export default function FleetMapSection() {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => setSelectedDriver(null)}
+                onClick={() => setSelectedDriverId(null)}
               >
                 Cerrar
               </button>

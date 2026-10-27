@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import RegisterPage from "./RegisterPage";
 import { supabase } from "../../services/supabaseClient";
@@ -58,6 +58,9 @@ describe("RegisterPage", () => {
       screen.getByRole("button", { name: /términos y condiciones/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByLabelText("Busco Servicios/Productos")).toBeChecked();
+    expect(screen.getByLabelText("Soy Profesional/Comercio")).not.toBeChecked();
+    expect(screen.getByLabelText(/^CONTRASEÑA$/)).toHaveAccessibleDescription(/mínimo 9.*mayúscula.*número.*carácter especial/i);
   });
 
   it("muestra errores de validación si se envía vacío incluyendo los términos", () => {
@@ -76,6 +79,20 @@ describe("RegisterPage", () => {
         "Debes aceptar los términos y condiciones para continuar",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("marca los requisitos cumplidos al escribir y vuelve a dejarlos pendientes al borrar", () => {
+    renderWithRouter(<RegisterPage />);
+    const password = screen.getByLabelText(/^CONTRASEÑA$/);
+    const requirements = screen.getByRole("list", { name: "Requisitos de la contraseña" });
+    expect(requirements.querySelectorAll(".register-password__requirement--met")).toHaveLength(0);
+    fireEvent.change(password, { target: { value: "Abc1!" } });
+    expect(requirements.querySelectorAll(".register-password__requirement--met")).toHaveLength(4);
+    expect(within(requirements).getByRole("listitem", { name: "Pendiente: Mínimo 9 caracteres" })).not.toHaveClass("register-password__requirement--met");
+    fireEvent.change(password, { target: { value: "Abcdefg1!" } });
+    expect(requirements.querySelectorAll(".register-password__requirement--met")).toHaveLength(5);
+    fireEvent.change(password, { target: { value: "Abcdefg1" } });
+    expect(within(requirements).getByRole("listitem", { name: /Pendiente: Al menos 1 carácter especial/ })).not.toHaveClass("register-password__requirement--met");
   });
 
   it("valida que las contraseñas coincidan", () => {
@@ -149,7 +166,26 @@ describe("RegisterPage", () => {
     expect(screen.getByRole("checkbox")).toBeChecked();
   });
 
+  it.each(["Abcdef1!", "Abcdefg1!"])("exige más de 8 caracteres al registrar: %s", async (password) => {
+    registerMock.mockClear();
+    renderWithRouter(<RegisterPage />);
+    fireEvent.change(screen.getByPlaceholderText("Ej. Juan"), { target: { value: "Juan" } });
+    fireEvent.change(screen.getByPlaceholderText("Ej. Pérez"), { target: { value: "Lopez" } });
+    fireEvent.change(screen.getByPlaceholderText("arquitecto@obsidian.pro"), { target: { value: "juan@example.com" } });
+    fireEvent.change(screen.getAllByPlaceholderText("••••••••")[0], { target: { value: password } });
+    fireEvent.change(screen.getAllByPlaceholderText("••••••••")[1], { target: { value: password } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /^Registrarse$/i }));
+    if (password.length === 8) {
+      expect(screen.getByText("Debe tener al menos 9 caracteres")).toBeInTheDocument();
+      expect(registerMock).not.toHaveBeenCalled();
+    } else {
+      await waitFor(() => expect(registerMock).toHaveBeenCalledWith(expect.objectContaining({ password, role: "normal" })));
+    }
+  });
+
   it("llama a authService al enviar datos válidos con términos aceptados", async () => {
+    registerMock.mockClear();
     registerMock.mockResolvedValueOnce({
       token: "mock-token",
     } as any);
@@ -170,7 +206,13 @@ describe("RegisterPage", () => {
     fireEvent.change(confirmInput, { target: { value: "Password1!" } });
     fireEvent.click(checkbox);
 
+    fireEvent.click(screen.getByLabelText("Soy Profesional/Comercio"));
     fireEvent.click(submitBtn);
+
+    const requirements = screen.getByRole("dialog", { name: "Requisitos para una cuenta profesional" });
+    expect(registerMock).not.toHaveBeenCalled();
+    fireEvent.click(within(requirements).getByRole("checkbox"));
+    fireEvent.click(within(requirements).getByRole("button", { name: "Continuar" }));
 
     await waitFor(() => {
       expect(registerMock).toHaveBeenCalledWith({

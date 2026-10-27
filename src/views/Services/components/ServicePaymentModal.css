@@ -338,6 +338,20 @@
 }
 
 /* Footer / Checkout CTA */
+.service-payment-modal__purchase-summary {
+  padding: var(--space-4);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.service-payment-modal__purchase-summary-title {
+  margin: 0 0 var(--space-3);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
 .service-payment-modal__footer {
   display: flex;
   align-items: center;

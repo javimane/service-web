@@ -438,9 +438,19 @@
 }
 
 /* Stock */
+.dash-products__stock-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  max-width: 100%;
+  gap: var(--space-4);
+}
+
 .dash-products__stock {
   font-weight: var(--weight-bold);
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .dash-products__stock--low {

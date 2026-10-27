@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import "./ProfessionalRequirementsDialog.css";
 
 type ProfessionalRequirementsDialogProps = {
@@ -20,9 +21,9 @@ export default function ProfessionalRequirementsDialog({
     if (open) setConfirmed(false);
   }, [open]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div className="professional-requirements__overlay">
       <section
         className="professional-requirements__dialog"
@@ -84,6 +85,6 @@ export default function ProfessionalRequirementsDialog({
           </button>
         </div>
       </section>
-    </div>
+    </div>, document.body
   );
 }

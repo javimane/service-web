@@ -306,7 +306,10 @@ export default function GoogleMapPickerModal({
         {/* Toolbar: Search & GPS Location */}
         <div className="google-map-picker-modal__toolbar">
           <form
-            onSubmit={handleSearch}
+            onSubmit={(event) => {
+              event.stopPropagation();
+              handleSearch(event);
+            }}
             className="google-map-picker-modal__search-form"
           >
             <div className="google-map-picker-modal__search-input-wrap">

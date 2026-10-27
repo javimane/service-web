@@ -179,6 +179,7 @@
 }
 
 .account-setup__error {
+  margin: var(--space-6) 0 0;
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--error-color);
   border-radius: var(--radius-md);

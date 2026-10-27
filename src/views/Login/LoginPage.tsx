@@ -12,7 +12,8 @@ import Footer from "@/components/Footer/Footer";
 import Modal from "../../components/Modal/Modal";
 import { API_BASE_URL } from "../../services/api.config";
 import RegisterPlanSelection from "../Register/RegisterPlanSelection";
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { checkoutReturnPath } from "@/utils/checkoutAuth";
 
 type LoginPageProps = {
   isModal?: boolean;
@@ -75,6 +76,12 @@ export default function LoginPage({
         setAuthError(
           "Los repartidores no tienen acceso a la plataforma web. Por favor, utilizá la aplicación móvil.",
         );
+        return;
+      }
+      const checkoutReturnTo = checkoutReturnPath(window.location.search);
+      if (checkoutReturnTo) {
+        if (isModal) onClose?.();
+        router.replace(checkoutReturnTo);
         return;
       }
       if (sessionStatus.requires_personal_name) {
@@ -320,6 +327,12 @@ export default function LoginPage({
         console.warn("refreshSession background warning:", refreshErr);
       }
 
+      const checkoutReturnTo = checkoutReturnPath(window.location.search);
+      if (checkoutReturnTo) {
+        if (isModal) onClose?.();
+        router.replace(checkoutReturnTo);
+        return;
+      }
       if (st?.requires_personal_name) {
         if (isModal) onClose?.();
         router.push(ROUTES.accountSetup);
@@ -377,6 +390,10 @@ export default function LoginPage({
 
   const formCard = (
     <div className="login-card">
+      <Link href={ROUTES.home} className="login-card__home-button" onClick={() => onClose?.()}>
+        <ArrowLeft size={18} aria-hidden="true" />
+        Volver al inicio
+      </Link>
       <h2 className="login-title">Bienvenido</h2>
       <p className="login-subtitle">
         Ingrese sus credenciales para acceder al panel.
@@ -480,9 +497,11 @@ export default function LoginPage({
                 process.env.NEXT_PUBLIC_API_BASE_URL ||
                 API_BASE_URL ||
                 "http://localhost:3000";
-              const redirectTo = encodeURIComponent(
-                window.location.origin + "/dashboard?auth=success",
-              );
+              const checkoutReturnTo = checkoutReturnPath(window.location.search);
+              const callback = checkoutReturnTo
+                ? `/login?auth=success&redirect=${encodeURIComponent(checkoutReturnTo)}`
+                : "/dashboard?auth=success";
+              const redirectTo = encodeURIComponent(window.location.origin + callback);
               window.location.href = `${apiBase}/api/auth/login/google?redirectTo=${redirectTo}`;
             }}
           >
@@ -531,32 +550,7 @@ export default function LoginPage({
     </div>
   );
   // If showPlanModal is active, always render the plan selection (regardless of isModal mode)
-  if (showPlanModal) {
-    return (
-      <div
-        style={{
-          zIndex: 1000,
-          overflowY: "auto",
-          position: "fixed",
-          inset: 0,
-          backgroundColor: "var(--bg-color)",
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          padding: "var(--space-8) var(--space-4)",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "1040px",
-          }}
-        >
-          <RegisterPlanSelection />
-        </div>
-      </div>
-    );
-  }
+  if (showPlanModal) return <RegisterPlanSelection />;
 
   if (isModal) return formCard;
 

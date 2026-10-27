@@ -45,13 +45,18 @@ import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink"
 import { calculateProductPricing } from "@/utils/productPricing";
 import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
 import { getDeliveryCoverage } from "@/utils/deliveryCoverage";
+import { detectPaymentCardBrand } from "@/utils/cardBrand";
 import { requestIdentityVerification } from "@/utils/identityVerification";
 import "./ProductPaymentModal.css";
 import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
+import CheckoutFinancialCost from "@/components/CheckoutFinancialCost/CheckoutFinancialCost";
 import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
 import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
 import QrPaymentConfirmedModal from "@/components/QrPaymentConfirmedModal/QrPaymentConfirmedModal";
-import { isQrPaymentConfirmed, useQrPaymentStatus } from "@/hooks/useQrPaymentStatus";
+import {
+  isQrPaymentConfirmed,
+  useQrPaymentStatus,
+} from "@/hooks/useQrPaymentStatus";
 
 interface ProductPaymentModalProps {
   isOpen: boolean;
@@ -87,7 +92,7 @@ export default function ProductPaymentModal({
   const { data: cardConfig } = useCardPaymentConfig();
   const { user, isAgeVerified } = useAuth();
   const { showSuccess, showError, showAlert } = useAlert();
-  const availableStock = Math.max(
+  const totalStock = Math.max(
     0,
     Math.trunc(Number(product?.stock ?? 0) || 0),
   );
@@ -96,6 +101,11 @@ export default function ProductPaymentModal({
   const [quantity, setQuantity] = useState<number>(initialQuantity);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("pickup");
   const [selectedBranchId, setSelectedBranchId] = useState("");
+  const { data: locationStocks, isLoading: stockLoading, isError: stockError } = useQuery({
+    queryKey: ["product-branch-stock", professionalProductId],
+    queryFn: () => commerceService.productBranchStock(professionalProductId!),
+    enabled: isOpen && Boolean(professionalProductId), staleTime: 0,
+  });
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [billingAddressId, setBillingAddressId] = useState("");
   const [billingAddressComplete, setBillingAddressComplete] = useState(false);
@@ -141,28 +151,34 @@ export default function ProductPaymentModal({
   const selectedBranch = branches.find(
     (branch) => branch.id === selectedBranchId,
   );
+  const stockAt = (branch: Branch) => {
+    if (!locationStocks) return 0;
+    if (!locationStocks.length) return 0;
+    return locationStocks.find(row => branch.is_main ? row.origin_address_id === branch.address_id : row.branch_id === branch.id)?.stock ?? 0;
+  };
+  const availableStock = selectedBranch ? stockAt(selectedBranch) : totalStock;
   const shippingBranches = useMemo(
     () =>
       branches.filter(
         (branch) =>
-          branch.delivery_available === true &&
+          stockAt(branch) >= quantity && branch.delivery_available === true &&
           (branch.is_open !== false || branch.own_riders_available === true) &&
           getDeliveryCoverage(branch, selectedAddress).status !== "outside",
       ),
-    [branches, selectedAddress],
+    [branches, selectedAddress, locationStocks, quantity, totalStock],
   );
   const hasShippingBranch = shippingBranches.length > 0;
   useEffect(() => {
     const current = branches.find((branch) => branch.id === selectedBranchId);
     const canUse = (branch: Branch) =>
-      deliveryType === "pickup"
+      stockAt(branch) >= quantity && (deliveryType === "pickup"
         ? branch.is_pickup_point
-        : shippingBranches.includes(branch);
+        : deliveryType === "shipment" ? shippingBranches.includes(branch) : true);
     if ((!current || !canUse(current)) && branches.length) {
       const available = branches.find(canUse);
       setSelectedBranchId(available?.id || "");
     }
-  }, [branches, selectedBranchId, deliveryType, shippingBranches]);
+  }, [branches, selectedBranchId, deliveryType, shippingBranches, locationStocks, quantity]);
   const deliveryCoverage = getDeliveryCoverage(selectedBranch, selectedAddress);
   const isOutsideDeliveryRange = deliveryCoverage.status === "outside";
   const hasPickupBranch = branches.some((branch) => branch.is_pickup_point);
@@ -179,16 +195,20 @@ export default function ProductPaymentModal({
   const [shippingCalc, setShippingCalc] =
     useState<CalculateShippingResponse | null>(null);
   const [quotedFor, setQuotedFor] = useState("");
-  const [deliveryCapacityError, setDeliveryCapacityError] = useState<{ key: string; message: string } | null>(null);
+  const [deliveryCapacityError, setDeliveryCapacityError] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
   const shippingQuoteKey = JSON.stringify({
     professionalProductId,
     quantity,
     selectedAddressId,
     selectedBranchId,
   });
-  const currentCapacityError = deliveryCapacityError?.key === shippingQuoteKey
-    ? deliveryCapacityError.message
-    : null;
+  const currentCapacityError =
+    deliveryCapacityError?.key === shippingQuoteKey
+      ? deliveryCapacityError.message
+      : null;
   const [isCalculatingShipping, setIsCalculatingShipping] =
     useState<boolean>(false);
 
@@ -216,7 +236,7 @@ export default function ProductPaymentModal({
     delivery_type: deliveryType,
     delivery_address_id:
       deliveryType === "shipment" ? selectedAddressId || undefined : undefined,
-    ...(deliveryType !== "coordinate_with_merchant" ? originSelection : {}),
+    ...originSelection,
   };
   const {
     data: productQuote,
@@ -225,9 +245,14 @@ export default function ProductPaymentModal({
     refetch: refreshProductQuote,
   } = useQuery({
     queryKey: ["product-checkout-quote", productQuoteRequest],
-    queryFn: () => commerceService.calculateProductCheckoutQuote(productQuoteRequest),
-    enabled: isOpen && Boolean(user) && Boolean(professionalProductId) &&
-      (deliveryType !== "shipment" || Boolean(selectedAddressId && selectedBranchId)),
+    queryFn: () =>
+      commerceService.calculateProductCheckoutQuote(productQuoteRequest),
+    enabled:
+      isOpen &&
+      Boolean(user) &&
+      Boolean(professionalProductId) &&
+      (deliveryType !== "shipment" ||
+        Boolean(selectedAddressId && selectedBranchId)),
     staleTime: 0,
     retry: false,
   });
@@ -287,9 +312,9 @@ export default function ProductPaymentModal({
       setCompletedOrder(null);
       setActiveQr(null);
       setQrPaymentConfirmed(false);
-      setQuantity(Math.max(1, Math.min(initialQuantity, availableStock)));
+      setQuantity(Math.max(1, Math.min(initialQuantity, totalStock)));
     }
-  }, [isOpen, initialQuantity, availableStock]);
+  }, [isOpen, initialQuantity, totalStock]);
 
   // QR countdown
   useEffect(() => {
@@ -341,11 +366,21 @@ export default function ProductPaymentModal({
       } catch (err) {
         if (isMounted) {
           setShippingCalc(null);
-          const details = err as { data?: { error_code?: string; message?: string }; response?: { data?: { error_code?: string; message?: string } } };
+          const details = err as {
+            data?: { error_code?: string; message?: string };
+            response?: { data?: { error_code?: string; message?: string } };
+          };
           const problem = details.data ?? details.response?.data;
           if (problem?.error_code === "DELIVERY_CAPACITY_UNAVAILABLE") {
-            setDeliveryCapacityError({ key: shippingQuoteKey, message: problem.message || "Este pedido supera la capacidad de los vehículos disponibles." });
-            setDeliveryType(hasPickupBranch ? "pickup" : "coordinate_with_merchant");
+            setDeliveryCapacityError({
+              key: shippingQuoteKey,
+              message:
+                problem.message ||
+                "Este pedido supera la capacidad de los vehículos disponibles.",
+            });
+            setDeliveryType(
+              hasPickupBranch ? "pickup" : "coordinate_with_merchant",
+            );
           }
         }
         console.warn("Shipping calculation error:", err);
@@ -432,7 +467,8 @@ export default function ProductPaymentModal({
     financingQuote
       ? financingQuote.totalAmount - subtotal
       : 0;
-  const totalToPay = productQuote?.total_amount ??
+  const totalToPay =
+    productQuote?.total_amount ??
     subtotal + financingAmount + calculatedShippingFee;
   const installmentAmount = Number((totalToPay / installments).toFixed(2));
 
@@ -475,13 +511,16 @@ export default function ProductPaymentModal({
 
   // Card brand detection
   const getCardBrand = (num: string) => {
-    const clean = num.replace(/\s/g, "");
-    if (clean.startsWith("4")) return "Visa";
-    if (/^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[01]|2720)/.test(clean))
-      return "Mastercard";
-    if (/^3[47]/.test(clean)) return "American Express";
-    if (/^(5896|6042|6043)/.test(clean)) return "Cabal";
-    return null;
+    const brand = detectPaymentCardBrand(num, cardType);
+    return brand
+      ? {
+          visa: "Visa",
+          mastercard: "Mastercard",
+          amex: "American Express",
+          cabal: "Cabal",
+          maestro: "Maestro",
+        }[brand]
+      : null;
   };
 
   const cardBrand = getCardBrand(cardNumber);
@@ -490,6 +529,9 @@ export default function ProductPaymentModal({
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (stockLoading || stockError || !selectedBranch) {
+      showError("Elegí una sucursal con stock disponible antes de pagar."); return;
+    }
     if (availableStock === 0 || quantity > availableStock) {
       showError(`Stock insuficiente (disponible: ${availableStock}).`);
       return;
@@ -590,8 +632,13 @@ export default function ProductPaymentModal({
     submittingRef.current = true;
     setIsSubmitting(true);
     try {
-      const freshQuote = await commerceService.calculateProductCheckoutQuote(productQuoteRequest);
-      if (Math.abs(Math.round((freshQuote.total_amount - totalToPay) * 100)) > 1) {
+      const freshQuote =
+        await commerceService.calculateProductCheckoutQuote(
+          productQuoteRequest,
+        );
+      if (
+        Math.abs(Math.round((freshQuote.total_amount - totalToPay) * 100)) > 1
+      ) {
         await refreshProductQuote();
         showError("El precio cambió. Revisá el nuevo total antes de pagar.");
         return;
@@ -667,9 +714,7 @@ export default function ProductPaymentModal({
           delivery_type: deliveryType,
           billing_address_id:
             providerMethod === "payway_card" ? billingAddressId : undefined,
-          ...(deliveryType !== "coordinate_with_merchant"
-            ? originSelection
-            : {}),
+          ...originSelection,
           delivery_address_id:
             deliveryType === "shipment" ||
             deliveryType === "coordinate_with_merchant"
@@ -756,15 +801,20 @@ export default function ProductPaymentModal({
         showAlert({
           type: "warning",
           title: "Estamos verificando tu pago",
-          message: "Consultá el estado de tu pedido en Mis Compras. No vuelvas a pagar mientras se confirma.",
+          message:
+            "Consultá el estado de tu pedido en Mis Compras. No vuelvas a pagar mientras se confirma.",
           confirmText: "Ir a Mis Compras",
           onConfirm: () => {
             if (!pageMode) onClose();
-            router.push(`/panel?view=purchases${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`);
+            router.push(
+              `/panel?view=purchases${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`,
+            );
           },
         });
       } else {
-        showError(err?.message || "No se pudo procesar el pago. Intenta nuevamente.");
+        showError(
+          err?.message || "No se pudo procesar el pago. Intenta nuevamente.",
+        );
       }
     } finally {
       submittingRef.current = false;
@@ -1035,7 +1085,9 @@ export default function ProductPaymentModal({
 
                   <button
                     type="button"
-                    disabled={!hasShippingBranch || Boolean(currentCapacityError)}
+                    disabled={
+                      !hasShippingBranch || Boolean(currentCapacityError)
+                    }
                     className={`product-payment-modal__delivery-card ${
                       deliveryType === "shipment"
                         ? "product-payment-modal__delivery-card--active"
@@ -1051,11 +1103,13 @@ export default function ProductPaymentModal({
                       <p>
                         {currentCapacityError
                           ? "No disponible para este peso o volumen"
-                          : !branches.some((branch) => branch.delivery_available)
-                          ? "No hay riders autónomos disponibles en esta zona"
-                          : isOutsideDeliveryRange
-                            ? "Fuera del rango de la sucursal seleccionada"
-                            : "Recibí en tu dirección"}
+                          : !branches.some(
+                                (branch) => branch.delivery_available,
+                              )
+                            ? "No hay riders autónomos disponibles en esta zona"
+                            : isOutsideDeliveryRange
+                              ? "Fuera del rango de la sucursal seleccionada"
+                              : "Recibí en tu dirección"}
                       </p>
                     </div>
                   </button>
@@ -1082,7 +1136,10 @@ export default function ProductPaymentModal({
                 </div>
 
                 {currentCapacityError && (
-                  <p className="product-payment-modal__coverage-notice" role="status">
+                  <p
+                    className="product-payment-modal__coverage-notice"
+                    role="status"
+                  >
                     {currentCapacityError}
                   </p>
                 )}
@@ -1102,7 +1159,7 @@ export default function ProductPaymentModal({
                   </p>
                 )}
 
-                {deliveryType !== "coordinate_with_merchant" && (
+                {(
                   <div className="product-payment-modal__address-fields">
                     <label className="product-payment-modal__input-label">
                       {deliveryType === "pickup"
@@ -1121,12 +1178,13 @@ export default function ProductPaymentModal({
                         .filter((branch) =>
                           deliveryType === "pickup"
                             ? branch.is_pickup_point
-                            : shippingBranches.includes(branch),
+                            : deliveryType === "shipment" ? shippingBranches.includes(branch) : true,
                         )
                         .map((branch) => (
-                          <option key={branch.id} value={branch.id}>
+                          <option key={branch.id} value={branch.id} disabled={stockAt(branch) < quantity}>
                             {branch.name} — {branch.street_name}{" "}
                             {branch.street_number}
+                            {` · Stock: ${stockAt(branch)}`}
                             {branch.delivery_eta_minutes
                               ? ` · Demora ${branch.delivery_eta_minutes} min`
                               : ""}
@@ -1380,12 +1438,13 @@ export default function ProductPaymentModal({
                       >
                         {installmentsEnabled
                           ? interestFreeChoices.map((c) => {
-                              const instPrice = Math.round(subtotal / c);
+                              const planTotal = subtotal + calculatedShippingFee;
+                              const instPrice = Number((planTotal / c).toFixed(2));
                               return (
                                 <option key={c} value={c}>
                                   {c === 1
-                                    ? `1 pago de $${subtotal.toLocaleString("es-AR")}`
-                                    : `${c} cuotas sin interés de $${instPrice.toLocaleString("es-AR")} (Total: $${subtotal.toLocaleString("es-AR")})`}
+                                    ? `1 pago de $${planTotal.toLocaleString("es-AR")}`
+                                    : `${c} cuotas sin interés de $${instPrice.toLocaleString("es-AR")} (Total: $${planTotal.toLocaleString("es-AR")})`}
                                 </option>
                               );
                             })
@@ -1396,12 +1455,12 @@ export default function ProductPaymentModal({
                                 commissions,
                               )!;
                               const surchargePct = quote.surchargePct;
-                              const totalW = quote.totalAmount;
-                              const instPrice = quote.installmentAmount;
+                              const totalW = quote.totalAmount + calculatedShippingFee;
+                              const instPrice = Number((totalW / c).toFixed(2));
                               return (
                                 <option key={c} value={c}>
                                   {c === 1
-                                    ? `1 cuota de $${subtotal.toLocaleString("es-AR")} (sin recargo)`
+                                    ? `1 pago de $${totalW.toLocaleString("es-AR")} (sin recargo)`
                                     : `${c} cuotas fijas de $${instPrice.toLocaleString("es-AR")} (+${surchargePct.toFixed(2)}% | Total: $${totalW.toLocaleString("es-AR")})`}
                                 </option>
                               );
@@ -1687,12 +1746,16 @@ export default function ProductPaymentModal({
                     </span>
                   </div>
                 )}
-                {financingAmount > 0 && (
-                  <div className="product-payment-modal__summary-row">
-                    <span>Financiación ({installments} cuotas):</span>
-                    <span>+${financingAmount.toLocaleString("es-AR")}</span>
-                  </div>
-                )}
+                <CheckoutFinancialCost
+                  totalAmount={totalToPay}
+                  financingAmount={paymentMethod === "card"
+                    ? productQuote?.financing_surcharge_amount ??
+                      (installments > 1 && !installmentsEnabled && !financingQuote ? null : financingAmount)
+                    : 0}
+                  installments={installments}
+                  paymentMethod={paymentMethod}
+                  pending={Boolean(user) && (productQuoteLoading || productQuoteError || !productQuote)}
+                />
                 {deliveryType !== "coordinate_with_merchant" &&
                   currentShippingCalc?.is_free_shipping && (
                     <div className="product-payment-modal__summary-row product-payment-modal__summary-row--free-delivery">
@@ -1709,12 +1772,6 @@ export default function ProductPaymentModal({
                   <span>Total a pagar:</span>
                   <div className="product-payment-modal__total-price-wrap">
                     <strong>${totalToPay.toLocaleString("es-AR")}</strong>
-                    {installments > 1 && (
-                      <span className="product-payment-modal__installment-preview">
-                        en {installments} cuotas de $
-                        {installmentAmount.toLocaleString("es-AR")}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1736,10 +1793,13 @@ export default function ProductPaymentModal({
                   className="btn-primary product-payment-modal__btn-submit"
                   disabled={
                     isSubmitting ||
+                    stockLoading || stockError || !selectedBranch ||
                     availableStock === 0 ||
                     quantity > availableStock ||
-                    (Boolean(user) && (productQuoteLoading ||
-                      productQuoteError || !productQuote)) ||
+                    (Boolean(user) &&
+                      (productQuoteLoading ||
+                        productQuoteError ||
+                        !productQuote)) ||
                     (isAgeRestricted && !canPurchase) ||
                     (paymentMethod === "card" &&
                       installments > 1 &&
@@ -1786,7 +1846,9 @@ export default function ProductPaymentModal({
   );
   return (
     <>
-      {pageMode ? content : (
+      {pageMode ? (
+        content
+      ) : (
         <Modal isOpen={isOpen} onClose={onClose} title="Finalizar Compra">
           {content}
         </Modal>

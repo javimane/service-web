@@ -37,12 +37,15 @@ import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import Modal from "@/components/Modal/Modal";
 import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
+import CheckoutFinancialCost from "@/components/CheckoutFinancialCost/CheckoutFinancialCost";
 import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
 import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
 import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
-import WithdrawalReviewNotice from "@/components/WithdrawalReviewNotice/WithdrawalReviewNotice";
 import QrPaymentConfirmedModal from "@/components/QrPaymentConfirmedModal/QrPaymentConfirmedModal";
-import { isQrPaymentConfirmed, useQrPaymentStatus } from "@/hooks/useQrPaymentStatus";
+import {
+  isQrPaymentConfirmed,
+  useQrPaymentStatus,
+} from "@/hooks/useQrPaymentStatus";
 import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
 import { ROUTES } from "@/routes/paths";
 import { getAccessToken } from "@/utils/auth";
@@ -78,7 +81,10 @@ export default function CartSection() {
     useState<CalculateShippingResponse | null>(null);
   const [scheduleForNextDay, setScheduleForNextDay] = useState(false);
   const [quotedFor, setQuotedFor] = useState("");
-  const [deliveryCapacityError, setDeliveryCapacityError] = useState<{ key: string; message: string } | null>(null);
+  const [deliveryCapacityError, setDeliveryCapacityError] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "paycloud_qr">(
     "paycloud_qr",
   );
@@ -99,10 +105,14 @@ export default function CartSection() {
   );
   const [qrTimerSeconds, setQrTimerSeconds] = useState(900); // 15 min
   const [qrPaymentConfirmed, setQrPaymentConfirmed] = useState(false);
-  const { data: qrOrder } = useQrPaymentStatus(activeQrData?.order_id, qrModalOpen);
+  const { data: qrOrder } = useQrPaymentStatus(
+    activeQrData?.order_id,
+    qrModalOpen,
+  );
 
   useEffect(() => {
-    if (!qrModalOpen || !activeQrData || !isQrPaymentConfirmed(qrOrder?.status)) return;
+    if (!qrModalOpen || !activeQrData || !isQrPaymentConfirmed(qrOrder?.status))
+      return;
     setQrModalOpen(false);
     setActiveQrData(null);
     setQrPaymentConfirmed(true);
@@ -206,6 +216,51 @@ export default function CartSection() {
   const serviceBranches = requiresServiceLocation
     ? branches.filter((branch) => allowedServiceLocationIds.includes(branch.id))
     : [];
+  const productListingIds = [
+    ...new Set(
+      items
+        .map((item) => item.professional_product_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const { data: branchInventory, isError: inventoryError } = useQuery({
+    queryKey: ["cart-branch-stock", productListingIds.join(",")],
+    queryFn: async () =>
+      Object.fromEntries(
+        await Promise.all(
+          productListingIds.map(
+            async (id) =>
+              [id, await commerceService.productBranchStock(id)] as const,
+          ),
+        ),
+      ),
+    enabled: productListingIds.length > 0,
+    staleTime: 0,
+  });
+  const stockAt = (item: (typeof items)[number], branch: Branch) => {
+    const rows = branchInventory?.[item.professional_product_id!];
+    if (!rows) return 0;
+    if (!rows.length) return 0;
+    return (
+      rows.find((row) =>
+        branch.is_main
+          ? row.origin_address_id === branch.address_id
+          : row.branch_id === branch.id,
+      )?.stock ?? 0
+    );
+  };
+  const hasBranchStock = (branch: Branch) =>
+    items
+      .filter((item) => item.professional_product_id)
+      .every((item) => stockAt(item, branch) >= item.quantity);
+  const branchStockLabel = (branch: Branch) =>
+    items
+      .filter((item) => item.professional_product_id)
+      .map(
+        (item) =>
+          `${item.product?.name || "Producto"}: ${stockAt(item, branch)} disponibles`,
+      )
+      .join(" · ");
 
   const { data: userAddresses = [] } = useQuery<UserAddress[]>({
     queryKey: ["user-addresses", user?.id],
@@ -292,21 +347,37 @@ export default function CartSection() {
 
   useEffect(() => {
     if (hasService) {
-      if (requiresServiceLocation && selectedBranchId && !serviceBranches.some((branch) => branch.id === selectedBranchId)) {
+      if (
+        requiresServiceLocation &&
+        selectedBranchId &&
+        !serviceBranches.some((branch) => branch.id === selectedBranchId)
+      ) {
         setSelectedBranchId("");
       }
       return;
     }
     const current = branches.find((branch) => branch.id === selectedBranchId);
     const canUse = (branch: Branch) =>
-      deliveryType === "pickup"
+      hasBranchStock(branch) &&
+      (deliveryType === "pickup"
         ? branch.is_pickup_point
-        : branch.is_open !== false || branch.own_riders_available;
+        : deliveryType === "coordinate_with_merchant" ||
+          branch.is_open !== false ||
+          branch.own_riders_available);
     if ((!current || !canUse(current)) && branches.length) {
       const available = branches.find(canUse);
       setSelectedBranchId(available?.id || "");
     }
-  }, [branches, selectedBranchId, deliveryType, hasService, requiresServiceLocation, serviceBranches]);
+  }, [
+    branches,
+    selectedBranchId,
+    deliveryType,
+    hasService,
+    requiresServiceLocation,
+    serviceBranches,
+    branchInventory,
+    items,
+  ]);
   useEffect(() => {
     setScheduleForNextDay(false);
   }, [selectedBranchId, deliveryType]);
@@ -322,9 +393,10 @@ export default function CartSection() {
     selectedAddressId,
     selectedBranchId,
   });
-  const currentCapacityError = deliveryCapacityError?.key === quoteKey
-    ? deliveryCapacityError.message
-    : null;
+  const currentCapacityError =
+    deliveryCapacityError?.key === quoteKey
+      ? deliveryCapacityError.message
+      : null;
   const latestQuoteKey = useRef(quoteKey);
   latestQuoteKey.current = quoteKey;
 
@@ -337,7 +409,8 @@ export default function CartSection() {
     onSuccess: (updatedCart) => {
       queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
     },
-    onError: (error: Error) => showError(error.message || "No se pudo actualizar la cantidad."),
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo actualizar la cantidad."),
   });
 
   const removeMutation = useMutation({
@@ -349,11 +422,15 @@ export default function CartSection() {
       showSuccess("Artículo eliminado del carrito.");
       queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
       if (user) {
-        void queryClient.invalidateQueries({ queryKey: ["user-cart", user.id] });
+        void queryClient.invalidateQueries({
+          queryKey: ["user-cart", user.id],
+        });
       }
     },
     onError: (error: Error) =>
-      showError(error.message || "No se pudo eliminar el artículo del carrito."),
+      showError(
+        error.message || "No se pudo eliminar el artículo del carrito.",
+      ),
   });
 
   const clearCartMutation = useMutation({
@@ -362,7 +439,9 @@ export default function CartSection() {
     onSuccess: (updatedCart) => {
       showSuccess("Carrito vaciado.");
       if (user) {
-        void queryClient.invalidateQueries({ queryKey: ["user-cart", user.id] });
+        void queryClient.invalidateQueries({
+          queryKey: ["user-cart", user.id],
+        });
       } else {
         queryClient.setQueryData(["user-cart", "guest"], updatedCart);
       }
@@ -400,10 +479,15 @@ export default function CartSection() {
       if (requestedKey !== latestQuoteKey.current) return;
       setQuotedFor("");
       setShippingQuote(null);
-      const details = error as { data?: { error_code?: string; message?: string }; response?: { data?: { error_code?: string; message?: string } } };
+      const details = error as {
+        data?: { error_code?: string; message?: string };
+        response?: { data?: { error_code?: string; message?: string } };
+      };
       const problem = details.data ?? details.response?.data;
       if (problem?.error_code === "DELIVERY_CAPACITY_UNAVAILABLE") {
-        const message = problem.message || "Este pedido supera la capacidad de los vehículos disponibles.";
+        const message =
+          problem.message ||
+          "Este pedido supera la capacidad de los vehículos disponibles.";
         setDeliveryCapacityError({ key: requestedKey, message });
         setDeliveryType("pickup");
         showError(message);
@@ -455,10 +539,18 @@ export default function CartSection() {
         if (!active) return;
         setQuotedFor("");
         setShippingQuote(null);
-        const details = error as { data?: { error_code?: string; message?: string }; response?: { data?: { error_code?: string; message?: string } } };
+        const details = error as {
+          data?: { error_code?: string; message?: string };
+          response?: { data?: { error_code?: string; message?: string } };
+        };
         const problem = details.data ?? details.response?.data;
         if (problem?.error_code === "DELIVERY_CAPACITY_UNAVAILABLE") {
-          setDeliveryCapacityError({ key: quoteKey, message: problem.message || "Este pedido supera la capacidad de los vehículos disponibles." });
+          setDeliveryCapacityError({
+            key: quoteKey,
+            message:
+              problem.message ||
+              "Este pedido supera la capacidad de los vehículos disponibles.",
+          });
           setDeliveryType("pickup");
         }
       }
@@ -514,7 +606,8 @@ export default function CartSection() {
           billing_address_id: paymentAddressId,
           ...(!hasService || requiresServiceLocation ? originSelection : {}),
           delivery_address_id:
-            activeDeliveryType === "shipment" || activeDeliveryType === "coordinate_with_merchant"
+            activeDeliveryType === "shipment" ||
+            activeDeliveryType === "coordinate_with_merchant"
               ? selectedAddressId || undefined
               : undefined,
           schedule_for_next_day:
@@ -570,17 +663,21 @@ export default function CartSection() {
     },
     onError: (error) => {
       checkoutStartedRef.current = false;
-      const checkoutError = error as Error & { data?: { error_code?: string; order_id?: string } };
+      const checkoutError = error as Error & {
+        data?: { error_code?: string; order_id?: string };
+      };
       if (checkoutError.data?.error_code === "CHECKOUT_REQUIRES_VERIFICATION") {
         const orderId = checkoutError.data.order_id;
         showAlert({
           type: "warning",
           title: "Estamos verificando tu pago",
-          message: "Consultá el estado de tu pedido en Mis Compras. No vuelvas a pagar mientras se confirma.",
+          message:
+            "Consultá el estado de tu pedido en Mis Compras. No vuelvas a pagar mientras se confirma.",
           confirmText: "Ir a Mis Compras",
-          onConfirm: () => router.push(
-            `${ROUTES.dashboard}?view=purchases${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`,
-          ),
+          onConfirm: () =>
+            router.push(
+              `${ROUTES.dashboard}?view=purchases${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`,
+            ),
         });
         return;
       }
@@ -681,6 +778,15 @@ export default function CartSection() {
 
   const handleCheckout = () => {
     if (checkoutStartedRef.current || checkoutMutation.isPending) return;
+    if (
+      productListingIds.length &&
+      (inventoryError || !selectedBranch || !hasBranchStock(selectedBranch))
+    ) {
+      showError(
+        "Elegí una sucursal con stock disponible para todos los productos.",
+      );
+      return;
+    }
     if (!user) {
       openAuth("login");
       return;
@@ -701,8 +807,14 @@ export default function CartSection() {
       showError("Seleccioná una sucursal disponible para el retiro o envío.");
       return;
     }
-    if (requiresServiceLocation && (!selectedBranch || !serviceBranches.some((branch) => branch.id === selectedBranch.id))) {
-      showError("Seleccioná una sucursal disponible para realizar el servicio.");
+    if (
+      requiresServiceLocation &&
+      (!selectedBranch ||
+        !serviceBranches.some((branch) => branch.id === selectedBranch.id))
+    ) {
+      showError(
+        "Seleccioná una sucursal disponible para realizar el servicio.",
+      );
       return;
     }
     if (activeDeliveryType === "shipment" && quotedFor !== quoteKey) {
@@ -821,7 +933,8 @@ export default function CartSection() {
                   item.service?.price ??
                   0;
                 const isServiceItem = Boolean(item.service_id || item.service);
-                const itemStock = item.professional_product?.stock ?? item.product?.stock;
+                const itemStock =
+                  item.professional_product?.stock ?? item.product?.stock;
 
                 return (
                   <div key={item.id} className="cart-item-card">
@@ -873,7 +986,10 @@ export default function CartSection() {
                           <button
                             type="button"
                             className="qty-btn"
-                            disabled={updateQtyMutation.isPending || (itemStock != null && item.quantity >= itemStock)}
+                            disabled={
+                              updateQtyMutation.isPending ||
+                              (itemStock != null && item.quantity >= itemStock)
+                            }
                             onClick={() =>
                               updateQtyMutation.mutate({
                                 id: item.id,
@@ -940,7 +1056,11 @@ export default function CartSection() {
                       <Truck size={20} />
                       <div>
                         <strong>Envío a domicilio</strong>
-                        <p>{currentCapacityError ? "No disponible para este peso o volumen" : "Por rider o transporte asignado"}</p>
+                        <p>
+                          {currentCapacityError
+                            ? "No disponible para este peso o volumen"
+                            : "Por rider o transporte asignado"}
+                        </p>
                       </div>
                     </button>
                   </>
@@ -957,7 +1077,11 @@ export default function CartSection() {
                 >
                   <Clock size={20} />
                   <div>
-                    <strong>{hasService && requiresServiceLocation ? "Servicio en sucursal" : "Acordar con vendedor"}</strong>
+                    <strong>
+                      {hasService && requiresServiceLocation
+                        ? "Servicio en sucursal"
+                        : "Acordar con vendedor"}
+                    </strong>
                     <p>
                       {hasService
                         ? requiresServiceLocation
@@ -970,7 +1094,9 @@ export default function CartSection() {
               </div>
 
               {currentCapacityError && !hasService && (
-                <p className="no-branches-warning" role="status">{currentCapacityError}</p>
+                <p className="no-branches-warning" role="status">
+                  {currentCapacityError}
+                </p>
               )}
 
               {hasService && requiresServiceLocation && (
@@ -980,19 +1106,23 @@ export default function CartSection() {
                   </label>
                   {serviceBranches.length === 0 ? (
                     <p className="no-branches-warning">
-                      Los servicios del carrito no tienen una sucursal disponible en común.
+                      Los servicios del carrito no tienen una sucursal
+                      disponible en común.
                     </p>
                   ) : (
                     <select
                       id="service-branch"
                       className="branch-select"
                       value={selectedBranchId}
-                      onChange={(event) => setSelectedBranchId(event.target.value)}
+                      onChange={(event) =>
+                        setSelectedBranchId(event.target.value)
+                      }
                     >
                       <option value="">Seleccionar sucursal</option>
                       {serviceBranches.map((branch) => (
                         <option key={branch.id} value={branch.id}>
-                          {branch.name} — {branch.street_name} {branch.street_number}
+                          {branch.name} — {branch.street_name}{" "}
+                          {branch.street_number}
                         </option>
                       ))}
                     </select>
@@ -1000,25 +1130,56 @@ export default function CartSection() {
                 </div>
               )}
 
-              {deliveryType === "coordinate_with_merchant" && !requiresServiceLocation && (
+              {deliveryType === "coordinate_with_merchant" &&
+                !requiresServiceLocation && (
+                  <div className="delivery-details-subbox">
+                    <label className="commercial-label">
+                      Dirección del destinatario
+                    </label>
+                    <select
+                      className="branch-select"
+                      value={selectedAddressId}
+                      onChange={(event) =>
+                        setSelectedAddressId(event.target.value)
+                      }
+                    >
+                      <option value="">Seleccionar dirección guardada</option>
+                      {userAddresses.map((address) => (
+                        <option key={address.id} value={address.id}>
+                          {address.name ||
+                            address.street_name ||
+                            address.street}{" "}
+                          {address.street_number || address.number}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+              {/* Pickup branch selection */}
+              {!hasService && deliveryType === "coordinate_with_merchant" && (
                 <div className="delivery-details-subbox">
-                  <label className="commercial-label">Dirección del destinatario</label>
+                  <label className="commercial-label">Sucursal de origen</label>
                   <select
                     className="branch-select"
-                    value={selectedAddressId}
-                    onChange={(event) => setSelectedAddressId(event.target.value)}
+                    value={selectedBranchId}
+                    onChange={(event) =>
+                      setSelectedBranchId(event.target.value)
+                    }
                   >
-                    <option value="">Seleccionar dirección guardada</option>
-                    {userAddresses.map((address) => (
-                      <option key={address.id} value={address.id}>
-                        {address.name || address.street_name || address.street} {address.street_number || address.number}
+                    <option value="">Seleccionar sucursal</option>
+                    {branches.map((branch) => (
+                      <option
+                        key={branch.id}
+                        value={branch.id}
+                        disabled={!hasBranchStock(branch)}
+                      >
+                        {branch.name} · {branchStockLabel(branch)}
                       </option>
                     ))}
                   </select>
                 </div>
               )}
-
-              {/* Pickup branch selection */}
               {!hasService && deliveryType === "pickup" && (
                 <div className="delivery-details-subbox">
                   <label className="commercial-label">
@@ -1039,9 +1200,14 @@ export default function CartSection() {
                       {branches
                         .filter((branch) => branch.is_pickup_point)
                         .map((b) => (
-                          <option key={b.id} value={b.id}>
+                          <option
+                            key={b.id}
+                            value={b.id}
+                            disabled={!hasBranchStock(b)}
+                          >
                             {b.name} — {b.street_name} {b.street_number} (
                             {b.opening_hours || "Horario comercial"})
+                            {` · ${branchStockLabel(b)}`}
                             {b.delivery_eta_minutes
                               ? ` · Demora ${b.delivery_eta_minutes} min`
                               : ""}
@@ -1080,8 +1246,13 @@ export default function CartSection() {
                           branch.own_riders_available,
                       )
                       .map((branch) => (
-                        <option key={branch.id} value={branch.id}>
+                        <option
+                          key={branch.id}
+                          value={branch.id}
+                          disabled={!hasBranchStock(branch)}
+                        >
                           {branch.name}
+                          {` · ${branchStockLabel(branch)}`}
                           {branch.delivery_eta_minutes
                             ? ` · Demora ${branch.delivery_eta_minutes} min`
                             : ""}
@@ -1217,12 +1388,27 @@ export default function CartSection() {
                 </span>
               </div>
 
-              {financingSurcharge > 0 && (
-                <div className="cart-summary-row">
-                  <span>Recargo por {installments} cuotas:</span>
-                  <span>${financingSurcharge.toLocaleString("es-AR")}</span>
-                </div>
-              )}
+              <CheckoutFinancialCost
+                totalAmount={total}
+                financingAmount={financingSurcharge}
+                installments={installments}
+                paymentMethod={paymentMethod}
+                pending={
+                  paymentMethod === "card" &&
+                  installments > 1 &&
+                  items.some(
+                    (item) =>
+                      !(item.service
+                        ? item.service.installments_enabled
+                        : item.professional_product?.installments_enabled) &&
+                      !calculateInstallmentFinancing(
+                        item.subtotal || 0,
+                        installments,
+                        commissionRates,
+                      ),
+                  )
+                }
+              />
 
               {activeDeliveryType !== "coordinate_with_merchant" &&
                 quotedFor === quoteKey &&
@@ -1241,275 +1427,294 @@ export default function CartSection() {
               )}
 
               {/* Payment gateway selection */}
-              {paymentMethod === "card" &&
-                cardConfig?.provider === "payway" && (
-                  <PaymentAddressCard
-                    preferredId={selectedAddressId}
-                    onChange={(id, complete) => {
-                      setBillingAddressId(id);
-                      setBillingAddressComplete(complete);
-                    }}
-                  />
-                )}
-              <div className="cart-payment-methods">
-                <label className="commercial-label">Medio de Pago</label>
-
-                <div
-                  className={`payment-choice-card ${
-                    paymentMethod === "paycloud_qr"
-                      ? "payment-choice-card--active"
-                      : ""
-                  }`}
-                  onClick={() => setPaymentMethod("paycloud_qr")}
-                >
-                  <QrCode size={20} />
-                  <div>
-                    <strong>QR Interoperable</strong>
-                    <p>
-                      Pagá con cualquier billetera (Mercado Pago, MODO, etc.)
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className={`payment-choice-card ${
-                    paymentMethod === "card"
-                      ? "payment-choice-card--active"
-                      : ""
-                  }`}
-                  onClick={() => setPaymentMethod("card")}
-                >
-                  <CreditCard size={20} />
-                  <div>
-                    <strong>Tarjeta de Crédito / Débito</strong>
-                    <p>Hasta 12 cuotas bancarias habilitadas</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Installments selector for Getnet */}
-              {paymentMethod === "card" && (
-                <div className="installments-box">
-                  <label className="commercial-label">Tarjeta guardada</label>
-                  <select
-                    className="installments-select"
-                    value={selectedCardId}
-                    onChange={(event) => setSelectedCardId(event.target.value)}
-                  >
-                    <option value="">Seleccionar tarjeta</option>
-                    {cardConfig?.provider === "payway" && (
-                      <option value="new">Usar una tarjeta nueva</option>
+              {user && (
+                <>
+                  {paymentMethod === "card" &&
+                    cardConfig?.provider === "payway" && (
+                      <PaymentAddressCard
+                        preferredId={selectedAddressId}
+                        onChange={(id, complete) => {
+                          setBillingAddressId(id);
+                          setBillingAddressComplete(complete);
+                        }}
+                      />
                     )}
-                    {savedCards.map((card) => (
-                      <option key={card.id} value={card.id}>
-                        {card.card_brand} terminada en {card.last_four}
-                      </option>
-                    ))}
-                  </select>
-                  {savedCards.length === 0 &&
-                    cardConfig?.provider !== "payway" && (
-                      <p>
-                        Guardá una tarjeta en tu perfil para usar este medio de
-                        pago.
-                      </p>
-                    )}
-                  {cardConfig?.provider === "payway" && (
-                    <>
-                      {!savedCards.some(
-                        (card) => card.id === selectedCardId,
-                      ) && (
+                  <div className="cart-payment-methods">
+                    <label className="commercial-label">Medio de Pago</label>
+
+                    <div
+                      className={`payment-choice-card ${
+                        paymentMethod === "paycloud_qr"
+                          ? "payment-choice-card--active"
+                          : ""
+                      }`}
+                      onClick={() => setPaymentMethod("paycloud_qr")}
+                    >
+                      <QrCode size={20} />
+                      <div>
+                        <strong>QR Interoperable</strong>
+                        <p>
+                          Pagá con cualquier billetera (Mercado Pago, MODO,
+                          etc.)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`payment-choice-card ${
+                        paymentMethod === "card"
+                          ? "payment-choice-card--active"
+                          : ""
+                      }`}
+                      onClick={() => setPaymentMethod("card")}
+                    >
+                      <CreditCard size={20} />
+                      <div>
+                        <strong>Tarjeta de Crédito / Débito</strong>
+                        <p>Hasta 12 cuotas bancarias habilitadas</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Installments selector for Getnet */}
+                  {paymentMethod === "card" && (
+                    <div className="installments-box">
+                      <label className="commercial-label">
+                        Tarjeta guardada
+                      </label>
+                      <select
+                        className="installments-select"
+                        value={selectedCardId}
+                        onChange={(event) =>
+                          setSelectedCardId(event.target.value)
+                        }
+                      >
+                        <option value="">Seleccionar tarjeta</option>
+                        {cardConfig?.provider === "payway" && (
+                          <option value="new">Usar una tarjeta nueva</option>
+                        )}
+                        {savedCards.map((card) => (
+                          <option key={card.id} value={card.id}>
+                            {card.card_brand} terminada en {card.last_four}
+                          </option>
+                        ))}
+                      </select>
+                      {savedCards.length === 0 &&
+                        cardConfig?.provider !== "payway" && (
+                          <p>
+                            Guardá una tarjeta en tu perfil para usar este medio
+                            de pago.
+                          </p>
+                        )}
+                      {cardConfig?.provider === "payway" && (
                         <>
+                          {!savedCards.some(
+                            (card) => card.id === selectedCardId,
+                          ) && (
+                            <>
+                              <label className="commercial-label cart-card-field">
+                                Número de tarjeta
+                                <input
+                                  className="installments-select"
+                                  autoComplete="cc-number"
+                                  value={paywayInput.number}
+                                  onChange={(e) =>
+                                    setPaywayInput({
+                                      ...paywayInput,
+                                      number: e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 19),
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label className="commercial-label cart-card-field">
+                                Titular
+                                <input
+                                  className="installments-select"
+                                  autoComplete="cc-name"
+                                  value={paywayInput.holder}
+                                  onChange={(e) =>
+                                    setPaywayInput({
+                                      ...paywayInput,
+                                      holder: e.target.value,
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label className="commercial-label cart-card-field">
+                                DNI
+                                <input
+                                  className="installments-select"
+                                  value={paywayInput.dni}
+                                  onChange={(e) =>
+                                    setPaywayInput({
+                                      ...paywayInput,
+                                      dni: e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 9),
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label className="commercial-label cart-card-field">
+                                Vencimiento (MM/AA)
+                                <input
+                                  className="installments-select"
+                                  autoComplete="cc-exp"
+                                  inputMode="numeric"
+                                  maxLength={5}
+                                  placeholder="MM/AA"
+                                  value={paywayInput.expiry}
+                                  onChange={(e) => {
+                                    const digits = e.target.value
+                                      .replace(/\D/g, "")
+                                      .slice(0, 4);
+                                    setPaywayInput((current) => ({
+                                      ...current,
+                                      expiry:
+                                        digits.length > 2
+                                          ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+                                          : digits,
+                                    }));
+                                  }}
+                                />
+                              </label>
+                              <label className="commercial-label cart-card-field">
+                                Tipo de tarjeta
+                                <select
+                                  className="installments-select"
+                                  value={paywayInput.type}
+                                  onChange={(e) =>
+                                    setPaywayInput({
+                                      ...paywayInput,
+                                      type: e.target.value as
+                                        | "credit"
+                                        | "debit",
+                                    })
+                                  }
+                                >
+                                  <option value="credit">Crédito</option>
+                                  <option value="debit">Débito</option>
+                                </select>
+                              </label>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={savePaywayCard}
+                                  onChange={(e) =>
+                                    setSavePaywayCard(e.target.checked)
+                                  }
+                                />{" "}
+                                Guardar tarjeta después del pago
+                              </label>
+                            </>
+                          )}
                           <label className="commercial-label cart-card-field">
-                            Número de tarjeta
+                            Código de seguridad
                             <input
                               className="installments-select"
-                              autoComplete="cc-number"
-                              value={paywayInput.number}
+                              type="password"
+                              autoComplete="cc-csc"
+                              maxLength={4}
+                              value={paywayInput.cvv}
                               onChange={(e) =>
                                 setPaywayInput({
                                   ...paywayInput,
-                                  number: e.target.value
-                                    .replace(/\D/g, "")
-                                    .slice(0, 19),
+                                  cvv: e.target.value.replace(/\D/g, ""),
                                 })
                               }
                             />
-                          </label>
-                          <label className="commercial-label cart-card-field">
-                            Titular
-                            <input
-                              className="installments-select"
-                              autoComplete="cc-name"
-                              value={paywayInput.holder}
-                              onChange={(e) =>
-                                setPaywayInput({
-                                  ...paywayInput,
-                                  holder: e.target.value,
-                                })
-                              }
-                            />
-                          </label>
-                          <label className="commercial-label cart-card-field">
-                            DNI
-                            <input
-                              className="installments-select"
-                              value={paywayInput.dni}
-                              onChange={(e) =>
-                                setPaywayInput({
-                                  ...paywayInput,
-                                  dni: e.target.value
-                                    .replace(/\D/g, "")
-                                    .slice(0, 9),
-                                })
-                              }
-                            />
-                          </label>
-                          <label className="commercial-label cart-card-field">
-                            Vencimiento (MM/AA)
-                            <input
-                              className="installments-select"
-                              autoComplete="cc-exp"
-                              inputMode="numeric"
-                              maxLength={5}
-                              placeholder="MM/AA"
-                              value={paywayInput.expiry}
-                              onChange={(e) => {
-                                const digits = e.target.value
-                                  .replace(/\D/g, "")
-                                  .slice(0, 4);
-                                setPaywayInput((current) => ({
-                                  ...current,
-                                  expiry:
-                                    digits.length > 2
-                                      ? `${digits.slice(0, 2)}/${digits.slice(2)}`
-                                      : digits,
-                                }));
-                              }}
-                            />
-                          </label>
-                          <label className="commercial-label cart-card-field">
-                            Tipo de tarjeta
-                            <select
-                              className="installments-select"
-                              value={paywayInput.type}
-                              onChange={(e) =>
-                                setPaywayInput({
-                                  ...paywayInput,
-                                  type: e.target.value as "credit" | "debit",
-                                })
-                              }
-                            >
-                              <option value="credit">Crédito</option>
-                              <option value="debit">Débito</option>
-                            </select>
-                          </label>
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={savePaywayCard}
-                              onChange={(e) =>
-                                setSavePaywayCard(e.target.checked)
-                              }
-                            />{" "}
-                            Guardar tarjeta después del pago
                           </label>
                         </>
                       )}
-                      <label className="commercial-label cart-card-field">
-                        Código de seguridad
-                        <input
-                          className="installments-select"
-                          type="password"
-                          autoComplete="cc-csc"
-                          maxLength={4}
-                          value={paywayInput.cvv}
-                          onChange={(e) =>
-                            setPaywayInput({
-                              ...paywayInput,
-                              cvv: e.target.value.replace(/\D/g, ""),
-                            })
-                          }
-                        />
+                      <label className="commercial-label">
+                        Cuotas Disponibles
                       </label>
-                    </>
-                  )}
-                  <label className="commercial-label">Cuotas Disponibles</label>
-                  {hasPerishable ? (
-                    <div className="perishable-warning-pill">
-                      <AlertTriangle size={14} />
-                      <span>
-                        Los alimentos y perecederos solo se abonan en 1 pago.
-                      </span>
+                      {hasPerishable ? (
+                        <div className="perishable-warning-pill">
+                          <AlertTriangle size={14} />
+                          <span>
+                            Los alimentos y perecederos solo se abonan en 1
+                            pago.
+                          </span>
+                        </div>
+                      ) : (
+                        <select
+                          className="installments-select"
+                          value={installments}
+                          onChange={(e) =>
+                            setInstallments(parseInt(e.target.value, 10))
+                          }
+                        >
+                          {availableInstallments.map((count) => {
+                            const surcharge =
+                              count > 1 && hasFinancedService
+                                ? items.reduce((sum, item) => {
+                                    if (
+                                      item.service
+                                        ? item.service.installments_enabled
+                                        : item.professional_product
+                                            ?.installments_enabled
+                                    )
+                                      return sum;
+                                    const quote = calculateInstallmentFinancing(
+                                      item.subtotal || 0,
+                                      count,
+                                      commissionRates,
+                                    );
+                                    return (
+                                      sum +
+                                      (quote
+                                        ? quote.totalAmount -
+                                          (item.subtotal || 0)
+                                        : 0)
+                                    );
+                                  }, 0)
+                                : 0;
+                            const installmentTotal =
+                              subtotal +
+                              surcharge +
+                              (activeDeliveryType === "shipment" &&
+                              quotedFor === quoteKey
+                                ? shippingCost
+                                : 0);
+                            return (
+                              <option key={count} value={count}>
+                                {count === 1 ? "1 pago" : `${count} cuotas`} de
+                                $
+                                {Number(
+                                  (installmentTotal / count).toFixed(2),
+                                ).toLocaleString("es-AR")}
+                                {surcharge > 0
+                                  ? " con recargo"
+                                  : " sin interés"}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      )}
                     </div>
-                  ) : (
-                    <select
-                      className="installments-select"
-                      value={installments}
-                      onChange={(e) =>
-                        setInstallments(parseInt(e.target.value, 10))
-                      }
-                    >
-                      {availableInstallments.map((count) => {
-                        const surcharge =
-                          count > 1 && hasFinancedService
-                            ? items.reduce((sum, item) => {
-                                if (
-                                  item.service
-                                    ? item.service.installments_enabled
-                                    : item.professional_product
-                                        ?.installments_enabled
-                                )
-                                  return sum;
-                                const quote = calculateInstallmentFinancing(
-                                  item.subtotal || 0,
-                                  count,
-                                  commissionRates,
-                                );
-                                return (
-                                  sum +
-                                  (quote
-                                    ? quote.totalAmount - (item.subtotal || 0)
-                                    : 0)
-                                );
-                              }, 0)
-                            : 0;
-                        const installmentTotal =
-                          subtotal +
-                          surcharge +
-                          (activeDeliveryType === "shipment" &&
-                          quotedFor === quoteKey
-                            ? shippingCost
-                            : 0);
-                        return (
-                          <option key={count} value={count}>
-                            {count === 1 ? "1 pago" : `${count} cuotas`} de $
-                            {Math.round(
-                              installmentTotal / count,
-                            ).toLocaleString("es-AR")}
-                            {surcharge > 0 ? " con recargo" : " sin interés"}
-                          </option>
-                        );
-                      })}
-                    </select>
                   )}
-                </div>
+                </>
               )}
-
               <ReturnsPolicyLink />
-              <WithdrawalReviewNotice />
               <button
                 type="button"
                 className="btn-primary cart-checkout-btn"
                 disabled={
                   checkoutMutation.isPending ||
                   isAuthLoading ||
-                  (paymentMethod === "card" &&
+                  (Boolean(user) &&
+                    paymentMethod === "card" &&
                     cardConfig?.provider === "payway" &&
                     !billingAddressComplete)
                 }
                 onClick={handleCheckout}
               >
-                <span>Pagar pedido</span>
+                <span>
+                  {user ? "Pagar pedido" : "Iniciar sesión para pagar"}
+                </span>
                 <ArrowRight size={18} />
               </button>
 

@@ -1,4 +1,5 @@
 "use client";
+import ProductBranchStock from "@/components/ProductBranchStock/ProductBranchStock";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -1436,7 +1437,6 @@ export default function DashboardProducts({
       data: {
         product_condition: editProduct.product_condition,
         price: Number(editProduct.price),
-        stock: Number(editProduct.stock),
         offer_price: Number(editProduct.offerPrice) || 0,
         image_url: finalImages,
         images_to_save: finalImages,
@@ -1858,11 +1858,14 @@ export default function DashboardProducts({
                     </div>
                   </td>
                   <td className="dash-products__cell-right">
-                    <span
-                      className={`dash-products__stock ${product.stock <= 10 ? "dash-products__stock--low" : ""}`}
-                    >
-                      {product.stock}
-                    </span>
+                    <div className="dash-products__stock-controls">
+                      <span
+                        className={`dash-products__stock ${product.stock <= 10 ? "dash-products__stock--low" : ""}`}
+                      >
+                        Total: {product.stock}
+                      </span>
+                      <ProductBranchStock listingId={product.professional_product_id || product.id} onSaved={() => { void refetchProducts(); }} />
+                    </div>
                   </td>
                   <td className="dash-products__cell-right">
                     <div className="dash-products__actions">
@@ -2948,6 +2951,7 @@ export default function DashboardProducts({
                     min="0"
                     placeholder="0"
                     value={editProduct.stock}
+                    readOnly
                     onChange={(e) =>
                       setEditProduct({ ...editProduct, stock: e.target.value })
                     }
@@ -2963,6 +2967,7 @@ export default function DashboardProducts({
                       {editProductErrors.stock}
                     </span>
                   )}
+                  <small>El stock se administra desde «Stock por sucursal» en la lista de productos.</small>
                 </div>
 
                 <div className="dash-products__modal-field dash-products__field--full">

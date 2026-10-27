@@ -330,10 +330,16 @@
 
 .reputation-reviews-tabs {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
 }
 
 .reputation-tab-btn {
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  line-height: 1;
   background: var(--surface-soft);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);

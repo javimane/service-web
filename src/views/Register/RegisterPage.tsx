@@ -15,7 +15,7 @@ import { useAuth } from "../../context/AuthContext";
 import "../Login/LoginPage.css";
 import "./RegisterPage.css";
 import Footer from "@/components/Footer/Footer";
-import { Eye, EyeOff } from "lucide-react";
+import { Check, Circle, Eye, EyeOff } from "lucide-react";
 import { TERMS_SECTIONS } from "../Terms/TermsPage";
 
 type RegisterPageProps = {
@@ -37,7 +37,7 @@ export default function RegisterPage({
     password: "",
     confirmPassword: "",
   });
-  const [role, setRole] = useState<"normal" | "professional">("professional");
+  const [role, setRole] = useState<"normal" | "professional">("normal");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -47,11 +47,20 @@ export default function RegisterPage({
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const [requirementsAction, setRequirementsAction] = useState<"register" | "google" | null>(null);
+  const [requirementsAction, setRequirementsAction] = useState<
+    "register" | "google" | null
+  >(null);
   const [requirementsConfirmed, setRequirementsConfirmed] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const { refreshSession } = useAuth();
+  const passwordRequirements = [
+    { id: "length", label: "Mínimo 9 caracteres", met: formData.password.length >= 9 },
+    { id: "uppercase", label: "Al menos 1 mayúscula", met: /[A-Z]/.test(formData.password) },
+    { id: "number", label: "Al menos 1 número", met: /\d/.test(formData.password) },
+    { id: "special", label: "Al menos 1 carácter especial (!, @, #…)", met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(formData.password) },
+    { id: "spaces", label: "Sin espacios", met: formData.password.length > 0 && !/\s/.test(formData.password) },
+  ];
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -73,15 +82,11 @@ export default function RegisterPage({
 
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Debe tener al menos 6 caracteres";
+    } else if (formData.password.length < 9) {
+      newErrors.password = "Debe tener al menos 9 caracteres";
     } else if (/\s/.test(formData.password)) {
       newErrors.password = "La contraseña no puede contener espacios";
-    } else if (
-      !/(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/.test(
-        formData.password,
-      )
-    ) {
+    } else if (passwordRequirements.some((requirement) => !requirement.met)) {
       newErrors.password =
         "Debe contener al menos una mayúscula, un número y un carácter especial";
     }
@@ -93,7 +98,8 @@ export default function RegisterPage({
     }
 
     if (!acceptedTerms) {
-      newErrors.terms = "Debes aceptar los términos y condiciones para continuar";
+      newErrors.terms =
+        "Debes aceptar los términos y condiciones para continuar";
     }
 
     setErrors(newErrors);
@@ -180,7 +186,8 @@ export default function RegisterPage({
     if (!acceptedTerms) {
       setErrors((prev) => ({
         ...prev,
-        terms: "Debes aceptar los términos y condiciones antes de registrarte con Google",
+        terms:
+          "Debes aceptar los términos y condiciones antes de registrarte con Google",
       }));
       return;
     }
@@ -236,45 +243,7 @@ export default function RegisterPage({
         onSubmit={handleSubmit}
         noValidate
       >
-        <div
-          className="role-selector"
-          style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}
-        >
-          <label
-            className={`role-option ${role === "professional" ? "active" : ""}`}
-            style={{
-              flex: 1,
-              padding: "1rem",
-              border: `1px solid ${role === "professional" ? "var(--accent-color)" : "var(--border-color)"}`,
-              borderRadius: "var(--radius-md)",
-              cursor: "pointer",
-              textAlign: "center",
-              background:
-                role === "professional"
-                  ? "var(--accent-transparent)"
-                  : "var(--bg-card)",
-            }}
-          >
-            <input
-              type="radio"
-              name="role"
-              value="professional"
-              checked={role === "professional"}
-              onChange={() => setRole("professional")}
-              style={{ display: "none" }}
-            />
-            <span
-              style={{
-                fontWeight: "var(--weight-bold)",
-                color:
-                  role === "professional"
-                    ? "var(--accent-color)"
-                    : "var(--text-secondary)",
-              }}
-            >
-              Soy Profesional
-            </span>
-          </label>
+        <div className="role-selector">
           <label
             className={`role-option ${role === "normal" ? "active" : ""}`}
             style={{
@@ -310,7 +279,42 @@ export default function RegisterPage({
                     : "var(--text-secondary)",
               }}
             >
-              Busco Servicios
+              Busco Servicios/Productos
+            </span>
+          </label>
+          <label
+            className={`role-option ${role === "professional" ? "active" : ""}`}
+            style={{
+              flex: 1,
+              padding: "1rem",
+              border: `1px solid ${role === "professional" ? "var(--accent-color)" : "var(--border-color)"}`,
+              borderRadius: "var(--radius-md)",
+              cursor: "pointer",
+              textAlign: "center",
+              background:
+                role === "professional"
+                  ? "var(--accent-transparent)"
+                  : "var(--bg-card)",
+            }}
+          >
+            <input
+              type="radio"
+              name="role"
+              value="professional"
+              checked={role === "professional"}
+              onChange={() => setRole("professional")}
+              style={{ display: "none" }}
+            />
+            <span
+              style={{
+                fontWeight: "var(--weight-bold)",
+                color:
+                  role === "professional"
+                    ? "var(--accent-color)"
+                    : "var(--text-secondary)",
+              }}
+            >
+              Soy Profesional/Comercio
             </span>
           </label>
         </div>
@@ -318,19 +322,43 @@ export default function RegisterPage({
         <div className="form-row">
           <div className="input-group">
             <label htmlFor="firstName">NOMBRE</label>
-            <div className={`input-wrapper ${errors.firstName ? "has-error" : ""}`}>
-              <input id="firstName" name="firstName" type="text" autoComplete="given-name" value={formData.firstName} onChange={handleChange} placeholder="Ej. Juan" />
+            <div
+              className={`input-wrapper ${errors.firstName ? "has-error" : ""}`}
+            >
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                autoComplete="given-name"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="Ej. Juan"
+              />
               <span className="input-icon">👤</span>
             </div>
-            {errors.firstName && <span className="error-text">{errors.firstName}</span>}
+            {errors.firstName && (
+              <span className="error-text">{errors.firstName}</span>
+            )}
           </div>
           <div className="input-group">
             <label htmlFor="lastName">APELLIDO</label>
-            <div className={`input-wrapper ${errors.lastName ? "has-error" : ""}`}>
-              <input id="lastName" name="lastName" type="text" autoComplete="family-name" value={formData.lastName} onChange={handleChange} placeholder="Ej. Pérez" />
+            <div
+              className={`input-wrapper ${errors.lastName ? "has-error" : ""}`}
+            >
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                autoComplete="family-name"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Ej. Pérez"
+              />
               <span className="input-icon">👤</span>
             </div>
-            {errors.lastName && <span className="error-text">{errors.lastName}</span>}
+            {errors.lastName && (
+              <span className="error-text">{errors.lastName}</span>
+            )}
           </div>
         </div>
 
@@ -360,6 +388,9 @@ export default function RegisterPage({
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
+                minLength={9}
+                autoComplete="new-password"
+                aria-describedby="register-password-requirements"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
@@ -373,9 +404,24 @@ export default function RegisterPage({
                 }
                 aria-pressed={showPassword}
               >
-                {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                {showPassword ? (
+                  <EyeOff size={18} aria-hidden="true" />
+                ) : (
+                  <Eye size={18} aria-hidden="true" />
+                )}
               </button>
             </div>
+            <ul id="register-password-requirements" className="register-password__requirements" aria-label="Requisitos de la contraseña">
+              {passwordRequirements.map((requirement) => (
+                <li key={requirement.id}
+                  className={`register-password__requirement${requirement.met ? " register-password__requirement--met" : ""}`}
+                  aria-label={`${requirement.met ? "Cumplido" : "Pendiente"}: ${requirement.label}`}
+                >
+                  {requirement.met ? <Check size={14} aria-hidden="true" /> : <Circle size={14} aria-hidden="true" />}
+                  <span>{requirement.label}</span>
+                </li>
+              ))}
+            </ul>
             {errors.password && (
               <span className="error-text">{errors.password}</span>
             )}
@@ -405,7 +451,11 @@ export default function RegisterPage({
                 }
                 aria-pressed={showConfirmPassword}
               >
-                {showConfirmPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                {showConfirmPassword ? (
+                  <EyeOff size={18} aria-hidden="true" />
+                ) : (
+                  <Eye size={18} aria-hidden="true" />
+                )}
               </button>
             </div>
             {errors.confirmPassword && (
@@ -415,7 +465,10 @@ export default function RegisterPage({
         </div>
 
         <div className="register-terms">
-          <label className="register-terms__label" htmlFor="register-terms-checkbox">
+          <label
+            className="register-terms__label"
+            htmlFor="register-terms-checkbox"
+          >
             <input
               id="register-terms-checkbox"
               type="checkbox"
@@ -520,7 +573,9 @@ export default function RegisterPage({
           {TERMS_SECTIONS.map((section, index) => (
             <div key={index} className="terms-modal-section">
               <h3 className="terms-modal-section__title">{section.title}</h3>
-              <div className="terms-modal-section__content">{section.content}</div>
+              <div className="terms-modal-section__content">
+                {section.content}
+              </div>
             </div>
           ))}
         </div>
@@ -580,29 +635,7 @@ export default function RegisterPage({
 
       <Footer />
 
-      {showPlanModal && (
-        <div
-          className="subscription-confirm-overlay"
-          style={{
-            zIndex: 1000,
-            padding: "20px",
-            overflowY: "auto",
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-        >
-          <div
-            style={{
-              position: "relative",
-              maxWidth: "1000px",
-              margin: "0 auto",
-            }}
-          >
-            <RegisterPlanSelection />
-          </div>
-        </div>
-      )}
+      {showPlanModal && <RegisterPlanSelection />}
     </div>
   );
 }

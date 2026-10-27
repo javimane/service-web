@@ -308,6 +308,17 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
           por el estado y entrega puntual del paquete.
         </p>
 
+        <h3 className="terms-section__subtitle">5.1. Retiro en tienda</h3>
+        <p>
+          En las compras de productos con retiro en tienda, el Comprador tiene
+          treinta (30) días corridos para retirar el pedido en la sucursal
+          elegida. El plazo comienza cuando el Comercio marca el pedido como
+          listo para retirar. Si el Comprador no lo retira dentro de ese plazo,
+          pierde la compra: ya no podrá retirar el producto ni recuperar el
+          importe abonado por ella. Esta condición no limita los derechos de
+          arrepentimiento, garantía o reclamo que correspondan por ley.
+        </p>
+
         <h3 className="terms-section__subtitle">
           5.2. Responsabilidad de Riders y Fleteros (Custodia y Cancelaciones)
         </h3>

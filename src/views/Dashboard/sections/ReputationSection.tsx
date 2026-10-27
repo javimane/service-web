@@ -40,37 +40,37 @@ const TIERS: TierInfo[] = [
   },
   {
     name: "Bronce",
-    min: 5000,
+    min: 2500,
     badgeClass: "reputation-tier--bronze",
     label: "Nivel Bronce",
   },
   {
     name: "Plata",
-    min: 25000,
+    min: 22500,
     badgeClass: "reputation-tier--silver",
     label: "Nivel Plata",
   },
   {
     name: "Oro",
-    min: 150000,
+    min: 147500,
     badgeClass: "reputation-tier--gold",
     label: "Nivel Oro",
   },
   {
     name: "Platino",
-    min: 250000,
+    min: 247500,
     badgeClass: "reputation-tier--platinum",
     label: "Nivel Platino",
   },
   {
     name: "Mercado Líder",
-    min: 600000,
+    min: 597500,
     badgeClass: "reputation-tier--leader",
     label: "Mercado Líder",
   },
   {
     name: "Supremo",
-    min: 3000000,
+    min: 2997500,
     badgeClass: "reputation-tier--supreme",
     label: "Nivel Supremo",
   },
@@ -98,9 +98,7 @@ export default function ReputationSection({
     sessionStatus?.subscription?.professional_id ||
     sessionStatus?.professional_id;
 
-  const [reviewFilter, setReviewFilter] = useState<
-    "all" | "positive" | "negative"
-  >("all");
+  const [reviewFilter, setReviewFilter] = useState<number | null>(null);
 
   const { data: scoreData, isLoading: isLoadingScore } =
     useQuery<ProfessionalScore>({
@@ -168,11 +166,9 @@ export default function ReputationSection({
         )
       : 0.0);
 
-  const filteredReviews = reviews.filter((r) => {
-    if (reviewFilter === "positive") return (r.rating || 5) >= 4;
-    if (reviewFilter === "negative") return (r.rating || 5) <= 3;
-    return true;
-  });
+  const filteredReviews = reviews.filter(
+    (review) => reviewFilter === null || review.rating === reviewFilter,
+  );
 
   const completedRate = scoreData?.completed_services_rate ?? 100;
   const penaltiesCount = scoreData?.penalties_count ?? 0;
@@ -318,30 +314,26 @@ export default function ReputationSection({
             <button
               type="button"
               className={`reputation-tab-btn ${
-                reviewFilter === "all" ? "reputation-tab-btn--active" : ""
+                reviewFilter === null ? "reputation-tab-btn--active" : ""
               }`}
-              onClick={() => setReviewFilter("all")}
+              aria-pressed={reviewFilter === null}
+              onClick={() => setReviewFilter(null)}
             >
               Todas ({reviews.length})
             </button>
-            <button
-              type="button"
-              className={`reputation-tab-btn ${
-                reviewFilter === "positive" ? "reputation-tab-btn--active" : ""
-              }`}
-              onClick={() => setReviewFilter("positive")}
-            >
-              Positivas 4-5★
-            </button>
-            <button
-              type="button"
-              className={`reputation-tab-btn ${
-                reviewFilter === "negative" ? "reputation-tab-btn--active" : ""
-              }`}
-              onClick={() => setReviewFilter("negative")}
-            >
-              A mejorar 1-3★
-            </button>
+            {[5, 4, 3, 2, 1].map((stars) => (
+              <button
+                key={stars}
+                type="button"
+                className={`reputation-tab-btn ${
+                  reviewFilter === stars ? "reputation-tab-btn--active" : ""
+                }`}
+                aria-pressed={reviewFilter === stars}
+                onClick={() => setReviewFilter(stars)}
+              >
+                {stars} {stars === 1 ? "estrella" : "estrellas"}
+              </button>
+            ))}
           </div>
         </div>
 

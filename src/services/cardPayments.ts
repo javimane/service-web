@@ -1,6 +1,7 @@
 import { apiClient } from "./apiClient";
 import { API_BASE_URL } from "./api.config";
 import { collectPaywayDeviceFingerprint } from './paywayDeviceFingerprint';
+import { detectPaymentCardBrand } from "@/utils/cardBrand";
 
 export type CardConfig = {
   provider: "getnet" | "payway";
@@ -50,17 +51,7 @@ export function paywayMethodId(
   type: string,
   methods?: PaywayPaymentMethod[],
 ) {
-  const brand = /^4/.test(number)
-    ? "visa"
-    : /^(5[1-5]|2[2-7])/.test(number)
-      ? "mastercard"
-      : /^3[47]/.test(number)
-        ? "amex"
-        : /^(5896|6042|6043)/.test(number)
-          ? "cabal"
-          : /^(50|5[6-9]|6)/.test(number) && type === "debit"
-            ? "maestro"
-            : null;
+  const brand = detectPaymentCardBrand(number, type);
   const method = methods?.find(
     (method) => method.brand === brand && method.type === type,
   );
@@ -101,9 +92,6 @@ export async function tokenizePayway(
   if (!saved) await validateCardholder(input.holder, input.dni);
   const deviceFingerprintId = await collectPaywayDeviceFingerprint(config.device_fingerprint);
   const number = input.number.replace(/\D/g, "");
-  const configuredMethodId =
-    saved?.payway_payment_method_id ||
-    paywayMethodId(number, input.type || "credit", config.payment_methods);
   const [month, year] = input.expiry.split("/");
   const body = saved
     ? { token: saved.provider_card_token, security_code: input.cvv }
@@ -135,10 +123,11 @@ export async function tokenizePayway(
   }
   if (!response.ok || !result?.id)
     throw new Error("Payway no pudo tokenizar la tarjeta. Revisá sus datos.");
-  const methodId =
-    saved?.payway_payment_method_id ||
-    Number(result.payment_method_id) ||
-    configuredMethodId;
+  const responseMethodId = Number(result.payment_method_id);
+  const methodId = saved?.payway_payment_method_id ||
+    (Number.isInteger(responseMethodId) && responseMethodId > 0
+      ? responseMethodId
+      : paywayMethodId(number, input.type || "credit", config.payment_methods));
   if (!methodId)
     throw new Error("Payway no informó el medio de pago de la tarjeta.");
   return {

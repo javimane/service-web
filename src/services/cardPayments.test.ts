@@ -15,6 +15,9 @@ describe("Payway tokenization", () => {
       { id: 1, brand: 'visa', name: 'Visa', type: 'credit' as const },
       { id: 104, brand: 'mastercard', name: 'Mastercard Payway', type: 'credit' as const },
       { id: 105, brand: 'mastercard', name: 'Mastercard Débito Payway', type: 'debit' as const },
+      { id: 63, brand: 'cabal', name: 'Cabal Payway', type: 'credit' as const },
+      { id: 108, brand: 'cabal', name: 'Cabal Débito Payway', type: 'debit' as const },
+      { id: 106, brand: 'maestro', name: 'Maestro Payway', type: 'debit' as const },
     ],
   };
   const input = {
@@ -111,6 +114,39 @@ describe("Payway tokenization", () => {
     expect(paywayMethodId('5454540000000000', 'credit', config.payment_methods)).toBe(104);
     expect(paywayMethodId('5454540000000000', 'debit', config.payment_methods)).toBe(105);
     expect(() => paywayMethodId('5454540000000000', 'credit')).toThrow('Actualizá');
+  });
+
+  it.each(['586057', '589657', '603522', '604201', '604299', '604399', '604400', '627170'])(
+    'resolves Cabal BIN %s to credit 63 or debit 108 before Maestro', (bin) => {
+      expect(paywayMethodId(`${bin} 0000 0000 0000`, 'credit', config.payment_methods)).toBe(63);
+      expect(paywayMethodId(`${bin}0000000000`, 'debit', config.payment_methods)).toBe(108);
+    },
+  );
+
+  it('does not interpret an unknown credit card as Visa or a Cabal debit as Maestro', () => {
+    expect(() => paywayMethodId('9999990000000000', 'credit', config.payment_methods)).toThrow('No se encontró');
+    expect(() => paywayMethodId('6035220000000000', 'debit', config.payment_methods.filter(method => method.id !== 108)))
+      .toThrow('No se encontró');
+  });
+
+  it('uses the method returned by Payway even when the local BIN detector does not recognize it', async () => {
+    vi.stubEnv('NEXT_PUBLIC_PAYWAY_PUBLIC_KEY', 'public');
+    vi.stubEnv('NEXT_PUBLIC_PAYWAY_ENVIRONMENT', 'sandbox');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ id: 'payment-token', payment_method_id: 63 }),
+    }));
+    const result = await tokenizePayway(config, { ...input, number: '9999990000000000' });
+    expect(result.payway_payment_method_id).toBe(63);
+  });
+
+  it('prepares the Cabal sandbox card when the token response has no payment_method_id', async () => {
+    vi.stubEnv('NEXT_PUBLIC_PAYWAY_PUBLIC_KEY', 'public');
+    vi.stubEnv('NEXT_PUBLIC_PAYWAY_ENVIRONMENT', 'sandbox');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ id: 'cabal-token', bin: '586057' }),
+    }));
+    const result = await tokenizePayway(config, { ...input, number: '5860570000000008' });
+    expect(result.payway_payment_method_id).toBe(63);
   });
 
   it('uses the same-origin token endpoint in production', async () => {

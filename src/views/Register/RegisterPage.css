@@ -10,8 +10,83 @@
   flex: 1;
 }
 
+.register-password__requirements {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.register-password__requirement {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.register-password__requirement svg {
+  flex-shrink: 0;
+  margin-top: var(--space-1);
+}
+
+.register-password__requirement--met {
+  color: var(--green-dark);
+  font-weight: var(--weight-semibold);
+}
+
 .register-card {
   max-width: 540px; /* Un poco más ancha para las dos columnas */
+  padding: var(--space-5);
+}
+
+.register-card .login-subtitle {
+  margin-bottom: var(--space-3);
+}
+
+.register-card .register-form {
+  gap: var(--space-2);
+}
+
+.register-form .role-selector {
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.register-form .form-row {
+  gap: var(--space-3);
+}
+
+.register-form .input-group {
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.register-form .btn-primary,
+.register-form .btn-social {
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  line-height: 1;
+  border: 1px solid transparent;
+  padding: 0 var(--space-4);
+  margin: 0;
+}
+
+.register-form .btn-social {
+  border-color: var(--border-color);
+}
+
+.register-form .divider {
+  margin: var(--space-1) 0;
+}
+
+.register-form .register-prompt {
+  margin: var(--space-1) 0 0;
 }
 
 .status-pill--blue {
@@ -25,7 +100,7 @@
 }
 
 /* Responsive adicional para form-row */
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .form-row {
     flex-direction: column;
   }
@@ -40,7 +115,7 @@
 }
 
 .register-terms {
-  margin: var(--space-3) 0 var(--space-4) 0;
+  margin: var(--space-1) 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
   CreditCard,
@@ -48,15 +48,22 @@ import CompanyDisplaySection from "@/views/Settings/sections/CompanyDisplaySecti
 import "@/views/Settings/SettingsPage.css";
 import "./CommercialDataSection.css";
 
-export default function CommercialDataSection() {
+export default function CommercialDataSection({ requireVerification = false, onSaved }: {
+  requireVerification?: boolean;
+  onSaved?: () => void;
+}) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { sessionStatus, refreshSession } = useAuth();
-  const { showSuccess, showError } = useAlert();
+  const { showSuccess, showError, showInfo } = useAlert();
 
   const [activeTab, setActiveTab] = useState<
     "company" | "banking" | "branches"
-  >("company");
+  >(searchParams.get("tab") === "banking" ? "banking" : "company");
+  useEffect(() => {
+    if (searchParams.get("tab") === "banking") setActiveTab("banking");
+  }, [searchParams]);
   const [showMaskedCbu, setShowMaskedCbu] = useState(true);
   const [editBankModalOpen, setEditBankModalOpen] = useState(false);
   const [isEditingCompany, setIsEditingCompany] = useState(false);
@@ -88,8 +95,8 @@ export default function CommercialDataSection() {
   const [storeDepartmentId, setStoreDepartmentId] = useState<number | null>(
     null,
   );
-  const [storeLat, setStoreLat] = useState<number | null>(-34.6037);
-  const [storeLng, setStoreLng] = useState<number | null>(-58.3816);
+  const [storeLat, setStoreLat] = useState<number | null>(null);
+  const [storeLng, setStoreLng] = useState<number | null>(null);
 
   // Bank form state
   const [cbuInput, setCbuInput] = useState("");
@@ -231,8 +238,8 @@ export default function CommercialDataSection() {
         setStoreZip(mainAddress.zip_code || "");
         setStoreProvinceId(mainAddress.province_id);
         setStoreDepartmentId(mainAddress.department_id);
-        setStoreLat(mainAddress.latitude ?? -34.6037);
-        setStoreLng(mainAddress.longitude ?? -58.3816);
+        setStoreLat(mainAddress.latitude ?? null);
+        setStoreLng(mainAddress.longitude ?? null);
       }
 
       // Coverage
@@ -339,6 +346,7 @@ export default function CommercialDataSection() {
       await refreshSession();
       showSuccess("Datos comerciales guardados correctamente ✨");
       setIsEditingCompany(false);
+      onSaved?.();
     },
     onError: (error: any) => {
       console.error("Error saving commercial data:", error);
@@ -425,6 +433,10 @@ export default function CommercialDataSection() {
       );
       return;
     }
+    if (hasStorefront === "si" && (!storeStreet.trim() || !storeNumber.trim() || !storeProvinceId || !storeDepartmentId)) {
+      showError("Completá calle, número, provincia y departamento para registrar la sucursal principal. Necesitás una sucursal principal o alguna sucursal registrada para vender productos.");
+      return;
+    }
     if (
       hasStorefront === "si" &&
       (storeLat === null ||
@@ -491,6 +503,17 @@ export default function CommercialDataSection() {
         </div>
       </header>
 
+      {requireVerification && actualCompany && (
+        <div className="commercial-data-section__verification" role="status">
+          <ShieldCheck size={22} aria-hidden="true" />
+          <div>
+            <strong>Verificación obligatoria para continuar</strong>
+            <p>Datos fiscales en ARCA: {sessionStatus?.arca_verified ? "Verificados" : "Pendientes"}. CBU de cobro: {sessionStatus?.cbu_verified ? "Verificado" : "Pendiente"}.</p>
+            <p>Usá «Verificar ahora» en Datos Fiscales y Empresa y guardá tu cuenta en Datos de Cobro para validar su titularidad.</p>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="commercial-tabs">
         <button
@@ -512,7 +535,13 @@ export default function CommercialDataSection() {
         <button
           type="button"
           className={`commercial-tab ${activeTab === "branches" ? "commercial-tab--active" : ""}`}
-          onClick={() => router.push(`${ROUTES.dashboard}?view=branches`)}
+          onClick={() => {
+            if (requireVerification) {
+              showInfo("Después de terminar de crear tu cuenta agregá tus sucursales.", "Sucursales");
+              return;
+            }
+            router.push(`${ROUTES.dashboard}?view=branches`);
+          }}
         >
           <Store size={16} />
           <span>Sucursales</span>
@@ -673,10 +702,11 @@ export default function CommercialDataSection() {
                   )}
                   <button
                     type="submit"
-                    className="branches-section__add-btn"
+                    className="commercial-data-section__save"
+                    data-action-tone="add"
                     disabled={saveCompanyMutation.isPending}
                   >
-                    <Save size={16} />
+                    <Save size={20} aria-hidden="true" />
                     <span>
                       {saveCompanyMutation.isPending
                         ? "Guardando cambios..."

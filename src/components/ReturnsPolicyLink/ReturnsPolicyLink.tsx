@@ -10,9 +10,8 @@ export default function ReturnsPolicyLink() {
       target="_blank"
       rel="noopener noreferrer"
     >
-      <span>Políticas de devolución y arrepentimiento</span>
+      <span>Políticas de devolución,arrepentimiento y cancelación</span>
       <ExternalLink size={14} aria-hidden="true" />
-      <span className="returns-policy-link__new-tab">(abre en otra pestaña)</span>
     </Link>
   );
 }

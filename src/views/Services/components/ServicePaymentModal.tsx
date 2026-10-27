@@ -33,6 +33,7 @@ import WhatsAppContactButton from "@/components/WhatsAppContactButton/WhatsAppCo
 import { requestIdentityVerification } from "@/utils/identityVerification";
 import "./ServicePaymentModal.css";
 import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
+import CheckoutFinancialCost from "@/components/CheckoutFinancialCost/CheckoutFinancialCost";
 import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
 import QrPaymentConfirmedModal from "@/components/QrPaymentConfirmedModal/QrPaymentConfirmedModal";
 import { isQrPaymentConfirmed, useQrPaymentStatus } from "@/hooks/useQrPaymentStatus";
@@ -679,15 +680,13 @@ export default function ServicePaymentModal({
                     {installmentOptions.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt === 1
-                          ? `1 pago de $${totalToPay.toLocaleString("es-AR")}`
+                          ? `1 pago de $${baseTotal.toLocaleString("es-AR")}`
                           : installmentsEnabled
-                            ? `${opt} cuotas sin interés de $${Math.round(
-                                totalToPay / opt,
-                              ).toLocaleString("es-AR")}`
+                            ? `${opt} cuotas sin interés de $${Number((baseTotal / opt).toFixed(2)).toLocaleString("es-AR")}`
                             : (() => {
                                 const quote = calculateInstallmentFinancing(baseTotal, opt, commissionRates);
                                 return quote
-                                  ? `${opt} cuotas de $${quote.installmentAmount.toLocaleString("es-AR")} (+${quote.surchargePct.toLocaleString("es-AR")}% recargo)`
+                                  ? `${opt} cuotas de $${Number((quote.totalAmount / opt).toFixed(2)).toLocaleString("es-AR")} (+${quote.surchargePct.toLocaleString("es-AR")}% recargo)`
                                   : `${opt} cuotas con recargo`;
                               })()}
                       </option>
@@ -797,14 +796,22 @@ export default function ServicePaymentModal({
 
             {/* Total Summary & Submit Button */}
             <ReturnsPolicyLink />
-            <div className="service-payment-modal__footer">
-              {paymentMethod === "card" && financedQuote && (
-                <p className="service-payment-modal__financing-breakdown">
-                  Recargo por {installments} cuotas: ${Number(
-                    serverQuote?.financingSurchargeAmount ?? financedQuote.totalAmount - baseTotal,
-                  ).toLocaleString("es-AR")}
-                </p>
-              )}
+            <div className="service-payment-modal__purchase-summary">
+              <h3 className="service-payment-modal__purchase-summary-title">Resumen de compra</h3>
+              <div className="service-payment-modal__summary-row">
+                <span>Subtotal ({quantity} un.)</span>
+                <strong>${baseTotal.toLocaleString("es-AR")}</strong>
+              </div>
+              <CheckoutFinancialCost
+                totalAmount={totalToPay}
+                financingAmount={paymentMethod === "card" && installments > 1
+                  ? serverQuote?.financingSurchargeAmount ?? (installmentsEnabled ? 0 :
+                    financedQuote ? financedQuote.totalAmount - baseTotal : null)
+                  : 0}
+                installments={installments}
+                paymentMethod={paymentMethod}
+                pending={paymentMethod === "card" && installments > 1 && (quoteLoading || quoteError || !serverQuote)}
+              />
               {paymentMethod === "card" && installments > 1 && quoteError && (
                 <p className="service-payment-modal__financing-breakdown">
                   No pudimos confirmar el importe de las cuotas. Intentá nuevamente.
@@ -818,7 +825,8 @@ export default function ServicePaymentModal({
                   ${totalToPay.toLocaleString("es-AR")}
                 </span>
               </div>
-
+            </div>
+            <div className="service-payment-modal__footer">
               <button
                 type="submit"
                 className="service-payment-modal__btn-primary"

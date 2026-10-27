@@ -54,6 +54,8 @@ export default function AccountSetupPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [hasRegisteredName, setHasRegisteredName] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -63,20 +65,30 @@ export default function AccountSetupPage() {
 
   useEffect(() => {
     if (!user?.id) return;
+    let active = true;
+    setProfileLoaded(false);
     const savedStep = localStorage.getItem(`account_setup_step_${user.id}`) as SetupStep | null;
     if (personalNameOnly) setStep("personal");
     else if (savedStep && steps.includes(savedStep)) setStep(savedStep);
     void getProfileAction({ id: user.id, token: getAccessToken() }).then((result) => {
+      if (!active) return;
       const profile = result?.data;
       if (!profile) return;
       const nameParts = String(profile.display_name || "").trim().split(/\s+/);
       const companyName = String(sessionStatus?.company_name || "").trim().toLocaleLowerCase();
       const personalName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim().toLocaleLowerCase();
       const businessNameEntered = Boolean(companyName && personalName === companyName);
+      setHasRegisteredName(Boolean(!personalNameOnly && !businessNameEntered &&
+        profile.first_name?.trim() && profile.last_name?.trim()));
       setFirstName(personalNameOnly || businessNameEntered ? "" : profile.first_name || nameParts[0] || "");
       setLastName(personalNameOnly || businessNameEntered ? "" : profile.last_name || nameParts.slice(1).join(" ") || "");
       setPhone(profile.phone || profile.phone_number || "");
+    }).catch(() => {
+      if (active) setError("No pudimos cargar tus datos. Volvé a intentar antes de continuar.");
+    }).finally(() => {
+      if (active) setProfileLoaded(true);
     });
+    return () => { active = false; };
   }, [user?.id, steps, personalNameOnly, sessionStatus?.company_name]);
 
   const currentIndex = Math.max(0, steps.indexOf(step));
@@ -143,6 +155,14 @@ export default function AccountSetupPage() {
         if (!currentCompany?.name?.trim() || !/^\d{11}$/.test(String(currentCompany.tax_code ?? ""))) {
           throw new Error("Guardá el nombre comercial y un CUIT/CUIL de 11 dígitos para continuar.");
         }
+        const verifiedSession = await refreshSession();
+        const missing = [
+          verifiedSession?.arca_verified !== true && "los datos fiscales en ARCA",
+          verifiedSession?.cbu_verified !== true && "el CBU de cobro",
+        ].filter(Boolean);
+        if (missing.length) {
+          throw new Error(`Para continuar, verificá ${missing.join(" y ")} después de guardar los datos comerciales.`);
+        }
       }
       if (step === "profile") {
         const professionalId = Number(
@@ -168,7 +188,7 @@ export default function AccountSetupPage() {
     }
   };
 
-  if (loading || !user?.id) return null;
+  if (loading || !user?.id || !profileLoaded) return null;
 
   return (
     <>
@@ -202,15 +222,17 @@ export default function AccountSetupPage() {
             <form id="account-setup-personal" className="account-setup__form" onSubmit={continueSetup}>
               <p>{personalNameOnly
                 ? "Ingresá tu nombre y apellido personales tal como figuran en tu DNI. No uses el nombre comercial: Didit compara estos datos con el documento."
-                : "Usá tu nombre y apellido reales. Guardaremos el teléfono para entregas y contacto sobre tus compras."}</p>
-              <div className="account-setup__field-row">
+                : hasRegisteredName
+                  ? "Ya guardamos tu nombre y apellido durante el registro. Completá tu teléfono para entregas y contacto sobre tus compras."
+                  : "Usá tu nombre y apellido reales. Guardaremos el teléfono para entregas y contacto sobre tus compras."}</p>
+              {hasRegisteredName ? <p><strong>{firstName} {lastName}</strong></p> : <div className="account-setup__field-row">
                 <label className="account-setup__field">Nombre
                   <input autoComplete="given-name" value={firstName} onChange={(event) => setFirstName(event.target.value)} required />
                 </label>
                 <label className="account-setup__field">Apellido
                   <input autoComplete="family-name" value={lastName} onChange={(event) => setLastName(event.target.value)} required />
                 </label>
-              </div>
+              </div>}
               {!personalNameOnly && <label className="account-setup__field">Teléfono
                 <input type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required />
               </label>}
@@ -230,8 +252,8 @@ export default function AccountSetupPage() {
           )}
           {step === "commercial" && (
             <div className="account-setup__embedded">
-              <p>Completá el nombre, ubicación y medios de cobro de tu negocio. Estos son los mismos formularios de tu panel.</p>
-              <CommercialDataSection />
+              <p>Guardá los datos de tu negocio y verificá los datos fiscales en ARCA y el CBU de cobro. Ambas verificaciones son obligatorias para continuar al perfil público.</p>
+              <CommercialDataSection requireVerification onSaved={() => setError("")} />
             </div>
           )}
           {step === "profile" && (
