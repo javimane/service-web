@@ -136,7 +136,7 @@ export default function FleetVehiclesPanel() {
         storage_path,
         file_name: file.name,
         mime_type: file.type,
-        expires_at: expiresAt || undefined,
+        expires_at: documentType === "insurance" ? undefined : expiresAt || undefined,
       });
       queryClient.invalidateQueries({ queryKey: ["fleet-vehicles"] });
       queryClient.invalidateQueries({ queryKey: ["logistics-employees"] });
@@ -377,7 +377,7 @@ export default function FleetVehiclesPanel() {
                         {DOCUMENT_TYPES.find(
                           ([type]) => type === document.document_type,
                         )?.[1] ?? document.document_type}
-                        {document.expires_at
+                        {document.document_type !== "insurance" && document.expires_at
                           ? ` · vence ${document.expires_at}`
                           : ""}
                       </li>
@@ -400,12 +400,12 @@ export default function FleetVehiclesPanel() {
                     accept=".pdf,.jpg,.jpeg,.png,.webp"
                     aria-label="Archivo del documento"
                   />
-                  <input
+                  {documentType !== "insurance" && <input
                     type="date"
                     value={expiresAt}
                     onChange={(event) => setExpiresAt(event.target.value)}
                     aria-label="Vencimiento del documento"
-                  />
+                  />}
                   <button data-action-tone="upload"
                     type="button"
                     className="btn-primary"

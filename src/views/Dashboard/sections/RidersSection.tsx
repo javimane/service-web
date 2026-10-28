@@ -403,7 +403,7 @@ export default function RidersSection() {
         storage_path,
         file_name: file.name,
         mime_type: file.type,
-        expires_at: docExpiry || undefined,
+        expires_at: ["insurance", "criminal_record"].includes(docType) ? undefined : docExpiry || undefined,
       });
 
       showSuccess("Documento subido correctamente.");
@@ -1245,7 +1245,7 @@ export default function RidersSection() {
                     ref={docFileRef}
                   />
                 </div>
-                <div className="riders-form__group">
+                {!["insurance", "criminal_record"].includes(docType) && <div className="riders-form__group">
                   <label className="riders-form__label">
                     Fecha de Vencimiento
                   </label>
@@ -1254,7 +1254,7 @@ export default function RidersSection() {
                     value={docExpiry}
                     onChange={(e) => setDocExpiry(e.target.value)}
                   />
-                </div>
+                </div>}
                 <button
                   data-action-tone="upload"
                   type="button"
@@ -1288,7 +1288,7 @@ export default function RidersSection() {
                         d.rider_vehicle_id === docsRider.own_vehicle_id),
                   );
                   const statusInfo = uploaded
-                    ? req.type === "criminal_record"
+                    ? ["criminal_record", "insurance"].includes(req.type)
                       ? { label: "Presentado", color: "green" }
                       : getDocStatus(uploaded.expires_at)
                     : { label: "Falta presentar", color: "red" };
@@ -1299,7 +1299,7 @@ export default function RidersSection() {
                         <FileText size={18} className="doc-item__icon" />
                         <div>
                           <span className="doc-item__name">{req.label}</span>
-                          {uploaded?.expires_at && req.type !== "criminal_record" && (
+                          {uploaded?.expires_at && !["criminal_record", "insurance"].includes(req.type) && (
                             <span className="doc-item__expiry">
                               Vence:{" "}
                               {new Date(uploaded.expires_at).toLocaleDateString(
