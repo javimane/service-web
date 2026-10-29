@@ -23,6 +23,7 @@ import {
   MessageSquare,
   RotateCcw,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 import {
   commerceService,
@@ -54,6 +55,16 @@ import {
 import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
 import BuyerShipmentMap from "./BuyerShipmentMap";
 import BuyerRiderReview from "./BuyerRiderReview";
+
+const refundSummary = (order: Partial<OrderSummary>) => {
+  const refunded = Number(order.refunded_amount ?? 0);
+  const total = Number(order.total_amount ?? 0);
+  if (!Number.isFinite(refunded) || refunded <= 0) return null;
+  const partial = Number.isFinite(total) && total > 0 && Math.round(refunded * 100) < Math.round(total * 100);
+  const amount = refunded.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
+  const percent = partial ? ` (${(refunded / total * 100).toLocaleString("es-AR", { maximumFractionDigits: 2 })}%)` : "";
+  return `${partial ? "Reembolso parcial confirmado" : "Reembolso confirmado"}: ${amount}${percent}`;
+};
 
 const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
   if (!order) return false;
@@ -306,17 +317,19 @@ export default function BuyerOrdersSection() {
   const claimsUnavailable =
     orderClaimsPending || orderClaimsFetching || orderClaimsError;
   const answerOfferMutation = useMutation({
-    mutationFn: ({ claimId, accept }: { claimId: string; accept: boolean }) =>
-      commerceService.answerPartialOffer(selectedOrder!.id, claimId, accept),
+    mutationFn: ({ claimId, accept, offerRevision }: { claimId: string; accept: boolean; offerRevision: number }) =>
+      commerceService.answerPartialOffer(selectedOrder!.id, claimId, accept, offerRevision),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["order-claims", selectedOrder?.id],
       });
       queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
       showSuccess("Tu respuesta quedó registrada.");
+      queryClient.invalidateQueries({ queryKey: ["buyer-order-detail", selectedOrder?.id] });
     },
     onError: (error: Error) =>
       showError(error.message || "No se pudo responder la propuesta."),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["order-claims", selectedOrder?.id] }),
   });
 
   const closeOrderDetail = () => {
@@ -945,6 +958,9 @@ export default function BuyerOrdersSection() {
                   {getStatusBadge(order.status, order)}
                 </div>
 
+                {refundSummary(order) && (
+                  <p className="buyer-order-refund" role="status">{refundSummary(order)}</p>
+                )}
                 <div className="buyer-order-card__body">
                   <div className="buyer-order-product">
                     {imageUrl && (
@@ -1024,12 +1040,6 @@ export default function BuyerOrdersSection() {
                     <span className="buyer-order-total-amount">
                       ${Number(order.total_amount ?? 0).toLocaleString("es-AR")}
                     </span>
-                    {Number(order.refunded_amount ?? 0) > 0 && (
-                      <span className="buyer-order-refund">
-                        Reembolsado: $
-                        {Number(order.refunded_amount).toLocaleString("es-AR")}
-                      </span>
-                    )}
                     {order.has_return && (
                       <span className="buyer-order-refund">
                         Devolución registrada por el comercio
@@ -1233,6 +1243,11 @@ export default function BuyerOrdersSection() {
               </div>
             )}
 
+            {refundSummary(selectedOrder) && (
+              <p className="buyer-order-refund" role="status">
+                {refundSummary(selectedOrder)}
+              </p>
+            )}
             <ReturnsPolicyLink />
 
             {isLoadingDetail && (
@@ -1787,9 +1802,18 @@ export default function BuyerOrdersSection() {
                           }
                         }}
                       >
-                        {confirmCoordinatedDeliveryMutation.isPending
-                          ? "Confirmando..."
-                          : "Confirmar que recibí el producto"}
+                        {confirmCoordinatedDeliveryMutation.isPending ? (
+                          <>
+                            <Loader2
+                              size={16}
+                              className="btn-spinner"
+                              aria-hidden="true"
+                            />
+                            <span>Confirmando...</span>
+                          </>
+                        ) : (
+                          "Confirmar que recibí el producto"
+                        )}
                       </button>
                     </div>
                   )}
@@ -1845,7 +1869,18 @@ export default function BuyerOrdersSection() {
                       })
                     }
                   >
-                    Confirmar recepción del producto
+                    {confirmReceiptMutation.isPending ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className="btn-spinner"
+                          aria-hidden="true"
+                        />
+                        <span>Confirmando...</span>
+                      </>
+                    ) : (
+                      "Confirmar recepción del producto"
+                    )}
                   </button>
                 </div>
               )}
@@ -2047,6 +2082,9 @@ export default function BuyerOrdersSection() {
                       <p>Respuesta del comercio: {claim.merchant_response}</p>
                     )}
                     {claim.merchant_action === "full_refund_with_return" &&
+                      ["open", "in_review"].includes(claim.status) &&
+                      !claim.return_received_at &&
+                      !(Number(selectedOrder.total_amount) > 0 && Number(selectedOrder.refunded_amount ?? 0) >= Number(selectedOrder.total_amount)) &&
                       selectedOrder.status !== "returning_to_store" &&
                       selectedOrder.status !== "returned" &&
                       selectedOrder.status !== "refunded" &&
@@ -2084,6 +2122,13 @@ export default function BuyerOrdersSection() {
                           : "El comercio aprobó el reembolso total sin pedir la devolución del producto."}
                       </p>
                     )}
+                    {(claim.offer_history?.length ?? 0) > 1 && (
+                      <details><summary>Historial de propuestas</summary>
+                        {claim.offer_history?.map(offer => <p key={offer.revision}>
+                          Propuesta {offer.revision}: {offer.percent}% (${Number(offer.amount).toLocaleString("es-AR")}) — {offer.buyer_decision === "rejected" ? "Rechazada" : offer.buyer_decision === "accepted" ? "Aceptada" : "Pendiente"}. {offer.response}
+                        </p>)}
+                      </details>
+                    )}
                     {claim.merchant_action === "partial_offer" && (
                       <p>
                         Oferta de reintegro: {claim.partial_offer_percent}% ($
@@ -2093,28 +2138,46 @@ export default function BuyerOrdersSection() {
                             ? "Reintegro confirmado"
                             : "Aceptada; reintegro en revisión"
                           : claim.buyer_decision === "rejected"
-                            ? "Rechazada; Sercio revisará el reclamo"
+                            ? ["resolved", "refunded", "rejected"].includes(claim.status) ? "Oferta rechazada; consultá la resolución del reclamo" : claim.status === "open" ? "Oferta rechazada; el comercio puede enviar una nueva propuesta. El mismo reclamo sigue abierto" : "Oferta rechazada; Sercio revisará el mismo reclamo"
                             : "Pendiente de tu respuesta"}
                         .
                       </p>
                     )}
                     {claim.status === "open" &&
                       claim.merchant_action === "partial_offer" &&
-                      !claim.buyer_decision && (
+                      claim.buyer_decision !== "rejected" && (
                         <div className="buyer-order-modal__claim-actions">
-                          <button
-                            type="button"
-                            data-action-tone="cancel"
-                            disabled={answerOfferMutation.isPending}
-                            onClick={() =>
-                              answerOfferMutation.mutate({
-                                claimId: claim.id,
-                                accept: false,
-                              })
-                            }
-                          >
-                            Rechazar oferta
-                          </button>
+                          {!claim.buyer_decision && (
+                            <button
+                              type="button"
+                              data-action-tone="cancel"
+                              disabled={answerOfferMutation.isPending}
+                              onClick={() =>
+                                answerOfferMutation.mutate({
+                                  claimId: claim.id,
+                                  accept: false,
+                                offerRevision: claim.offer_revision ?? 1,
+                                })
+                              }
+                            >
+                              {answerOfferMutation.isPending &&
+                              answerOfferMutation.variables?.claimId ===
+                                claim.id &&
+                              answerOfferMutation.variables?.accept ===
+                                false ? (
+                                <>
+                                  <Loader2
+                                    size={16}
+                                    className="btn-spinner"
+                                    aria-hidden="true"
+                                  />
+                                  <span>Rechazando...</span>
+                                </>
+                              ) : (
+                                "Rechazar oferta"
+                              )}
+                            </button>
+                          )}
                           <button
                             type="button"
                             data-action-tone="add"
@@ -2123,10 +2186,31 @@ export default function BuyerOrdersSection() {
                               answerOfferMutation.mutate({
                                 claimId: claim.id,
                                 accept: true,
+                                offerRevision: claim.offer_revision ?? 1,
                               })
                             }
                           >
-                            Aceptar reintegro parcial
+                            {answerOfferMutation.isPending &&
+                            answerOfferMutation.variables?.claimId ===
+                              claim.id &&
+                            answerOfferMutation.variables?.accept === true ? (
+                              <>
+                                <Loader2
+                                  size={16}
+                                  className="btn-spinner"
+                                  aria-hidden="true"
+                                />
+                                <span>
+                                  {claim.buyer_decision === "accepted"
+                                    ? "Consultando..."
+                                    : "Aceptando..."}
+                                </span>
+                              </>
+                            ) : claim.buyer_decision === "accepted" ? (
+                              "Reintentar o consultar reintegro"
+                            ) : (
+                              "Aceptar reintegro parcial"
+                            )}
                           </button>
                         </div>
                       )}
@@ -2304,9 +2388,18 @@ export default function BuyerOrdersSection() {
                 }
                 onClick={() => withdrawalMutation.mutate()}
               >
-                {withdrawalMutation.isPending
-                  ? "Enviando..."
-                  : "Enviar solicitud"}
+                {withdrawalMutation.isPending ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="btn-spinner"
+                      aria-hidden="true"
+                    />
+                    <span>Enviando...</span>
+                  </>
+                ) : (
+                  "Enviar solicitud"
+                )}
               </button>
             </div>
           </div>
@@ -2350,9 +2443,18 @@ export default function BuyerOrdersSection() {
                 }
                 onClick={() => cancelMutation.mutate()}
               >
-                {cancelMutation.isPending
-                  ? "Cancelando..."
-                  : "Confirmar cancelación"}
+                {cancelMutation.isPending ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="btn-spinner"
+                      aria-hidden="true"
+                    />
+                    <span>Cancelando...</span>
+                  </>
+                ) : (
+                  "Confirmar cancelación"
+                )}
               </button>
             </div>
           </div>
@@ -2489,7 +2591,18 @@ export default function BuyerOrdersSection() {
                 }
                 onClick={() => claimMutation.mutate()}
               >
-                {claimMutation.isPending ? "Enviando..." : "Enviar reclamo"}
+                {claimMutation.isPending ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="btn-spinner"
+                      aria-hidden="true"
+                    />
+                    <span>Enviando...</span>
+                  </>
+                ) : (
+                  "Enviar reclamo"
+                )}
               </button>
             </div>
           </div>
@@ -2523,9 +2636,18 @@ export default function BuyerOrdersSection() {
                 onClick={() => confirmClaimResolutionMutation.mutate()}
                 disabled={confirmClaimResolutionMutation.isPending}
               >
-                {confirmClaimResolutionMutation.isPending
-                  ? "Confirmando..."
-                  : "Sí, quedó resuelto"}
+                {confirmClaimResolutionMutation.isPending ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="btn-spinner"
+                      aria-hidden="true"
+                    />
+                    <span>Confirmando...</span>
+                  </>
+                ) : (
+                  "Sí, quedó resuelto"
+                )}
               </button>
             </div>
           </div>

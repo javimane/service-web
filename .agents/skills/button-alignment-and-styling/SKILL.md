@@ -193,3 +193,34 @@ Modal footers and action rows MUST follow this standard layout pattern:
   line-height: 1;
 }
 ```
+
+---
+
+## 6. Mandatory Loading State (Spinner / Loader in Async Buttons)
+
+Every button that triggers an asynchronous action, API call, or React Query `useMutation` MUST show visual loading feedback and prevent duplicate submissions:
+
+1. **Disable while pending:** Always set `disabled={mutation.isPending}` (and disable sibling action buttons in the same group so conflicting actions cannot be triggered simultaneously).
+2. **Render `<Loader2>` spinner:** Import `Loader2` from `lucide-react` and render `<Loader2 size={16} className="btn-spinner" aria-hidden="true" />` accompanied by a gerund status label (`"Enviando..."`, `"Aceptando..."`, `"Rechazando..."`, `"Confirmando..."`, `"Guardando..."`).
+3. **Shared mutation disambiguation:** When two buttons share a single mutation (e.g., Accept vs. Reject claim/offer), check `mutation.variables` so the spinner only appears inside the clicked button while both buttons remain `disabled`.
+
+```tsx
+import { Loader2 } from "lucide-react";
+
+<button
+  type="button"
+  className="btn-primary"
+  data-action-tone="add"
+  disabled={mutation.isPending}
+  onClick={() => mutation.mutate({ id, accept: true })}
+>
+  {mutation.isPending && mutation.variables?.accept === true ? (
+    <>
+      <Loader2 size={16} className="btn-spinner" aria-hidden="true" />
+      <span>Aceptando...</span>
+    </>
+  ) : (
+    "Aceptar reclamo"
+  )}
+</button>
+```

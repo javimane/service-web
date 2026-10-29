@@ -289,6 +289,12 @@ export default function ComponentName({
 - Cancel (`Cancelar`) buttons use light red via `data-action-tone="cancel"`.
 - Shared tokens and styles live in `src/index.css`. Apply the attribute to button-like links and upload labels too, and keep it in sync when a button changes action dynamically.
 
+### Mandatory loading state (Loader in async buttons)
+
+- Every button that triggers an async request, mutation (`useMutation`), or save (`isPending` / `isLoading` / `saving`) **MUST** be disabled (`disabled={isPending}`) and display a spinning loader icon `<Loader2 size={16} className="btn-spinner" aria-hidden="true" />` (from `lucide-react`) alongside a gerund status label (`"Guardando..."`, `"Enviando..."`, `"Aceptando..."`, `"Rechazando..."`, `"Confirmando..."`, etc.).
+- When two decision buttons share a single mutation (e.g. accept vs. reject claim/offer), disable both while `isPending`, and only display `<Loader2>` and the pending text inside the button that was clicked (by checking `mutation.variables`).
+- `.btn-spinner` is defined globally in `src/index.css` (`animation: spin 1s linear infinite; flex-shrink: 0;`). Ensure the button uses `display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);`.
+
 ### Primary button (`.btn-primary`)
 
 - Background: `var(--accent-color)`, text: white

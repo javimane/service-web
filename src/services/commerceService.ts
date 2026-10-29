@@ -1123,10 +1123,13 @@ export const commerceService = {
       due_date?: string | null;
       merchant_response?: string | null;
       merchant_response_at?: string | null;
+      return_received_at?: string | null;
       merchant_action?: "full_refund_with_return" | "full_refund_no_return" | "partial_offer" | null;
       partial_offer_percent?: number | null;
       partial_offer_amount?: number | null;
       buyer_decision?: "accepted" | "rejected" | null;
+      offer_revision?: number;
+      offer_history?: Array<{ revision: number; percent: number; amount: number; response: string; buyer_decision: "accepted" | "rejected" | null }>;
       items?: Array<{ order_item_id: string; quantity: number; name: string }>;
       media: Array<{ id: string; media_type: "image" | "video"; url: string | null; status: "ready" | "processing" }>;
     }>>(API_ENDPOINTS.orders.claims(id)),
@@ -1135,13 +1138,14 @@ export const commerceService = {
     action: "full_refund_with_return" | "full_refund_no_return" | "partial_offer";
     response: string;
     percent?: number;
+    offer_revision?: number;
   }) => apiClient(API_ENDPOINTS.orders.merchantClaimResponse(id, claimId), {
     method: "POST", body: JSON.stringify(body),
   }),
 
-  answerPartialOffer: (id: string, claimId: string, accept: boolean) =>
+  answerPartialOffer: (id: string, claimId: string, accept: boolean, offerRevision?: number) =>
     apiClient(API_ENDPOINTS.orders.answerPartialOffer(id, claimId), {
-      method: "POST", body: JSON.stringify({ accept }),
+      method: "POST", body: JSON.stringify({ accept, offer_revision: offerRevision }),
     }),
 
   confirmClaimResolved: (id: string) =>

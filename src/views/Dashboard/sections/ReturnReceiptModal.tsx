@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, QrCode } from "lucide-react";
+import { Camera, Loader2, QrCode } from "lucide-react";
 import Modal from "@/components/Modal/Modal";
 import { normalizeReturnReceiptCode } from "./returnReceiptCode";
 import "./ReturnReceiptModal.css";
@@ -84,8 +84,8 @@ export default function ReturnReceiptModal({ onClose, onReceive }: Props) {
       {cameraActive && <video ref={videoRef} className="return-receipt-modal__video" muted playsInline aria-label="Vista de cámara para escanear QR" />}
       {cameraError && <p className="return-receipt-modal__error" role="alert">{cameraError}</p>}
       <div className="return-receipt-modal__actions">
-        <button type="button" className="btn-secondary" data-action-tone="cancel" onClick={onClose}>Cancelar</button>
-        <button type="button" className="btn-primary" disabled={!code.trim() || conditionVerified === null || saving} onClick={submit}><QrCode size={16} />{saving ? "Registrando..." : "Registrar recepción"}</button>
+        <button type="button" className="btn-secondary" data-action-tone="cancel" disabled={saving} onClick={onClose}>Cancelar</button>
+        <button type="button" className="btn-primary" disabled={!code.trim() || conditionVerified === null || saving} onClick={submit}>{saving ? <Loader2 size={16} className="btn-spinner" aria-hidden="true" /> : <QrCode size={16} />}<span>{saving ? "Registrando..." : "Registrar recepción"}</span></button>
       </div>
     </div>
   </Modal>;

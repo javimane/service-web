@@ -493,7 +493,9 @@ a:hover {
 }
 
 /* ===== Global Loader Animation ===== */
-.animate-spin {
+.animate-spin,
+.btn-spinner {
+  flex-shrink: 0;
   animation: spin 1s linear infinite;
 }
 

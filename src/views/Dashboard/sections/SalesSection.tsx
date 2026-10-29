@@ -22,6 +22,8 @@ import {
   Square,
   ToggleLeft,
   ToggleRight,
+  RefreshCw,
+  Loader2,
   Upload,
 } from "lucide-react";
 import {
@@ -143,14 +145,28 @@ export default function SalesSection() {
   const [claimAction, setClaimAction] = useState<
     "full_refund_with_return" | "full_refund_no_return" | "partial_offer"
   >("full_refund_with_return");
+  const [claimOfferRevision, setClaimOfferRevision] = useState(0);
   const [claimResponse, setClaimResponse] = useState("");
-  const [claimPercent, setClaimPercent] = useState(10);
+  const [claimPercent, setClaimPercent] = useState("10");
+  const [retryingClaimId, setRetryingClaimId] = useState<string | null>(null);
+  const parsedClaimPercent = Number(
+    String(claimPercent).replace(",", ".").trim(),
+  );
+  const isValidClaimPercent =
+    claimAction !== "partial_offer" ||
+    (String(claimPercent).trim() !== "" &&
+      Number.isFinite(parsedClaimPercent) &&
+      parsedClaimPercent >= 0.01 &&
+      parsedClaimPercent <= 99.99);
   const claimResponseMutation = useMutation({
     mutationFn: ({ claimId }: { claimId: string }) =>
       commerceService.respondToClaim(selectedOrder!.id, claimId, {
         action: claimAction,
         response: claimResponse.trim(),
-        ...(claimAction === "partial_offer" ? { percent: claimPercent } : {}),
+        offer_revision: claimOfferRevision,
+        ...(claimAction === "partial_offer"
+          ? { percent: Math.round(parsedClaimPercent * 100) / 100 }
+          : {}),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -159,10 +175,12 @@ export default function SalesSection() {
       queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
       setRespondingClaimId(null);
       setClaimResponse("");
+      setClaimPercent("10");
       showSuccess("La respuesta al reclamo se registró.");
     },
     onError: (error: Error) =>
       showError(error.message || "No se pudo responder el reclamo."),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["order-claims", selectedOrder?.id] }),
   });
 
   // Auto-cargar orden si viene orderId por URL (ej. desde notificación)
@@ -355,6 +373,7 @@ export default function SalesSection() {
     isError,
     error,
     refetch,
+    isFetching,
   } = useQuery<PageResponse<OrderSummary>>({
     queryKey: [
       "merchant-orders",
@@ -1075,6 +1094,24 @@ export default function SalesSection() {
           <span className="sales-section__subtitle">Gestión Comercial</span>
           <h1 className="sales-section__title">Ventas</h1>
         </div>
+        <div className="sales-section__actions">
+          <button
+            type="button"
+            className="btn-secondary sales-section__refresh-btn"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            title="Refrescar ventas"
+            aria-label="Refrescar lista de ventas"
+          >
+            <RefreshCw
+              size={16}
+              className={
+                isFetching ? "sales-section__refresh-icon--spinning" : ""
+              }
+            />
+            <span>{isFetching ? "Actualizando..." : "Refrescar"}</span>
+          </button>
+        </div>
       </header>
 
       {/* Metric Cards */}
@@ -1509,6 +1546,24 @@ export default function SalesSection() {
                       </td>
                       <td>
                         <div className="sales-row-actions">
+                          {order.status === "confirmed" &&
+                            order.delivery_type === "pickup" &&
+                            !order.pickup_ready_at &&
+                            !isServiceSale(order) && (
+                              <button
+                                type="button"
+                                className="sales-action-btn sales-action-btn--preparing"
+                                disabled={pickupReadyMutation.isPending}
+                                onClick={() => pickupReadyMutation.mutate(order.id)}
+                              >
+                                <PackageCheck size={15} aria-hidden="true" />
+                                <span>
+                                  {pickupReadyMutation.isPending && pickupReadyMutation.variables === order.id
+                                    ? "Actualizando..."
+                                    : "Marcar listo para retirar"}
+                                </span>
+                              </button>
+                            )}
                           {canMarkPreparing && (
                             <button
                               type="button"
@@ -1735,7 +1790,12 @@ export default function SalesSection() {
                     {claim.merchant_response && (
                       <p>Tu respuesta: {claim.merchant_response}</p>
                     )}
-                    {claim.merchant_action === "full_refund_with_return" && (
+                    {claim.merchant_action === "full_refund_with_return" &&
+                      ["open", "in_review"].includes(claim.status) &&
+                      !claim.return_received_at &&
+                      !["refunded", "returning_to_store", "returned"].includes(selectedOrder.status) &&
+                      !["returning_to_store", "returned_to_store"].includes(selectedOrder.shipment_status ?? "") &&
+                      !(Number(selectedOrder.total_amount) > 0 && Number(selectedOrder.refunded_amount ?? 0) >= Number(selectedOrder.total_amount)) && (
                       <p>
                         El reintegro total se iniciará al registrar la recepción
                         del producto.
@@ -1749,8 +1809,12 @@ export default function SalesSection() {
                         <button
                           type="button"
                           className="order-detail-claim__respond"
-                          disabled={claimResponseMutation.isPending}
+                          disabled={
+                            claimResponseMutation.isPending ||
+                            retryingClaimId === claim.id
+                          }
                           onClick={async () => {
+                            setRetryingClaimId(claim.id);
                             try {
                               await commerceService.respondToClaim(
                                 selectedOrder.id,
@@ -1772,12 +1836,32 @@ export default function SalesSection() {
                                   ? error.message
                                   : "Sercio debe revisar el reintegro.",
                               );
+                            } finally {
+                              setRetryingClaimId(null);
                             }
                           }}
                         >
-                          Consultar o reintentar reintegro
+                          {retryingClaimId === claim.id ? (
+                            <>
+                              <Loader2
+                                size={16}
+                                className="btn-spinner"
+                                aria-hidden="true"
+                              />
+                              <span>Consultando...</span>
+                            </>
+                          ) : (
+                            "Consultar o reintentar reintegro"
+                          )}
                         </button>
                       )}
+                    {(claim.offer_history?.length ?? 0) > 1 && (
+                      <details><summary>Historial de propuestas</summary>
+                        {claim.offer_history?.map(offer => <p key={offer.revision}>
+                          Propuesta {offer.revision}: {offer.percent}% (${Number(offer.amount).toLocaleString("es-AR")}) — {offer.buyer_decision === "rejected" ? "Rechazada" : offer.buyer_decision === "accepted" ? "Aceptada" : "Pendiente"}. {offer.response}
+                        </p>)}
+                      </details>
+                    )}
                     {claim.merchant_action === "partial_offer" && (
                       <p>
                         Oferta: {claim.partial_offer_percent}% ($
@@ -1787,14 +1871,14 @@ export default function SalesSection() {
                             ? "Reintegro confirmado"
                             : "Aceptada; reintegro en revisión"
                           : claim.buyer_decision === "rejected"
-                            ? "Rechazada; Sercio decidirá el caso"
+                            ? ["resolved", "refunded", "rejected"].includes(claim.status) ? "Oferta rechazada; consultá la resolución del reclamo" : claim.status === "open" ? "Rechazada; podés enviar una nueva propuesta dentro del plazo indicado" : "Rechazada; Sercio decidirá el caso"
                             : "Esperando al comprador"}
                         .
                       </p>
                     )}
                     {claim.status === "open" &&
-                      !claim.merchant_action &&
-                      !claim.merchant_response_at &&
+                      ((!claim.merchant_action && !claim.merchant_response_at) ||
+                        (claim.merchant_action === "partial_offer" && claim.buyer_decision === "rejected" && (claim.offer_revision ?? 1) === 1)) &&
                       (!claim.due_date ||
                         new Date(claim.due_date).getTime() > claimClock) &&
                       (respondingClaimId === claim.id ? (
@@ -1811,14 +1895,14 @@ export default function SalesSection() {
                               )
                             }
                           >
-                            {!isServiceSale(selectedOrder) && (
+                            {!isServiceSale(selectedOrder) && !claim.merchant_action && (
                               <option value="full_refund_with_return">
                                 Reembolso total al recibir el producto
                               </option>
                             )}
-                            <option value="full_refund_no_return">
+                            {!claim.merchant_action && <option value="full_refund_no_return">
                               Reembolso total sin devolución física
-                            </option>
+                            </option>}
                             <option value="partial_offer">
                               Ofrecer reembolso parcial
                             </option>
@@ -1832,19 +1916,70 @@ export default function SalesSection() {
                           {claimAction === "partial_offer" && (
                             <>
                               <label htmlFor={`claim-percent-${claim.id}`}>
-                                Porcentaje a reintegrar
+                                Porcentaje a reintegrar (%)
                               </label>
                               <input
                                 id={`claim-percent-${claim.id}`}
-                                type="number"
-                                min="0.01"
-                                max="99.99"
-                                step="0.01"
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="Ej: 25"
                                 value={claimPercent}
-                                onChange={(event) =>
-                                  setClaimPercent(Number(event.target.value))
-                                }
+                                onChange={(event) => {
+                                  const raw = event.target.value.replace(
+                                    ",",
+                                    ".",
+                                  );
+                                  if (
+                                    raw === "" ||
+                                    /^\d{0,2}(\.\d{0,2})?$/.test(raw)
+                                  ) {
+                                    setClaimPercent(raw);
+                                  }
+                                }}
                               />
+                              <div className="order-detail-claim__percent-helpers">
+                                <div className="order-detail-claim__percent-presets">
+                                  {[10, 25, 50, 75].map((preset) => (
+                                    <button
+                                      key={preset}
+                                      type="button"
+                                      className={`order-detail-claim__preset-btn ${
+                                        parsedClaimPercent === preset
+                                          ? "order-detail-claim__preset-btn--active"
+                                          : ""
+                                      }`}
+                                      onClick={() =>
+                                        setClaimPercent(String(preset))
+                                      }
+                                    >
+                                      {preset}%
+                                    </button>
+                                  ))}
+                                </div>
+                                {isValidClaimPercent ? (
+                                  <span className="order-detail-claim__percent-preview">
+                                    Monto a reintegrar: $
+                                    {(
+                                      ((Number(
+                                        selectedOrder.total_amount ?? 0,
+                                      ) -
+                                        Number(
+                                          selectedOrder.shipping_cost ?? 0,
+                                        )) *
+                                        parsedClaimPercent) /
+                                      100
+                                    ).toLocaleString("es-AR", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
+                                  </span>
+                                ) : (
+                                  <span className="order-detail-claim__percent-error">
+                                    Ingresá un porcentaje válido entre 0,01% y
+                                    99,99%.
+                                  </span>
+                                )}
+                              </div>
                             </>
                           )}
                           <label htmlFor={`claim-response-${claim.id}`}>
@@ -1863,6 +1998,7 @@ export default function SalesSection() {
                             <button
                               type="button"
                               data-action-tone="cancel"
+                              disabled={claimResponseMutation.isPending}
                               onClick={() => setRespondingClaimId(null)}
                             >
                               Cancelar
@@ -1872,6 +2008,8 @@ export default function SalesSection() {
                               data-action-tone="add"
                               disabled={
                                 claimResponse.trim().length < 10 ||
+                                (claimAction === "partial_offer" &&
+                                  !isValidClaimPercent) ||
                                 claimResponseMutation.isPending
                               }
                               onClick={() =>
@@ -1880,9 +2018,18 @@ export default function SalesSection() {
                                 })
                               }
                             >
-                              {claimResponseMutation.isPending
-                                ? "Enviando..."
-                                : "Enviar propuesta"}
+                              {claimResponseMutation.isPending ? (
+                                <>
+                                  <Loader2
+                                    size={16}
+                                    className="btn-spinner"
+                                    aria-hidden="true"
+                                  />
+                                  <span>Enviando...</span>
+                                </>
+                              ) : (
+                                "Enviar propuesta"
+                              )}
                             </button>
                           </div>
                         </div>
@@ -1892,14 +2039,15 @@ export default function SalesSection() {
                           className="order-detail-claim__respond"
                           onClick={() => {
                             setClaimAction(
-                              isServiceSale(selectedOrder)
+                              claim.merchant_action === "partial_offer" ? "partial_offer" : isServiceSale(selectedOrder)
                                 ? "full_refund_no_return"
                                 : "full_refund_with_return",
                             );
+                            setClaimOfferRevision(claim.offer_revision ?? 0);
                             setRespondingClaimId(claim.id);
                           }}
                         >
-                          Resolver reclamo
+                          {claim.merchant_action === "partial_offer" ? "Enviar nueva propuesta" : "Resolver reclamo"}
                         </button>
                       ))}
                     {claim.status === "open" &&
@@ -2239,7 +2387,18 @@ export default function SalesSection() {
                     disabled={confirmMutation.isPending}
                     onClick={() => confirmMutation.mutate(selectedOrder.id)}
                   >
-                    Confirmar pedido
+                    {confirmMutation.isPending ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className="btn-spinner"
+                          aria-hidden="true"
+                        />
+                        <span>Confirmando...</span>
+                      </>
+                    ) : (
+                      "Confirmar pedido"
+                    )}
                   </button>
                   {!selectedOrder.has_return &&
                     !selectedOrder.has_chargeback &&
@@ -2457,7 +2616,18 @@ export default function SalesSection() {
                         preparingMutation.mutate(selectedOrder.id);
                       }}
                     >
-                      Marcar en preparación
+                      {preparingMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        "Marcar en preparación"
+                      )}
                     </button>
                   </div>
                 )}
@@ -2534,9 +2704,20 @@ export default function SalesSection() {
                               })
                             }
                           >
-                            {assignedOwnRiderId
-                              ? "Cambiar rider"
-                              : "Asignar rider"}
+                            {assignOwnRiderMutation.isPending ? (
+                              <>
+                                <Loader2
+                                  size={16}
+                                  className="btn-spinner"
+                                  aria-hidden="true"
+                                />
+                                <span>Asignando...</span>
+                              </>
+                            ) : assignedOwnRiderId ? (
+                              "Cambiar rider"
+                            ) : (
+                              "Asignar rider"
+                            )}
                           </button>
                         </div>
                       </>
@@ -2588,7 +2769,18 @@ export default function SalesSection() {
                           })
                         }
                       >
-                        Confirmar entrega al rider
+                        {handToRiderMutation.isPending ? (
+                          <>
+                            <Loader2
+                              size={16}
+                              className="btn-spinner"
+                              aria-hidden="true"
+                            />
+                            <span>Confirmando...</span>
+                          </>
+                        ) : (
+                          "Confirmar entrega al rider"
+                        )}
                       </button>
                     </div>
                   </div>
@@ -2607,7 +2799,18 @@ export default function SalesSection() {
                         pickupReadyMutation.mutate(selectedOrder.id)
                       }
                     >
-                      Marcar listo para retiro en sucursal
+                      {pickupReadyMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        "Marcar listo para retiro en sucursal"
+                      )}
                     </button>
                   </div>
                 )}
@@ -2634,7 +2837,18 @@ export default function SalesSection() {
                       }
                       onClick={() => readyMutation.mutate(selectedOrder.id)}
                     >
-                      Marcar listo para despacho
+                      {readyMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        "Marcar listo para despacho"
+                      )}
                     </button>
                   </div>
                 )}
@@ -2651,7 +2865,18 @@ export default function SalesSection() {
                         coordinatedPreparingMutation.mutate(selectedOrder.id)
                       }
                     >
-                      Marcar en preparación
+                      {coordinatedPreparingMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        "Marcar en preparación"
+                      )}
                     </button>
                   </div>
                 )}
@@ -2671,7 +2896,18 @@ export default function SalesSection() {
                         coordinatedDispatchedMutation.mutate(selectedOrder.id)
                       }
                     >
-                      Confirmar que ya se despachó
+                      {coordinatedDispatchedMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Confirmando...</span>
+                        </>
+                      ) : (
+                        "Confirmar que ya se despachó"
+                      )}
                     </button>
                   </div>
                 )}
@@ -2715,9 +2951,20 @@ export default function SalesSection() {
                         })
                       }
                     >
-                      {isServiceSale(selectedOrder)
-                        ? "Validar y completar servicio"
-                        : "Validar y completar"}
+                      {pickupVerifyMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Validando...</span>
+                        </>
+                      ) : isServiceSale(selectedOrder) ? (
+                        "Validar y completar servicio"
+                      ) : (
+                        "Validar y completar"
+                      )}
                     </button>
                     <button
                       type="button"
@@ -2810,9 +3057,18 @@ export default function SalesSection() {
                             })
                           }
                         >
-                          {dispatchEvidenceMutation.isPending
-                            ? "Subiendo..."
-                            : "Subir foto"}
+                          {dispatchEvidenceMutation.isPending ? (
+                            <>
+                              <Loader2
+                                size={16}
+                                className="btn-spinner"
+                                aria-hidden="true"
+                              />
+                              <span>Subiendo...</span>
+                            </>
+                          ) : (
+                            "Subir foto"
+                          )}
                         </button>
                       </div>
                     </>
@@ -2896,7 +3152,18 @@ export default function SalesSection() {
                             })
                           }
                         >
-                          Guardar guía de transporte
+                          {transportMutation.isPending ? (
+                            <>
+                              <Loader2
+                                size={16}
+                                className="btn-spinner"
+                                aria-hidden="true"
+                              />
+                              <span>Guardando...</span>
+                            </>
+                          ) : (
+                            "Guardar guía de transporte"
+                          )}
                         </button>
                       </div>
                     ) : selectedOrder.status === "settled" ||
@@ -2974,10 +3241,20 @@ export default function SalesSection() {
                       })
                     }
                   >
-                    <Upload size={16} aria-hidden="true" />
-                    {invoiceMutation.isPending
-                      ? "Subiendo..."
-                      : "Subir factura"}
+                    {invoiceMutation.isPending ? (
+                      <Loader2
+                        size={16}
+                        className="btn-spinner"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Upload size={16} aria-hidden="true" />
+                    )}
+                    <span>
+                      {invoiceMutation.isPending
+                        ? "Subiendo..."
+                        : "Subir factura"}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -3050,7 +3327,18 @@ export default function SalesSection() {
                     })
                   }
                 >
-                  Confirmar cancelación
+                  {cancelMutation.isPending ? (
+                    <>
+                      <Loader2
+                        size={16}
+                        className="btn-spinner"
+                        aria-hidden="true"
+                      />
+                      <span>Cancelando...</span>
+                    </>
+                  ) : (
+                    "Confirmar cancelación"
+                  )}
                 </button>
               </div>
             </div>

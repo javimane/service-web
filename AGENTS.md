@@ -311,6 +311,12 @@ export default function ComponentName({
 - **Grupos mixtos (button, a, label):** Cuando un grupo incluye enlaces (ej. WhatsApp `<a>`), inputs de archivo `<label>` o botones `<button>`, todos deben tener `display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 42px; min-height: 42px;`.
 - **Skill de referencia:** Ver `.agents/skills/button-alignment-and-styling/SKILL.md` para detalles completos.
 
+### Estado de Carga (Loader Obligatorio en Botones Asíncronos)
+
+- **Regla obligatoria:** Todo botón que dispare una petición asíncrona, mutación (`useMutation`) o guardado (`isPending` / `isLoading` / `saving`) **DEBE** deshabilitarse (`disabled={isPending}`) y mostrar un icono de carga giratorio `<Loader2 size={16} className="btn-spinner" aria-hidden="true" />` (de `lucide-react`) junto con un texto en gerundio (`"Guardando..."`, `"Enviando..."`, `"Aceptando..."`, `"Rechazando..."`, `"Confirmando..."`, etc.).
+- **Grupos de decisión (Aceptar / Rechazar):** Cuando dos botones comparten la misma mutación (por ejemplo, aceptar o rechazar un reclamo/oferta), ambos deben deshabilitarse durante `isPending`, pero el loader `<Loader2>` y el cambio de texto solo deben mostrarse en el botón que fue accionado (verificando `mutation.variables`).
+- **Clase global:** `.btn-spinner` está definida en `src/index.css` (`animation: spin 1s linear infinite; flex-shrink: 0;`). El botón contenedor debe tener `display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);`.
+
 ### Colores semánticos de acciones
 
 - Los botones o controles tipo botón para **Agregar/Añadir** y **Subir** usan fondo verde claro: `data-action-tone="add"` o `data-action-tone="upload"`.
