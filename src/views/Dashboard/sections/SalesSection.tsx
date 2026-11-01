@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { refreshMerchantSales } from "./refreshMerchantSales";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -180,7 +181,10 @@ export default function SalesSection() {
     },
     onError: (error: Error) =>
       showError(error.message || "No se pudo responder el reclamo."),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["order-claims", selectedOrder?.id] }),
+    onSettled: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["order-claims", selectedOrder?.id],
+      }),
   });
 
   // Auto-cargar orden si viene orderId por URL (ej. desde notificación)
@@ -406,6 +410,15 @@ export default function SalesSection() {
     404;
   const waitingForBranches =
     Boolean(selectedBranchId) && rawBranches === undefined && !branchesError;
+
+  const refreshSalesMutation = useMutation({
+    mutationFn: () => refreshMerchantSales(queryClient),
+    onError: () =>
+      showError(
+        "No se pudieron actualizar todas las ventas y reclamos. Volvé a intentar.",
+      ),
+  });
+  const refreshingSales = isFetching || refreshSalesMutation.isPending;
 
   const orders = React.useMemo(
     () => ordersData?.items ?? ordersData?.data ?? [],
@@ -1098,18 +1111,17 @@ export default function SalesSection() {
           <button
             type="button"
             className="btn-secondary sales-section__refresh-btn"
-            onClick={() => refetch()}
-            disabled={isFetching}
+            onClick={() => refreshSalesMutation.mutate()}
+            disabled={refreshingSales}
             title="Refrescar ventas"
             aria-label="Refrescar lista de ventas"
           >
-            <RefreshCw
-              size={16}
-              className={
-                isFetching ? "sales-section__refresh-icon--spinning" : ""
-              }
-            />
-            <span>{isFetching ? "Actualizando..." : "Refrescar"}</span>
+            {refreshingSales ? (
+              <Loader2 size={16} className="btn-spinner" aria-hidden="true" />
+            ) : (
+              <RefreshCw size={16} aria-hidden="true" />
+            )}
+            <span>{refreshingSales ? "Actualizando..." : "Refrescar"}</span>
           </button>
         </div>
       </header>
@@ -1324,9 +1336,13 @@ export default function SalesSection() {
           <button
             type="button"
             className="btn-primary"
-            onClick={() => refetch()}
+            onClick={() => refreshSalesMutation.mutate()}
+            disabled={refreshingSales}
           >
-            Reintentar
+            {refreshingSales && (
+              <Loader2 size={16} className="btn-spinner" aria-hidden="true" />
+            )}
+            {refreshingSales ? "Actualizando..." : "Reintentar"}
           </button>
         </div>
       ) : orders.length === 0 ? (
@@ -1430,7 +1446,7 @@ export default function SalesSection() {
                         />
                       </td>
                       <td className="sales-table__order-id">
-                        #{order.order_number || order.id.slice(0, 8)}
+                        {order.order_number || order.id.slice(0, 8)}
                       </td>
                       <td>
                         {new Date(order.created_at).toLocaleDateString("es-AR")}
@@ -1554,11 +1570,14 @@ export default function SalesSection() {
                                 type="button"
                                 className="sales-action-btn sales-action-btn--preparing"
                                 disabled={pickupReadyMutation.isPending}
-                                onClick={() => pickupReadyMutation.mutate(order.id)}
+                                onClick={() =>
+                                  pickupReadyMutation.mutate(order.id)
+                                }
                               >
                                 <PackageCheck size={15} aria-hidden="true" />
                                 <span>
-                                  {pickupReadyMutation.isPending && pickupReadyMutation.variables === order.id
+                                  {pickupReadyMutation.isPending &&
+                                  pickupReadyMutation.variables === order.id
                                     ? "Actualizando..."
                                     : "Marcar listo para retirar"}
                                 </span>
@@ -1724,7 +1743,7 @@ export default function SalesSection() {
         <Modal
           isOpen={Boolean(selectedOrder)}
           onClose={closeOrderDetail}
-          title={`Detalle de Venta #${
+          title={`Detalle de Venta:${
             selectedOrder.order_number || selectedOrder.id.slice(0, 8)
           }`}
         >
@@ -1793,14 +1812,22 @@ export default function SalesSection() {
                     {claim.merchant_action === "full_refund_with_return" &&
                       ["open", "in_review"].includes(claim.status) &&
                       !claim.return_received_at &&
-                      !["refunded", "returning_to_store", "returned"].includes(selectedOrder.status) &&
-                      !["returning_to_store", "returned_to_store"].includes(selectedOrder.shipment_status ?? "") &&
-                      !(Number(selectedOrder.total_amount) > 0 && Number(selectedOrder.refunded_amount ?? 0) >= Number(selectedOrder.total_amount)) && (
-                      <p>
-                        El reintegro total se iniciará al registrar la recepción
-                        del producto.
-                      </p>
-                    )}
+                      !["refunded", "returning_to_store", "returned"].includes(
+                        selectedOrder.status,
+                      ) &&
+                      !["returning_to_store", "returned_to_store"].includes(
+                        selectedOrder.shipment_status ?? "",
+                      ) &&
+                      !(
+                        Number(selectedOrder.total_amount) > 0 &&
+                        Number(selectedOrder.refunded_amount ?? 0) >=
+                          Number(selectedOrder.total_amount)
+                      ) && (
+                        <p>
+                          El reintegro total se iniciará al registrar la
+                          recepción del producto.
+                        </p>
+                      )}
                     {claim.merchant_action === "full_refund_no_return" && (
                       <p>Devolución total sin retorno del producto.</p>
                     )}
@@ -1856,10 +1883,20 @@ export default function SalesSection() {
                         </button>
                       )}
                     {(claim.offer_history?.length ?? 0) > 1 && (
-                      <details><summary>Historial de propuestas</summary>
-                        {claim.offer_history?.map(offer => <p key={offer.revision}>
-                          Propuesta {offer.revision}: {offer.percent}% (${Number(offer.amount).toLocaleString("es-AR")}) — {offer.buyer_decision === "rejected" ? "Rechazada" : offer.buyer_decision === "accepted" ? "Aceptada" : "Pendiente"}. {offer.response}
-                        </p>)}
+                      <details>
+                        <summary>Historial de propuestas</summary>
+                        {claim.offer_history?.map((offer) => (
+                          <p key={offer.revision}>
+                            Propuesta {offer.revision}: {offer.percent}% ($
+                            {Number(offer.amount).toLocaleString("es-AR")}) —{" "}
+                            {offer.buyer_decision === "rejected"
+                              ? "Rechazada"
+                              : offer.buyer_decision === "accepted"
+                                ? "Aceptada"
+                                : "Pendiente"}
+                            . {offer.response}
+                          </p>
+                        ))}
                       </details>
                     )}
                     {claim.merchant_action === "partial_offer" && (
@@ -1871,14 +1908,23 @@ export default function SalesSection() {
                             ? "Reintegro confirmado"
                             : "Aceptada; reintegro en revisión"
                           : claim.buyer_decision === "rejected"
-                            ? ["resolved", "refunded", "rejected"].includes(claim.status) ? "Oferta rechazada; consultá la resolución del reclamo" : claim.status === "open" ? "Rechazada; podés enviar una nueva propuesta dentro del plazo indicado" : "Rechazada; Sercio decidirá el caso"
+                            ? ["resolved", "refunded", "rejected"].includes(
+                                claim.status,
+                              )
+                              ? "Oferta rechazada; consultá la resolución del reclamo"
+                              : claim.status === "open"
+                                ? "Rechazada; podés enviar una nueva propuesta dentro del plazo indicado"
+                                : "Rechazada; Sercio decidirá el caso"
                             : "Esperando al comprador"}
                         .
                       </p>
                     )}
                     {claim.status === "open" &&
-                      ((!claim.merchant_action && !claim.merchant_response_at) ||
-                        (claim.merchant_action === "partial_offer" && claim.buyer_decision === "rejected" && (claim.offer_revision ?? 1) === 1)) &&
+                      ((!claim.merchant_action &&
+                        !claim.merchant_response_at) ||
+                        (claim.merchant_action === "partial_offer" &&
+                          claim.buyer_decision === "rejected" &&
+                          (claim.offer_revision ?? 1) === 1)) &&
                       (!claim.due_date ||
                         new Date(claim.due_date).getTime() > claimClock) &&
                       (respondingClaimId === claim.id ? (
@@ -1895,14 +1941,17 @@ export default function SalesSection() {
                               )
                             }
                           >
-                            {!isServiceSale(selectedOrder) && !claim.merchant_action && (
-                              <option value="full_refund_with_return">
-                                Reembolso total al recibir el producto
+                            {!isServiceSale(selectedOrder) &&
+                              !claim.merchant_action && (
+                                <option value="full_refund_with_return">
+                                  Reembolso total al recibir el producto
+                                </option>
+                              )}
+                            {!claim.merchant_action && (
+                              <option value="full_refund_no_return">
+                                Reembolso total sin devolución física
                               </option>
                             )}
-                            {!claim.merchant_action && <option value="full_refund_no_return">
-                              Reembolso total sin devolución física
-                            </option>}
                             <option value="partial_offer">
                               Ofrecer reembolso parcial
                             </option>
@@ -2039,15 +2088,19 @@ export default function SalesSection() {
                           className="order-detail-claim__respond"
                           onClick={() => {
                             setClaimAction(
-                              claim.merchant_action === "partial_offer" ? "partial_offer" : isServiceSale(selectedOrder)
-                                ? "full_refund_no_return"
-                                : "full_refund_with_return",
+                              claim.merchant_action === "partial_offer"
+                                ? "partial_offer"
+                                : isServiceSale(selectedOrder)
+                                  ? "full_refund_no_return"
+                                  : "full_refund_with_return",
                             );
                             setClaimOfferRevision(claim.offer_revision ?? 0);
                             setRespondingClaimId(claim.id);
                           }}
                         >
-                          {claim.merchant_action === "partial_offer" ? "Enviar nueva propuesta" : "Resolver reclamo"}
+                          {claim.merchant_action === "partial_offer"
+                            ? "Enviar nueva propuesta"
+                            : "Resolver reclamo"}
                         </button>
                       ))}
                     {claim.status === "open" &&

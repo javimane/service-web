@@ -648,7 +648,7 @@ export default function LiquidationsSection() {
               <thead>
                 <tr>
                   <th>ID Liquidación</th>
-                  <th>Fecha de corte</th>
+                  <th>Fecha</th>
                   <th>Monto Bruto</th>
                   <th>Comisión Sercio</th>
                   <th>IVA</th>
@@ -720,7 +720,7 @@ export default function LiquidationsSection() {
                   return (
                     <tr key={liq.id}>
                       <td className="liquidations-table__id">
-                        #{liq.id.slice(0, 8)}
+                        {liq.id.slice(0, 8)}
                       </td>
                       <td>
                         {liq.cutoff_date
@@ -770,13 +770,15 @@ export default function LiquidationsSection() {
                       </td>
                       <td>{getStatusBadge(liq.status)}</td>
                       <td>
-                        {liq.paid_to_merchant_at
-                          ? new Date(
-                              liq.paid_to_merchant_at,
-                            ).toLocaleDateString("es-AR")
-                          : liq.scheduled_release_at
-                            ? `Est. ${new Date(liq.scheduled_release_at).toLocaleDateString("es-AR")}`
-                            : "Pendiente"}
+                        {isCancelled
+                          ? "—"
+                          : liq.paid_to_merchant_at
+                            ? new Date(
+                                liq.paid_to_merchant_at,
+                              ).toLocaleDateString("es-AR")
+                            : liq.scheduled_release_at
+                              ? `Est. ${new Date(liq.scheduled_release_at).toLocaleDateString("es-AR")}`
+                              : "Pendiente"}
                       </td>
                       <td>
                         {liq.receipt_url ? (
@@ -892,7 +894,7 @@ export default function LiquidationsSection() {
             <Modal
               isOpen={Boolean(selectedLiquidation)}
               onClose={() => setSelectedLiquidation(null)}
-              title={`Detalle de Liquidación #${selectedLiquidation.id.slice(0, 8)}`}
+              title={`Detalle de Liquidación: ${selectedLiquidation.id.slice(0, 8)}`}
             >
               <div className="liquidation-detail-modal">
                 <div className="liq-detail-row">
@@ -1018,18 +1020,6 @@ export default function LiquidationsSection() {
                     </span>
                   </div>
                 )}
-                {Number(selectedLiquidation.refund_deduction_amount ?? 0) >
-                  0 && (
-                  <div className="liq-detail-row">
-                    <span>Deducción por cancelación/devolución:</span>
-                    <span className="liq-detail-deduction">
-                      -$
-                      {Number(
-                        selectedLiquidation.refund_deduction_amount,
-                      ).toLocaleString("es-AR")}
-                    </span>
-                  </div>
-                )}
                 {Number(selectedLiquidation.refund_debt_amount ?? 0) > 0 && (
                   <div className="liq-detail-row">
                     <span>
@@ -1088,7 +1078,7 @@ export default function LiquidationsSection() {
                         <div key={o.id} className="liq-order-item">
                           <div>
                             <strong>
-                              #{o.order_number || o.id.slice(0, 8)}
+                              {o.order_number || o.id.slice(0, 8)}
                             </strong>
                             <p>
                               {new Date(o.created_at).toLocaleDateString(

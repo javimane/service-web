@@ -39,7 +39,10 @@ import { useAlert } from "@/context/AlertContext";
 import { useAuth } from "@/context/AuthContext";
 import { getAccessToken } from "@/utils/auth";
 import { setApiAccessToken } from "@/services/apiClient";
-import { hasActiveOrderClaim, hasOrderClaimHistory } from "@/utils/orderClaimState";
+import {
+  hasActiveOrderClaim,
+  hasOrderClaimHistory,
+} from "@/utils/orderClaimState";
 import OrderReviewModal from "./OrderReviewModal";
 import OrderChatModal from "./OrderChatModal";
 import { getProductImage } from "./orderTicketData";
@@ -60,9 +63,17 @@ const refundSummary = (order: Partial<OrderSummary>) => {
   const refunded = Number(order.refunded_amount ?? 0);
   const total = Number(order.total_amount ?? 0);
   if (!Number.isFinite(refunded) || refunded <= 0) return null;
-  const partial = Number.isFinite(total) && total > 0 && Math.round(refunded * 100) < Math.round(total * 100);
-  const amount = refunded.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
-  const percent = partial ? ` (${(refunded / total * 100).toLocaleString("es-AR", { maximumFractionDigits: 2 })}%)` : "";
+  const partial =
+    Number.isFinite(total) &&
+    total > 0 &&
+    Math.round(refunded * 100) < Math.round(total * 100);
+  const amount = refunded.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+  });
+  const percent = partial
+    ? ` (${((refunded / total) * 100).toLocaleString("es-AR", { maximumFractionDigits: 2 })}%)`
+    : "";
   return `${partial ? "Reembolso parcial confirmado" : "Reembolso confirmado"}: ${amount}${percent}`;
 };
 
@@ -317,19 +328,37 @@ export default function BuyerOrdersSection() {
   const claimsUnavailable =
     orderClaimsPending || orderClaimsFetching || orderClaimsError;
   const answerOfferMutation = useMutation({
-    mutationFn: ({ claimId, accept, offerRevision }: { claimId: string; accept: boolean; offerRevision: number }) =>
-      commerceService.answerPartialOffer(selectedOrder!.id, claimId, accept, offerRevision),
+    mutationFn: ({
+      claimId,
+      accept,
+      offerRevision,
+    }: {
+      claimId: string;
+      accept: boolean;
+      offerRevision: number;
+    }) =>
+      commerceService.answerPartialOffer(
+        selectedOrder!.id,
+        claimId,
+        accept,
+        offerRevision,
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["order-claims", selectedOrder?.id],
       });
       queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
       showSuccess("Tu respuesta quedó registrada.");
-      queryClient.invalidateQueries({ queryKey: ["buyer-order-detail", selectedOrder?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["buyer-order-detail", selectedOrder?.id],
+      });
     },
     onError: (error: Error) =>
       showError(error.message || "No se pudo responder la propuesta."),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["order-claims", selectedOrder?.id] }),
+    onSettled: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["order-claims", selectedOrder?.id],
+      }),
   });
 
   const closeOrderDetail = () => {
@@ -949,7 +978,7 @@ export default function BuyerOrdersSection() {
                 <div className="buyer-order-card__header">
                   <div>
                     <span className="buyer-order-number">
-                      Orden #{order.order_number || order.id.slice(0, 8)}
+                      Orden: {order.order_number || order.id.slice(0, 8)}
                     </span>
                     <span className="buyer-order-date">
                       {new Date(order.created_at).toLocaleDateString("es-AR")}
@@ -959,7 +988,9 @@ export default function BuyerOrdersSection() {
                 </div>
 
                 {refundSummary(order) && (
-                  <p className="buyer-order-refund" role="status">{refundSummary(order)}</p>
+                  <p className="buyer-order-refund" role="status">
+                    {refundSummary(order)}
+                  </p>
                 )}
                 <div className="buyer-order-card__body">
                   <div className="buyer-order-product">
@@ -1138,7 +1169,7 @@ export default function BuyerOrdersSection() {
         <Modal
           isOpen={Boolean(selectedOrder)}
           onClose={closeOrderDetail}
-          title={`Pedido #${selectedOrder.order_number || selectedOrder.id.slice(0, 8)}`}
+          title={`Pedido N°: ${selectedOrder.order_number || selectedOrder.id.slice(0, 8)}`}
         >
           <div className="buyer-order-modal">
             {selectedOrder.delivery_type === "pickup" &&
@@ -1994,7 +2025,9 @@ export default function BuyerOrdersSection() {
             )}
             {orderHasClaimHistory && (
               <p className="buyer-order-modal__withdrawal-status">
-                Esta compra ya tiene un reclamo registrado. Consultá el historial para ver cómo se gestionó o se está gestionando la devolución.
+                Esta compra ya tiene un reclamo registrado. Consultá el
+                historial para ver cómo se gestionó o se está gestionando la
+                devolución.
               </p>
             )}
             {selectedOrder.withdrawal_requested && (
@@ -2084,7 +2117,11 @@ export default function BuyerOrdersSection() {
                     {claim.merchant_action === "full_refund_with_return" &&
                       ["open", "in_review"].includes(claim.status) &&
                       !claim.return_received_at &&
-                      !(Number(selectedOrder.total_amount) > 0 && Number(selectedOrder.refunded_amount ?? 0) >= Number(selectedOrder.total_amount)) &&
+                      !(
+                        Number(selectedOrder.total_amount) > 0 &&
+                        Number(selectedOrder.refunded_amount ?? 0) >=
+                          Number(selectedOrder.total_amount)
+                      ) &&
                       selectedOrder.status !== "returning_to_store" &&
                       selectedOrder.status !== "returned" &&
                       selectedOrder.status !== "refunded" &&
@@ -2123,10 +2160,20 @@ export default function BuyerOrdersSection() {
                       </p>
                     )}
                     {(claim.offer_history?.length ?? 0) > 1 && (
-                      <details><summary>Historial de propuestas</summary>
-                        {claim.offer_history?.map(offer => <p key={offer.revision}>
-                          Propuesta {offer.revision}: {offer.percent}% (${Number(offer.amount).toLocaleString("es-AR")}) — {offer.buyer_decision === "rejected" ? "Rechazada" : offer.buyer_decision === "accepted" ? "Aceptada" : "Pendiente"}. {offer.response}
-                        </p>)}
+                      <details>
+                        <summary>Historial de propuestas</summary>
+                        {claim.offer_history?.map((offer) => (
+                          <p key={offer.revision}>
+                            Propuesta {offer.revision}: {offer.percent}% ($
+                            {Number(offer.amount).toLocaleString("es-AR")}) —{" "}
+                            {offer.buyer_decision === "rejected"
+                              ? "Rechazada"
+                              : offer.buyer_decision === "accepted"
+                                ? "Aceptada"
+                                : "Pendiente"}
+                            . {offer.response}
+                          </p>
+                        ))}
                       </details>
                     )}
                     {claim.merchant_action === "partial_offer" && (
@@ -2138,7 +2185,13 @@ export default function BuyerOrdersSection() {
                             ? "Reintegro confirmado"
                             : "Aceptada; reintegro en revisión"
                           : claim.buyer_decision === "rejected"
-                            ? ["resolved", "refunded", "rejected"].includes(claim.status) ? "Oferta rechazada; consultá la resolución del reclamo" : claim.status === "open" ? "Oferta rechazada; el comercio puede enviar una nueva propuesta. El mismo reclamo sigue abierto" : "Oferta rechazada; Sercio revisará el mismo reclamo"
+                            ? ["resolved", "refunded", "rejected"].includes(
+                                claim.status,
+                              )
+                              ? "Oferta rechazada; consultá la resolución del reclamo"
+                              : claim.status === "open"
+                                ? "Oferta rechazada; el comercio puede enviar una nueva propuesta. El mismo reclamo sigue abierto"
+                                : "Oferta rechazada; Sercio revisará el mismo reclamo"
                             : "Pendiente de tu respuesta"}
                         .
                       </p>
@@ -2156,7 +2209,7 @@ export default function BuyerOrdersSection() {
                                 answerOfferMutation.mutate({
                                   claimId: claim.id,
                                   accept: false,
-                                offerRevision: claim.offer_revision ?? 1,
+                                  offerRevision: claim.offer_revision ?? 1,
                                 })
                               }
                             >

@@ -12,12 +12,9 @@ export const isOrderDeliveredForTicket = (order: OrderSummary) =>
 
 export const isPrintableOrder = (order: OrderSummary) =>
   Boolean(order.paid_at) &&
-  ![
-    "pending",
-    "pending_payment",
-    "cancelled",
-    "refunded",
-  ].includes(order.status) &&
+  !["pending", "pending_payment", "cancelled", "refunded"].includes(
+    order.status,
+  ) &&
   !isOrderDeliveredForTicket(order);
 
 export function getBuyerName(order: OrderSummary): string {
@@ -143,8 +140,12 @@ export function getOrderLines(order: OrderSummary) {
   ];
 }
 
-export function getDeliveryAddress(order: OrderSummary, skipPickup = false): string {
-  if (!skipPickup && order.delivery_type === "pickup") return "Retiro en sucursal";
+export function getDeliveryAddress(
+  order: OrderSummary,
+  skipPickup = false,
+): string {
+  if (!skipPickup && order.delivery_type === "pickup")
+    return "Retiro en sucursal";
   const address = order.delivery_address || order.shipping_address;
   if (!address) return "Dirección del comprador no informada";
   const street = [
@@ -174,9 +175,21 @@ export function getTicketDelivery(order: OrderSummary): {
   label: string;
   location: string | null;
 } {
-  const isService = Boolean(order.service_id || order.service || order.items?.some((item) => item.service_id || item.service || item.item_type === "service"));
+  const isService = Boolean(
+    order.service_id ||
+    order.service ||
+    order.items?.some(
+      (item) => item.service_id || item.service || item.item_type === "service",
+    ),
+  );
   if (isService) {
-    const kind = order.service_location_kind || (order.delivery_type === "pickup" ? "branch" : order.delivery_type === "shipment" ? "home" : "coordinate");
+    const kind =
+      order.service_location_kind ||
+      (order.delivery_type === "pickup"
+        ? "branch"
+        : order.delivery_type === "shipment"
+          ? "home"
+          : "coordinate");
     if (kind === "branch") {
       const branch = getSaleLocation(order);
       return {
@@ -185,29 +198,40 @@ export function getTicketDelivery(order: OrderSummary): {
       };
     }
     if (kind === "home") {
-      return { label: "En domicilio del cliente", location: getDeliveryAddress(order, true) };
+      return {
+        label: "En domicilio del cliente",
+        location: getDeliveryAddress(order, true),
+      };
     }
     return { label: "A coordinar", location: null };
   }
   return {
-    label: order.delivery_type === "pickup" ? "Retiro en sucursal" : order.delivery_type === "shipment" ? "Envío a domicilio" : "A convenir",
+    label:
+      order.delivery_type === "pickup"
+        ? "Retiro en sucursal"
+        : order.delivery_type === "shipment"
+          ? "Envío a domicilio"
+          : "A convenir",
     location: null,
   };
 }
 
 export const getOrderNumber = (order: OrderSummary) =>
-  order.order_number || `#ORD-${order.id.slice(0, 8).toUpperCase()}`;
+  order.order_number || `N°: ${order.id.slice(0, 8).toUpperCase()}`;
 
 export const getOrderQrPayload = (order: OrderSummary) => {
-  const shipment = Array.isArray(order.shipments) ? order.shipments[0] : order.shipments;
+  const shipment = Array.isArray(order.shipments)
+    ? order.shipments[0]
+    : order.shipments;
   return JSON.stringify({
     order_id: order.id,
     order_number: getOrderNumber(order),
     ...(order.delivery_type === "shipment" && shipment?.id
       ? { shipment_id: shipment.id }
       : {}),
-    security_code: order.delivery_type === "shipment"
-      ? shipment?.seller_security_code || ""
-      : order.pickup_code || "",
+    security_code:
+      order.delivery_type === "shipment"
+        ? shipment?.seller_security_code || ""
+        : order.pickup_code || "",
   });
 };

@@ -45,6 +45,7 @@ export default function CheckoutFinancialCost({
     ? null
     : calculateCheckoutCftea(cashAmount, totalAmount, count);
   const noSurcharge = !unavailable && surcharge === 0;
+  const annualRate = cftea === null ? "No disponible" : percent(cftea);
 
   return (
     <section
@@ -83,10 +84,10 @@ export default function CheckoutFinancialCost({
           <div className="checkout-financial-cost__rates">
             <strong className="checkout-financial-cost__cftea">
               CFTEA{noSurcharge ? "" : " estimado"}:{" "}
-              {cftea === null ? "No disponible" : percent(cftea)}
+              {annualRate}
             </strong>
             <span className="checkout-financial-cost__tea">
-              TEA: {noSurcharge ? "0,00%" : "No informada por el financiador"}
+              TEA{noSurcharge ? "" : " estimada"}: {annualRate}
             </span>
           </div>
           <p className="checkout-financial-cost__note">
@@ -94,7 +95,7 @@ export default function CheckoutFinancialCost({
               ? paymentMethod === "paycloud_qr"
                 ? "Pago único con QR, sin financiación."
                 : "Pago único, sin recargo de financiación."
-              : "Costo financiero total efectivo anual de esta compra, calculado con cuotas iguales cada 30 días. El primer vencimiento depende del cierre de tu tarjeta."}
+              : "La TEA y el CFTEA coinciden porque el recargo incluye todo el costo de financiación, sin cargos adicionales. Tasas calculadas con cuotas iguales cada 30 días. El primer vencimiento depende del cierre de tu tarjeta."}
           </p>
         </>
       )}

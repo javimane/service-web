@@ -355,7 +355,6 @@ export type Liquidation = {
   cancellation_commission_pct?: number;
   cancellation_iva_amount?: number;
   refunded_gross_amount?: number;
-  refund_deduction_amount?: number;
   refund_debt_amount?: number;
   chargeback_deduction_amount?: number;
   payment_provider_fee?: number;
