@@ -130,6 +130,7 @@ export type OrderSummary = {
   shipment_id?: string | null;
   shipment_status?: string | null;
   uses_merchant_riders?: boolean | null;
+  shipping_amount_hidden?: boolean;
   shipments?: Array<{ id: string; status: string; delivery_driver_id?: string | null; seller_security_code?: string | null }> | { id: string; status: string; delivery_driver_id?: string | null; seller_security_code?: string | null } | null;
   user_id?: string;
   professional_id?: number;
@@ -346,6 +347,12 @@ export type Liquidation = {
   tax_withholding?: number;
   net_amount?: number;
   gross_amount?: number;
+  shipping_pricing_version?: number;
+  merchant_gross_amount?: number | null;
+  shipping_processing_fee_pct?: number;
+  shipping_processing_fee?: number;
+  shipping_processing_iva_amount?: number;
+
   platform_commission?: number;
   platform_commission_pct?: number;
   iva_amount?: number;
@@ -1505,6 +1512,8 @@ export const commerceService = {
     }),
 
   // Branches
+  branchRiderCoverage: (companyId: number): Promise<BranchRiderCoverageResponse> => apiClient(API_ENDPOINTS.branches.riderCoverage(companyId)),
+  enableOwnRidersForAllBranches: (companyId: number) => apiClient<{ success: boolean }>(API_ENDPOINTS.branches.enableOwnRidersForAll(companyId), { method: "PUT" }),
   branches: async (companyId?: number): Promise<Branch[]> => {
     const res = await apiClient<any>(
       companyId
@@ -1748,12 +1757,12 @@ export const commerceService = {
       API_ENDPOINTS.products.variants(professionalProductId),
     ),
 
-  linkVariant: (professionalProductId: string, productId: string) =>
+  linkVariant: (professionalProductId: string, productId: string, inheritParentImages = false) =>
     apiClient<{ parent_product_id: string; child_product_id: string }>(
       API_ENDPOINTS.products.variants(professionalProductId),
       {
         method: "POST",
-        body: { product_id: productId },
+        body: { product_id: productId, inherit_parent_images: inheritParentImages },
       },
     ),
 
@@ -1966,3 +1975,6 @@ export const commerceService = {
       method: "PATCH",
     }),
 };
+
+export type BranchRiderCoverage = { location_id: string; configured: boolean; total_riders: number; online_riders: number; by_vehicle: { vehicle_type: string; total: number; online: number }[] };
+export type BranchRiderCoverageResponse = { checked_at: string; locations: BranchRiderCoverage[] };

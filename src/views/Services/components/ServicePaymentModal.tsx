@@ -390,6 +390,10 @@ export default function ServicePaymentModal({
               )}
             </div>
 
+            <p className="service-payment-modal__qr-subtitle">
+              Después de escanear el código, esperá a que aparezca el cartel de compra realizada.
+            </p>
+
             <div className="service-payment-modal__qr-amount-box">
               <span>Total a transferir:</span>
               <strong>

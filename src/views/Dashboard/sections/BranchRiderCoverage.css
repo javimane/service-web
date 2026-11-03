@@ -1,0 +1,9 @@
+.branch-rider-coverage { margin-top: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+.branch-rider-coverage h4 { font-size: var(--text-sm); margin-bottom: var(--space-2); }
+.branch-rider-coverage p { margin-bottom: var(--space-2); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.branch-rider-coverage ul { list-style: none; padding: 0; margin: 0 0 var(--space-2); }
+.branch-rider-coverage li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); font-size: var(--text-sm); }
+.branch-rider-coverage__note { color: var(--text-secondary); font-size: var(--text-xs); }
+.branch-own-riders-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+.branch-own-riders-actions button { box-sizing: border-box; height: 42px; min-height: 42px; line-height: 1; }
+.branch-own-riders-actions p { flex: 1 1 240px; }

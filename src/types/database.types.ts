@@ -222,7 +222,7 @@ export interface ProfessionalImageRow {
 }
 
 export interface ProfessionalProductRow {
-  readonly product_condition?: 'original' | 'replica' | 'used' | 'alternative' | null;
+  readonly product_condition?: 'original' | 'replica' | 'used' | 'alternative' | 'artisanal' | null;
   readonly id: number;
   readonly professional_id: number;
   readonly product_id: number;

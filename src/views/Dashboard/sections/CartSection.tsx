@@ -389,6 +389,7 @@ export default function CartSection() {
     ? { origin_address_id: selectedBranch.address_id ?? undefined }
     : { branch_id: selectedBranchId || undefined };
   const quoteKey = JSON.stringify({
+    installments: paymentMethod === "card" ? installments : 1,
     items: items.map((item) => [item.id, item.quantity]),
     selectedAddressId,
     selectedBranchId,
@@ -462,6 +463,7 @@ export default function CartSection() {
           quantity: item.quantity,
         })),
         delivery_type: "shipment",
+        installments: paymentMethod === "card" ? installments : 1,
         delivery_address_id: selectedAddressId,
         ...originSelection,
       });
@@ -524,6 +526,7 @@ export default function CartSection() {
               quantity: item.quantity,
             })),
           delivery_type: "shipment",
+        installments: paymentMethod === "card" ? installments : 1,
           delivery_address_id: selectedAddressId,
           ...(selectedBranch.is_main
             ? { origin_address_id: selectedBranch.address_id ?? undefined }
@@ -569,6 +572,8 @@ export default function CartSection() {
     selectedAddressId,
     items,
     quoteKey,
+    paymentMethod,
+    installments,
   ]);
 
   const checkoutMutation = useMutation({
@@ -1757,6 +1762,10 @@ export default function CartSection() {
             <p className="qr-hint">
               Abrí tu app bancaria o billetera (Mercado Pago, MODO, BNA+, Ualá,
               etc.) y escaneá este código QR interoperable.
+            </p>
+
+            <p className="qr-hint">
+              Después de escanear el código, esperá a que aparezca el cartel de compra realizada.
             </p>
 
             <div className="qr-amount-pill">

@@ -191,6 +191,12 @@ export default function ProductPaymentModal({
     ? { origin_address_id: selectedBranch.address_id ?? undefined }
     : { branch_id: selectedBranchId || undefined };
 
+  // Payment states
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "paycloud_qr">(
+    "card",
+  );
+  const [installments, setInstallments] = useState<number>(1);
+
   // Automated shipping calculation states
   const [shippingCalc, setShippingCalc] =
     useState<CalculateShippingResponse | null>(null);
@@ -200,6 +206,7 @@ export default function ProductPaymentModal({
     message: string;
   } | null>(null);
   const shippingQuoteKey = JSON.stringify({
+    installments: paymentMethod === "card" ? installments : 1,
     professionalProductId,
     quantity,
     selectedAddressId,
@@ -212,11 +219,6 @@ export default function ProductPaymentModal({
   const [isCalculatingShipping, setIsCalculatingShipping] =
     useState<boolean>(false);
 
-  // Payment states
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "paycloud_qr">(
-    "card",
-  );
-  const [installments, setInstallments] = useState<number>(1);
 
   // Saved payment methods
   const { data: commissions = [] } = useQuery<MarketplaceCommission[]>({
@@ -352,6 +354,7 @@ export default function ProductPaymentModal({
           professional_product_id: professionalProductId,
           quantity,
           delivery_type: "shipment",
+          installments: paymentMethod === "card" ? installments : 1,
           delivery_address_id: selectedAddressId,
           ...(selectedBranch?.is_main
             ? { origin_address_id: selectedBranch.address_id ?? undefined }
@@ -406,6 +409,8 @@ export default function ProductPaymentModal({
     selectedBranch?.address_id,
     isOutsideDeliveryRange,
     shippingQuoteKey,
+    paymentMethod,
+    installments,
     hasPickupBranch,
   ]);
 
@@ -861,6 +866,10 @@ export default function ProductPaymentModal({
               </div>
             )}
           </div>
+
+          <p className="product-payment-modal__qr-subtitle">
+            Después de escanear el código, esperá a que aparezca el cartel de compra realizada.
+          </p>
 
           <div className="product-payment-modal__qr-amount-box">
             <span>Total a transferir:</span>

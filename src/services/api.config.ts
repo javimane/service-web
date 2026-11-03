@@ -113,6 +113,8 @@ export const API_ENDPOINTS = {
     cancel: (id: string) => `${API_BASE_URL}/api/shipments/${id}/cancel`,
   },
   branches: {
+    riderCoverage: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}/rider-coverage`,
+    enableOwnRidersForAll: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}/own-riders/enable-all`,
     base: `${API_BASE_URL}/api/branches`,
     byCompany: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}`,
     locations: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}/locations`,

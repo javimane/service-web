@@ -1,0 +1,10 @@
+.variant-image-inheritance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.variant-image-inheritance .product-creator__images-hint {
+  margin: 0;
+  color: var(--text-secondary);
+}

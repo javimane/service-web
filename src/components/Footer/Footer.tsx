@@ -33,7 +33,7 @@ export default function Footer() {
             <BrandLogo className="footer__brand-mark" />
           </div>
           <p className="footer__copy">
-            © 2026 Sercio. Tu red de servicios y comercios en un solo lugar.
+            Copyright © 2026 SERCIO SOFT SAS · CUIT: 30719565936
           </p>
         </div>
 

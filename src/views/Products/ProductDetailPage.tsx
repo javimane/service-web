@@ -820,7 +820,7 @@ export default function ProductDetailPage({
                     <span>{sellerProvince}</span>
                   </div>
                   <ProfessionalReputation professionalId={professionalId} />
-                  <p>Condición: {({ original: "Original", replica: "Réplica", used: "Usado", alternative: "Alternativo" } as Record<string, string>)[professionalProduct?.product_condition || ""] || "No informada"}</p>
+                  <p>Condición: {({ original: "Original", replica: "Réplica", used: "Usado", alternative: "Alternativo", artisanal: "Artesanal" } as Record<string, string>)[professionalProduct?.product_condition || ""] || "No informada"}</p>
                   {professionalProduct?.id && <ListingReportButton targetType="professional_product" targetId={String(professionalProduct.id)} />}
 
                   {/* Variants selector (if product has variants) */}

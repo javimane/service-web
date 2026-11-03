@@ -118,8 +118,8 @@ export function AccountAccessNotice({
         <h2>{blocked ? "Cuenta bloqueada" : "Cuenta en pausa"}</h2>
         <p>
           {blocked
-            ? "Tu cuenta no puede operar. Contactá a Sercio para revisar el bloqueo."
-            : "No podés vender ni aceptar nuevos pedidos hasta que se quite la pausa."}
+            ? "Tu cuenta tiene acceso de consulta. No podés comprar, vender ni modificar datos. Contactá a Sercio para revisar el bloqueo y los pedidos pendientes."
+            : "No podés publicar ni aceptar nuevas ventas hasta que se quite la pausa. Podés atender pedidos anteriores, reclamos y consultar tus liquidaciones."}
         </p>
         {reason && <p>{reason}</p>}
         <div className="account-access__actions">

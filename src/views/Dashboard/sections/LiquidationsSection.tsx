@@ -969,6 +969,12 @@ export default function LiquidationsSection() {
                     </div>
                   </>
                 )}
+                {Number(selectedLiquidation.shipping_processing_fee ?? 0) > 0 && (
+                  <>
+                    <div className="liq-detail-row"><span>Costo por Procesamiento de Pago del Envío:</span><span className="liq-detail-deduction">-$ {Number(selectedLiquidation.shipping_processing_fee).toLocaleString("es-AR")}</span></div>
+                    <div className="liq-detail-row"><span>IVA Costo por Procesamiento de Pago del Envío:</span><span className="liq-detail-deduction">-$ {Number(selectedLiquidation.shipping_processing_iva_amount ?? 0).toLocaleString("es-AR")}</span></div>
+                  </>
+                )}
                 {Number(selectedLiquidation.iibb_amount ?? 0) > 0 && (
                   <div className="liq-detail-row">
                     <span>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { refreshMerchantSales } from "./refreshMerchantSales";
+import { isServiceAppointmentScheduled } from "@/utils/serviceAppointment";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -767,7 +768,7 @@ export default function SalesSection() {
       queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
       setSelectedOrder(null);
     },
-    onError: () => showError("Código de retiro inválido."),
+    onError: (error: any) => showError(error?.response?.data?.message || error?.message || "No se pudo validar el código de entrega."),
   });
 
   const invoiceMutation = useMutation({
@@ -1477,8 +1478,7 @@ export default function SalesSection() {
                                 <span className="sales-badge sales-badge--appointment-scheduled">
                                   ✅ Turno realizado
                                 </span>
-                              ) : order.appointment_status ===
-                                "pending_appointment" ? (
+                              ) : !isServiceAppointmentScheduled(order) ? (
                                 <span className="sales-badge sales-badge--appointment-pending">
                                   ⚠️ Turno Pendiente
                                 </span>
@@ -1674,8 +1674,7 @@ export default function SalesSection() {
                           {(order.service_id || order.service) &&
                             !isClosedServiceAppointment(order) &&
                             !isOrderDelivered(order) &&
-                            order.appointment_status ===
-                              "pending_appointment" && (
+                            !isServiceAppointmentScheduled(order) && (
                               <button
                                 type="button"
                                 className="sales-action-btn sales-action-btn--appointment"
@@ -2399,8 +2398,8 @@ export default function SalesSection() {
                   ).toLocaleString("es-AR")}
                 </span>
               </div>
-              {(!isServiceSale(selectedOrder) ||
-                Number(selectedOrder.shipping_cost ?? 0) > 0) && (
+              {(!selectedOrder.shipping_amount_hidden && (!isServiceSale(selectedOrder) ||
+                Number(selectedOrder.shipping_cost ?? 0) > 0)) && (
                 <div className="order-detail-row">
                   <span>
                     {isServiceSale(selectedOrder)
@@ -2528,8 +2527,7 @@ export default function SalesSection() {
                           )}
                         </div>
                       </div>
-                    ) : selectedOrder.appointment_status ===
-                      "pending_appointment" ? (
+                    ) : !isServiceAppointmentScheduled(selectedOrder) ? (
                       <div className="appointment-pending-banner">
                         <div className="appointment-pending-text">
                           <AlertTriangle size={20} className="icon-amber" />
@@ -2968,6 +2966,7 @@ export default function SalesSection() {
               {/* Pickup Verification */}
               {(isServiceSale(selectedOrder)
                 ? selectedOrder.status === "confirmed" &&
+                  isServiceAppointmentScheduled(selectedOrder) &&
                   !isOrderDelivered(selectedOrder)
                 : isOrderPickupReady(selectedOrder)) && (
                 <div className="pickup-verify-box">

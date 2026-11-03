@@ -16,16 +16,19 @@ import {
   AlertCircle,
   ToggleLeft,
   ToggleRight,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { commerceService, Branch } from "@/services/commerceService";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { getAccessToken } from "@/utils/auth";
 import { getProfessionalMeAction } from "@/app/actions/professionals";
-import { getProvincesAction } from "@/app/actions/locations";
+import { getProvincesAction, getDepartmentsAction } from "@/app/actions/locations";
 import { setApiAccessToken } from "@/services/apiClient";
 import Modal from "@/components/Modal/Modal";
 import "./BranchesSection.css";
+import { BranchRiderCoverage } from "./BranchRiderCoverage";
 
 const GOOGLE_MAPS_API_KEY =
   process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
@@ -285,6 +288,17 @@ export default function BranchesSection() {
     staleTime: 1000 * 60 * 60 * 24,
   });
 
+  const coverageQuery = useQuery({
+    queryKey: ["merchant-branch-rider-coverage", companyId],
+    queryFn: () => commerceService.branchRiderCoverage(companyId!),
+    enabled: Boolean(companyId),
+    staleTime: 0,
+  });
+  const enableAllMutation = useMutation({
+    mutationFn: () => commerceService.enableOwnRidersForAllBranches(companyId!),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["merchant-branches"] }); showSuccess("Envíos propios activados en todas las sucursales, incluida la principal."); },
+    onError: () => showError("No se pudo activar el envío propio en todas las sucursales. Reintentá."),
+  });
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [branchToDelete, setBranchToDelete] = useState<Branch | null>(null);
@@ -297,6 +311,8 @@ export default function BranchesSection() {
   const [floor, setFloor] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [provinceId, setProvinceId] = useState<number | "">("");
+  const [departmentId, setDepartmentId] = useState<number | "">("");
+  const { data: departments = [] } = useQuery<{ id: number; name: string }[]>({ queryKey: ["departments", provinceId], queryFn: async () => (await getDepartmentsAction({ provinceId }))?.data ?? [], enabled: Boolean(provinceId) });
   const [phone, setPhone] = useState("");
   const [openingHours, setOpeningHours] = useState("");
   const [isPickupPoint, setIsPickupPoint] = useState(true);
@@ -371,6 +387,7 @@ export default function BranchesSection() {
           : "Sucursal agregada con éxito.",
       );
       queryClient.invalidateQueries({ queryKey: ["merchant-branches"] });
+      queryClient.invalidateQueries({ queryKey: ["merchant-branch-rider-coverage"] });
       closeModal();
     },
     onError: (error) => {
@@ -415,6 +432,7 @@ export default function BranchesSection() {
     setFloor("");
     setZipCode("");
     setProvinceId("");
+    setDepartmentId("");
     setPhone("");
     setOpeningHours("Lun a Vie 09:00 a 18:00 hs - Sáb 09:00 a 13:00 hs");
     setIsPickupPoint(true);
@@ -438,6 +456,7 @@ export default function BranchesSection() {
     setFloor(b.floor_apartment || "");
     setZipCode(b.zip_code || "");
     setProvinceId(b.province_id ?? "");
+    setDepartmentId(b.department_id ?? "");
     setPhone(b.phone || "");
     setOpeningHours(b.opening_hours || "");
     setIsPickupPoint(b.is_pickup_point);
@@ -459,6 +478,7 @@ export default function BranchesSection() {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (provinceId && !departmentId) { showError("Seleccioná el departamento / partido de la sucursal."); return; }
     if (!companyId) {
       showError("No encontramos el comercio asociado a tu cuenta. Completá primero el perfil comercial.");
       return;
@@ -494,6 +514,7 @@ export default function BranchesSection() {
       floor_apartment: floor.trim() || undefined,
       zip_code: zipCode.trim() || undefined,
       province_id: provinceId || undefined,
+      department_id: departmentId || undefined,
       phone: phone.trim() || undefined,
       opening_hours: openingHours.trim() || undefined,
       is_pickup_point: isPickupPoint,
@@ -527,6 +548,17 @@ export default function BranchesSection() {
         </button>
       </header>
 
+      <div className="branch-own-riders-actions">
+        <p>La empresa se hace cargo de los envíos (empleados propios)</p>
+        <button type="button" className="branches-section__add-btn" disabled={!companyId || enableAllMutation.isPending} onClick={() => enableAllMutation.mutate()}>
+          {enableAllMutation.isPending && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
+          {enableAllMutation.isPending ? "Activando…" : "Activar en todas las sucursales"}
+        </button>
+        <button type="button" className="branches-section__add-btn" disabled={!companyId || coverageQuery.isFetching} onClick={() => coverageQuery.refetch()}>
+          {coverageQuery.isFetching ? <Loader2 size={16} className="btn-spinner" aria-hidden="true" /> : <RefreshCw size={16} aria-hidden="true" />}
+          {coverageQuery.isFetching ? "Actualizando…" : "Actualizar cobertura"}
+        </button>
+      </div>
       {/* List or States */}
       {isLoading || isLoadingProfessional ? (
         <div className="branches-state branches-state--loading">
@@ -691,6 +723,7 @@ export default function BranchesSection() {
                   </div>
                 )}
 
+                <BranchRiderCoverage coverage={coverageQuery.data?.locations.find(location => location.location_id === b.id)} loading={coverageQuery.isLoading} error={coverageQuery.isError} />
                 <div className="branch-shipping-badge">
                   {b.company_covers_shipping ? (
                     <span
@@ -704,7 +737,7 @@ export default function BranchesSection() {
                       className="shipping-badge shipping-badge--external"
                       title="Envíos gestionados por riders de Sercio"
                     >
-                      🛵 Envíos por riders de Sercio
+                      {b.independent_riders_available ? "🛵 Envíos por riders de Sercio" : "Sin cobertura de riders de Sercio"}
                     </span>
                   )}
                   {b.auto_print_tickets && (
@@ -971,6 +1004,7 @@ export default function BranchesSection() {
                   setNumber("");
                   setZipCode("");
                   setProvinceId("");
+                  setDepartmentId("");
                   setAddressFromMap(true);
                   return addressEditRevision.current;
                 }}
@@ -987,9 +1021,16 @@ export default function BranchesSection() {
               />
               <div className="branch-form-group">
                 <label className="commercial-label" htmlFor="branch-province">Provincia de la sucursal</label>
-                <select id="branch-province" value={provinceId} onChange={(event) => setProvinceId(Number(event.target.value) || "")}>
+                <select id="branch-province" value={provinceId} onChange={(event) => { setProvinceId(Number(event.target.value) || ""); setDepartmentId(""); }}>
                   <option value="">Seleccioná una provincia</option>
                   {provinces.map((province) => <option key={province.id} value={province.id}>{province.name}</option>)}
+                </select>
+              </div>
+              <div className="branch-form-group">
+                <label className="commercial-label" htmlFor="branch-department">Departamento / partido</label>
+                <select id="branch-department" value={departmentId} disabled={!provinceId} onChange={event => setDepartmentId(Number(event.target.value) || "")}>
+                  <option value="">Seleccioná un departamento</option>
+                  {departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}
                 </select>
               </div>
               <div className="branch-form-row">

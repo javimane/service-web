@@ -1,4 +1,6 @@
 "use client";
+import { variantParentImageUrls } from "./variant-image-selection";
+import { VariantImageInheritanceOption } from "./VariantImageInheritanceOption";
 import ProductBranchStock from "@/components/ProductBranchStock/ProductBranchStock";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -132,6 +134,11 @@ export default function ProductCreator({
     number | null
   >(null);
 
+  const parentImageUrls = variantParentImageUrls(variantParent);
+  const [inheritImages, setInheritImages] = useState(Boolean(variantParent && !productToEdit && parentImageUrls.length));
+  const usingParentImages = Boolean(variantParent && inheritImages);
+  const selectedImagePreviews = usingParentImages ? parentImageUrls : imagePreviews;
+
   // Video state (up to 2 videos per product)
   const [videoFiles, setVideoFiles] = useState<(File | null)[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
@@ -257,6 +264,7 @@ export default function ProductCreator({
         await commerceService.linkVariant(
           variantParent.professional_product_id,
           String(data.product_id),
+          usingParentImages,
         );
       }
       return result?.data;
@@ -296,9 +304,11 @@ export default function ProductCreator({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [linkingVariant, setLinkingVariant] = useState(false);
 
   const isSaving =
     isSubmitting ||
+    linkingVariant ||
     createMutation.isPending ||
     assignMutation.isPending ||
     updateMutation.isPending ||
@@ -614,17 +624,19 @@ export default function ProductCreator({
   };
 
   const handleAddFromEan = async () => {
-    if (!eanMatch) return;
+    if (!eanMatch || linkingVariant) return;
     if (!newProduct.product_condition) {
       setMissingFieldsModalMessage("Falta agregar: la condición del producto.");
       showError("Elegí la condición del producto.");
       return;
     }
+    setLinkingVariant(true);
     try {
       if (eanMatch.isAlreadyAssigned && variantParent) {
         await commerceService.linkVariant(
           variantParent.professional_product_id,
           String(eanMatch.id),
+          usingParentImages,
         );
         queryClient.invalidateQueries({
           queryKey: ["product-family", variantParent.professional_product_id],
@@ -657,7 +669,7 @@ export default function ProductCreator({
       });
     } catch (error: any) {
       showError(error?.message || "No se pudo vincular el producto.");
-    }
+    } finally { setLinkingVariant(false); }
   };
 
   /* ── Submit ── */
@@ -704,7 +716,7 @@ export default function ProductCreator({
       if (!newProduct.width.trim()) e.width = "El ancho es obligatorio.";
       if (!newProduct.height.trim()) e.height = "El alto es obligatorio.";
       if (!newProduct.depth.trim()) e.depth = "La profundidad es obligatoria.";
-      if (imagePreviews.length === 0)
+      if (selectedImagePreviews.length === 0)
         e.image = "Debes subir al menos una imagen para el producto.";
 
       if (Object.keys(e).length > 0) {
@@ -738,8 +750,8 @@ export default function ProductCreator({
       const images_to_save: string[] = [];
       const images: string[] = [];
 
-      for (let i = 0; i < imagePreviews.length; i++) {
-        const file = imageFiles[i];
+      for (let i = 0; i < selectedImagePreviews.length; i++) {
+        const file = usingParentImages ? null : imageFiles[i];
         if (file) {
           const up = await uploadProductImage({
             file,
@@ -748,8 +760,8 @@ export default function ProductCreator({
           images_to_save.push(up.publicUrl);
           images.push(up.publicUrl);
         } else {
-          images_url.push(imagePreviews[i]);
-          images.push(imagePreviews[i]);
+          images_url.push(selectedImagePreviews[i]);
+          images.push(selectedImagePreviews[i]);
         }
       }
 
@@ -1157,6 +1169,7 @@ export default function ProductCreator({
           </div>
 
           {/* EAN Match result */}
+          {variantParent && eanMatch && <VariantImageInheritanceOption checked={inheritImages} images={parentImageUrls} disabled={isSaving} onChange={setInheritImages} />}
           {eanMatch && (
             <div className="product-creator__ean-match">
               <span
@@ -1198,6 +1211,7 @@ export default function ProductCreator({
                       <option value="">Seleccioná una opción</option>
                       <option value="original">Original</option><option value="replica">Réplica</option>
                       <option value="used">Usado</option><option value="alternative">Alternativo</option>
+                    <option value="artisanal">Artesanal</option>
                     </select>
                   </div>
                   <div
@@ -1913,6 +1927,7 @@ export default function ProductCreator({
                     <option value="">Seleccioná una opción</option>
                     <option value="original">Original</option><option value="replica">Réplica</option>
                     <option value="used">Usado</option><option value="alternative">Alternativo</option>
+                    <option value="artisanal">Artesanal</option>
                   </select>
                   {errors.product_condition && <span role="alert">{errors.product_condition}</span>}
                 </div>
@@ -2218,9 +2233,11 @@ export default function ProductCreator({
                     verticalAlign: "middle",
                   }}
                 />
-                Imágenes ({imagePreviews.length})
+                Imágenes ({selectedImagePreviews.length})
               </p>
 
+              {variantParent && <VariantImageInheritanceOption checked={inheritImages} images={parentImageUrls} disabled={isSaving} onChange={setInheritImages} />}
+              {!usingParentImages && <>
               <div
                 style={{
                   background: "rgba(233, 72, 35, 0.1)",
@@ -2304,6 +2321,7 @@ export default function ProductCreator({
                 Sin límite de imágenes. Arrastrá para reordenar. La primera es
                 la imagen principal.
               </p>
+              </>}
             </div>
 
             {/* ── Sección 5: Videos ── */}

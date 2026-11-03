@@ -583,7 +583,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           cbuVerified={sessionStatus?.cbu_verified === true}
           reason={sessionStatus?.is_blocked ? sessionStatus?.blocked_reason : sessionStatus?.paused_reason}
           refresh={refreshSession} logout={logout} />}
-      {!(user && sessionStatus?.is_blocked) && children}
+      {children}
       <Modal
         isOpen={showChatSyncModal}
         title="Sincronización de Chat"

@@ -2510,9 +2510,7 @@ export default function DashboardProducts({
                       <span>
                         Los productos elegidos mostrarán “Envío gratis” y no
                         necesitarán alcanzar la compra mínima de la empresa.
-                        {shippingPolicy?.has_own_riders
-                          ? " Con riders propios de la empresa también aplica al delivery local."
-                          : " El delivery local se configura por separado para la empresa."}
+                        {" El delivery local se configura en cada sucursal."}
                       </span>
                     </p>
                   )}
@@ -2991,6 +2989,7 @@ export default function DashboardProducts({
                     <option value="replica">Réplica</option>
                     <option value="used">Usado</option>
                     <option value="alternative">Alternativo</option>
+                    <option value="artisanal">Artesanal</option>
                   </select>
                 </div>
 
