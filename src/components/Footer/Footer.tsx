@@ -32,9 +32,7 @@ export default function Footer() {
           <div className="footer__brand-logo">
             <BrandLogo className="footer__brand-mark" />
           </div>
-          <p className="footer__copy">
-            Copyright © 2026 SERCIO SOFT SAS · CUIT: 30719565936
-          </p>
+          <p className="footer__copy">Copyright © 2026 SERCIO SOFT SAS</p>
         </div>
 
         <div className="footer__apps">
