@@ -22,12 +22,14 @@ interface CommissionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  showShippingProcessingFeeNote?: boolean;
 }
 
 export default function CommissionsModal({
   isOpen,
   onClose,
   title = "Comisiones por Venta",
+  showShippingProcessingFeeNote = false,
 }: CommissionsModalProps) {
   const [simulationAmount, setSimulationAmount] = useState<number>(10000);
 
@@ -240,6 +242,20 @@ export default function CommissionsModal({
             </p>
           </div>
         </div>
+
+        {showShippingProcessingFeeNote && (
+          <div className="commissions-modal__callout">
+            <Info size={18} className="commissions-modal__callout-icon" aria-hidden="true" />
+            <div className="commissions-modal__callout-body">
+              <strong>Envíos por delivery a cargo del comercio</strong>
+              <p>
+                Cuando el comercio se hace cargo del envío por delivery, se aplica
+                un costo por procesamiento del pago del envío, calculado sobre el
+                monto del envío, más el IVA correspondiente a ese costo.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Close Button */}
         <div className="commissions-modal__footer">

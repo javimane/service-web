@@ -3346,6 +3346,7 @@ export default function DashboardProducts({
       <CommissionsModal
         isOpen={commissionsModalOpen}
         onClose={() => setCommissionsModalOpen(false)}
+        showShippingProcessingFeeNote
       />
 
       {/* Shipping Rates Modal */}
