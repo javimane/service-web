@@ -723,7 +723,9 @@ export default function BranchesSection() {
                   </div>
                 )}
 
-                <BranchRiderCoverage coverage={coverageQuery.data?.locations.find(location => location.location_id === b.id)} loading={coverageQuery.isLoading} error={coverageQuery.isError} />
+                {!b.company_covers_shipping && (
+                  <BranchRiderCoverage coverage={coverageQuery.data?.locations.find(location => location.location_id === b.id)} loading={coverageQuery.isLoading} error={coverageQuery.isError} />
+                )}
                 <div className="branch-shipping-badge">
                   {b.company_covers_shipping ? (
                     <span

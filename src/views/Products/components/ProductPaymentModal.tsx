@@ -92,33 +92,31 @@ export default function ProductPaymentModal({
   const { data: cardConfig } = useCardPaymentConfig();
   const { user, isAgeVerified } = useAuth();
   const { showSuccess, showError, showAlert } = useAlert();
-  const totalStock = Math.max(
-    0,
-    Math.trunc(Number(product?.stock ?? 0) || 0),
-  );
+  const totalStock = Math.max(0, Math.trunc(Number(product?.stock ?? 0) || 0));
 
   // Step and flow states
   const [quantity, setQuantity] = useState<number>(initialQuantity);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("pickup");
   const [selectedBranchId, setSelectedBranchId] = useState("");
-  const { data: locationStocks, isLoading: stockLoading, isError: stockError } = useQuery({
+  const {
+    data: locationStocks,
+    isLoading: stockLoading,
+    isError: stockError,
+  } = useQuery({
     queryKey: ["product-branch-stock", professionalProductId],
     queryFn: () => commerceService.productBranchStock(professionalProductId!),
-    enabled: isOpen && Boolean(professionalProductId), staleTime: 0,
+    enabled: isOpen && Boolean(professionalProductId),
+    staleTime: 0,
   });
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [billingAddressId, setBillingAddressId] = useState("");
   const [billingAddressComplete, setBillingAddressComplete] = useState(false);
-  const [scheduleForNextDay, setScheduleForNextDay] = useState(false);
 
   const { data: userAddresses = [] } = useQuery<UserAddress[]>({
     queryKey: ["user-addresses", user?.id],
     queryFn: () => commerceService.getUserAddresses(),
     enabled: isOpen && Boolean(user),
   });
-  useEffect(() => {
-    setScheduleForNextDay(false);
-  }, [selectedBranchId, deliveryType]);
   useEffect(() => {
     const available = userAddresses.filter(
       (address) => address.latitude != null && address.longitude != null,
@@ -154,14 +152,21 @@ export default function ProductPaymentModal({
   const stockAt = (branch: Branch) => {
     if (!locationStocks) return 0;
     if (!locationStocks.length) return 0;
-    return locationStocks.find(row => branch.is_main ? row.origin_address_id === branch.address_id : row.branch_id === branch.id)?.stock ?? 0;
+    return (
+      locationStocks.find((row) =>
+        branch.is_main
+          ? row.origin_address_id === branch.address_id
+          : row.branch_id === branch.id,
+      )?.stock ?? 0
+    );
   };
   const availableStock = selectedBranch ? stockAt(selectedBranch) : totalStock;
   const shippingBranches = useMemo(
     () =>
       branches.filter(
         (branch) =>
-          stockAt(branch) >= quantity && branch.delivery_available === true &&
+          stockAt(branch) >= quantity &&
+          branch.delivery_available === true &&
           (branch.is_open !== false || branch.own_riders_available === true) &&
           getDeliveryCoverage(branch, selectedAddress).status !== "outside",
       ),
@@ -171,14 +176,24 @@ export default function ProductPaymentModal({
   useEffect(() => {
     const current = branches.find((branch) => branch.id === selectedBranchId);
     const canUse = (branch: Branch) =>
-      stockAt(branch) >= quantity && (deliveryType === "pickup"
+      stockAt(branch) >= quantity &&
+      (deliveryType === "pickup"
         ? branch.is_pickup_point
-        : deliveryType === "shipment" ? shippingBranches.includes(branch) : true);
+        : deliveryType === "shipment"
+          ? shippingBranches.includes(branch)
+          : true);
     if ((!current || !canUse(current)) && branches.length) {
       const available = branches.find(canUse);
       setSelectedBranchId(available?.id || "");
     }
-  }, [branches, selectedBranchId, deliveryType, shippingBranches, locationStocks, quantity]);
+  }, [
+    branches,
+    selectedBranchId,
+    deliveryType,
+    shippingBranches,
+    locationStocks,
+    quantity,
+  ]);
   const deliveryCoverage = getDeliveryCoverage(selectedBranch, selectedAddress);
   const isOutsideDeliveryRange = deliveryCoverage.status === "outside";
   const hasPickupBranch = branches.some((branch) => branch.is_pickup_point);
@@ -218,7 +233,6 @@ export default function ProductPaymentModal({
       : null;
   const [isCalculatingShipping, setIsCalculatingShipping] =
     useState<boolean>(false);
-
 
   // Saved payment methods
   const { data: commissions = [] } = useQuery<MarketplaceCommission[]>({
@@ -535,7 +549,8 @@ export default function ProductPaymentModal({
     e.preventDefault();
 
     if (stockLoading || stockError || !selectedBranch) {
-      showError("Elegí una sucursal con stock disponible antes de pagar."); return;
+      showError("Elegí una sucursal con stock disponible antes de pagar.");
+      return;
     }
     if (availableStock === 0 || quantity > availableStock) {
       showError(`Stock insuficiente (disponible: ${availableStock}).`);
@@ -578,13 +593,6 @@ export default function ProductPaymentModal({
         showError(
           "Seleccioná una dirección guardada y esperá el cálculo del envío.",
         );
-        return;
-      }
-      if (
-        currentShippingCalc.requires_scheduled_delivery &&
-        !scheduleForNextDay
-      ) {
-        showError("Confirmá el envío programado para mañana.");
         return;
       }
     }
@@ -728,7 +736,7 @@ export default function ProductPaymentModal({
           schedule_for_next_day:
             deliveryType === "shipment" &&
             currentShippingCalc?.requires_scheduled_delivery
-              ? scheduleForNextDay
+              ? true
               : undefined,
           payment_method:
             paymentMethod === "card" ? providerMethod : "paycloud_qr",
@@ -868,7 +876,8 @@ export default function ProductPaymentModal({
           </div>
 
           <p className="product-payment-modal__qr-subtitle">
-            Después de escanear el código, esperá a que aparezca el cartel de compra realizada.
+            Después de escanear el código, esperá a que aparezca el cartel de
+            compra realizada.
           </p>
 
           <div className="product-payment-modal__qr-amount-box">
@@ -1168,7 +1177,7 @@ export default function ProductPaymentModal({
                   </p>
                 )}
 
-                {(
+                {
                   <div className="product-payment-modal__address-fields">
                     <label className="product-payment-modal__input-label">
                       {deliveryType === "pickup"
@@ -1187,14 +1196,20 @@ export default function ProductPaymentModal({
                         .filter((branch) =>
                           deliveryType === "pickup"
                             ? branch.is_pickup_point
-                            : deliveryType === "shipment" ? shippingBranches.includes(branch) : true,
+                            : deliveryType === "shipment"
+                              ? shippingBranches.includes(branch)
+                              : true,
                         )
                         .map((branch) => (
-                          <option key={branch.id} value={branch.id} disabled={stockAt(branch) < quantity}>
+                          <option
+                            key={branch.id}
+                            value={branch.id}
+                            disabled={stockAt(branch) < quantity}
+                          >
                             {branch.name} — {branch.street_name}{" "}
                             {branch.street_number}
                             {` · Stock: ${stockAt(branch)}`}
-                            {branch.delivery_eta_minutes
+                            {deliveryType !== "coordinate_with_merchant" && branch.delivery_eta_minutes
                               ? ` · Demora ${branch.delivery_eta_minutes} min`
                               : ""}
                             {deliveryType === "shipment" &&
@@ -1204,26 +1219,28 @@ export default function ProductPaymentModal({
                           </option>
                         ))}
                     </select>
-                    {selectedBranch?.delivery_eta_minutes != null && (
+                    {deliveryType !== "coordinate_with_merchant" && selectedBranch?.delivery_eta_minutes != null && (
                       <p>
-                        Demora estimada{" "}
                         {selectedBranch.is_open === false &&
                         deliveryType === "shipment"
-                          ? "desde el despacho de mañana"
-                          : "de esta sucursal"}
+                          ? "Sucursal Cerrada - Demora estimada desde el despacho de mañana"
+                          : "Demora estimada de esta sucursal"}
                         : {selectedBranch.delivery_eta_minutes} minutos.
                       </p>
                     )}
                     {deliveryType === "pickup" &&
                       selectedBranch?.is_open === false && (
                         <p>
-                          Podés comprar ahora y retirar tu pedido cuando te
-                          convenga.
+                          Podés comprar ahora y retirar tu pedido cuando este
+                          listo.
                         </p>
                       )}
                   </div>
-                )}
+                }
 
+                {deliveryType === "coordinate_with_merchant" && (
+                  <p>El plazo y la forma de entrega se acuerdan directamente con el vendedor. No se aplica la demora de delivery de la sucursal.</p>
+                )}
                 {deliveryType === "pickup" && <PickupDeadlineWarning />}
 
                 {/* Dirección guardada para envío */}
@@ -1358,14 +1375,12 @@ export default function ProductPaymentModal({
                         <label className="product-payment-modal__schedule-option">
                           <input
                             type="checkbox"
-                            checked={scheduleForNextDay}
-                            onChange={(event) =>
-                              setScheduleForNextDay(event.target.checked)
-                            }
+                            checked
+                            disabled
                           />
                           <span>
-                            El comercio está cerrado. Programar el envío con sus
-                            riders para mañana
+                            El comercio está cerrado. El envío con sus riders se
+                            programará obligatoriamente para mañana
                             {currentShippingCalc.scheduled_delivery_date
                               ? ` (${currentShippingCalc.scheduled_delivery_date.split("-").reverse().join("/")})`
                               : ""}
@@ -1447,8 +1462,11 @@ export default function ProductPaymentModal({
                       >
                         {installmentsEnabled
                           ? interestFreeChoices.map((c) => {
-                              const planTotal = subtotal + calculatedShippingFee;
-                              const instPrice = Number((planTotal / c).toFixed(2));
+                              const planTotal =
+                                subtotal + calculatedShippingFee;
+                              const instPrice = Number(
+                                (planTotal / c).toFixed(2),
+                              );
                               return (
                                 <option key={c} value={c}>
                                   {c === 1
@@ -1464,7 +1482,8 @@ export default function ProductPaymentModal({
                                 commissions,
                               )!;
                               const surchargePct = quote.surchargePct;
-                              const totalW = quote.totalAmount + calculatedShippingFee;
+                              const totalW =
+                                quote.totalAmount + calculatedShippingFee;
                               const instPrice = Number((totalW / c).toFixed(2));
                               return (
                                 <option key={c} value={c}>
@@ -1757,13 +1776,22 @@ export default function ProductPaymentModal({
                 )}
                 <CheckoutFinancialCost
                   totalAmount={totalToPay}
-                  financingAmount={paymentMethod === "card"
-                    ? productQuote?.financing_surcharge_amount ??
-                      (installments > 1 && !installmentsEnabled && !financingQuote ? null : financingAmount)
-                    : 0}
+                  financingAmount={
+                    paymentMethod === "card"
+                      ? (productQuote?.financing_surcharge_amount ??
+                        (installments > 1 &&
+                        !installmentsEnabled &&
+                        !financingQuote
+                          ? null
+                          : financingAmount))
+                      : 0
+                  }
                   installments={installments}
                   paymentMethod={paymentMethod}
-                  pending={Boolean(user) && (productQuoteLoading || productQuoteError || !productQuote)}
+                  pending={
+                    Boolean(user) &&
+                    (productQuoteLoading || productQuoteError || !productQuote)
+                  }
                 />
                 {deliveryType !== "coordinate_with_merchant" &&
                   currentShippingCalc?.is_free_shipping && (
@@ -1802,7 +1830,9 @@ export default function ProductPaymentModal({
                   className="btn-primary product-payment-modal__btn-submit"
                   disabled={
                     isSubmitting ||
-                    stockLoading || stockError || !selectedBranch ||
+                    stockLoading ||
+                    stockError ||
+                    !selectedBranch ||
                     availableStock === 0 ||
                     quantity > availableStock ||
                     (Boolean(user) &&

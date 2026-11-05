@@ -23,27 +23,35 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
         </p>
         <p>
           En cumplimiento con la legislación de la República Argentina (Código
-          Civil y Comercial de la Nación, Ley N° 24.240 de Defensa del Consumidor
-          y normativas complementarias), dejamos expresa constancia de que
-          Sercio opera exclusivamente como un canal tecnológico de
+          Civil y Comercial de la Nación, Ley N° 24.240 de Defensa del
+          Consumidor y normativas complementarias), dejamos expresa constancia
+          de que Sercio opera exclusivamente como un canal tecnológico de
           intermediación y puesta en contacto. Salvo indicación expresa en
           contrario:
         </p>
         <ul>
           <li>
-            <strong>Sercio no es propietaria ni posee la custodia material</strong>{" "}
+            <strong>
+              Sercio no es propietaria ni posee la custodia material
+            </strong>{" "}
             de los bienes o productos ofrecidos en venta a través de la
             plataforma.
           </li>
           <li>
-            <strong>Sercio no presta directamente los servicios ofrecidos</strong>{" "}
+            <strong>
+              Sercio no presta directamente los servicios ofrecidos
+            </strong>{" "}
             ni actúa como empleador, mandatario, socio o representante legal
             directo de los comercios, profesionales ni fleteros registrados.
           </li>
           <li>
-            <strong>Los contratos de compraventa de cosas muebles, transporte o locación de servicios</strong>{" "}
-            se perfeccionan entre las partes intervinientes, actuando Sercio como
-            facilitador tecnológico y custodio de la experiencia transaccional.
+            <strong>
+              Los contratos de compraventa de cosas muebles, transporte o
+              locación de servicios
+            </strong>{" "}
+            se perfeccionan entre las partes intervinientes, actuando Sercio
+            como facilitador tecnológico y custodio de la experiencia
+            transaccional.
           </li>
         </ul>
       </>
@@ -54,7 +62,8 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
     content: (
       <>
         <h3 className="terms-section__subtitle">
-          2.1. Tipificación Obligatoria de Productos (Original, Genérico o Copia)
+          2.1. Tipificación Obligatoria de Productos (Original, Genérico o
+          Copia)
         </h3>
         <p>
           Toda publicación de productos dentro de Sercio debe clasificar y
@@ -77,7 +86,8 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
         </ol>
 
         <h3 className="terms-section__subtitle">
-          2.2. Prohibición de Falsificaciones, Adulteraciones y Régimen de Denuncias
+          2.2. Prohibición de Falsificaciones, Adulteraciones y Régimen de
+          Denuncias
         </h3>
         <ul>
           <li>
@@ -173,7 +183,8 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
     content: (
       <>
         <p>
-          Para premiar el buen servicio y desalentar malas prácticas comerciales:
+          Para premiar el buen servicio y desalentar malas prácticas
+          comerciales:
         </p>
         <ul>
           <li>
@@ -216,8 +227,8 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
         <p>
           Sercio se compromete a proteger la privacidad de sus usuarios de
           conformidad con la Ley N° 25.326 de Protección de los Datos Personales
-          de la República Argentina y normativas complementarias de la
-          Dirección Nacional de Protección de Datos Personales (DNPDP).
+          de la República Argentina y normativas complementarias de la Dirección
+          Nacional de Protección de Datos Personales (DNPDP).
         </p>
         <ul>
           <li>
@@ -225,8 +236,8 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
             compartimos, vendemos ni alquilamos tus datos personales a terceros
             para fines comerciales o publicitarios. Los datos recopilados se
             utilizan exclusivamente para el funcionamiento interno de la
-            plataforma, la prestación del servicio y la mejora de la
-            experiencia del usuario.
+            plataforma, la prestación del servicio y la mejora de la experiencia
+            del usuario.
           </li>
           <li>
             <strong>Publicidad de Terceros:</strong> Sercio no muestra
@@ -366,12 +377,25 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
             deducible de la operación.
           </li>
           <li>
-            <strong>Guarda y Custodia Transitoria del Dinero:</strong> Al
-            abonar el Comprador a través de las pasarelas de pago de la
-            plataforma, Sercio actúa como custodio transitorio de los fondos para
-            garantizar la seguridad de la operación. El dinero de la venta
-            permanece en resguardo hasta que la orden sea completada o
-            transcurran los plazos razonables de confirmación y reclamo.
+            <strong>Costos de Procesamiento del Pago de los Envíos:</strong> El
+            cobro de importes por envíos a través de Sercio genera costos de
+            procesamiento del pago y, cuando corresponda, los impuestos
+            asociados. Estos cargos se calculan sobre el importe del envío
+            conforme a las tarifas vigentes y a la modalidad logística de la
+            operación. Si están a cargo del Comprador, se incluyen en el total
+            del envío informado antes de confirmar la compra. Si están a cargo
+            del Comercio, se deducen de los fondos a liquidar y se detallan en
+            su liquidación. Cuando el Comercio ofrece envío gratis, el Comprador
+            no abona el envío y el Comercio asume los costos que correspondan
+            según la modalidad elegida.
+          </li>
+          <li>
+            <strong>Guarda y Custodia Transitoria del Dinero:</strong> Al abonar
+            el Comprador a través de las pasarelas de pago de la plataforma,
+            Sercio actúa como custodio transitorio de los fondos para garantizar
+            la seguridad de la operación. El dinero de la venta permanece en
+            resguardo hasta que la orden sea completada o transcurran los plazos
+            razonables de confirmación y reclamo.
           </li>
           <li>
             <strong>Liquidación a los Comercios:</strong> Los importes netos de
@@ -387,6 +411,97 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
             involucrados hasta tanto se dilucide la disputa comercial.
           </li>
         </ul>
+
+        <h3 className="terms-section__subtitle">
+          6.1. Costos de Procesamiento No Reintegrables
+        </h3>
+        <p>
+          El Comercio (Vendedor) reconoce y acepta que las pasarelas y
+          procesadores de pago externos utilizados por Sercio no reintegran los
+          aranceles, impuestos ni comisiones por venta originados en el cobro
+          inicial una vez que el lote de transacciones ha sido cerrado y
+          presentado (operación de devolución). Por lo tanto, toda cancelación
+          efectuada con posterioridad al cierre de lote, incluidas aquellas
+          originadas por el ejercicio del Derecho de Arrepentimiento del
+          Comprador, generará una pérdida financiera por la comisión ya cobrada
+          por la pasarela, que será asumida en su totalidad por el Comercio.
+        </p>
+
+        <h3 className="terms-section__subtitle">
+          6.2. Asunción de Costos por el Comercio
+        </h3>
+        <p>
+          Dado que el derecho de arrepentimiento constituye un riesgo de la
+          actividad comercial del Vendedor,{" "}
+          <strong>
+            el Comercio asumirá el 100% de la pérdida financiera correspondiente
+            al arancel de procesamiento de pago no reintegrado
+          </strong>
+          . La Plataforma queda eximida de absorber o subsidiar dichos costos.
+        </p>
+
+        <h3 className="terms-section__subtitle">
+          6.3. Mecanismo de Recupero y Saldo Deudor
+        </h3>
+        <p>
+          Ante la activación del Botón de Arrepentimiento por parte de un
+          Comprador, la Plataforma reintegrará el 100% del dinero al cliente.
+          Para recuperar dichos fondos y los costos del arancel no reintegrado a
+          cargo del Comercio, se aplicará el siguiente procedimiento según el
+          estado de la liquidación:
+        </p>
+        <ul>
+          <li>
+            <strong>A) Retención de Fondos Pendientes:</strong> Si los fondos de
+            la venta aún se encuentran retenidos por la Plataforma o pendientes
+            de liquidación por parte de las pasarelas, según los plazos vigentes
+            de la Plataforma, se cancelará la liberación del dinero al Comercio.
+            Al mismo tiempo, se debitará de su balance interno el importe
+            equivalente a la comisión por procesamiento cobrada por la pasarela
+            de pagos.
+          </li>
+          <li>
+            <strong>B) Generación de Saldo Negativo y Neteo Automático:</strong>{" "}
+            Si la Plataforma ya hubiese liberado o transferido los fondos al
+            Comercio, por ejemplo, debido a los plazos reducidos de liquidación
+            de pasarelas de pagos, su cuenta interna reflejará de forma
+            inmediata un <strong>saldo deudor (saldo negativo)</strong> por los
+            importes a recuperar.
+          </li>
+          <li>
+            <strong>C) Compensación Automática:</strong> Dicho saldo deudor se
+            compensará y neteará automáticamente, al 100%, con los ingresos
+            generados por las <strong>próximas ventas</strong> consecutivas que
+            realice el Comercio en la Plataforma, hasta que la deuda quede
+            completamente saldada. El Comercio no podrá realizar retiros de
+            fondos mientras su cuenta registre un saldo negativo.
+          </li>
+        </ul>
+
+        <h3 className="terms-section__subtitle">
+          6.4. Alcance de las Promociones Bancarias y de los Comercios
+        </h3>
+        <p>
+          Las promociones bancarias y los beneficios promocionales difundidos
+          por los Comercios en Sercio no se aplican automáticamente a las
+          compras de productos ni a la contratación de servicios pagadas a
+          través de la Plataforma. Salvo que las condiciones de la promoción
+          indiquen expresamente lo contrario, dichos beneficios son válidos
+          para operaciones realizadas en los locales físicos del Comercio o
+          en los canales que la propia promoción identifique.
+        </p>
+        <p>
+          Cada promoción se rige por sus condiciones particulares, incluidos
+          su vigencia, locales y canales habilitados, medios de pago,
+          productos o servicios alcanzados, topes y exclusiones. Antes de
+          realizar la compra, el Comprador deberá consultar esas condiciones
+          para verificar si el beneficio resulta aplicable. La publicación de
+          una promoción en Sercio, por sí sola, no implica que esté disponible
+          para el pago dentro de la Plataforma. Las ofertas de precio y
+          promociones por cantidad configuradas específicamente para comprar
+          en Sercio se rigen por las condiciones de la publicación
+          correspondiente.
+        </p>
       </>
     ),
   },
@@ -412,10 +527,10 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
           Civil y Comercial de la Nación, los Compradores gozan del derecho de
           revocar la aceptación de compras a distancia dentro del plazo de diez
           (10) días corridos contados a partir de la entrega del producto o de
-          la celebración del contrato (lo último que ocurra). Asimismo, rigen los
-          plazos legales mínimos de garantía legal (seis meses para cosas muebles
-          no consumibles nuevas y tres meses para usadas) a cargo exclusivo del
-          vendedor o fabricante.
+          la celebración del contrato (lo último que ocurra). Asimismo, rigen
+          los plazos legales mínimos de garantía legal (seis meses para cosas
+          muebles no consumibles nuevas y tres meses para usadas) a cargo
+          exclusivo del vendedor o fabricante.
         </p>
         <p>
           Más información en anexo de{" "}
@@ -428,7 +543,8 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
     ),
   },
   {
-    title: "9. Métricas de Calidad, Cancelaciones y Régimen de Sanciones y Bajas",
+    title:
+      "9. Métricas de Calidad, Cancelaciones y Régimen de Sanciones y Bajas",
     content: (
       <>
         <p>
@@ -489,8 +605,8 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
       <>
         <p>
           El acceso a funcionalidades avanzadas para profesionales y comercios
-          requiere la suscripción a planes mensuales. Las tarifas están sujetas a
-          la estructura de costos y al contexto socioeconómico.
+          requiere la suscripción a planes mensuales. Las tarifas están sujetas
+          a la estructura de costos y al contexto socioeconómico.
         </p>
         <ul>
           <li>
@@ -501,14 +617,16 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
             beneficios.
           </li>
           <li>
-            <strong>Cobro recurrente vía pasarelas autorizadas (Mercado Pago):</strong>{" "}
+            <strong>
+              Cobro recurrente vía pasarelas autorizadas (Mercado Pago):
+            </strong>{" "}
             El importe del abono se debitará automáticamente mediante el método
             de pago vinculado al confirmar la suscripción.
             <ul>
               <li>
                 La suscripción se renueva de forma automática cada mes
-                calendario, a menos que sea cancelada con anterioridad a la fecha
-                de corte.
+                calendario, a menos que sea cancelada con anterioridad a la
+                fecha de corte.
               </li>
               <li>
                 El cobro de renovación se procesa dentro de las 24 horas previas
@@ -595,10 +713,10 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
     content: (
       <>
         <p>
-          Sercio promueve un ecosistema de respeto mutuo, honestidad y
-          seguridad transaccional. La plataforma se reserva el derecho formal de
-          admisión, permanencia y exclusión de usuarios. Sercio podrá suspender,
-          limitar, bloquear o expulsar a todo usuario que:
+          Sercio promueve un ecosistema de respeto mutuo, honestidad y seguridad
+          transaccional. La plataforma se reserva el derecho formal de admisión,
+          permanencia y exclusión de usuarios. Sercio podrá suspender, limitar,
+          bloquear o expulsar a todo usuario que:
         </p>
         <ul>
           <li>
@@ -630,9 +748,9 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
             Ingresos Brutos.
           </li>
           <li>
-            Cuentas que figuren dadas de baja de oficio, en estado de inactividad
-            fiscal o con irregularidades ante los entes recaudadores no
-            calificarán para la insignia de perfil verificado.
+            Cuentas que figuren dadas de baja de oficio, en estado de
+            inactividad fiscal o con irregularidades ante los entes recaudadores
+            no calificarán para la insignia de perfil verificado.
           </li>
           <li>
             La información obtenida de ARCA se conserva exclusivamente con fines
@@ -640,10 +758,11 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
             interna de seguridad. No se cede a terceros.
           </li>
           <li>
-            La insignia de «Verificado» refleja que la razón social o titularidad
-            fiscal coincide con los registros públicos oficiales a la fecha de
-            consulta, pero no exime a los compradores de efectuar las
-            diligencias comerciales habituales antes de perfeccionar una compra.
+            La insignia de «Verificado» refleja que la razón social o
+            titularidad fiscal coincide con los registros públicos oficiales a
+            la fecha de consulta, pero no exime a los compradores de efectuar
+            las diligencias comerciales habituales antes de perfeccionar una
+            compra.
           </li>
         </ul>
       </>
@@ -668,12 +787,13 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
         </ul>
 
         <h3 className="terms-section__subtitle">
-          14.1. Declaración de Cumplimiento de Datos de Usuario de Google (Google API Disclosure)
+          14.1. Declaración de Cumplimiento de Datos de Usuario de Google
+          (Google API Disclosure)
         </h3>
         <p>
           Nuestra aplicación accede a los servicios de Google mediante el
-          estándar OAuth 2.0 y se rige por la Política de Datos de Usuario de los
-          Servicios de API de Google (Google API Services User Data Policy),
+          estándar OAuth 2.0 y se rige por la Política de Datos de Usuario de
+          los Servicios de API de Google (Google API Services User Data Policy),
           incluidos los requisitos de Uso Limitado:
         </p>
         <ul>
@@ -685,39 +805,46 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
                 Autenticación federada segura mediante OpenID Connect.
               </li>
               <li>
-                <code className="terms-section__code">auth/userinfo.email</code>:
-                Obtención del correo electrónico principal para inicio de sesión
-                y soporte.
+                <code className="terms-section__code">auth/userinfo.email</code>
+                : Obtención del correo electrónico principal para inicio de
+                sesión y soporte.
               </li>
               <li>
-                <code className="terms-section__code">auth/userinfo.profile</code>:
-                Acceso al nombre e imagen de perfil para personalización de
+                <code className="terms-section__code">
+                  auth/userinfo.profile
+                </code>
+                : Acceso al nombre e imagen de perfil para personalización de
                 interfaz.
               </li>
               <li>
-                <code className="terms-section__code">auth/calendar.readonly</code>:
-                Lectura en tiempo real de disponibilidad horaria para evitar
+                <code className="terms-section__code">
+                  auth/calendar.readonly
+                </code>
+                : Lectura en tiempo real de disponibilidad horaria para evitar
                 solapamiento de turnos.
               </li>
               <li>
-                <code className="terms-section__code">auth/calendar.events</code>:
-                Alta, modificación o baja de citas agendadas a través de Sercio.
+                <code className="terms-section__code">
+                  auth/calendar.events
+                </code>
+                : Alta, modificación o baja de citas agendadas a través de
+                Sercio.
               </li>
             </ul>
           </li>
           <li>
             <strong>Mecanismos de Protección:</strong> El tráfico se transmite
-            cifrado bajo protocolos seguros SSL/TLS (HTTPS). Los tokens de sesión
-            se resguardan en entornos de memoria controlada y servidores
+            cifrado bajo protocolos seguros SSL/TLS (HTTPS). Los tokens de
+            sesión se resguardan en entornos de memoria controlada y servidores
             seguros.
           </li>
           <li>
             <strong>Retención y Eliminación:</strong> No persistimos de forma
             innecesaria información privada del calendario en bases de datos
-            externas; el procesamiento es estrictamente en memoria
-            (in-memory). La desconexión voluntaria desde la cuenta del usuario o
-            la eliminación de la cuenta en Sercio revoca y destruye
-            inmediatamente los refresh tokens asociados.
+            externas; el procesamiento es estrictamente en memoria (in-memory).
+            La desconexión voluntaria desde la cuenta del usuario o la
+            eliminación de la cuenta en Sercio revoca y destruye inmediatamente
+            los refresh tokens asociados.
           </li>
         </ul>
       </>
@@ -789,7 +916,9 @@ export default function TermsPage() {
       <Navbar />
       <main className="terms-page">
         <header className="terms-header">
-          <span className="terms-header__badge">Documento Legal y Operativo</span>
+          <span className="terms-header__badge">
+            Documento Legal y Operativo
+          </span>
           <h1 className="terms-header__title">Términos y Condiciones</h1>
           <p className="terms-header__subtitle">
             Políticas de Privacidad y Uso del Servicio Sercio

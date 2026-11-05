@@ -235,7 +235,10 @@ export default function RidersSection() {
       return employee;
     },
     onSuccess: () => {
-      showSuccess("Rider registrado exitosamente.");
+      showSuccess(
+        "La activación del rider puede demorar entre 24 y 48 horas desde que se presenta la documentación completa. Podrá comenzar a realizar entregas una vez que la revisión sea aprobada.",
+        "Rider registrado correctamente",
+      );
       queryClient.invalidateQueries({ queryKey: ["logistics-employees"] });
       queryClient.invalidateQueries({ queryKey: ["fleet-vehicles"] });
       resetForm();

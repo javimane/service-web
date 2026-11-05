@@ -494,6 +494,16 @@ export default function RegisterPage({
               >
                 términos y condiciones
               </button>
+              {" y la "}
+              <Link
+                href={ROUTES.privacy}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="register-terms__link"
+                aria-label="Política de privacidad (abre en una nueva pestaña)"
+              >
+                Política de privacidad
+              </Link>
             </span>
           </label>
           {errors.terms && <span className="error-text">{errors.terms}</span>}

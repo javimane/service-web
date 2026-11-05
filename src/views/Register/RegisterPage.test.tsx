@@ -58,6 +58,8 @@ describe("RegisterPage", () => {
       screen.getByRole("button", { name: /términos y condiciones/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("link", { name: /Política de privacidad/i })).toHaveAttribute("href", ROUTES.privacy);
+    expect(screen.getByRole("link", { name: /Política de privacidad/i })).toHaveAttribute("target", "_blank");
     expect(screen.getByLabelText("Busco Servicios/Productos")).toBeChecked();
     expect(screen.getByLabelText("Soy Profesional/Comercio")).not.toBeChecked();
     expect(screen.getByLabelText(/^CONTRASEÑA$/)).toHaveAccessibleDescription(/mínimo 9.*mayúscula.*número.*carácter especial/i);

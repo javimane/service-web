@@ -79,7 +79,6 @@ export default function CartSection() {
   const [estimatedTime, setEstimatedTime] = useState("");
   const [shippingQuote, setShippingQuote] =
     useState<CalculateShippingResponse | null>(null);
-  const [scheduleForNextDay, setScheduleForNextDay] = useState(false);
   const [quotedFor, setQuotedFor] = useState("");
   const [deliveryCapacityError, setDeliveryCapacityError] = useState<{
     key: string;
@@ -378,9 +377,6 @@ export default function CartSection() {
     branchInventory,
     items,
   ]);
-  useEffect(() => {
-    setScheduleForNextDay(false);
-  }, [selectedBranchId, deliveryType]);
 
   const selectedBranch = branches.find(
     (branch) => branch.id === selectedBranchId,
@@ -526,7 +522,7 @@ export default function CartSection() {
               quantity: item.quantity,
             })),
           delivery_type: "shipment",
-        installments: paymentMethod === "card" ? installments : 1,
+          installments: paymentMethod === "card" ? installments : 1,
           delivery_address_id: selectedAddressId,
           ...(selectedBranch.is_main
             ? { origin_address_id: selectedBranch.address_id ?? undefined }
@@ -619,7 +615,7 @@ export default function CartSection() {
             activeDeliveryType === "shipment" &&
             quotedFor === quoteKey &&
             shippingQuote?.requires_scheduled_delivery
-              ? scheduleForNextDay
+              ? true
               : undefined,
           payment_method: paymentMethod,
           card_token:
@@ -826,14 +822,6 @@ export default function CartSection() {
       showError(
         "Calculá el costo de envío con la sucursal y dirección elegidas.",
       );
-      return;
-    }
-    if (
-      activeDeliveryType === "shipment" &&
-      shippingQuote?.requires_scheduled_delivery &&
-      !scheduleForNextDay
-    ) {
-      showError("Confirmá el envío programado para mañana.");
       return;
     }
     if (paymentMethod === "card" && !cardConfig) {
@@ -1229,6 +1217,9 @@ export default function CartSection() {
                 </div>
               )}
 
+              {!hasService && activeDeliveryType === "coordinate_with_merchant" && (
+                <p>El plazo y la forma de entrega se acuerdan directamente con el vendedor. No se aplica la demora de delivery de la sucursal.</p>
+              )}
               {!hasService && activeDeliveryType === "pickup" && (
                 <PickupDeadlineWarning />
               )}
@@ -1267,10 +1258,9 @@ export default function CartSection() {
                   </select>
                   {selectedBranch?.delivery_eta_minutes != null && (
                     <p>
-                      Demora estimada{" "}
                       {selectedBranch.is_open === false
-                        ? "desde el despacho de mañana"
-                        : "de esta sucursal"}
+                        ? "Sucursal Cerrada - Demora estimada desde el despacho de mañana"
+                        : "Demora estimada de esta sucursal"}
                       : {selectedBranch.delivery_eta_minutes} minutos.
                     </p>
                   )}
@@ -1352,14 +1342,12 @@ export default function CartSection() {
                       <label className="cart-schedule-option">
                         <input
                           type="checkbox"
-                          checked={scheduleForNextDay}
-                          onChange={(event) =>
-                            setScheduleForNextDay(event.target.checked)
-                          }
+                          checked
+                          disabled
                         />
                         <span>
-                          El comercio está cerrado. Programar el envío con sus
-                          riders para mañana.
+                          El comercio está cerrado. El envío con sus riders se
+                          programará obligatoriamente para mañana.
                         </span>
                       </label>
                     )}
@@ -1765,7 +1753,8 @@ export default function CartSection() {
             </p>
 
             <p className="qr-hint">
-              Después de escanear el código, esperá a que aparezca el cartel de compra realizada.
+              Después de escanear el código, esperá a que aparezca el cartel de
+              compra realizada.
             </p>
 
             <div className="qr-amount-pill">
