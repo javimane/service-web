@@ -1,5 +1,6 @@
 import { supabase } from "@/services/supabaseClient";
 import { getProfileAction } from "./profile";
+import { chatService } from "@/services/chatService";
 
 export const getProfileByUserIdAction = async ({ id }: { id: string }) => {
   if (!id || id === "undefined" || id === "null") return { data: null };
@@ -90,32 +91,8 @@ export const deleteChatAction = async ({ userId, otherUserId }: { userId: string
 };
 
 export const getUserConversationsAction = async ({ userId }: { userId: string }) => {
-  // Fetch all messages involving the user to determine active general conversations (excluding order chats)
-  let query = supabase
-    .from("messages")
-    .select("*")
-    .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-    .is("order_id", null)
-    .order("created_at", { ascending: false });
+  const { messages } = await chatService.listGeneralInboxMessages();
 
-  const { data, error } = await query;
-
-  let messages = data ?? [];
-
-  if (error) {
-    if (error.message?.includes("order_id") || error.code === "42703" || error.code === "PGRST204") {
-      const fallback = await supabase
-        .from("messages")
-        .select("*")
-        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-        .order("created_at", { ascending: false });
-      if (fallback.error) throw new Error(fallback.error.message);
-      messages = fallback.data ?? [];
-    } else {
-      throw new Error(error.message);
-    }
-  }
-  
   // Group by other user
   const conversationsMap = new Map();
   

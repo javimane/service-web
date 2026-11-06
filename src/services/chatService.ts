@@ -11,7 +11,17 @@ type SendMessagePayload = {
   content: string;
 };
 
+type DirectMessageRow = MessageRow & {
+  receiver_id: string;
+  order_id: string | null;
+};
+
 export const chatService = {
+  listGeneralInboxMessages: () =>
+    apiClient<{ messages: DirectMessageRow[] }>(
+      `${API_ENDPOINTS.chats.base}/general/inbox-messages`,
+    ),
+
   /**
    * @route POST /api/chats/requests
    * @auth Bearer

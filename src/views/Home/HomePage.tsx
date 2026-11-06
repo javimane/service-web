@@ -52,9 +52,6 @@ const ProfessionalReelsSection = dynamic(
 const JobSlider = dynamic(() => import("@/components/JobSlider/JobSlider"), {
   ssr: false,
 });
-const JoinCTASection = dynamic(() => import("./sections/JoinCTASection"), {
-  ssr: false,
-});
 const OpportunitiesModalSection = dynamic(
   () => import("./sections/OpportunitiesModalSection"),
   { ssr: false },
@@ -215,6 +212,7 @@ export default function HomePage() {
       <Navbar />
 
       <main className="home-page__main">
+        <OpportunitiesModalSection />
         {/* ── Hero ──────────────────────────────────── */}
         <section className="home-hero">
           <div className="home-hero__glow" aria-hidden="true" />
@@ -328,11 +326,9 @@ export default function HomePage() {
         />
 
         <JobSlider provinceId={userProvinceId} />
-        <JoinCTASection />
       </main>
 
       <Footer />
-      <OpportunitiesModalSection />
       <MobileAppBanner />
 
       <Modal
