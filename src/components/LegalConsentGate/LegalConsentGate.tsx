@@ -32,9 +32,8 @@ function ConsentDialog({
     },
   });
   const visible =
-    status.isPending ||
-    status.isError ||
-    status.data?.requires_legal_consent !== false;
+    status.data?.requires_legal_consent === true ||
+    (status.isError && !status.isFetching);
   useEffect(() => {
     if (visible && dialog.current && !dialog.current.open)
       dialog.current.showModal();
@@ -52,9 +51,7 @@ function ConsentDialog({
         Leé y aceptá nuestros términos y condiciones y la política de privacidad
         para continuar con tu cuenta.
       </p>
-      {status.isPending ? (
-        <p role="status">Consultando tu aceptación…</p>
-      ) : status.isError ? (
+      {status.isError ? (
         <>
           <p role="alert">
             No pudimos consultar tu aceptación. Revisá la conexión e intentá

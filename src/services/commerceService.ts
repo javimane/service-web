@@ -352,6 +352,7 @@ export type Liquidation = {
   shipping_processing_fee_pct?: number;
   shipping_processing_fee?: number;
   shipping_processing_iva_amount?: number;
+  shipping_base_iva_amount?: number | null;
 
   platform_commission?: number;
   platform_commission_pct?: number;
@@ -362,6 +363,7 @@ export type Liquidation = {
   cancellation_commission_pct?: number;
   cancellation_iva_amount?: number;
   refunded_gross_amount?: number;
+  cancellation_shipping_amount?: number;
   refund_debt_amount?: number;
   chargeback_deduction_amount?: number;
   payment_provider_fee?: number;

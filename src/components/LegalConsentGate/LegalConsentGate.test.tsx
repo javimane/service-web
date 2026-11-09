@@ -77,6 +77,7 @@ describe("LegalConsentGate", () => {
   });
   it("requires both checkboxes and persists explicit acceptance before closing", async () => {
     mount();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     const button = await screen.findByRole("button", {
       name: "Aceptar y continuar",
     });

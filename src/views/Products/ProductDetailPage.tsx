@@ -48,12 +48,7 @@ import ProductSlider from "../../components/ProductSlider/ProductSlider";
 import WhatsAppContactButton from "../../components/WhatsAppContactButton/WhatsAppContactButton";
 import "./ProductDetailPage.css";
 import ListingReportButton from "../../components/ListingReport/ListingReportButton";
-
-const AGE_RESTRICTED_SUBCATEGORIES = new Set([
-  "2d6c30b1-95b8-4a2a-b43f-f9f09e5c507a",
-  "fb762aba-7df9-4f6c-b507-651323fab7bb",
-  "ea1d5cc2-5ed0-4227-a5e3-0f292d4ec67a",
-]);
+import { AGE_RESTRICTED_PRODUCT_SUBCATEGORIES } from "@/lib/productMerchantData";
 
 function formatPrice(n: number | null | undefined) {
   if (!n) return "0";
@@ -389,7 +384,7 @@ export default function ProductDetailPage({
 
   const isAgeRestricted = Boolean(
     productSubcategoryId &&
-    AGE_RESTRICTED_SUBCATEGORIES.has(
+    AGE_RESTRICTED_PRODUCT_SUBCATEGORIES.has(
       String(productSubcategoryId).toLowerCase(),
     ),
   );

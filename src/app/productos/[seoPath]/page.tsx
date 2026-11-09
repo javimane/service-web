@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import { API_ENDPOINTS } from "@/services/api.config";
 import { fetchWithApiKey } from "@/lib/serverFetch";
+import { getCanonicalProductUrl, getMerchantProduct } from "@/lib/productMerchantData";
 import { extractIdFromSlug, isUuid } from "@/utils/utils";
 import ProductDetailPage from "@/views/Products/ProductDetailPage";
 
@@ -69,7 +70,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const seller =
         professionalProduct?.Professional?.Company?.[0]?.name ||
         professionalProduct?.Professional?.Profile?.display_name;
-      const price = professionalProduct?.price || product?.price;
+      const merchantProduct = getMerchantProduct(product);
+      const price = merchantProduct?.salePrice ?? merchantProduct?.price;
+      const canonical = getCanonicalProductUrl(product, fullPath);
       const province =
         professionalProduct?.Professional?.address?.[0]?.Province?.name;
       const image =
@@ -95,12 +98,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         alternates: {
-          canonical: `https://sercio.com.ar${fullPath}`,
+          canonical,
         },
         openGraph: {
           title,
           description,
-          url: `https://sercio.com.ar${fullPath}`,
+          url: canonical,
           siteName: "Sercio",
           images: image ? [{ url: image }] : [],
         },
@@ -113,7 +116,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function Page({ params }: Props) {
   const { seoPath } = await params;
-  const fullPath = `/productos/${seoPath}`;
 
   const { product: productData, redirectUrl } = await resolveProduct(seoPath);
 
@@ -127,68 +129,14 @@ export default async function Page({ params }: Props) {
     );
   }
 
-  let jsonLd: any = null;
-
-  const name = productData?.Product?.name ?? productData?.name;
-  const brand = productData?.brand || productData?.Brand?.name;
-  const category =
-    productData?.Category?.name ||
-    productData?.categories_products?.name ||
-    productData?.SubCategory?.name;
-  const professionalProduct = productData?.ProfessionalProducts?.[0];
-  const seller =
-    professionalProduct?.Professional?.Company?.[0]?.name ||
-    professionalProduct?.Professional?.Profile?.display_name;
-  const price = professionalProduct?.price || productData?.price;
-  const province =
-    professionalProduct?.Professional?.address?.[0]?.Province?.name;
-  const image =
-    productData?.Images?.[0]?.image_url ||
-    productData?.Product?.image_url ||
-    productData?.image_url;
-
-  const formattedPrice =
-    price && Number(price) > 0
-      ? ` por $${Number(price).toLocaleString("es-AR")}`
-      : "";
-  const description =
-    productData?.Product?.description ||
-    productData?.description ||
-    `Comprá ${name}${brand ? ` de ${brand}` : ""}${seller ? ` en ${seller}` : ""}${province ? ` (${province})` : ""}${formattedPrice}. Disponible en Sercio.`;
-
-  if (name) {
-    jsonLd = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      name: name,
-      description: description,
-      image: image || undefined,
-      category: category || undefined,
-      ...(brand ? { brand: { "@type": "Brand", name: brand } } : {}),
-      offers: {
-        "@type": "Offer",
-        priceCurrency: "ARS",
-        price: price && Number(price) > 0 ? Number(price) : undefined,
-        availability: "https://schema.org/InStock",
-        url: `https://sercio.com.ar${fullPath}`,
-        ...(seller
-          ? {
-              seller: {
-                "@type": "Organization",
-                name: seller,
-              },
-            }
-          : {}),
-      },
-    };
-  }
+  const jsonLd = getMerchantProduct(productData)?.structuredData;
 
   return (
     <>
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
         />
       )}
       <ProductDetailPage initialData={productData} />

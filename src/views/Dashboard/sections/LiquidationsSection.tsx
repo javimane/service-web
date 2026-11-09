@@ -359,7 +359,9 @@ export default function LiquidationsSection() {
               <div className="liquidations-debt__item" key={debt.id}>
                 <div>
                   <b>
-                    {debt.source_kind === "chargeback"
+                    {debt.adjustment?.charge_concept === "cancellation_shipping"
+                      ? "Envío por cancelación"
+                      : debt.source_kind === "chargeback"
                       ? "Contracargo"
                       : debt.adjustment?.charge_concept === "cancellation"
                         ? "Cancelación / devolución"
@@ -1004,9 +1006,17 @@ export default function LiquidationsSection() {
                     </span>
                   </div>
                 )}
+                {Number(selectedLiquidation.shipping_base_iva_amount ?? 0) > 0 && (
+                  <div className="liq-detail-row">
+                    <span>IVA sobre la tarifa del envío bonificado:</span>
+                    <span className="liq-detail-deduction">
+                      -$ {Number(selectedLiquidation.shipping_base_iva_amount).toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
                 {Number(selectedLiquidation.other_deductions ?? 0) > 0 && (
                   <div className="liq-detail-row">
-                    <span>Otras deducciones:</span>
+                    <span>{selectedLiquidation.shipping_base_iva_amount != null ? "Tarifa base del envío bonificado:" : "Otras deducciones:"}</span>
                     <span className="liq-detail-deduction">
                       -$
                       {Number(
@@ -1023,6 +1033,14 @@ export default function LiquidationsSection() {
                       {Number(
                         selectedLiquidation.refunded_gross_amount,
                       ).toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
+                {Number(selectedLiquidation.cancellation_shipping_amount ?? 0) > 0 && (
+                  <div className="liq-detail-row">
+                    <span>Envío por cancelación (deuda):</span>
+                    <span className="liq-detail-deduction">
+                      {Number(selectedLiquidation.cancellation_shipping_amount).toLocaleString("es-AR", { style: "currency", currency: "ARS" })}
                     </span>
                   </div>
                 )}

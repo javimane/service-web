@@ -479,7 +479,36 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
         </ul>
 
         <h3 className="terms-section__subtitle">
-          6.4. Alcance de las Promociones Bancarias y de los Comercios
+          6.4. Envíos de Sercio y recupero de costos al Comercio
+        </h3>
+        <p>
+          Cuando el Comercio bonifique un envío gestionado por Sercio, Sercio
+          facturará al Comercio la tarifa base del envío, el costo de
+          procesamiento del pago y los impuestos aplicables a cada concepto.
+          El cargo se descontará de la liquidación de la venta.
+        </p>
+        <p>
+          Si una compra pagada se cancela después de que el repartidor retiró
+          el pedido y antes de entregarlo, o se confirma un reintegro total
+          después de la entrega, el Comercio asumirá el precio del envío
+          original registrado en la compra. Esto incluye la tarifa base, su
+          IVA, el costo de procesamiento y el IVA correspondiente, según el
+          desglose vigente al contratar. Se aplica también al reintegro total
+          por arrepentimiento, tanto si el Comprador pagó el envío como si el
+          Comercio lo bonificó.
+        </p>
+        <p>
+          Sercio registrará el costo del viaje una sola vez y podrá
+          compensarlo con futuras liquidaciones del Comercio. Una cancelación
+          antes del retiro del pedido o un reintegro que siga siendo parcial
+          después de la entrega no generan este cargo adicional. El cargo es
+          exclusivo del Comercio y no reduce el reintegro ni condiciona los
+          derechos del Comprador. La regla de recupero después de la entrega
+          aplica a las compras realizadas desde su entrada en vigencia.
+        </p>
+
+        <h3 className="terms-section__subtitle">
+          6.5. Alcance de las Promociones Bancarias y de los Comercios
         </h3>
         <p>
           Las promociones bancarias y los beneficios promocionales difundidos
