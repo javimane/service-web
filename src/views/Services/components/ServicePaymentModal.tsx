@@ -48,6 +48,10 @@ interface ServicePaymentModalProps {
   pageMode?: boolean;
 }
 
+function createGetnetCheckoutToken() {
+  return `gn_tok_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
 export default function ServicePaymentModal({
   isOpen,
   onClose,
@@ -258,9 +262,7 @@ export default function ServicePaymentModal({
     submittingRef.current = true;
     setIsSubmitting(true);
     try {
-      let token = `gn_tok_${Date.now()}_${Math.random()
-        .toString(36)
-        .substring(2, 8)}`;
+      let token: string | undefined;
 
       let paywayData = {};
       let refreshPayment: (() => ReturnType<typeof tokenizePayway>) | undefined;
@@ -277,6 +279,7 @@ export default function ServicePaymentModal({
           providerMethod = 'payway_card';
         } else {
           await validateCardholder(cardHolder, cardDni);
+          token = createGetnetCheckoutToken();
         }
       }
       const res = await commerceService.checkout({

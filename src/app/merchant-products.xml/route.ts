@@ -6,6 +6,8 @@ const PILOT_SCAN_LIMIT = 200;
 
 function xmlText(value: string | number) {
   return String(value)
+    // XML 1.0 allows tab, line feed and carriage return.
+    // eslint-disable-next-line no-control-regex
     .replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu, "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
