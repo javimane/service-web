@@ -55,6 +55,34 @@ describe("HttpOnly API proxy", () => {
     expect(response.status).toBe(401);
   });
 
+  it.each(["https://sercio.com.ar", "https://www.sercio.com.ar"])(
+    "forwards a same-origin login from %s when Next.js receives an internal URL",
+    async (origin) => {
+      upstreamFetch.mockResolvedValue(Response.json({ ok: true }, {
+        headers: { "set-cookie": "refresh_token=rotated; HttpOnly; Secure; Domain=.sercio.com.ar" },
+      }));
+      const response = await POST(new NextRequest("http://localhost:3000/api/backend/auth/login", {
+        method: "POST", headers: { origin, "sec-fetch-site": "same-origin" }, body: "{}",
+      }), context(["auth", "login"]));
+      expect(response.status).toBe(200);
+      expect(upstreamFetch).toHaveBeenCalledOnce();
+      expect(response.headers.getSetCookie()[0]).toContain("Domain=.sercio.com.ar");
+    },
+  );
+
+  it.each(["same-site", "cross-site", null])(
+    "rejects the production origin on an internal URL without same-origin browser metadata (%s)",
+    async (fetchSite) => {
+      const headers = new Headers({ origin: "https://sercio.com.ar" });
+      if (fetchSite) headers.set("sec-fetch-site", fetchSite);
+      const response = await POST(new NextRequest("http://localhost:3000/api/backend/auth/login", {
+        method: "POST", headers, body: "{}",
+      }), context(["auth", "login"]));
+      expect(response.status).toBe(403);
+      expect(upstreamFetch).not.toHaveBeenCalled();
+    },
+  );
+
   it("does not send a malformed access token through the cookie fallback", async () => {
     upstreamFetch.mockResolvedValue(Response.json({ message: "Missing token" }, { status: 401 }));
     await GET(new NextRequest("https://web.example.com/api/backend/orders", {

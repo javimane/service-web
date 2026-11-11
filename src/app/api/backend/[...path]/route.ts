@@ -6,12 +6,23 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
+const productionWebOrigins = new Set([
+  "https://sercio.com.ar",
+  "https://www.sercio.com.ar",
+]);
+
 async function forward(request: NextRequest, context: RouteContext) {
   // This endpoint uses browser cookies, so mutations must originate here.
   const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
+  // Amplify can give Next.js an internal URL while the browser sees Sercio.
+  const publicOrigin =
+    origin && fetchSite === "same-origin" && productionWebOrigins.has(origin)
+      ? new URL(origin)
+      : null;
   if (!["GET", "HEAD"].includes(request.method) &&
-      ((origin && origin !== request.nextUrl.origin) ||
-       request.headers.get("sec-fetch-site") === "cross-site")) {
+      ((origin && origin !== request.nextUrl.origin && !publicOrigin) ||
+       fetchSite === "cross-site")) {
     return Response.json({ message: "Invalid request origin" }, { status: 403 });
   }
 
@@ -54,7 +65,7 @@ async function forward(request: NextRequest, context: RouteContext) {
       // Keep shared production domains; adapt API-only domains for local or
       // preview hosts so login/refresh cookies reach subsequent server calls.
       const adapted = cookie.replace(/;\s*Domain=([^;]+)/i, (attribute, domain: string) => {
-        const hostname = request.nextUrl.hostname;
+        const hostname = publicOrigin?.hostname ?? request.nextUrl.hostname;
         const cookieDomain = domain.trim().replace(/^\./, "").toLowerCase();
         return hostname === cookieDomain || hostname.endsWith(`.${cookieDomain}`) ? attribute : "";
       });
