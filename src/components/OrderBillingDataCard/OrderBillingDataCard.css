@@ -1,0 +1,316 @@
+/* ═══════════════════════════════════════════════════════════
+   OrderBillingDataCard — Post-purchase billing info selection
+   ═══════════════════════════════════════════════════════════ */
+
+.order-billing-card {
+  width: 100%;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-align: left;
+}
+
+.order-billing-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.order-billing-card__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.order-billing-card__icon {
+  color: var(--accent-color);
+}
+
+.order-billing-card__title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.order-billing-card__tag {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--text-secondary);
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+}
+
+.order-billing-card__subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.order-billing-card__loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  padding: var(--space-2) 0;
+}
+
+.order-billing-card__profiles-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.order-billing-card__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.order-billing-card__item:hover {
+  border-color: var(--accent-color);
+}
+
+.order-billing-card__item--active {
+  border-color: var(--accent-color);
+  background: var(--accent-transparent);
+}
+
+.order-billing-card__radio {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.order-billing-card__item--active .order-billing-card__radio {
+  border-color: var(--accent-color);
+}
+
+.order-billing-card__radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--accent-color);
+}
+
+.order-billing-card__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.order-billing-card__info-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.order-billing-card__name {
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+}
+
+.order-billing-card__badge {
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+}
+
+.order-billing-card__badge--final {
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.order-billing-card__badge--company {
+  background: var(--accent-transparent);
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+}
+
+.order-billing-card__cuit-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.order-billing-card__edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.order-billing-card__edit-btn:hover {
+  color: var(--accent-color);
+  background: var(--surface-soft);
+}
+
+.order-billing-card__add-inline-btn {
+  background: none;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--accent-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  transition: all 0.2s ease;
+}
+
+.order-billing-card__add-inline-btn:hover {
+  border-color: var(--accent-color);
+  background: var(--surface-soft);
+}
+
+.order-billing-card__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.order-billing-card__empty p {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.order-billing-card__btn-create {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  padding: 8px 14px;
+}
+
+.order-billing-card__status-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(64, 192, 87, 0.1);
+  border: 1px solid var(--success-color);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+}
+
+/* Modal Form inside Order Billing */
+.order-billing-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.order-billing-modal-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-billing-modal-form__label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.order-billing-modal-form__input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.order-billing-modal-form__input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-transparent);
+}
+
+.order-billing-modal-form__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.order-billing-modal-form__tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.order-billing-modal-form__tab--active {
+  background: var(--accent-transparent);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  font-weight: var(--weight-bold);
+}
+
+.order-billing-modal-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .order-billing-modal-form__tabs {
+    grid-template-columns: 1fr;
+  }
+}

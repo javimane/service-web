@@ -377,7 +377,7 @@ export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
             </div>
 
             <div className="dashboard-jobs__form-actions">
-              <button
+              <button data-action-tone="cancel"
                 type="button"
                 className="btn-cancel"
                 onClick={closeForm}

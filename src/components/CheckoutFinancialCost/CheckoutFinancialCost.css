@@ -1,0 +1,68 @@
+.checkout-financial-cost {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin-block: var(--space-3);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.checkout-financial-cost__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-base);
+}
+
+.checkout-financial-cost__row > :last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.checkout-financial-cost__plan,
+.checkout-financial-cost__rates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.checkout-financial-cost__plan > span,
+.checkout-financial-cost__tea,
+.checkout-financial-cost__note {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.checkout-financial-cost__plan .checkout-financial-cost__same-price {
+  color: var(--success-color);
+  font-weight: var(--weight-semibold);
+}
+
+.checkout-financial-cost__rates {
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-3);
+}
+
+.checkout-financial-cost__cftea {
+  color: var(--brand-blue);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.checkout-financial-cost__note {
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .checkout-financial-cost__row {
+    flex-wrap: wrap;
+  }
+}

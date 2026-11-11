@@ -21,11 +21,38 @@ export default function ProductFilters({
   const sections: FilterSection[] = [
     {
       type: "chips",
+      label: "Ofertas",
+      filterKey: "is_offer",
+      options: [
+        { value: "all", label: "Todos" },
+        { value: "true", label: "Solo ofertas 🔥" },
+      ],
+    },
+    {
+      type: "chips",
       label: "Venta Mayorista",
       filterKey: "wholesale",
       options: [
         { value: "all", label: "Todos" },
         { value: "true", label: "Por mayor" },
+      ],
+    },
+    {
+      type: "chips",
+      label: "Cuotas sin interés",
+      filterKey: "interest_free_installments",
+      options: [
+        { value: "all", label: "Todos" },
+        { value: "true", label: "Con cuotas sin interés" },
+      ],
+    },
+    {
+      type: "chips",
+      label: "Envío gratis",
+      filterKey: "free_shipping",
+      options: [
+        { value: "all", label: "Todos" },
+        { value: "true", label: "Con envío gratis" },
       ],
     },
     {

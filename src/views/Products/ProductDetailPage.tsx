@@ -1,26 +1,54 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ShieldCheck,
+  ShieldAlert,
   MapPin,
   MessageCircle,
   Loader2,
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
   Play,
   Maximize,
+  CreditCard,
+  Sparkles,
+  ShoppingCart,
+  Minus,
+  Plus,
+  Car,
+  Store,
+  Star,
 } from "lucide-react";
-import { getProductDetailAction } from "../../app/actions/products";
+import {
+  getProductDetailAction,
+  getProductsAction,
+  getProductsByProfessionalAction,
+} from "../../app/actions/products";
 import Navbar from "../../components/Navbar/Navbar";
+import ProfessionalReputation from "@/components/ProfessionalReputation/ProfessionalReputation";
 import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
+import {
+  commerceService,
+  ProductVariant,
+} from "../../services/commerceService";
+import { useAuth } from "../../context/AuthContext";
+import { useAlert } from "../../context/AlertContext";
+import { addGuestCartItem } from "../../utils/guestCart";
+import { calculateProductPricing } from "../../utils/productPricing";
+import ProductInstallmentsModal from "./components/ProductInstallmentsModal";
+import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
+import CommentsCarousel from "../../components/CommentsCarousel/CommentsCarousel";
+import ProductSlider from "../../components/ProductSlider/ProductSlider";
+import WhatsAppContactButton from "../../components/WhatsAppContactButton/WhatsAppContactButton";
 import "./ProductDetailPage.css";
+import ListingReportButton from "../../components/ListingReport/ListingReportButton";
+import { AGE_RESTRICTED_PRODUCT_SUBCATEGORIES } from "@/lib/productMerchantData";
 
 function formatPrice(n: number | null | undefined) {
   if (!n) return "0";
@@ -71,8 +99,14 @@ export default function ProductDetailPage({
   const id = queryId || extractIdFromSlug(seoPath);
 
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { user, isAgeVerified } = useAuth();
+  const { showSuccess, showError } = useAlert();
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const videoFrameRef = useRef<HTMLDivElement | null>(null);
+
+  const [isInstallmentsModalOpen, setIsInstallmentsModalOpen] = useState(false);
 
   const {
     data: item,
@@ -86,8 +120,213 @@ export default function ProductDetailPage({
     },
     initialData: initialData ?? undefined,
     enabled: !!id,
-    staleTime: 1000 * 60 * 10, // 10 minutos
+    staleTime: 0, // Precio y promociones deben reflejar los cambios del comercio.
     gcTime: 1000 * 60 * 30,
+  });
+
+  // Extracted product & professional data for queries and display
+  const itemAny = item as any;
+  const professionalProduct = item?.ProfessionalProducts?.[0];
+  const professional = professionalProduct?.Professional;
+  const professionalAny = professional as any;
+
+  const profile = professionalAny?.Profile || professionalAny?.profile;
+  const companyData =
+    professionalAny?.Company ||
+    professionalAny?.Companies ||
+    professionalAny?.company ||
+    professionalAny?.companies;
+  const company = Array.isArray(companyData) ? companyData[0] : companyData;
+  const sellerName =
+    company?.name || profile?.display_name || "Profesional independiente";
+
+  const professionalId =
+    professional?.id ??
+    professionalProduct?.professional_id ??
+    item?.ProfessionalProducts?.[0]?.professional_id;
+  const userId = professional?.user_id ?? professionalId;
+
+  const productCategoryId =
+    item?.category_id || itemAny?.Category?.id || itemAny?.category?.id;
+  const productCategory = itemAny?.Category?.name || itemAny?.category?.name;
+  const productSubcategoryId =
+    item?.subcategory_id ||
+    itemAny?.SubCategory?.id ||
+    itemAny?.subCategory?.id ||
+    itemAny?.sub_category?.id;
+  const productSubcategory =
+    itemAny?.SubCategory?.name ||
+    itemAny?.subCategory?.name ||
+    itemAny?.sub_category?.name;
+
+  const professionalProductId =
+    item?.ProfessionalProducts?.[0]?.id || undefined;
+
+  // Query: Más productos del vendedor
+  const { data: sellerProductsData, isLoading: isLoadingSellerProducts } =
+    useQuery({
+      queryKey: ["seller-products", professionalId],
+      queryFn: async () => {
+        if (!professionalId) return [];
+        const result = await getProductsByProfessionalAction({
+          professionalId: Number(professionalId),
+          limit: 20,
+        });
+        const raw = result?.data as any;
+        const list = Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw)
+            ? raw
+            : [];
+        return list;
+      },
+      enabled: Boolean(professionalId && !isNaN(Number(professionalId))),
+      staleTime: 1000 * 60 * 5,
+    });
+
+  // Query: Productos similares (misma subcategoría o categoría)
+  const { data: similarProductsData, isLoading: isLoadingSimilarProducts } =
+    useQuery({
+      queryKey: ["similar-products", productCategoryId, productSubcategoryId],
+      queryFn: async () => {
+        let result = await getProductsAction({
+          categoryId: productCategoryId ? Number(productCategoryId) : undefined,
+          subcategoryId: productSubcategoryId
+            ? String(productSubcategoryId)
+            : undefined,
+          limit: 20,
+        });
+
+        let raw = result?.data as any;
+        let list = Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw)
+            ? raw
+            : [];
+
+        if (list.length <= 1 && productSubcategoryId && productCategoryId) {
+          result = await getProductsAction({
+            categoryId: Number(productCategoryId),
+            limit: 20,
+          });
+          raw = result?.data as any;
+          list = Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+        }
+
+        if (list.length <= 1) {
+          result = await getProductsAction({
+            limit: 20,
+          });
+          raw = result?.data as any;
+          list = Array.isArray(raw?.data)
+            ? raw.data
+            : Array.isArray(raw)
+              ? raw
+              : [];
+        }
+
+        return list;
+      },
+      enabled: Boolean(item?.id || id),
+      staleTime: 1000 * 60 * 5,
+    });
+
+  const sellerProducts = useMemo(() => {
+    if (!sellerProductsData) return [];
+    const currentId = String(item?.id || id || "");
+    return sellerProductsData.filter((p: any) => {
+      const pId = String(p.id || p.product_id || p.Product?.id || "");
+      return pId !== currentId;
+    });
+  }, [sellerProductsData, item?.id, id]);
+
+  const similarProducts = useMemo(() => {
+    if (!similarProductsData) return [];
+    const currentId = String(item?.id || id || "");
+    return similarProductsData.filter((p: any) => {
+      const pId = String(p.id || p.product_id || p.Product?.id || "");
+      return pId !== currentId;
+    });
+  }, [similarProductsData, item?.id, id]);
+
+  const sellerStoreLink = professionalId
+    ? `${getProfilePath(professionalId, professional?.seo_path)}/tienda`
+    : undefined;
+
+  const similarProductsLink = productCategoryId
+    ? `/productos?category=${productCategoryId}`
+    : "/productos";
+
+  const { data: variants = [] } = useQuery<ProductVariant[]>({
+    queryKey: ["product-variants", professionalProductId],
+    queryFn: () =>
+      professionalProductId
+        ? commerceService.variants(professionalProductId)
+        : Promise.resolve([]),
+    enabled: !!professionalProductId,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const addToCartMutation = useMutation({
+    mutationFn: (cartQuantity: number) => {
+      if (!user) {
+        return Promise.resolve(
+          addGuestCartItem(Number(professionalId) || null, {
+            id: `guest-product-${professionalProductId || item?.id || id}`,
+            product_id: String(item?.id || id),
+            professional_product_id: professionalProductId,
+            quantity: cartQuantity,
+            subtotal: calculateProductPricing(
+              {
+                ...professionalProduct,
+                price: Number(professionalProduct?.price || item?.price || 0),
+              },
+              cartQuantity,
+            ).subtotal,
+            product: {
+              id: String(item?.id || id),
+              name: productName,
+              image_url:
+                rawImages[0]?.image_url || rawImages[0]?.url || rawImages[0],
+              price: Number(professionalProduct?.price || item?.price || 0),
+              offer_price: professionalProduct?.offer_price,
+              wholesale: professionalProduct?.wholesale,
+              wholesale_price: professionalProduct?.wholesale_price,
+              wholesale_unit: professionalProduct?.wholesale_unit,
+              offer_2x1: professionalProduct?.offer_2x1,
+              offer_3x2: professionalProduct?.offer_3x2,
+              stock: availableStock,
+              installments_enabled: installmentsEnabled,
+              max_installments: maxInstallments,
+            },
+          }),
+        );
+      }
+
+      return commerceService.addCartItem({
+        product_id: String(item?.id || id),
+        ...(professionalProductId
+          ? { professional_product_id: professionalProductId }
+          : { product_id: String(item?.id || id) }),
+        quantity: cartQuantity,
+      });
+    },
+    onSuccess: (updatedCart) => {
+      queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
+      showSuccess("Producto listo en el carrito. Ya podés continuar la compra.");
+    },
+    onError: (err: any) => {
+      const rawMsg =
+        err?.response?.data?.message || err?.data?.message || err?.message;
+      const msg = Array.isArray(rawMsg)
+        ? rawMsg.join(". ")
+        : rawMsg || "No se pudo agregar el producto al carrito.";
+      showError(msg);
+    },
   });
 
   // URL Normalization disabled - using query params approach instead
@@ -137,26 +376,22 @@ export default function ProductDetailPage({
   }
 
   // Data mapping based on API response provided by user
-  const itemAny = item as any;
   const productName = item.name ?? "Producto";
   const productDescription = item.description;
   const productBrand = item.brand;
   const productEan = item.ean;
-  const productCategoryId =
-    item.category_id || itemAny.Category?.id || itemAny.category?.id;
-  const productCategory = itemAny.Category?.name || itemAny.category?.name;
-  const productSubcategoryId =
-    item.subcategory_id ||
-    itemAny.SubCategory?.id ||
-    itemAny.subCategory?.id ||
-    itemAny.sub_category?.id;
-  const productSubcategory =
-    itemAny.SubCategory?.name ||
-    itemAny.subCategory?.name ||
-    itemAny.sub_category?.name;
+  const isInquiryOnlyCategory = [45, 46].includes(Number(productCategoryId));
+
+  const isAgeRestricted = Boolean(
+    productSubcategoryId &&
+    AGE_RESTRICTED_PRODUCT_SUBCATEGORIES.has(
+      String(productSubcategoryId).toLowerCase(),
+    ),
+  );
+
   const productOrigin = item.is_foreign ? "Externo" : "Local";
-  const rawImages: any[] = item.Images || itemAny.images || [];
-  const rawVideos: any[] = item.Videos || itemAny.videos || [];
+  const rawImages: any[] = item.Images || itemAny?.images || [];
+  const rawVideos: any[] = item.Videos || itemAny?.videos || [];
 
   const mediaItems: Array<{ type: "image" | "video"; url: string; id?: any }> =
     [];
@@ -173,22 +408,7 @@ export default function ProductDetailPage({
     if (url) mediaItems.push({ type: "video", url, id: vid?.id || `vid-${i}` });
   }
 
-  // Get seller info from the first ProfessionalProducts entry (Direct access without .map())
-  const professionalProduct = item.ProfessionalProducts?.[0];
-  const productLink = professionalProduct?.link_url;
-  const professional = professionalProduct?.Professional;
-  const professionalAny = professional as any;
-
-  const profile = professionalAny?.Profile || professionalAny?.profile;
   const avatarUrl = profile?.avatar_url || null;
-  const companyData =
-    professionalAny?.Company ||
-    professionalAny?.Companies ||
-    professionalAny?.company ||
-    professionalAny?.companies;
-  const company = Array.isArray(companyData) ? companyData[0] : companyData;
-  const sellerName =
-    company?.name || profile?.display_name || "Profesional independiente";
 
   const addressData = professionalAny?.Address || professionalAny?.address;
   const address = Array.isArray(addressData) ? addressData[0] : addressData;
@@ -197,33 +417,71 @@ export default function ProductDetailPage({
     address?.province?.name ||
     "Ubicación no especificada";
 
-  const professionalId =
-    professional?.id ??
-    professionalProduct?.professional_id ??
-    item?.ProfessionalProducts?.[0]?.professional_id;
-  const userId = professional?.user_id ?? professionalId;
-
   // Price logic
+  const currentVariant = variants.find((v) => v.product_id === item.id);
+  const productHasFreeShipping = Boolean(professionalProduct?.free_shipping);
+  const companyHasLocalFreeShipping = Boolean(company?.free_shipping);
+  const companyHasCountryFreeShipping = Boolean(company?.free_shipping_country);
+  const companyRadiusFreeShipping = Number(
+    company?.free_shipping_radius_km ?? 0,
+  );
+  const localShippingMinimum = Number(company?.free_shipping_min_amount ?? 0);
+  const countryShippingMinimum = Number(
+    company?.free_shipping_country_min_amount ?? 0,
+  );
+
+  const hasOffer2x1 = Boolean(
+    professionalProduct?.offer_2x1 ??
+    itemAny?.offer_2x1 ??
+    (currentVariant as ProductVariant | undefined)?.offer_2x1,
+  );
+
+  const hasOffer3x2 = Boolean(
+    professionalProduct?.offer_3x2 ??
+    itemAny?.offer_3x2 ??
+    (currentVariant as ProductVariant | undefined)?.offer_3x2,
+  );
+
   const originalPrice = professionalProduct?.price || item.price;
   const offerPrice = professionalProduct?.offer_price;
+
+  const activeOriginalPrice = Number(originalPrice || 0);
+  const activeOfferPrice = offerPrice ? Number(offerPrice) : null;
+
+  const activeFinalPrice = activeOfferPrice || activeOriginalPrice;
+
+  const installmentsEnabled = Boolean(
+    professionalProduct?.installments_enabled ?? item.installments_enabled,
+  );
+  const maxInstallments = Number(
+    professionalProduct?.max_installments || item.max_installments || 12,
+  );
+
   const currencyCode =
+    (currentVariant as any)?.currency_code ||
     professionalProduct?.currency_code ||
     item.currency_code ||
     itemAny.Product?.currency_code ||
     "ARG";
+  const isUsd = (currencyCode || "").toUpperCase() === "USD";
   const percentDiscount =
     professionalProduct?.percent_discount ||
     item.percent_discount ||
     itemAny.Product?.percent_discount ||
     0;
-  const hasDiscount = !!offerPrice || percentDiscount > 0;
+  const hasDiscount = !!activeOfferPrice || percentDiscount > 0;
   const discountVal =
     percentDiscount > 0
       ? percentDiscount
-      : offerPrice && originalPrice
-        ? Math.round((1 - offerPrice / originalPrice) * 100)
+      : activeOfferPrice && activeOriginalPrice
+        ? Math.round((1 - activeOfferPrice / activeOriginalPrice) * 100)
         : 0;
-  const currencySymbol = currencyCode === "USD" ? "USD $" : "$";
+  const currencySymbol = isUsd ? "USD $" : "$";
+
+  const canPurchase =
+    !isInquiryOnlyCategory &&
+    !isUsd &&
+    (!isAgeRestricted || (Boolean(user) && isAgeVerified));
 
   const isWholesale =
     professionalProduct?.wholesale === true || item.wholesale === true;
@@ -231,6 +489,16 @@ export default function ProductDetailPage({
     professionalProduct?.wholesale_price || item.wholesale_price;
   const wholesaleUnit =
     professionalProduct?.wholesale_unit || item.wholesale_unit;
+
+  const availableStock = Math.max(
+    0,
+    Number(professionalProduct?.stock ?? item.stock ?? 99),
+  );
+
+  const handleAddToCart = () => {
+    if (!canPurchase) return;
+    addToCartMutation.mutate(Math.min(quantity, availableStock));
+  };
 
   const handleContact = () => {
     const productUrl = window.location.href;
@@ -304,6 +572,15 @@ export default function ProductDetailPage({
         <div className="product-detail__layout">
           {/* Left Column: Image + Details */}
           <div className="product-detail__left-column">
+            <div className="product-detail__favorite-wrapper">
+              <FavoriteButton
+                type="product"
+                targetId={item?.id || id}
+                variant="icon"
+                size={20}
+                className="product-detail__favorite-btn"
+              />
+            </div>
             {(productCategory || productSubcategory) && (
               <nav
                 className="product-detail__breadcrumbs"
@@ -436,6 +713,31 @@ export default function ProductDetailPage({
                 </span>
               </div>
               <h1 className="product-detail__title">{productName}</h1>
+              <div className="product-detail__metrics" aria-label="Ventas y calificaciones del producto">
+                <span className="product-detail__rating">
+                  <span className="product-detail__stars" aria-hidden="true">
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <Star
+                        key={index}
+                        size={16}
+                        fill={index < Math.round(Number(itemAny?.rating_average ?? 0)) ? "currentColor" : "none"}
+                      />
+                    ))}
+                  </span>
+                  <span>
+                    {itemAny?.rating_count == null
+                      ? "Calificación no disponible"
+                      : itemAny.rating_count > 0
+                        ? `${Number(itemAny.rating_average).toFixed(1)} (${itemAny.rating_count} ${itemAny.rating_count === 1 ? "opinión" : "opiniones"})`
+                        : "Sin calificaciones"}
+                  </span>
+                </span>
+                <span className="product-detail__sales-count">
+                  {itemAny?.sales_count == null
+                    ? "Ventas no disponibles"
+                    : `${Number(itemAny.sales_count).toLocaleString("es-AR")} ${itemAny.sales_count === 1 ? "venta" : "ventas"}`}
+                </span>
+              </div>
 
               <div className="product-detail__facts">
                 <div className="product-detail__fact-row">
@@ -512,13 +814,68 @@ export default function ProductDetailPage({
                     <MapPin size={14} />
                     <span>{sellerProvince}</span>
                   </div>
+                  <ProfessionalReputation professionalId={professionalId} />
+                  <p>Condición: {({ original: "Original", replica: "Réplica", used: "Usado", alternative: "Alternativo", artisanal: "Artesanal" } as Record<string, string>)[professionalProduct?.product_condition || ""] || "No informada"}</p>
+                  {professionalProduct?.id && <ListingReportButton targetType="professional_product" targetId={String(professionalProduct.id)} />}
+
+                  {/* Variants selector (if product has variants) */}
+                  {variants.length > 1 && (
+                    <div className="product-detail__variants-section">
+                      <span className="product-detail__variants-label">
+                        Elegí tu variante:
+                      </span>
+                      <div className="product-detail__variants-options">
+                        {variants
+                          .filter((v) => v.is_active !== false)
+                          .map((v) => {
+                            const isSelected = v.product_id === item.id;
+                            return (
+                              <button
+                                key={v.id}
+                                type="button"
+                                className={`product-detail__variant-chip ${
+                                  isSelected
+                                    ? "product-detail__variant-chip--active"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  !isSelected &&
+                                  router.push(
+                                    `/productos/producto-${v.product_id}`,
+                                  )
+                                }
+                              >
+                                <span>
+                                  <strong>
+                                    {v.attributes?.length
+                                      ? v.attributes
+                                          .map(
+                                            (attribute) =>
+                                              `${attribute.name}: ${attribute.value}`,
+                                          )
+                                          .join(" · ")
+                                      : v.name}
+                                  </strong>
+                                </span>
+                                {v.price != null && (
+                                  <span className="product-detail__variant-chip-price">
+                                    $
+                                    {Number(
+                                      v.offer_price || v.price,
+                                    ).toLocaleString("es-AR")}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="seller-card__price-row">
                     <div className="prices">
                       {(() => {
-                        const finalPrice = offerPrice
-                          ? offerPrice
-                          : originalPrice;
+                        const finalPrice = activeFinalPrice;
                         const isConsult =
                           !finalPrice || Number(finalPrice) <= 1;
 
@@ -526,16 +883,21 @@ export default function ProductDetailPage({
                           return (
                             <div className="seller-current-price-row">
                               <span className="seller-price">Consultar</span>
+                              {(hasOffer2x1 || hasOffer3x2) && (
+                                <span className="product-detail__quantity-offer">
+                                  {hasOffer2x1 ? "Oferta 2x1" : "Oferta 3x2"}
+                                </span>
+                              )}
                             </div>
                           );
                         }
 
                         return (
                           <>
-                            {hasDiscount && originalPrice > 1 && (
+                            {hasDiscount && activeOriginalPrice > 1 && (
                               <span className="seller-original-price">
                                 {currencySymbol}
-                                {formatPrice(originalPrice)}
+                                {formatPrice(activeOriginalPrice)}
                               </span>
                             )}
                             <div className="seller-current-price-row">
@@ -543,15 +905,50 @@ export default function ProductDetailPage({
                                 {currencySymbol}
                                 {formatPrice(finalPrice)}
                               </span>
-                              {discountVal > 0 && originalPrice > 1 && (
+                              {discountVal > 0 && activeOriginalPrice > 1 && (
                                 <span className="seller-discount">
                                   {discountVal}% OFF
+                                </span>
+                              )}
+                              {(hasOffer2x1 || hasOffer3x2) && (
+                                <span className="product-detail__quantity-offer">
+                                  {hasOffer2x1 ? "Oferta 2x1" : "Oferta 3x2"}
                                 </span>
                               )}
                             </div>
                           </>
                         );
                       })()}
+
+                      {(productHasFreeShipping ||
+                        companyHasLocalFreeShipping ||
+                        companyHasCountryFreeShipping) && (
+                        <div className="seller-card__shipping-note">
+                          <Car size={15} aria-hidden="true" />
+                          <div className="seller-card__shipping-note-text">
+                            {productHasFreeShipping ? (
+                              <span>Envío gratis a todo el país</span>
+                            ) : (
+                              <>
+                                {companyHasLocalFreeShipping && (
+                                  <span>
+                                    {localShippingMinimum > 0
+                                      ? `Envío gratis por delivery desde $${localShippingMinimum.toLocaleString("es-AR")} hasta ${companyRadiusFreeShipping} km de la sucursal`
+                                      : "Envío gratis por delivery en la zona de entrega"}
+                                  </span>
+                                )}
+                                {companyHasCountryFreeShipping && (
+                                  <span>
+                                    {countryShippingMinimum > 0
+                                      ? `Envío gratis a todo el país desde $${countryShippingMinimum.toLocaleString("es-AR")}`
+                                      : "Envío gratis a todo el país"}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {isWholesale && (
                         <div
@@ -602,37 +999,315 @@ export default function ProductDetailPage({
                         </div>
                       )}
                     </div>
-
-                    <button
-                      className="seller-contact-btn"
-                      onClick={handleContact}
-                    >
-                      <MessageCircle size={16} />
-                      Contactar
-                    </button>
                   </div>
 
-                  {productLink && (
-                    <a
-                      href={
-                        productLink.startsWith("http")
-                          ? productLink
-                          : `https://${productLink}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="seller-contact-btn seller-contact-btn--link"
-                    >
-                      <ExternalLink size={16} />
-                      Ver en sitio web
-                    </a>
+                  {/* Installments Information Box */}
+                  {!isInquiryOnlyCategory && !isUsd && activeFinalPrice > 1 && (
+                    <div className="seller-installments-box">
+                      {installmentsEnabled ? (
+                        <>
+                          <div className="seller-installments-pill seller-installments-pill--free">
+                            <CreditCard size={16} />
+                            <span>
+                              Hasta {maxInstallments} cuotas sin interés de $
+                              {Math.round(
+                                activeFinalPrice / maxInstallments,
+                              ).toLocaleString("es-AR")}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="seller-installments-btn"
+                            onClick={() => setIsInstallmentsModalOpen(true)}
+                          >
+                            Ver medios de pago y cuotas sin interés
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="seller-installments-pill">
+                            <CreditCard size={16} />
+                            <span>
+                              1 pago de $
+                              {activeFinalPrice.toLocaleString("es-AR")}{" "}
+                              (débito/crédito)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="seller-installments-btn"
+                            onClick={() => setIsInstallmentsModalOpen(true)}
+                          >
+                            Ver opciones en cuotas fijas
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
+
+                  {/* Age restriction alert */}
+                  {isAgeRestricted &&
+                    !isInquiryOnlyCategory &&
+                    !isUsd &&
+                    !canPurchase && (
+                      <div className="product-detail__age-warning">
+                        <ShieldAlert
+                          size={20}
+                          className="product-detail__age-warning-icon"
+                        />
+                        <div className="product-detail__age-warning-body">
+                          <strong className="product-detail__age-warning-title">
+                            Producto para mayores de 18 años
+                          </strong>
+                          <p className="product-detail__age-warning-text">
+                            Para comprar este producto tenés que tener tu edad
+                            verificada en tu cuenta.
+                          </p>
+                          {!user ? (
+                            <button
+                              type="button"
+                              className="product-detail__age-warning-btn"
+                              onClick={() =>
+                                router.push(
+                                  `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+                                )
+                              }
+                            >
+                              Iniciar sesión para verificar edad
+                            </button>
+                          ) : (
+                            <span className="product-detail__age-warning-badge">
+                              Edad no verificada · Actualizá tu cuenta para
+                              habilitar la compra
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Action buttons */}
+                  <div className="seller-actions-group">
+                    {isUsd || isInquiryOnlyCategory || activeFinalPrice <= 1 ? (
+                      <>
+                        <WhatsAppContactButton
+                          professionalId={professionalId}
+                          professional={professional}
+                          profile={profile}
+                          phone={
+                            profile?.phone ||
+                            profile?.phone_number ||
+                            professionalAny?.phone ||
+                            professionalAny?.phone_number ||
+                            company?.phone ||
+                            company?.phone_number
+                          }
+                          message={`Hola, qué tal, te contacto por el producto: ${productName} - ${typeof window !== "undefined" ? window.location.href : ""}`}
+                        />
+
+                        <button
+                          type="button"
+                          className="product-detail__contact-btn"
+                          onClick={handleContact}
+                        >
+                          <MessageCircle size={18} />
+                          <span>Contactar al comercio</span>
+                        </button>
+
+                        {professionalProduct?.warranty != null && (
+                          <div className="seller-protected-badge seller-protected-badge--warranty">
+                            <ShieldCheck
+                              size={18}
+                              className="seller-protected-badge__icon"
+                            />
+                            <span className="seller-protected-badge__text">
+                              {Number(professionalProduct.warranty) > 0
+                                ? `Garantía del vendedor: ${
+                                    Number(professionalProduct.warranty) %
+                                      12 ===
+                                      0 &&
+                                    Number(professionalProduct.warranty) >= 12
+                                      ? `${Number(professionalProduct.warranty) / 12} ${Number(professionalProduct.warranty) / 12 === 1 ? "año" : "años"}`
+                                      : `${professionalProduct.warranty} ${Number(professionalProduct.warranty) === 1 ? "mes" : "meses"}`
+                                  }`
+                                : "Este producto no posee garantía"}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      canPurchase && (
+                        <>
+                          <div className="product-detail__cart-actions">
+                            <div
+                              className="product-detail__quantity-control"
+                              aria-label="Cantidad del producto"
+                            >
+                              <button
+                                type="button"
+                                className="product-detail__quantity-btn"
+                                onClick={() =>
+                                  setQuantity((current) =>
+                                    Math.max(1, current - 1),
+                                  )
+                                }
+                                disabled={
+                                  quantity <= 1 || addToCartMutation.isPending
+                                }
+                                aria-label="Quitar una unidad"
+                              >
+                                <Minus size={16} aria-hidden="true" />
+                              </button>
+                              <span
+                                className="product-detail__quantity-value"
+                                aria-live="polite"
+                              >
+                                {quantity}
+                              </span>
+                              <button
+                                type="button"
+                                className="product-detail__quantity-btn"
+                                onClick={() =>
+                                  setQuantity((current) =>
+                                    Math.min(availableStock, current + 1),
+                                  )
+                                }
+                                disabled={
+                                  quantity >= availableStock ||
+                                  addToCartMutation.isPending
+                                }
+                                aria-label="Agregar una unidad"
+                                data-action-tone="add"
+                              >
+                                <Plus size={16} aria-hidden="true" />
+                              </button>
+                            </div>
+                            <button
+                              data-action-tone="add"
+                              type="button"
+                              className="product-detail__add-cart-btn"
+                              onClick={handleAddToCart}
+                              disabled={
+                                availableStock === 0 ||
+                                addToCartMutation.isPending
+                              }
+                            >
+                              {addToCartMutation.isPending ? (
+                                <Loader2
+                                  className="animate-spin"
+                                  size={18}
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <ShoppingCart size={18} aria-hidden="true" />
+                              )}
+                              <span>
+                                {availableStock === 0
+                                  ? "Sin stock"
+                                  : "Agregar al carrito"}
+                              </span>
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className="seller-buy-btn"
+                            onClick={() => router.push(`/pagar/producto/${item.id}?quantity=${quantity}`)}
+                          >
+                            <CreditCard size={18} />
+                            <span>Comprar ahora</span>
+                          </button>
+
+                          <div className="seller-protected-badge">
+                            <ShieldCheck
+                              size={18}
+                              className="seller-protected-badge__icon"
+                            />
+                            <span className="seller-protected-badge__text">
+                              Compra protegida o te devolvemos el dinero
+                            </span>
+                          </div>
+
+                          {professionalProduct?.warranty != null && (
+                            <div className="seller-protected-badge seller-protected-badge--warranty">
+                              <ShieldCheck
+                                size={18}
+                                className="seller-protected-badge__icon"
+                              />
+                              <span className="seller-protected-badge__text">
+                                {Number(professionalProduct.warranty) > 0
+                                  ? `Garantía del vendedor: ${
+                                      Number(professionalProduct.warranty) %
+                                        12 ===
+                                        0 &&
+                                      Number(professionalProduct.warranty) >= 12
+                                        ? `${Number(professionalProduct.warranty) / 12} ${Number(professionalProduct.warranty) / 12 === 1 ? "año" : "años"}`
+                                        : `${professionalProduct.warranty} ${Number(professionalProduct.warranty) === 1 ? "mes" : "meses"}`
+                                    }`
+                                  : "Este producto no posee garantía"}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <CommentsCarousel
+          type="product"
+          targetId={String(item?.id || id || "")}
+          title="Opiniones sobre el Producto"
+        />
+
+        <ProductSlider
+          title="Más Productos del Vendedor"
+          subtitle={
+            sellerName
+              ? `Descubrí más artículos de ${sellerName}`
+              : "Otros productos disponibles de este comercio"
+          }
+          badge={{
+            icon: <Store size={13} />,
+            text: "Comercio",
+          }}
+          products={sellerProducts}
+          isLoading={isLoadingSellerProducts}
+          viewAllLink={sellerStoreLink}
+          viewAllText="Ver tienda"
+        />
+
+        <ProductSlider
+          title="Productos Similares"
+          subtitle={
+            productSubcategory
+              ? `Más opciones destacadas en ${productSubcategory}`
+              : productCategory
+                ? `Más opciones en ${productCategory}`
+                : "Opciones similares que te pueden interesar"
+          }
+          badge={{
+            icon: <Sparkles size={13} />,
+            text: "Recomendados",
+          }}
+          products={similarProducts}
+          isLoading={isLoadingSimilarProducts}
+          viewAllLink={similarProductsLink}
+          viewAllText="Ver catálogo"
+        />
       </main>
+
+      {/* Installments Breakdown Modal */}
+      <ProductInstallmentsModal
+        isOpen={isInstallmentsModalOpen}
+        onClose={() => setIsInstallmentsModalOpen(false)}
+        price={activeFinalPrice}
+        installmentsEnabled={installmentsEnabled}
+        maxInstallments={maxInstallments}
+        productName={productName}
+      />
 
       <Footer />
     </>

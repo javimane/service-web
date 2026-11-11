@@ -20,7 +20,7 @@ export default function BusinessInfoSection({
       <div className="settings-fields two-columns">
         <label className="settings-field">
           <span>
-            Nombre comercial <span style={{ color: "var(--error-color, #fa5252)", fontWeight: "bold" }}>* (Obligatorio)</span>
+            Nombre comercial <span className="settings-required-mark">* (Obligatorio)</span>
           </span>
           <input
             type="text"
@@ -30,19 +30,17 @@ export default function BusinessInfoSection({
             onChange={(e) => setTradeName(e.target.value)}
           />
         </label>
-      </div>
 
-      <div className="settings-fields two-columns">
         <label className="settings-field">
           <span>
-            CUIT / CUIL <span style={{ color: "var(--error-color, #fa5252)", fontWeight: "bold" }}>* (Obligatorio)</span>
+            CUIT / CUIL <span className="settings-required-mark">* (Obligatorio)</span>
           </span>
           <input
             type="text"
             inputMode="numeric"
             maxLength={11}
             required
-            placeholder="Ingresá el CUIT / CUIL (11 dígitos sin guiones)"
+            placeholder="Ingresá el CUIT / CUIL (11 dígitos)"
             value={cuit}
             onChange={(e) => {
               const onlyNums = e.target.value.replace(/\D/g, "").slice(0, 11);

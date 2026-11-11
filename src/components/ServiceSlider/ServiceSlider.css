@@ -1,0 +1,156 @@
+/* ===================================================
+   SERVICE SLIDER (Reusable Carousel)
+=================================================== */
+
+.service-slider {
+  margin: var(--space-8) 0;
+  padding: var(--space-6) 0;
+}
+
+.service-slider__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.service-slider__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.service-slider__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--accent-transparent);
+  color: var(--accent-color);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-1);
+}
+
+.service-slider__title {
+  font-size: clamp(1.25rem, 2vw, var(--text-2xl));
+  font-weight: var(--weight-extrabold);
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.service-slider__count {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+
+.service-slider__subtitle {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: var(--weight-normal);
+}
+
+.service-slider__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--brand-blue);
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.service-slider__link:hover {
+  color: #154ca0;
+  transform: translateX(2px);
+}
+
+/* ── CAROUSEL WRAPPER ── */
+.service-slider__wrap {
+  position: relative;
+  width: 100%;
+}
+
+.service-slider__scroll {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: var(--space-2) var(--space-1) var(--space-4);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.service-slider__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.service-slider__scroll:active {
+  cursor: grabbing;
+}
+
+.service-slider__item {
+  flex: 0 0 320px;
+  width: 320px;
+  max-width: 320px;
+  display: flex;
+}
+
+.service-slider__item .service-card-modern {
+  width: 100%;
+}
+
+/* Loading state */
+.service-slider__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-10) var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+}
+
+@media (max-width: 640px) {
+  .service-slider {
+    margin: var(--space-6) 0;
+    padding: var(--space-4) 0;
+  }
+
+  .service-slider__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .service-slider__scroll {
+    gap: var(--space-3);
+    padding: var(--space-2) 0 var(--space-4);
+  }
+
+  .service-slider__item {
+    flex: 0 0 280px;
+    width: 280px;
+    max-width: 280px;
+  }
+
+  .service-slider .carousel-control {
+    display: none;
+  }
+}

@@ -8,6 +8,26 @@
   gap: 32px;
 }
 
+.settings-setup-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  box-sizing: border-box;
+  height: 42px;
+  min-height: 42px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+  background: var(--brand-blue);
+  color: var(--white);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 @media (max-width: 768px) {
   .settings-content {
     padding: 24px 20px;
@@ -1194,3 +1214,42 @@
   background: var(--border-color);
   color: var(--text-secondary);
 }
+
+.settings-commercial-redirect-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-6);
+}
+
+.settings-commercial-redirect-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--brand-blue-soft);
+  color: var(--brand-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-commercial-redirect-content h4 {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.settings-commercial-redirect-content p {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-4);
+}
+

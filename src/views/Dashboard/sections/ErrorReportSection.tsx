@@ -317,7 +317,7 @@ export default function ErrorReportSection() {
           </div>
 
           <div className="error-report-form__actions">
-            <button
+            <button data-action-tone="cancel"
               type="button"
               className="error-report-form__btn-cancel"
               onClick={() => {

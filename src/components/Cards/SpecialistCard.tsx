@@ -83,6 +83,9 @@ export default function SpecialistCard({ specialist }: SpecialistCardProps) {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(company_name || "P")}&background=random`;
   const linkHref = `${ROUTES.profile}${seo_path}`;
   const isVerified = company_arca?.is_verified ?? false;
+  const categoryNames = professional_categories
+    .map((category) => category.Category?.name)
+    .filter((name): name is string => Boolean(name));
 
   return (
     <article className="specialist-card">
@@ -131,17 +134,25 @@ export default function SpecialistCard({ specialist }: SpecialistCardProps) {
         </span>
 
         {/* Categories list */}
-        {professional_categories.length > 0 && (
+        {categoryNames.length > 0 && (
           <div className="specialist-card__categories">
-            {professional_categories.map((pc, idx) => {
-              const catName = pc.Category?.name;
-              if (!catName) return null;
-              return (
-                <span key={idx} className="specialist-card__category-tag">
-                  {catName}
-                </span>
-              );
-            })}
+            {categoryNames.slice(0, 2).map((name, index) => (
+              <span
+                key={`${name}-${index}`}
+                className="specialist-card__category-tag"
+              >
+                {name}
+              </span>
+            ))}
+            {categoryNames.length > 2 && (
+              <span
+                className="specialist-card__category-tag"
+                title={categoryNames.slice(2).join(", ")}
+                aria-label={`Más categorías: ${categoryNames.slice(2).join(", ")}`}
+              >
+                ...
+              </span>
+            )}
           </div>
         )}
       </div>

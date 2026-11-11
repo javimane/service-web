@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
+import WhatsAppContactButton from "@/components/WhatsAppContactButton/WhatsAppContactButton";
 import "../../../views/Services/ServiceDetailModal.css";
 
 interface ProfileServiceDetailModalProps {
@@ -59,9 +60,16 @@ export default function ProfileServiceDetailModal({
         </div>
 
         {professionalId && (
-          <button className="contact-professional-btn" onClick={handleContact}>
-            <MessageCircle size={18} /> CONTACTAR PROFESIONAL
-          </button>
+          <>
+            <WhatsAppContactButton
+              professionalId={professionalId}
+              message={`Hola, qué tal, te contacto por el servicio: ${service.name}`}
+              className="contact-professional-btn"
+            />
+            <button className="contact-professional-btn" onClick={handleContact}>
+              <MessageCircle size={18} /> CONTACTAR PROFESIONAL
+            </button>
+          </>
         )}
       </div>
     </Modal>

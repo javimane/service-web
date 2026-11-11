@@ -1,13 +1,20 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ChoicePills from "./ChoicePills";
-import MapPickerModal from "../../../components/MapPickerModal/MapPickerModal";
-import { Map } from "lucide-react";
+import GoogleMapPickerModal, { type GoogleAddressResult } from "@/components/GoogleMapPickerModal/GoogleMapPickerModal";
+import { getDepartmentsAction } from "@/app/actions/locations";
+import { AlertTriangle, Map } from "lucide-react";
+import "./OperationsSection.css";
 
 type Province = {
   id: number;
   name: string;
 };
+
+const normalizeLocation = (value: string) => value.normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es")
+  .replace(/^(provincia de |departamento de |partido de )/, "").trim();
 
 type Department = {
   id: number;
@@ -60,12 +67,31 @@ export default function OperationsSection({
   setStoreLng,
 }: OperationsSectionProps) {
   const [mapModalOpen, setMapModalOpen] = useState(false);
+  const addressRevision = useRef(0);
   const provinces = provinceList as Province[];
   const departments = departmentList as Department[];
 
-  const handleMapSelect = (lat: number, lng: number) => {
-    setStoreLat(lat);
-    setStoreLng(lng);
+  const handleMapSelect = async (address: GoogleAddressResult) => {
+    const revision = ++addressRevision.current;
+    setStoreLat(address.lat);
+    setStoreLng(address.lng);
+    setStoreStreet(address.street);
+    setStoreNumber(address.number);
+    setStoreZip(address.postalCode);
+    setStoreFloor("");
+    setStoreDepartmentId(null);
+    const province = provinces.find((item) => normalizeLocation(item.name) === normalizeLocation(address.province));
+    setStoreProvinceId(province?.id ?? null);
+    if (!province) return;
+    try {
+      const result = await getDepartmentsAction({ provinceId: province.id });
+      if (addressRevision.current !== revision) return;
+      const department = result?.data?.find((item: Department) =>
+        normalizeLocation(item.name) === normalizeLocation(address.department));
+      setStoreDepartmentId(department?.id ?? null);
+    } catch {
+      // Keep manual selection available when the location catalogue cannot be loaded.
+    }
   };
 
   return (
@@ -80,6 +106,10 @@ export default function OperationsSection({
       <div className="settings-fields">
         <div className="settings-field">
           <span>¿Tiene comercio al público?</span>
+          <div className="operations-section__product-warning" role="note">
+            <AlertTriangle size={22} aria-hidden="true" />
+            <p><strong>Obligatorio si vendés productos.</strong> Marcá «Sí» y completá la dirección y ubicación del local para registrar tu sucursal principal. Para vender productos necesitás una sucursal principal o al menos una sucursal registrada; sin una sucursal no podés vender.</p>
+          </div>
           <ChoicePills
             value={hasStorefront}
             onChange={setHasStorefront}
@@ -134,6 +164,7 @@ export default function OperationsSection({
                 <select
                   value={storeProvinceId || ""}
                   onChange={(e) => {
+                    addressRevision.current++;
                     const id = Number(e.target.value);
                     setStoreProvinceId(id);
                     setStoreDepartmentId(null);
@@ -156,7 +187,10 @@ export default function OperationsSection({
               <div className="select-wrapper">
                 <select
                   value={storeDepartmentId || ""}
-                  onChange={(e) => setStoreDepartmentId(Number(e.target.value))}
+                  onChange={(e) => {
+                    addressRevision.current++;
+                    setStoreDepartmentId(Number(e.target.value));
+                  }}
                   disabled={!storeProvinceId}
                 >
                   <option value="" disabled>
@@ -181,7 +215,7 @@ export default function OperationsSection({
                     Coordenadas Geográficas <span className="required-star">*</span>
                   </span>
                   <p className="coordinates-note">
-                    Ubicación precisa de tu comercio en el mapa. <strong>(Obligatorio para atención al público)</strong>
+                    Buscá la calle y el número en Google Maps o mové el pin. Se completarán la dirección y las coordenadas; revisá la provincia y el departamento antes de guardar.
                   </p>
                 </div>
                 <button
@@ -192,7 +226,7 @@ export default function OperationsSection({
                   <Map size={16} />
                   {storeLat && storeLng
                     ? "Ubicación seleccionada ✓"
-                    : "Seleccionar en mapa (Obligatorio)"}
+                    : "Buscar dirección en Google Maps"}
                 </button>
               </div>
 
@@ -237,13 +271,13 @@ export default function OperationsSection({
         )}
       </div>
 
-      <MapPickerModal
+      {mapModalOpen && createPortal(<GoogleMapPickerModal
         isOpen={mapModalOpen}
         onClose={() => setMapModalOpen(false)}
-        onSelect={handleMapSelect}
+        onSelectAddress={handleMapSelect}
         initialLat={storeLat}
         initialLng={storeLng}
-      />
+      />, document.body)}
     </article>
   );
 }

@@ -712,15 +712,25 @@ export default function MessagesPage() {
         },
         (payload) => {
           const newMsg = payload.new;
+          if (newMsg.order_id != null) return;
 
           const isRelevant =
             newMsg.sender_id === user.id || newMsg.receiver_id === user.id;
           if (!isRelevant) return;
 
+          // The API excludes rider conversations before updating the inbox.
+          queryClient.invalidateQueries({
+            queryKey: ["my-conversations", user.id],
+          });
+
           const reqId =
             newMsg.sender_id === user.id
               ? newMsg.receiver_id
               : newMsg.sender_id;
+
+          if (!requests.some((request: any) => String(request.id) === String(reqId))) {
+            return;
+          }
 
           if (reqId === activeRequestId) {
             queryClient.invalidateQueries({
@@ -745,10 +755,6 @@ export default function MessagesPage() {
             }));
           }
 
-          queryClient.invalidateQueries({
-            queryKey: ["my-conversations", user?.id],
-          });
-
           setLastMessageByRequest((prev) => ({
             ...prev,
             [reqId]: newMsg.content,
@@ -764,7 +770,7 @@ export default function MessagesPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, activeRequestId, queryClient]);
+  }, [user?.id, activeRequestId, queryClient, requests]);
 
   const deleteChatMutation = useMutation({
     mutationFn: async (otherUserId: string) => {

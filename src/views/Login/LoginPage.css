@@ -153,6 +153,38 @@
   margin-bottom: 0.5rem;
 }
 
+.login-card__home-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  box-sizing: border-box;
+  height: 42px;
+  min-height: 42px;
+  margin-bottom: var(--space-4);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+  background: var(--brand-blue);
+  color: var(--white);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.login-card__home-button:hover {
+  color: var(--white);
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
+.login-card__home-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
 .login-subtitle {
   color: var(--text-secondary);
   font-size: 0.95rem;
@@ -177,7 +209,7 @@
   align-items: center;
 }
 
-label {
+.login-card label {
   font-size: 0.75rem;
   font-weight: var(--weight-semibold);
   color: var(--text-secondary);
@@ -208,23 +240,32 @@ label {
 
 .input-icon-btn {
   position: absolute;
-  right: 12px;
+  right: var(--space-2);
+  width: var(--space-8);
+  height: var(--space-8);
   background: transparent;
   border: none;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  transition: all 0.2s ease;
 }
 
-.input-icon-btn:focus {
-  outline: none;
+.input-icon-btn:hover {
+  color: var(--accent-color);
+  background: var(--accent-transparent);
 }
 
-input {
+.input-icon-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.login-card input:not([type="checkbox"]):not([type="radio"]) {
   width: 100%;
   box-sizing: border-box;
   padding: 14px 44px 14px 16px;
@@ -237,7 +278,7 @@ input {
   outline: none;
 }
 
-input:focus {
+.login-card input:not([type="checkbox"]):not([type="radio"]):focus {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px var(--accent-transparent);
 }
@@ -271,7 +312,7 @@ input:focus {
   text-align: center;
 }
 
-.btn-primary {
+.login-card .btn-primary {
   background: var(--accent-color);
   color: white;
   padding: 14px;
@@ -282,13 +323,13 @@ input:focus {
   box-sizing: border-box;
 }
 
-.btn-primary:hover:not(:disabled) {
+.login-card .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px var(--accent-transparent);
 }
 
-.btn-primary:disabled {
+.login-card .btn-primary:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }

@@ -22,8 +22,20 @@ import {
 import Modal from "../components/Modal/Modal";
 import { sileo } from "sileo";
 import "./AuthContext.css";
+import { AccountAccessNotice } from "./AccountAccessNotice";
+import { showDesktopNotification } from "../services/desktopNotifications";
 
 type SessionStatus = {
+  is_blocked?: boolean;
+  is_paused?: boolean;
+  blocked_reason?: string | null;
+  paused_reason?: string | null;
+  can_sell?: boolean;
+  sell_verification_required?: boolean;
+  identity_verified?: boolean;
+  arca_verified?: boolean;
+  cbu_verified?: boolean;
+  can_accept_orders?: boolean;
   status?: boolean | string;
   is_professional?: boolean;
   professional_active?: boolean;
@@ -37,6 +49,11 @@ type SessionStatus = {
   email?: string | null;
   display_name?: string | null;
   company_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  requires_personal_name?: boolean;
+  role_id?: number;
+  is_age_verified?: boolean;
   subscription?: {
     status?: string;
     professional_id?: number | string;
@@ -51,12 +68,15 @@ type SessionStatus = {
 type AuthContextValue = {
   user: any;
   sessionStatus: SessionStatus | null;
+  roleId: number | null;
+  isAgeVerified: boolean;
+  isCompany: boolean;
   hasProfessionalSubscription: boolean;
   professionalPlanActive: boolean;
   subscriptionPlan: string | null;
   hasAddress: boolean;
   loading: boolean;
-  refreshSession: () => Promise<void>;
+  refreshSession: () => Promise<SessionStatus | null>;
   logout: () => Promise<void>;
   setUser: (value: any) => void;
   setSessionStatus: (value: SessionStatus | null) => void;
@@ -64,7 +84,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const normalizeSessionPayload = (payload: any) => {
+export const normalizeSessionPayload = (payload: any) => {
   const data = payload?.data ?? payload ?? null;
 
   const nextUser =
@@ -91,12 +111,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [loading, setLoading] = useState(true);
 
+  const clearClientSession = async () => {
+    if (typeof window !== "undefined") {
+      const tokenKeys = [
+        "registered_device_token",
+        "firebase_token",
+        "fcm_token",
+        "firebaseMessagingToken",
+      ];
+      const deviceToken = tokenKeys
+        .map((key) => localStorage.getItem(key))
+        .find((value): value is string => Boolean(value));
+
+      if (deviceToken) {
+        try {
+          await userService.removeDeviceToken(deviceToken);
+        } catch (error) {}
+      }
+
+      await deleteFirebaseMessagingToken();
+    }
+
+    try {
+      await authService.logout();
+    } catch (error) {}
+
+    if (typeof window !== "undefined") {
+      try {
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie =
+          "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      } catch (e) {}
+      localStorage.removeItem("token");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("registered_device_token");
+      localStorage.removeItem("firebase_token");
+      localStorage.removeItem("firebaseMessagingToken");
+      localStorage.removeItem("was_logged_in");
+      sessionStorage.clear();
+    }
+
+    await clearSupabaseSession();
+    queryClient.clear();
+    setUser(null);
+    setSessionStatus(null);
+  };
+
+  const isRiderSession = (u: any, s: any) =>
+    u?.user_metadata?.role === "delivery" ||
+    u?.user_metadata?.role === "rider" ||
+    s?.logistics_role === "delivery";
+
   const hasActiveStatusFlag =
     sessionStatus?.status === true || sessionStatus?.status === "active";
 
   const subscriptionStatus = sessionStatus?.subscription?.status;
-  const isSubscriptionCancelled = subscriptionStatus === "cancelled" || subscriptionStatus === "canceled";
-  
+  const isSubscriptionCancelled =
+    subscriptionStatus === "cancelled" || subscriptionStatus === "canceled";
+
   let isSubscriptionExpired = false;
   if (isSubscriptionCancelled) {
     const expiresAt = sessionStatus?.subscription?.expires_at;
@@ -124,59 +197,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasAddress = Boolean(sessionStatus?.has_professional_address);
 
+  const roleId = sessionStatus?.role_id ?? null;
+  const isAgeVerified = Boolean(sessionStatus?.is_age_verified);
+  const isCompany = roleId === 3;
+
   const subscriptionPlan = sessionStatus?.subscription?.plan ?? null;
 
-  const refreshSession = async () => {
+  const refreshSession = async (): Promise<SessionStatus | null> => {
     try {
-      // 1. Check if the Supabase client has an active session (e.g. from OAuth redirect)
-      const {
-        data: { session: supabaseSession },
-      } = await supabase.auth.getSession();
+      // 1. Si venimos de un redirect de Google OAuth (y solo en ese caso), sincronizar con NestJS
+      const isOAuthRedirect =
+        typeof window !== "undefined" &&
+        (window.location.search.includes("auth=success") ||
+          window.location.hash.includes("access_token"));
 
-      if (supabaseSession) {
+      if (isOAuthRedirect) {
         try {
-          // Try to get NestJS session
-          const session = await authService.getSession();
-          const { nextUser, nextSessionStatus } =
-            normalizeSessionPayload(session);
-          setUser(nextUser);
-          if (nextSessionStatus !== null) {
-            setSessionStatus(nextSessionStatus);
-          }
-          setLoading(false);
-          return;
-        } catch (apiErr) {
-          // If NestJS is not authenticated, sync the Supabase session
-          console.log("Syncing Supabase OAuth session with NestJS API...");
-          try {
+          const {
+            data: { session: supabaseSession },
+          } = await supabase.auth.getSession();
+          if (supabaseSession?.access_token) {
+            console.log(
+              "Syncing Supabase Google OAuth session with NestJS API...",
+            );
             const syncResponse = await authService.syncOAuth({
               access_token: supabaseSession.access_token,
               refresh_token: supabaseSession.refresh_token || "",
             });
             const { nextUser, nextSessionStatus } =
               normalizeSessionPayload(syncResponse);
-            setUser(nextUser);
+
+            if (isRiderSession(nextUser, nextSessionStatus)) {
+              await clearClientSession();
+              if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+                window.location.href = "/login?error=rider_not_allowed";
+              }
+              setLoading(false);
+              return null;
+            }
+
+            if (nextUser) setUser(nextUser);
             if (nextSessionStatus !== null) {
               setSessionStatus(nextSessionStatus);
             }
             setLoading(false);
-            return;
-          } catch (syncErr) {
-            console.error("Failed to sync Supabase OAuth session:", syncErr);
+            return nextSessionStatus;
           }
+        } catch (syncErr) {
+          console.error("Failed to sync Supabase OAuth session:", syncErr);
         }
       }
 
-      // 2. Default flow
+      // 2. Flujo principal: obtener la sesión desde la API de NestJS usando su cookie
       const session = await authService.getSession();
       const { nextUser, nextSessionStatus } = normalizeSessionPayload(session);
-      setUser(nextUser);
+
+      if (isRiderSession(nextUser, nextSessionStatus)) {
+        await clearClientSession();
+        if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+          window.location.href = "/login?error=rider_not_allowed";
+        }
+        setLoading(false);
+        return null;
+      }
+
+      if (nextUser) {
+        setUser(nextUser);
+      }
       if (nextSessionStatus !== null) {
         setSessionStatus(nextSessionStatus);
       }
+      return nextSessionStatus;
     } catch (err) {
-      setUser(null);
-      setSessionStatus(null);
+      // Solo resetear a null si no hay ninguna cookie ni token activo
+      const hasCookie = typeof document !== "undefined" && (document.cookie.includes("token=") || document.cookie.includes("access_token="));
+      const hasLocalToken = typeof localStorage !== "undefined" && Boolean(localStorage.getItem("token") || localStorage.getItem("access_token"));
+      if (!hasCookie && !hasLocalToken) {
+        setUser(null);
+        setSessionStatus(null);
+      }
+      return null;
     } finally {
       setLoading(false);
     }
@@ -185,6 +285,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshSession();
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let pending = false;
+    const reload = async () => {
+      if (pending || document.visibilityState !== "visible") return;
+      pending = true;
+      try { await refreshSession(); } finally { pending = false; }
+    };
+    const timer = window.setInterval(reload, 30000);
+    window.addEventListener("focus", reload);
+    document.addEventListener("visibilitychange", reload);
+    window.addEventListener("account-restricted", reload);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", reload);
+      document.removeEventListener("visibilitychange", reload);
+      window.removeEventListener("account-restricted", reload);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (user) {
@@ -214,7 +334,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const payload = JSON.parse(event.data);
 
             // Ignorar los eventos de tipo ping que mantienen viva la conexión
-            if (payload.type === "ping" || payload.message === "keep-alive" || payload.data?.message === "keep-alive" || payload.data?.type === "ping") {
+            if (
+              payload.type === "ping" ||
+              payload.message === "keep-alive" ||
+              payload.data?.message === "keep-alive" ||
+              payload.data?.type === "ping"
+            ) {
               return;
             }
 
@@ -242,6 +367,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 payload.message ||
                 "Tienes una nueva notificación",
             });
+            showDesktopNotification(payload);
           } catch (e) {
             console.error("Error al procesar la notificación en vivo:", e);
           }
@@ -352,7 +478,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user || typeof window === "undefined") return;
 
       // Obtener silenciosamente el token FCM actual de Firebase con la VAPID key
-      const currentToken = await getFirebaseMessagingToken(false);
+      let currentToken: string | null = null;
+      try {
+        currentToken = await getFirebaseMessagingToken(false);
+      } catch {
+        return;
+      }
       const savedToken = localStorage.getItem("registered_device_token");
 
       if (!currentToken) return;
@@ -387,16 +518,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         sileo.info({ title, description: body });
 
-        if (
-          typeof window !== "undefined" &&
-          Notification.permission === "granted"
-        ) {
-          new Notification(title, { body });
-        }
+        showDesktopNotification({
+          id: payload?.data?.notificationId ?? payload?.data?.notification_id,
+          type: payload?.data?.type,
+          title,
+          body,
+          data: payload?.data,
+        });
       });
     };
 
-    setupForegroundNotifications();
+    setupForegroundNotifications().catch(() => {
+      // Los avisos en vivo siguen disponibles por SSE si Firebase no responde.
+    });
+
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === "sercio-push") {
+        showDesktopNotification(event.data.payload);
+      }
+    };
+    navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
 
     const handleSessionExpired = () => {
       setUser(null);
@@ -406,57 +547,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       if (unsubscribe) unsubscribe();
+      navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
       window.removeEventListener("session-expired", handleSessionExpired);
     };
   }, []);
 
   const logout = async () => {
-    if (typeof window !== "undefined") {
-      const tokenKeys = [
-        "registered_device_token",
-        "firebase_token",
-        "fcm_token",
-        "firebaseMessagingToken",
-      ];
-      const deviceToken = tokenKeys
-        .map((key) => localStorage.getItem(key))
-        .find((value): value is string => Boolean(value));
-
-      if (deviceToken) {
-        try {
-          await userService.removeDeviceToken(deviceToken);
-        } catch (error) {
-          // Silent fail on logout API call.
-        }
-      }
-
-      // Eliminar el token del cliente SDK de Firebase para desvincular el ServiceWorker
-      await deleteFirebaseMessagingToken();
-    }
-
-    try {
-      await authService.logout();
-    } catch (error) {
-      // Ignore errors on logout
-    }
-
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("registered_device_token");
-      localStorage.removeItem("firebase_token");
-      localStorage.removeItem("firebaseMessagingToken");
-      localStorage.removeItem("was_logged_in");
-      sessionStorage.clear();
-    }
-
-    // Clear Supabase Session for chat functionality
-    await clearSupabaseSession();
-
-    // Reset React Query Cache to avoid stale auth data in UI
-    queryClient.clear();
-
-    setUser(null);
-    setSessionStatus(null);
+    await clearClientSession();
   };
 
   return (
@@ -464,6 +561,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         sessionStatus,
+        roleId,
+        isAgeVerified,
+        isCompany,
         hasProfessionalSubscription,
         professionalPlanActive,
         hasAddress,
@@ -475,6 +575,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSessionStatus,
       }}
     >
+      {user && (sessionStatus?.is_blocked || sessionStatus?.is_paused || sessionStatus?.sell_verification_required) &&
+        <AccountAccessNotice blocked={sessionStatus?.is_blocked === true}
+          verificationRequired={!sessionStatus?.is_blocked && !sessionStatus?.is_paused && sessionStatus?.sell_verification_required === true}
+          identityVerified={sessionStatus?.identity_verified === true}
+          arcaVerified={sessionStatus?.arca_verified === true}
+          cbuVerified={sessionStatus?.cbu_verified === true}
+          reason={sessionStatus?.is_blocked ? sessionStatus?.blocked_reason : sessionStatus?.paused_reason}
+          refresh={refreshSession} logout={logout} />}
       {children}
       <Modal
         isOpen={showChatSyncModal}
@@ -493,7 +601,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             alignItems: "center",
           }}
         >
-          <button
+          <button data-action-tone="cancel"
             className="btn-secondary"
             style={{
               margin: 0,

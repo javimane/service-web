@@ -14,15 +14,23 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
     profile?.avatar_url ||
     profile?.portfolio_image_url ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(professionalName)}&background=random`;
-  const price = service.base_price || 0;
+  const price = service.base_price ?? service.price ?? 0;
   const categoryName =
     service.CategoryService?.name || service.category?.name || "General";
   const rating = professional?.rating_avg || 0;
   const isVerified = company?.companies_arca?.[0]?.is_verified || false;
 
   // Location extraction
-  const address = professional?.address?.[0] || professional?.Address?.[0];
-  const locationName = address?.province?.name || address?.city || "Mendoza";
+  const address = Array.isArray(professional?.address)
+    ? professional.address[0]
+    : Array.isArray(professional?.Address)
+      ? professional.Address[0]
+      : professional?.address || professional?.Address;
+  const locationName =
+    address?.province?.name ||
+    address?.Province?.name ||
+    address?.city ||
+    "Argentina";
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -60,14 +68,16 @@ export default function ServiceCard({ service, viewMode = "grid", onClick }) {
           <MapPin size={12} className="loc-icon" />
           <span>{locationName.toUpperCase()}</span>
         </div>
-        <button
-          className="card-share-btn"
-          title="Compartir servicio"
-          type="button"
-          onClick={handleShare}
-        >
-          <Share2 size={14} />
-        </button>
+        <div className="card-top-actions">
+          <button
+            className="card-share-btn"
+            title="Compartir servicio"
+            type="button"
+            onClick={handleShare}
+          >
+            <Share2 size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Title */}

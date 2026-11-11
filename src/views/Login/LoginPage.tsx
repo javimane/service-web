@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../routes/paths";
 import { authService } from "../../services/authService";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth, normalizeSessionPayload } from "../../context/AuthContext";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import { supabase } from "../../services/supabaseClient";
 import "./LoginPage.css";
@@ -12,6 +12,8 @@ import Footer from "@/components/Footer/Footer";
 import Modal from "../../components/Modal/Modal";
 import { API_BASE_URL } from "../../services/api.config";
 import RegisterPlanSelection from "../Register/RegisterPlanSelection";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { checkoutReturnPath } from "@/utils/checkoutAuth";
 
 type LoginPageProps = {
   isModal?: boolean;
@@ -38,10 +40,23 @@ export default function LoginPage({
   const {
     refreshSession,
     setSessionStatus,
+    setUser,
     sessionStatus,
     user,
   } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const errorParam = params.get("error");
+      if (errorParam === "rider_not_allowed") {
+        setAuthError(
+          "Los repartidores no tienen acceso a la plataforma web. Por favor, utilizá la aplicación móvil.",
+        );
+      }
+    }
+  }, []);
 
   // Este useEffect solo maneja el caso OAuth (Google login).
   // Para form login (handleSubmit), la lógica es directa y marca isHandlingSubmitRef.
@@ -49,6 +64,31 @@ export default function LoginPage({
     // Solo correr si NO estamos en medio de un handleSubmit (evita race conditions)
     if (isHandlingSubmitRef.current) return;
     if (user && sessionStatus) {
+      const isRider =
+        user?.user_metadata?.role === "delivery" ||
+        user?.user_metadata?.role === "rider" ||
+        sessionStatus?.logistics_role === "delivery";
+
+      if (isRider) {
+        authService.logout().catch(() => {});
+        setUser(null);
+        setSessionStatus(null);
+        setAuthError(
+          "Los repartidores no tienen acceso a la plataforma web. Por favor, utilizá la aplicación móvil.",
+        );
+        return;
+      }
+      const checkoutReturnTo = checkoutReturnPath(window.location.search);
+      if (checkoutReturnTo) {
+        if (isModal) onClose?.();
+        router.replace(checkoutReturnTo);
+        return;
+      }
+      if (sessionStatus.requires_personal_name) {
+        if (isModal) onClose?.();
+        router.push(ROUTES.accountSetup);
+        return;
+      }
       let isNewUser = false;
       const createdAt = sessionStatus.user_created_at
         ? new Date(sessionStatus.user_created_at).getTime()
@@ -77,6 +117,9 @@ export default function LoginPage({
       const hasCompany = Boolean(
         compName && typeof compName === "string" && compName.trim() !== "",
       );
+      const needsSetup =
+        localStorage.getItem("show_setup_on_login") === "true" ||
+        Boolean(user?.id && localStorage.getItem(`account_setup_step_${user.id}`));
 
       if (isProf) {
         if (!hasSubscription) {
@@ -87,7 +130,13 @@ export default function LoginPage({
 
         if (!hasCompany) {
           if (isModal) onClose?.();
-          router.push(`${ROUTES.settings}?missing_company=true`);
+          router.push(ROUTES.accountSetup);
+          return;
+        }
+
+        if (needsSetup) {
+          if (isModal) onClose?.();
+          router.push(ROUTES.accountSetup);
           return;
         }
 
@@ -100,16 +149,16 @@ export default function LoginPage({
         }
       }
     }
-  }, [user, sessionStatus, isModal, onClose, router]);
+  }, [user, sessionStatus, isModal, onClose, router, setUser, setSessionStatus]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.email) {
-      newErrors.email = "El correo electrónico es requerido";
+    if (!formData.email.trim()) {
+      newErrors.email = "Ingresá tu email";
     } else if (
-      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email.trim())
     ) {
-      newErrors.email = "El formato del correo es inválido";
+      newErrors.email = "Ingresá un email válido";
     }
 
     if (!formData.password) {
@@ -136,7 +185,7 @@ export default function LoginPage({
 
   const handleForgotPassword = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!formData.email) {
+    if (!formData.email.trim()) {
       setErrors((prev) => ({
         ...prev,
         email: "Ingrese su correo electrónico para recuperar la contraseña",
@@ -178,43 +227,70 @@ export default function LoginPage({
     setAuthError("");
 
     try {
+      const email = formData.email.trim();
       const response = await authService.login({
-        email: formData.email,
+        email,
         password: formData.password,
       });
 
-      // Sincronizar login con la base de datos de Chat (Supabase)
-      const { error: chatLoginError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
+      // Validar si el usuario es un repartidor/rider
+      const { nextUser, nextSessionStatus } = normalizeSessionPayload(response);
+      const isRider =
+        nextUser?.user_metadata?.role === "delivery" ||
+        nextUser?.user_metadata?.role === "rider" ||
+        nextSessionStatus?.logistics_role === "delivery";
 
-      if (chatLoginError) {
-        console.error(
-          "Error al iniciar sesión en el chat:",
-          chatLoginError.message,
+      if (isRider) {
+        await authService.logout().catch(() => {});
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("token");
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("was_logged_in");
+        }
+        setUser(null);
+        setSessionStatus(null);
+        setAuthError(
+          "Los repartidores no tienen acceso a la plataforma web. Por favor, utilizá la aplicación móvil.",
         );
-        // Opcional: Decidir si el login general falla si el chat falla.
+        return;
+      }
+
+      try {
+        const { error: chatLoginError } = await supabase.auth.signInWithPassword({
+          email,
+          password: formData.password,
+        });
+
+        if (chatLoginError) {
+          console.error(
+            "Error al iniciar sesión en el chat:",
+            chatLoginError.message,
+          );
+        }
+      } catch (chatErr: any) {
+        console.error("Error al conectar con Supabase Chat:", chatErr);
       }
 
       // Marcar que estamos procesando el submit para que useEffect no interfiera
       isHandlingSubmitRef.current = true;
 
-      let isNewUser = false;
+      // Actualizar estado del contexto de auth inmediatamente desde la respuesta de login
+      if (nextUser) {
+        setUser(nextUser);
+      }
+      if (nextSessionStatus) {
+        setSessionStatus(nextSessionStatus);
+      }
+      if (typeof window !== "undefined") {
+        localStorage.setItem("was_logged_in", "true");
+      }
+
       let isProf = false;
       let hasSubscription = false;
       let hasCompany = false;
 
-      if (response?.sessionStatus) {
-        setSessionStatus(response.sessionStatus);
-        const st = response.sessionStatus;
-        if (st.user_created_at && st.user_last_sign_in_at) {
-          const created = new Date(st.user_created_at).getTime();
-          const lastSignIn = new Date(st.user_last_sign_in_at).getTime();
-          if (Math.abs(lastSignIn - created) < 5 * 60 * 1000) {
-            isNewUser = true;
-          }
-        }
+      const st = response?.sessionStatus || nextSessionStatus;
+      if (st) {
         isProf = !!st.is_professional;
         const sub = st.subscription;
         // Verificar suscripción real: el objeto subscription debe tener plan y status activo
@@ -236,41 +312,68 @@ export default function LoginPage({
       const needsPlan =
         typeof window !== "undefined" &&
         localStorage.getItem("show_plans_on_login") === "true";
+      const needsSetup =
+        typeof window !== "undefined" &&
+        (localStorage.getItem("show_setup_on_login") === "true" ||
+          Boolean(nextUser?.id && localStorage.getItem(`account_setup_step_${nextUser.id}`)));
       if (typeof window !== "undefined") {
         localStorage.removeItem("show_plans_on_login");
       }
 
+      // Intentar sincronizar sesión con la API de NestJS en segundo plano
+      try {
+        await refreshSession();
+      } catch (refreshErr) {
+        console.warn("refreshSession background warning:", refreshErr);
+      }
+
+      const checkoutReturnTo = checkoutReturnPath(window.location.search);
+      if (checkoutReturnTo) {
+        if (isModal) onClose?.();
+        router.replace(checkoutReturnTo);
+        return;
+      }
+      if (st?.requires_personal_name) {
+        if (isModal) onClose?.();
+        router.push(ROUTES.accountSetup);
+        return;
+      }
+
       if (isProf) {
         // 1. Es profesional sin suscripción → mostrar planes
-        // (NO llamamos refreshSession aquí porque el modal de planes maneja la navegación)
         if (!hasSubscription || needsPlan) {
           setShowPlanModal(true);
           return;
         }
 
-        // Para los casos 2 y 3, siempre refrescar la sesión primero
-        // para que el contexto de auth quede completamente actualizado
-        await refreshSession();
-
         // 2. Tiene suscripción pero no completó los datos de empresa → settings
         if (!hasCompany) {
           if (isModal) onClose?.();
-          router.push(`${ROUTES.settings}?missing_company=true`);
+          router.push(ROUTES.accountSetup);
           return;
         }
 
-        // 3. Tiene suscripción y empresa completa → normal
+        if (needsSetup) {
+          if (isModal) onClose?.();
+          router.push(ROUTES.accountSetup);
+          return;
+        }
+
+        // 3. Tiene suscripción y empresa completa → dashboard
         if (isModal) {
           onClose?.();
         } else {
-          router.push(isNewUser ? ROUTES.dashboard : ROUTES.home);
+          router.push(ROUTES.dashboard);
         }
         return;
       }
 
-      // Usuario normal: refrescar sesión y navegar
-      await refreshSession();
-
+      // Usuario normal: navegar a home
+      if (needsSetup) {
+        if (isModal) onClose?.();
+        router.push(ROUTES.accountSetup);
+        return;
+      }
       if (isModal) {
         onClose?.();
       } else {
@@ -287,6 +390,10 @@ export default function LoginPage({
 
   const formCard = (
     <div className="login-card">
+      <Link href={ROUTES.home} className="login-card__home-button" onClick={() => onClose?.()}>
+        <ArrowLeft size={18} aria-hidden="true" />
+        Volver al inicio
+      </Link>
       <h2 className="login-title">Bienvenido</h2>
       <p className="login-subtitle">
         Ingrese sus credenciales para acceder al panel.
@@ -294,15 +401,17 @@ export default function LoginPage({
 
       <form className="login-form" onSubmit={handleSubmit} noValidate>
         <div className="input-group">
-          <label htmlFor="email">CORREO ELECTRÓNICO</label>
+          <label htmlFor="email">EMAIL</label>
           <div className={`input-wrapper ${errors.email ? "has-error" : ""}`}>
             <input
               id="email"
               name="email"
               type="email"
+              autoCapitalize="none"
+              autoComplete="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="arquitecto@obsidian.pro"
+              placeholder="tu@email.com"
             />
             <span className="input-icon">@</span>
           </div>
@@ -339,8 +448,9 @@ export default function LoginPage({
               aria-label={
                 showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
               }
+              aria-pressed={showPassword}
             >
-              {showPassword ? "🔓" : "🔒"}
+              {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
             </button>
           </div>
           {errors.password && (
@@ -387,9 +497,11 @@ export default function LoginPage({
                 process.env.NEXT_PUBLIC_API_BASE_URL ||
                 API_BASE_URL ||
                 "http://localhost:3000";
-              const redirectTo = encodeURIComponent(
-                window.location.origin + "/dashboard?auth=success",
-              );
+              const checkoutReturnTo = checkoutReturnPath(window.location.search);
+              const callback = checkoutReturnTo
+                ? `/login?auth=success&redirect=${encodeURIComponent(checkoutReturnTo)}`
+                : "/dashboard?auth=success";
+              const redirectTo = encodeURIComponent(window.location.origin + callback);
               window.location.href = `${apiBase}/api/auth/login/google?redirectTo=${redirectTo}`;
             }}
           >
@@ -438,32 +550,7 @@ export default function LoginPage({
     </div>
   );
   // If showPlanModal is active, always render the plan selection (regardless of isModal mode)
-  if (showPlanModal) {
-    return (
-      <div
-        style={{
-          zIndex: 1000,
-          overflowY: "auto",
-          position: "fixed",
-          inset: 0,
-          backgroundColor: "var(--bg-color)",
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          padding: "var(--space-8) var(--space-4)",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "1040px",
-          }}
-        >
-          <RegisterPlanSelection />
-        </div>
-      </div>
-    );
-  }
+  if (showPlanModal) return <RegisterPlanSelection />;
 
   if (isModal) return formCard;
 

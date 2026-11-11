@@ -1,0 +1,1793 @@
+"use client";
+
+import { useCardPaymentConfig } from "@/hooks/useCardPaymentConfig";
+import { getCardConfig, tokenizePayway } from "@/services/cardPayments";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import {
+  ShoppingCart,
+  Trash2,
+  Plus,
+  Minus,
+  Store,
+  Truck,
+  MapPin,
+  Clock,
+  CreditCard,
+  QrCode,
+  ShieldCheck,
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+} from "lucide-react";
+import {
+  commerceService,
+  Cart,
+  CartItem,
+  DeliveryType,
+  Branch,
+  UserAddress,
+  UserPaymentMethod,
+  PayCloudQrResponse,
+  CalculateShippingResponse,
+} from "@/services/commerceService";
+import { useAlert } from "@/context/AlertContext";
+import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from "@/context/AuthModalContext";
+import Modal from "@/components/Modal/Modal";
+import CheckoutItemDetails from "@/components/CheckoutItemDetails/CheckoutItemDetails";
+import CheckoutFinancialCost from "@/components/CheckoutFinancialCost/CheckoutFinancialCost";
+import PaymentAddressCard from "@/components/PaymentAddressCard/PaymentAddressCard";
+import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
+import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
+import QrPaymentConfirmedModal from "@/components/QrPaymentConfirmedModal/QrPaymentConfirmedModal";
+import {
+  isQrPaymentConfirmed,
+  useQrPaymentStatus,
+} from "@/hooks/useQrPaymentStatus";
+import { calculateInstallmentFinancing } from "@/utils/installmentFinancing";
+import { ROUTES } from "@/routes/paths";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
+import { requestIdentityVerification } from "@/utils/identityVerification";
+import { getProfessionalDetailAction } from "@/app/actions/professionals";
+import {
+  clearGuestCart,
+  getGuestCart,
+  removeGuestCartItem,
+  updateGuestCartItem,
+} from "@/utils/guestCart";
+import "./CartSection.css";
+
+export default function CartSection() {
+  const token = getAccessToken();
+  setApiAccessToken(token);
+  const router = useRouter();
+  const { data: cardConfig } = useCardPaymentConfig();
+  const queryClient = useQueryClient();
+  const { user, isAgeVerified, loading: isAuthLoading } = useAuth();
+  const { openAuth } = useAuthModal();
+  const { showSuccess, showError, showAlert } = useAlert();
+
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("pickup");
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [billingAddressId, setBillingAddressId] = useState("");
+  const [billingAddressComplete, setBillingAddressComplete] = useState(false);
+  const [shippingCost, setShippingCost] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState("");
+  const [shippingQuote, setShippingQuote] =
+    useState<CalculateShippingResponse | null>(null);
+  const [quotedFor, setQuotedFor] = useState("");
+  const [deliveryCapacityError, setDeliveryCapacityError] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "paycloud_qr">(
+    "paycloud_qr",
+  );
+  const [selectedCardId, setSelectedCardId] = useState("");
+  const [paywayInput, setPaywayInput] = useState({
+    number: "",
+    holder: "",
+    dni: "",
+    expiry: "",
+    cvv: "",
+    type: "credit" as "credit" | "debit",
+  });
+  const [savePaywayCard, setSavePaywayCard] = useState(false);
+  const [installments, setInstallments] = useState(1);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [activeQrData, setActiveQrData] = useState<PayCloudQrResponse | null>(
+    null,
+  );
+  const [qrTimerSeconds, setQrTimerSeconds] = useState(900); // 15 min
+  const [qrPaymentConfirmed, setQrPaymentConfirmed] = useState(false);
+  const { data: qrOrder } = useQrPaymentStatus(
+    activeQrData?.order_id,
+    qrModalOpen,
+  );
+
+  useEffect(() => {
+    if (!qrModalOpen || !activeQrData || !isQrPaymentConfirmed(qrOrder?.status))
+      return;
+    setQrModalOpen(false);
+    setActiveQrData(null);
+    setQrPaymentConfirmed(true);
+    if (user) {
+      commerceService.clearCart().catch(() => undefined);
+    } else {
+      clearGuestCart();
+    }
+    queryClient.invalidateQueries({ queryKey: ["user-cart"] });
+  }, [activeQrData, qrModalOpen, qrOrder?.status, queryClient, user]);
+  const isMigratingGuestCart = useRef(false);
+  const checkoutStartedRef = useRef(false);
+
+  const {
+    data: cart,
+    isLoading: isCartLoading,
+    isFetching: isCartFetching,
+    isError,
+    refetch: refetchCart,
+  } = useQuery<Cart>({
+    queryKey: ["user-cart", user?.id ?? "guest"],
+    queryFn: () => (user ? commerceService.cart() : getGuestCart()),
+    enabled: !isAuthLoading,
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
+  const items = useMemo(() => cart?.items ?? [], [cart?.items]);
+  const merchantId = cart?.professional_id;
+  const hasService = items.some((item) =>
+    Boolean(item.service_id || item.service),
+  );
+  const serviceLocationGroups = items
+    .filter((item) => item.service?.service_location_ids?.length)
+    .map((item) => item.service!.service_location_ids!);
+  const requiresServiceLocation = serviceLocationGroups.length > 0;
+  const allowedServiceLocationIds = requiresServiceLocation
+    ? serviceLocationGroups.reduce(
+        (common, ids) => common.filter((id) => ids.includes(id)),
+        serviceLocationGroups[0],
+      )
+    : [];
+  const { data: merchant } = useQuery({
+    queryKey: ["cart-merchant", merchantId],
+    queryFn: async () => {
+      const result = await getProfessionalDetailAction({ id: merchantId! });
+      return result?.data ?? null;
+    },
+    enabled: Boolean(merchantId),
+    staleTime: 1000 * 60 * 10,
+  });
+  const merchantCompanyData =
+    merchant?.Companies ??
+    merchant?.Company ??
+    merchant?.companies ??
+    merchant?.company;
+  const merchantCompany = Array.isArray(merchantCompanyData)
+    ? merchantCompanyData[0]
+    : merchantCompanyData;
+  const merchantName =
+    merchantCompany?.name?.trim() ||
+    items[0]?.service?.professional?.commercial_name?.trim() ||
+    items[0]?.service?.professional?.name?.trim() ||
+    items[0]?.product?.professional?.commercial_name?.trim() ||
+    items[0]?.product?.professional?.name?.trim() ||
+    merchant?.Profile?.display_name?.trim() ||
+    (hasService ? "Profesional" : "Comercio");
+  const hasFinancedService = items.some((item) =>
+    item.service
+      ? !item.service.installments_enabled &&
+        !item.service.category?.no_installments
+      : !item.professional_product?.installments_enabled,
+  );
+  const { data: commissionRates = [] } = useQuery({
+    queryKey: ["public-marketplace-commissions"],
+    queryFn: commerceService.publicCommissions,
+    enabled: hasService,
+    staleTime: 1000 * 60 * 5,
+  });
+  const activeDeliveryType: DeliveryType = hasService
+    ? "coordinate_with_merchant"
+    : deliveryType;
+
+  // Fetch branches for merchant if pickup selected
+  const { data: rawBranches } = useQuery({
+    queryKey: ["merchant-branches", merchantId],
+    queryFn: () => commerceService.professionalLocations(merchantId!),
+    enabled: Boolean(merchantId) && (!hasService || requiresServiceLocation),
+  });
+
+  const branches = useMemo<Branch[]>(() => {
+    if (Array.isArray(rawBranches)) return rawBranches;
+    if (Array.isArray((rawBranches as any)?.data)) {
+      return (rawBranches as any).data;
+    }
+    if (Array.isArray((rawBranches as any)?.items)) {
+      return (rawBranches as any).items;
+    }
+    return [];
+  }, [rawBranches]);
+  const serviceBranches = requiresServiceLocation
+    ? branches.filter((branch) => allowedServiceLocationIds.includes(branch.id))
+    : [];
+  const productListingIds = [
+    ...new Set(
+      items
+        .map((item) => item.professional_product_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const { data: branchInventory, isError: inventoryError } = useQuery({
+    queryKey: ["cart-branch-stock", productListingIds.join(",")],
+    queryFn: async () =>
+      Object.fromEntries(
+        await Promise.all(
+          productListingIds.map(
+            async (id) =>
+              [id, await commerceService.productBranchStock(id)] as const,
+          ),
+        ),
+      ),
+    enabled: productListingIds.length > 0,
+    staleTime: 0,
+  });
+  const stockAt = (item: (typeof items)[number], branch: Branch) => {
+    const rows = branchInventory?.[item.professional_product_id!];
+    if (!rows) return 0;
+    if (!rows.length) return 0;
+    return (
+      rows.find((row) =>
+        branch.is_main
+          ? row.origin_address_id === branch.address_id
+          : row.branch_id === branch.id,
+      )?.stock ?? 0
+    );
+  };
+  const hasBranchStock = (branch: Branch) =>
+    items
+      .filter((item) => item.professional_product_id)
+      .every((item) => stockAt(item, branch) >= item.quantity);
+  const branchStockLabel = (branch: Branch) =>
+    items
+      .filter((item) => item.professional_product_id)
+      .map(
+        (item) =>
+          `${item.product?.name || "Producto"}: ${stockAt(item, branch)} disponibles`,
+      )
+      .join(" · ");
+
+  const { data: userAddresses = [] } = useQuery<UserAddress[]>({
+    queryKey: ["user-addresses", user?.id],
+    queryFn: () => commerceService.getUserAddresses(),
+    enabled: Boolean(user),
+  });
+  const { data: savedCards = [] } = useQuery<UserPaymentMethod[]>({
+    queryKey: ["user-payment-methods", user?.id],
+    queryFn: () => commerceService.getUserPaymentMethods(),
+    enabled: Boolean(user),
+    select: (cards: UserPaymentMethod[]) =>
+      cards.filter(
+        (card) => (card.provider || "getnet") === cardConfig?.provider,
+      ),
+  });
+  useEffect(() => {
+    if (!selectedCardId && savedCards.length) {
+      setSelectedCardId(
+        (savedCards.find((card) => card.is_default) || savedCards[0]).id,
+      );
+    }
+  }, [selectedCardId, savedCards]);
+
+  useEffect(() => {
+    const available = userAddresses.filter(
+      (address) => address.latitude != null && address.longitude != null,
+    );
+    if (!available.some((address) => address.id === selectedAddressId)) {
+      setSelectedAddressId(
+        (available.find((address) => address.is_default) || available[0])?.id ||
+          "",
+      );
+    }
+  }, [selectedAddressId, userAddresses]);
+
+  useEffect(() => {
+    if (!user?.id || isMigratingGuestCart.current) return;
+
+    const guestCart = getGuestCart();
+    if (guestCart.items.length === 0) return;
+
+    isMigratingGuestCart.current = true;
+
+    const migrateGuestCart = async () => {
+      try {
+        let updatedCart: Cart | null = null;
+
+        for (const item of guestCart.items) {
+          const productReference = {
+            product_id: item.product_id || undefined,
+            professional_product_id: item.professional_product_id || undefined,
+          };
+
+          updatedCart = await commerceService.addCartItem({
+            ...productReference,
+            service_id: item.service_id || undefined,
+            quantity: item.quantity,
+          });
+        }
+
+        clearGuestCart();
+        if (updatedCart) {
+          queryClient.setQueryData(["user-cart", user.id], updatedCart);
+        } else {
+          await queryClient.invalidateQueries({
+            queryKey: ["user-cart", user.id],
+          });
+        }
+      } catch (err: any) {
+        const rawMsg =
+          err?.response?.data?.message || err?.data?.message || err?.message;
+        const msg = Array.isArray(rawMsg)
+          ? rawMsg.join(". ")
+          : rawMsg ||
+            "Iniciaste sesión, pero no pudimos transferir tu carrito. Intentá nuevamente.";
+        showError(msg);
+      } finally {
+        isMigratingGuestCart.current = false;
+      }
+    };
+
+    void migrateGuestCart();
+  }, [queryClient, showError, user?.id]);
+
+  useEffect(() => {
+    if (hasService) {
+      if (
+        requiresServiceLocation &&
+        selectedBranchId &&
+        !serviceBranches.some((branch) => branch.id === selectedBranchId)
+      ) {
+        setSelectedBranchId("");
+      }
+      return;
+    }
+    const current = branches.find((branch) => branch.id === selectedBranchId);
+    const canUse = (branch: Branch) =>
+      hasBranchStock(branch) &&
+      (deliveryType === "pickup"
+        ? branch.is_pickup_point
+        : deliveryType === "coordinate_with_merchant" ||
+          branch.is_open !== false ||
+          branch.own_riders_available);
+    if ((!current || !canUse(current)) && branches.length) {
+      const available = branches.find(canUse);
+      setSelectedBranchId(available?.id || "");
+    }
+  }, [
+    branches,
+    selectedBranchId,
+    deliveryType,
+    hasService,
+    requiresServiceLocation,
+    serviceBranches,
+    branchInventory,
+    items,
+  ]);
+
+  const selectedBranch = branches.find(
+    (branch) => branch.id === selectedBranchId,
+  );
+  const originSelection = selectedBranch?.is_main
+    ? { origin_address_id: selectedBranch.address_id ?? undefined }
+    : { branch_id: selectedBranchId || undefined };
+  const quoteKey = JSON.stringify({
+    installments: paymentMethod === "card" ? installments : 1,
+    items: items.map((item) => [item.id, item.quantity]),
+    selectedAddressId,
+    selectedBranchId,
+  });
+  const currentCapacityError =
+    deliveryCapacityError?.key === quoteKey
+      ? deliveryCapacityError.message
+      : null;
+  const latestQuoteKey = useRef(quoteKey);
+  latestQuoteKey.current = quoteKey;
+
+  // Mutations
+  const updateQtyMutation = useMutation({
+    mutationFn: ({ id, qty }: { id: string; qty: number }) =>
+      user
+        ? commerceService.updateCartItem(id, qty)
+        : Promise.resolve(updateGuestCartItem(id, qty)),
+    onSuccess: (updatedCart) => {
+      queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo actualizar la cantidad."),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (id: string) =>
+      user
+        ? commerceService.removeCartItem(id)
+        : Promise.resolve(removeGuestCartItem(id)),
+    onSuccess: (updatedCart) => {
+      showSuccess("Artículo eliminado del carrito.");
+      queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
+      if (user) {
+        void queryClient.invalidateQueries({
+          queryKey: ["user-cart", user.id],
+        });
+      }
+    },
+    onError: (error: Error) =>
+      showError(
+        error.message || "No se pudo eliminar el artículo del carrito.",
+      ),
+  });
+
+  const clearCartMutation = useMutation({
+    mutationFn: () =>
+      user ? commerceService.clearCart() : Promise.resolve(clearGuestCart()),
+    onSuccess: (updatedCart) => {
+      showSuccess("Carrito vaciado.");
+      if (user) {
+        void queryClient.invalidateQueries({
+          queryKey: ["user-cart", user.id],
+        });
+      } else {
+        queryClient.setQueryData(["user-cart", "guest"], updatedCart);
+      }
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo vaciar el carrito."),
+  });
+
+  const calculateShippingMutation = useMutation({
+    mutationFn: (_requestedKey: string) => {
+      const products = items.filter((item) => item.professional_product_id);
+      if (!products.length || !selectedAddressId || !selectedBranch) {
+        throw new Error("Seleccioná una sucursal y una dirección de entrega.");
+      }
+      return commerceService.calculateShipping({
+        items: products.map((item) => ({
+          professional_product_id: item.professional_product_id!,
+          quantity: item.quantity,
+        })),
+        delivery_type: "shipment",
+        installments: paymentMethod === "card" ? installments : 1,
+        delivery_address_id: selectedAddressId,
+        ...originSelection,
+      });
+    },
+    onSuccess: (res, requestedKey) => {
+      if (requestedKey !== latestQuoteKey.current) return;
+      setDeliveryCapacityError(null);
+      setShippingCost(res.shippingCost);
+      setEstimatedTime(res.delivery_estimate || "");
+      setShippingQuote(res);
+      setQuotedFor(requestedKey);
+      showSuccess("Costo de envío calculado.");
+    },
+    onError: (error, requestedKey) => {
+      if (requestedKey !== latestQuoteKey.current) return;
+      setQuotedFor("");
+      setShippingQuote(null);
+      const details = error as {
+        data?: { error_code?: string; message?: string };
+        response?: { data?: { error_code?: string; message?: string } };
+      };
+      const problem = details.data ?? details.response?.data;
+      if (problem?.error_code === "DELIVERY_CAPACITY_UNAVAILABLE") {
+        const message =
+          problem.message ||
+          "Este pedido supera la capacidad de los vehículos disponibles.";
+        setDeliveryCapacityError({ key: requestedKey, message });
+        setDeliveryType("pickup");
+        showError(message);
+      } else {
+        showError("No se pudo calcular el envío para esta dirección.");
+      }
+    },
+  });
+
+  // Keep the quote current as quantities change, including while pickup is selected.
+  // This lets buyers see when their cart reaches the free home-delivery minimum.
+  useEffect(() => {
+    if (
+      hasService ||
+      deliveryType === "coordinate_with_merchant" ||
+      !merchantId ||
+      !selectedBranch ||
+      !selectedAddressId ||
+      !items.some((item) => item.professional_product_id)
+    ) {
+      setQuotedFor("");
+      setShippingQuote(null);
+      return;
+    }
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      try {
+        const quote = await commerceService.calculateShipping({
+          items: items
+            .filter((item) => item.professional_product_id)
+            .map((item) => ({
+              professional_product_id: item.professional_product_id!,
+              quantity: item.quantity,
+            })),
+          delivery_type: "shipment",
+          installments: paymentMethod === "card" ? installments : 1,
+          delivery_address_id: selectedAddressId,
+          ...(selectedBranch.is_main
+            ? { origin_address_id: selectedBranch.address_id ?? undefined }
+            : { branch_id: selectedBranchId }),
+        });
+        if (!active) return;
+        setShippingCost(quote.shippingCost);
+        setEstimatedTime(quote.delivery_estimate || "");
+        setShippingQuote(quote);
+        setQuotedFor(quoteKey);
+        setDeliveryCapacityError(null);
+      } catch (error) {
+        if (!active) return;
+        setQuotedFor("");
+        setShippingQuote(null);
+        const details = error as {
+          data?: { error_code?: string; message?: string };
+          response?: { data?: { error_code?: string; message?: string } };
+        };
+        const problem = details.data ?? details.response?.data;
+        if (problem?.error_code === "DELIVERY_CAPACITY_UNAVAILABLE") {
+          setDeliveryCapacityError({
+            key: quoteKey,
+            message:
+              problem.message ||
+              "Este pedido supera la capacidad de los vehículos disponibles.",
+          });
+          setDeliveryType("pickup");
+        }
+      }
+    }, 400);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [
+    hasService,
+    deliveryType,
+    merchantId,
+    selectedBranch,
+    selectedBranchId,
+    selectedAddressId,
+    items,
+    quoteKey,
+    paymentMethod,
+    installments,
+  ]);
+
+  const checkoutMutation = useMutation({
+    mutationFn: async () => {
+      let cardData = {};
+      let refreshPayment: (() => ReturnType<typeof tokenizePayway>) | undefined;
+      let paymentAddressId: string | undefined;
+      if (paymentMethod === "card") {
+        const config = await getCardConfig();
+        const saved = savedCards.find((card) => card.id === selectedCardId);
+        if (config.provider === "payway") {
+          if (!billingAddressId || !billingAddressComplete)
+            throw new Error(
+              "Seleccioná o completá la dirección del comprador antes de pagar.",
+            );
+          paymentAddressId = billingAddressId;
+          refreshPayment = () => tokenizePayway(config, paywayInput, saved);
+          cardData = {
+            ...(await refreshPayment()),
+            save_card: !saved && savePaywayCard,
+          };
+        } else if (!saved || (saved.provider || "getnet") !== "getnet") {
+          throw new Error("Seleccioná una tarjeta guardada.");
+        }
+      }
+      return commerceService.checkout(
+        {
+          professional_id: merchantId!,
+          items: items.map((item) => ({
+            professional_product_id: item.professional_product_id || undefined,
+            service_id: item.service_id || undefined,
+            quantity: item.quantity,
+          })),
+          delivery_type: activeDeliveryType,
+          billing_address_id: paymentAddressId,
+          ...(!hasService || requiresServiceLocation ? originSelection : {}),
+          delivery_address_id:
+            activeDeliveryType === "shipment" ||
+            activeDeliveryType === "coordinate_with_merchant"
+              ? selectedAddressId || undefined
+              : undefined,
+          schedule_for_next_day:
+            activeDeliveryType === "shipment" &&
+            quotedFor === quoteKey &&
+            shippingQuote?.requires_scheduled_delivery
+              ? true
+              : undefined,
+          payment_method: paymentMethod,
+          card_token:
+            paymentMethod === "card"
+              ? (savedCards.find((card) => card.id === selectedCardId)
+                  ?.getnet_card_token ?? undefined)
+              : undefined,
+          installments: paymentMethod === "card" ? installments : 1,
+          expected_total_amount: total,
+          ...cardData,
+        },
+        { refreshPayment },
+      );
+    },
+    onSuccess: async (res) => {
+      if (paymentMethod === "paycloud_qr" && res.qr) {
+        setActiveQrData(res.qr);
+        setQrTimerSeconds(900);
+        setQrModalOpen(true);
+      } else {
+        if (user) {
+          try {
+            await commerceService.clearCart();
+          } catch {
+            // El backend también borra los productos del carrito al confirmar el pago
+          }
+        } else {
+          clearGuestCart();
+        }
+        queryClient.setQueryData(["user-cart", user?.id ?? "guest"], {
+          id: "",
+          user_id: user?.id ?? "",
+          items: [],
+          subtotal: 0,
+          total: 0,
+          item_count: 0,
+        });
+        queryClient.invalidateQueries({ queryKey: ["user-cart"] });
+        showSuccess(
+          res.payment_status === "approved"
+            ? "¡Pago procesado con éxito!"
+            : "Estamos verificando tu pago. Consultá Mis Compras sin volver a pagar.",
+        );
+        router.push(`${ROUTES.dashboard}?view=purchases`);
+      }
+    },
+    onError: (error) => {
+      checkoutStartedRef.current = false;
+      const checkoutError = error as Error & {
+        data?: { error_code?: string; order_id?: string };
+      };
+      if (checkoutError.data?.error_code === "CHECKOUT_REQUIRES_VERIFICATION") {
+        const orderId = checkoutError.data.order_id;
+        showAlert({
+          type: "warning",
+          title: "Estamos verificando tu pago",
+          message:
+            "Consultá el estado de tu pedido en Mis Compras. No vuelvas a pagar mientras se confirma.",
+          confirmText: "Ir a Mis Compras",
+          onConfirm: () =>
+            router.push(
+              `${ROUTES.dashboard}?view=purchases${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`,
+            ),
+        });
+        return;
+      }
+      showError(error.message || "No se pudo procesar el pago.");
+    },
+  });
+
+  // QR Timer countdown
+  useEffect(() => {
+    if (!qrModalOpen || qrTimerSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setQrTimerSeconds((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [qrModalOpen, qrTimerSeconds]);
+
+  // Match the installment limits and financing rates enforced by checkout.
+  const hasPerishable = items.some(
+    (i) =>
+      i.product?.is_food_perishable ||
+      i.product?.category?.is_food ||
+      i.product?.category?.no_installments ||
+      i.product?.subCategory?.is_food ||
+      i.product?.subCategory?.no_installments,
+  );
+  const maxInstallments = hasPerishable
+    ? 1
+    : items.length > 0
+      ? Math.min(
+          ...items.map((item) =>
+            item.service
+              ? item.service.category?.no_installments
+                ? 1
+                : item.service.installments_enabled
+                  ? Number(item.service.max_installments || 1)
+                  : 18
+              : item.professional_product?.installments_enabled
+                ? Number(item.professional_product.max_installments || 1)
+                : 18,
+          ),
+        )
+      : 12;
+  const availableInstallments = [1, 2, 3, 6, 9, 12, 18].filter(
+    (count) =>
+      count <= maxInstallments &&
+      (count === 1 ||
+        !hasFinancedService ||
+        (commissionRates.some((rate) => Number(rate.installments) === count) &&
+          items.every(
+            (item) =>
+              (item.service
+                ? item.service.installments_enabled
+                : item.professional_product?.installments_enabled) ||
+              calculateInstallmentFinancing(
+                item.subtotal || 0,
+                count,
+                commissionRates,
+              ) !== null,
+          ))),
+  );
+  const financingSurcharge =
+    paymentMethod === "card" && installments > 1
+      ? items.reduce((sum, item) => {
+          if (
+            item.service
+              ? item.service.installments_enabled
+              : item.professional_product?.installments_enabled
+          )
+            return sum;
+          const quote = calculateInstallmentFinancing(
+            item.subtotal || 0,
+            installments,
+            commissionRates,
+          );
+          return sum + (quote ? quote.totalAmount - (item.subtotal || 0) : 0);
+        }, 0)
+      : 0;
+  useEffect(() => {
+    if (
+      installments > maxInstallments ||
+      (installments > 1 &&
+        hasFinancedService &&
+        !commissionRates.some(
+          (rate) => Number(rate.installments) === installments,
+        ))
+    ) {
+      setInstallments(1);
+    }
+  }, [installments, maxInstallments, hasFinancedService, commissionRates]);
+
+  const subtotal = items.reduce((acc, curr) => acc + (curr.subtotal || 0), 0);
+  const total =
+    subtotal +
+    financingSurcharge +
+    (activeDeliveryType === "shipment" && quotedFor === quoteKey
+      ? shippingCost
+      : 0);
+
+  const handleCheckout = () => {
+    if (checkoutStartedRef.current || checkoutMutation.isPending) return;
+    if (
+      productListingIds.length &&
+      (inventoryError || !selectedBranch || !hasBranchStock(selectedBranch))
+    ) {
+      showError(
+        "Elegí una sucursal con stock disponible para todos los productos.",
+      );
+      return;
+    }
+    if (!user) {
+      openAuth("login");
+      return;
+    }
+    if (!isAgeVerified) {
+      requestIdentityVerification();
+      return;
+    }
+
+    if (
+      !hasService &&
+      (!selectedBranch ||
+        (activeDeliveryType === "pickup" && !selectedBranch.is_pickup_point) ||
+        (activeDeliveryType === "shipment" &&
+          selectedBranch.is_open === false &&
+          !selectedBranch.own_riders_available))
+    ) {
+      showError("Seleccioná una sucursal disponible para el retiro o envío.");
+      return;
+    }
+    if (
+      requiresServiceLocation &&
+      (!selectedBranch ||
+        !serviceBranches.some((branch) => branch.id === selectedBranch.id))
+    ) {
+      showError(
+        "Seleccioná una sucursal disponible para realizar el servicio.",
+      );
+      return;
+    }
+    if (activeDeliveryType === "shipment" && quotedFor !== quoteKey) {
+      showError(
+        "Calculá el costo de envío con la sucursal y dirección elegidas.",
+      );
+      return;
+    }
+    if (paymentMethod === "card" && !cardConfig) {
+      showError(
+        "No se pudo obtener el proveedor de tarjetas. Actualizá la página.",
+      );
+      return;
+    }
+    if (
+      paymentMethod === "card" &&
+      cardConfig?.provider === "getnet" &&
+      !savedCards.find((card) => card.id === selectedCardId)?.getnet_card_token
+    ) {
+      showError("Seleccioná una tarjeta guardada para pagar");
+      return;
+    }
+    if (
+      paymentMethod === "card" &&
+      !availableInstallments.includes(installments)
+    ) {
+      showError("No hay una tasa vigente para las cuotas seleccionadas.");
+      return;
+    }
+    checkoutStartedRef.current = true;
+    checkoutMutation.mutate();
+  };
+
+  return (
+    <div className="cart-section">
+      <header className="cart-section__header">
+        <div>
+          <span className="cart-section__subtitle">Paso Final</span>
+          <h1 className="cart-section__title">Carrito de Compras</h1>
+        </div>
+        {items.length > 0 && (
+          <button
+            type="button"
+            className="cart-clear-btn"
+            onClick={() => clearCartMutation.mutate()}
+          >
+            <Trash2 size={16} />
+            <span>Vaciar carrito</span>
+          </button>
+        )}
+      </header>
+
+      {/* Cart Content or States */}
+      {isCartLoading || (isCartFetching && items.length === 0) ? (
+        <div className="cart-state cart-state--loading">
+          <Clock className="cart-state__spinner" size={32} />
+          <p>Cargando carrito...</p>
+        </div>
+      ) : isError ? (
+        <div className="cart-state cart-state--error">
+          <AlertCircle size={32} />
+          <p>Error al sincronizar tu carrito.</p>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => refetchCart()}
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="cart-state cart-state--empty">
+          <ShoppingCart size={52} />
+          <h3>Tu carrito está vacío</h3>
+          <p>Explorá el catálogo de comercios y sumá tus artículos deseados.</p>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => router.push(ROUTES.home)}
+          >
+            Explorar comercios
+          </button>
+        </div>
+      ) : (
+        <div className="cart-layout">
+          {/* Items Column */}
+          <div className="cart-items-column">
+            {/* Merchant Banner notice */}
+            <div className="merchant-group-banner">
+              <Store size={18} />
+              <span>
+                {hasService ? "Contratando a" : "Comprando en"}{" "}
+                <strong>{merchantName}</strong>.{" "}
+                {hasService
+                  ? "El profesional se comunicará para acordar los detalles del servicio."
+                  : "Cada pedido se procesa individualmente por comercio para asegurar el despacho."}
+              </span>
+            </div>
+
+            <div className="cart-items-list">
+              {items.map((item) => {
+                const name =
+                  item.product?.name || item.service?.name || "Artículo";
+                const img = item.product?.image_url;
+                const unitPrice =
+                  item.unit_price ??
+                  item.product?.price ??
+                  item.service?.price ??
+                  0;
+                const isServiceItem = Boolean(item.service_id || item.service);
+                const itemStock =
+                  item.professional_product?.stock ?? item.product?.stock;
+
+                return (
+                  <div key={item.id} className="cart-item-card">
+                    <div className="cart-item-card__main">
+                      {img ? (
+                        <img src={img} alt={name} className="cart-item-thumb" />
+                      ) : (
+                        <div className="cart-item-no-thumb">
+                          <ShoppingCart size={20} />
+                        </div>
+                      )}
+
+                      <div className="cart-item-info">
+                        <h4 className="cart-item-name">{name}</h4>
+                        <CheckoutItemDetails
+                          product={item.product}
+                          description={item.service?.description}
+                        />
+                        <span className="cart-item-unit-price">
+                          ${unitPrice.toLocaleString("es-AR")}
+                          {isServiceItem ? " por servicio" : " c/u"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="cart-item-card__actions">
+                      {isServiceItem ? (
+                        <span className="cart-item-card__service-label">
+                          Servicio
+                        </span>
+                      ) : (
+                        <div className="cart-qty-control">
+                          <button
+                            type="button"
+                            className="qty-btn"
+                            disabled={
+                              item.quantity <= 1 || updateQtyMutation.isPending
+                            }
+                            onClick={() =>
+                              updateQtyMutation.mutate({
+                                id: item.id,
+                                qty: item.quantity - 1,
+                              })
+                            }
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="qty-value">{item.quantity}</span>
+                          <button
+                            type="button"
+                            className="qty-btn"
+                            disabled={
+                              updateQtyMutation.isPending ||
+                              (itemStock != null && item.quantity >= itemStock)
+                            }
+                            onClick={() =>
+                              updateQtyMutation.mutate({
+                                id: item.id,
+                                qty: item.quantity + 1,
+                              })
+                            }
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="cart-item-subtotal">
+                        ${item.subtotal.toLocaleString("es-AR")}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="cart-item-delete"
+                        title="Eliminar"
+                        disabled={removeMutation.isPending}
+                        onClick={() => removeMutation.mutate(item.id)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Delivery Method Selector */}
+            <div className="cart-delivery-box">
+              <h3 className="cart-box-title">Método de Entrega</h3>
+              <div className="delivery-options-grid">
+                {!hasService ? (
+                  <>
+                    <button
+                      type="button"
+                      className={`delivery-option ${
+                        deliveryType === "pickup"
+                          ? "delivery-option--active"
+                          : ""
+                      }`}
+                      onClick={() => setDeliveryType("pickup")}
+                    >
+                      <Store size={20} />
+                      <div>
+                        <strong>Retiro en sucursal</strong>
+                        <p>Gratis • Retiro inmediato al estar listo</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={Boolean(currentCapacityError)}
+                      className={`delivery-option ${
+                        deliveryType === "shipment"
+                          ? "delivery-option--active"
+                          : ""
+                      }`}
+                      onClick={() => setDeliveryType("shipment")}
+                    >
+                      <Truck size={20} />
+                      <div>
+                        <strong>Envío a domicilio</strong>
+                        <p>
+                          {currentCapacityError
+                            ? "No disponible para este peso o volumen"
+                            : "Por rider o transporte asignado"}
+                        </p>
+                      </div>
+                    </button>
+                  </>
+                ) : null}
+
+                <button
+                  type="button"
+                  className={`delivery-option ${
+                    activeDeliveryType === "coordinate_with_merchant"
+                      ? "delivery-option--active"
+                      : ""
+                  } ${hasService ? "delivery-option--service" : ""}`}
+                  onClick={() => setDeliveryType("coordinate_with_merchant")}
+                >
+                  <Clock size={20} />
+                  <div>
+                    <strong>
+                      {hasService && requiresServiceLocation
+                        ? "Servicio en sucursal"
+                        : "Acordar con vendedor"}
+                    </strong>
+                    <p>
+                      {hasService
+                        ? requiresServiceLocation
+                          ? "Elegí la sucursal donde se realizará el servicio"
+                          : "El profesional se comunicará para coordinar el servicio"
+                        : "Para coordinar logística particular"}
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              {currentCapacityError && !hasService && (
+                <p className="no-branches-warning" role="status">
+                  {currentCapacityError}
+                </p>
+              )}
+
+              {hasService && requiresServiceLocation && (
+                <div className="delivery-details-subbox">
+                  <label className="commercial-label" htmlFor="service-branch">
+                    Sucursal donde se realizará el servicio
+                  </label>
+                  {serviceBranches.length === 0 ? (
+                    <p className="no-branches-warning">
+                      Los servicios del carrito no tienen una sucursal
+                      disponible en común.
+                    </p>
+                  ) : (
+                    <select
+                      id="service-branch"
+                      className="branch-select"
+                      value={selectedBranchId}
+                      onChange={(event) =>
+                        setSelectedBranchId(event.target.value)
+                      }
+                    >
+                      <option value="">Seleccionar sucursal</option>
+                      {serviceBranches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name} — {branch.street_name}{" "}
+                          {branch.street_number}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {deliveryType === "coordinate_with_merchant" &&
+                !requiresServiceLocation && (
+                  <div className="delivery-details-subbox">
+                    <label className="commercial-label">
+                      Dirección del destinatario
+                    </label>
+                    <select
+                      className="branch-select"
+                      value={selectedAddressId}
+                      onChange={(event) =>
+                        setSelectedAddressId(event.target.value)
+                      }
+                    >
+                      <option value="">Seleccionar dirección guardada</option>
+                      {userAddresses.map((address) => (
+                        <option key={address.id} value={address.id}>
+                          {address.name ||
+                            address.street_name ||
+                            address.street}{" "}
+                          {address.street_number || address.number}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+              {/* Pickup branch selection */}
+              {!hasService && deliveryType === "coordinate_with_merchant" && (
+                <div className="delivery-details-subbox">
+                  <label className="commercial-label">Sucursal de origen</label>
+                  <select
+                    className="branch-select"
+                    value={selectedBranchId}
+                    onChange={(event) =>
+                      setSelectedBranchId(event.target.value)
+                    }
+                  >
+                    <option value="">Seleccionar sucursal</option>
+                    {branches.map((branch) => (
+                      <option
+                        key={branch.id}
+                        value={branch.id}
+                        disabled={!hasBranchStock(branch)}
+                      >
+                        {branch.name} · {branchStockLabel(branch)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {!hasService && deliveryType === "pickup" && (
+                <div className="delivery-details-subbox">
+                  <label className="commercial-label">
+                    Seleccionar sucursal de retiro:
+                  </label>
+                  {branches.filter((branch) => branch.is_pickup_point)
+                    .length === 0 ? (
+                    <p className="no-branches-warning">
+                      El comercio no tiene sucursales cargadas aún. Se
+                      coordinará por mensajería.
+                    </p>
+                  ) : (
+                    <select
+                      className="branch-select"
+                      value={selectedBranchId}
+                      onChange={(e) => setSelectedBranchId(e.target.value)}
+                    >
+                      {branches
+                        .filter((branch) => branch.is_pickup_point)
+                        .map((b) => (
+                          <option
+                            key={b.id}
+                            value={b.id}
+                            disabled={!hasBranchStock(b)}
+                          >
+                            {b.name} — {b.street_name} {b.street_number} (
+                            {b.opening_hours || "Horario comercial"})
+                            {` · ${branchStockLabel(b)}`}
+                            {b.delivery_eta_minutes
+                              ? ` · Demora ${b.delivery_eta_minutes} min`
+                              : ""}
+                          </option>
+                        ))}
+                    </select>
+                  )}
+                  {selectedBranch?.is_open === false && (
+                    <p>
+                      Podés comprar ahora y retirar el pedido cuando te
+                      convenga.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!hasService && activeDeliveryType === "coordinate_with_merchant" && (
+                <p>El plazo y la forma de entrega se acuerdan directamente con el vendedor. No se aplica la demora de delivery de la sucursal.</p>
+              )}
+              {!hasService && activeDeliveryType === "pickup" && (
+                <PickupDeadlineWarning />
+              )}
+
+              {/* Shipping address & calculator */}
+              {!hasService && deliveryType === "shipment" && (
+                <div className="delivery-details-subbox">
+                  <label className="commercial-label">Sucursal de origen</label>
+                  <select
+                    className="branch-select"
+                    value={selectedBranchId}
+                    onChange={(event) =>
+                      setSelectedBranchId(event.target.value)
+                    }
+                  >
+                    {branches
+                      .filter(
+                        (branch) =>
+                          branch.is_open !== false ||
+                          branch.own_riders_available,
+                      )
+                      .map((branch) => (
+                        <option
+                          key={branch.id}
+                          value={branch.id}
+                          disabled={!hasBranchStock(branch)}
+                        >
+                          {branch.name}
+                          {` · ${branchStockLabel(branch)}`}
+                          {branch.delivery_eta_minutes
+                            ? ` · Demora ${branch.delivery_eta_minutes} min`
+                            : ""}
+                          {branch.is_open === false ? " · Envío mañana" : ""}
+                        </option>
+                      ))}
+                  </select>
+                  {selectedBranch?.delivery_eta_minutes != null && (
+                    <p>
+                      {selectedBranch.is_open === false
+                        ? "Sucursal Cerrada - Demora estimada desde el despacho de mañana"
+                        : "Demora estimada de esta sucursal"}
+                      : {selectedBranch.delivery_eta_minutes} minutos.
+                    </p>
+                  )}
+                  <label className="commercial-label">
+                    Dirección de entrega
+                  </label>
+                  <select
+                    className="branch-select"
+                    value={selectedAddressId}
+                    onChange={(event) =>
+                      setSelectedAddressId(event.target.value)
+                    }
+                  >
+                    <option value="">Seleccionar dirección guardada</option>
+                    {userAddresses
+                      .filter(
+                        (address) =>
+                          address.latitude != null && address.longitude != null,
+                      )
+                      .map((address) => (
+                        <option key={address.id} value={address.id}>
+                          {address.name ||
+                            address.street_name ||
+                            address.street}{" "}
+                          {address.street_number || address.number}
+                        </option>
+                      ))}
+                  </select>
+                  {!userAddresses.some(
+                    (address) =>
+                      address.latitude != null && address.longitude != null,
+                  ) && (
+                    <p>
+                      Guardá una dirección con ubicación en el mapa para pedir
+                      el envío.
+                    </p>
+                  )}
+                  <div className="shipping-calc-row">
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      disabled={
+                        !selectedAddressId ||
+                        !selectedBranchId ||
+                        calculateShippingMutation.isPending
+                      }
+                      onClick={() => calculateShippingMutation.mutate(quoteKey)}
+                    >
+                      Calcular costo
+                    </button>
+                  </div>
+
+                  {quotedFor === quoteKey && (
+                    <div className="shipping-result-badge">
+                      <span>
+                        Costo estimado:{" "}
+                        <strong>${shippingCost.toLocaleString("es-AR")}</strong>
+                      </span>
+                      <span>
+                        {shippingQuote?.requires_scheduled_delivery
+                          ? "Demora desde el despacho"
+                          : "Plazo"}
+                        : <strong>{estimatedTime || "A confirmar"}</strong>
+                      </span>
+                      {shippingQuote?.requires_scheduled_delivery && (
+                        <span>
+                          Entrega programable para mañana (
+                          {shippingQuote.scheduled_delivery_date
+                            ?.split("-")
+                            .reverse()
+                            .join("/")}
+                          ).
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {quotedFor === quoteKey &&
+                    shippingQuote?.requires_scheduled_delivery && (
+                      <label className="cart-schedule-option">
+                        <input
+                          type="checkbox"
+                          checked
+                          disabled
+                        />
+                        <span>
+                          El comercio está cerrado. El envío con sus riders se
+                          programará obligatoriamente para mañana.
+                        </span>
+                      </label>
+                    )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Summary & Payment Column */}
+          <div className="cart-summary-column">
+            <div className="cart-summary-card">
+              <h3 className="cart-box-title">Resumen de la Compra</h3>
+
+              <div className="cart-summary-row">
+                <span>
+                  {hasService ? "Subtotal servicios:" : "Subtotal productos:"}
+                </span>
+                <span>${subtotal.toLocaleString("es-AR")}</span>
+              </div>
+
+              <div className="cart-summary-row">
+                <span>Envío:</span>
+                <span>
+                  {activeDeliveryType === "pickup"
+                    ? "Gratis"
+                    : activeDeliveryType === "coordinate_with_merchant"
+                      ? "A convenir"
+                      : quotedFor === quoteKey
+                        ? `$${shippingCost.toLocaleString("es-AR")}`
+                        : "Pendiente de cálculo"}
+                </span>
+              </div>
+
+              <CheckoutFinancialCost
+                totalAmount={total}
+                financingAmount={financingSurcharge}
+                installments={installments}
+                paymentMethod={paymentMethod}
+                pending={
+                  paymentMethod === "card" &&
+                  installments > 1 &&
+                  items.some(
+                    (item) =>
+                      !(item.service
+                        ? item.service.installments_enabled
+                        : item.professional_product?.installments_enabled) &&
+                      !calculateInstallmentFinancing(
+                        item.subtotal || 0,
+                        installments,
+                        commissionRates,
+                      ),
+                  )
+                }
+              />
+
+              {activeDeliveryType !== "coordinate_with_merchant" &&
+                quotedFor === quoteKey &&
+                shippingQuote?.is_free_shipping && (
+                  <div className="cart-summary-row cart-summary-row--free-delivery">
+                    Envío gratis a domicilio
+                  </div>
+                )}
+
+              <div className="cart-summary-row cart-summary-row--total">
+                <span>Total a pagar:</span>
+                <span>${total.toLocaleString("es-AR")}</span>
+              </div>
+              {!hasService && activeDeliveryType === "pickup" && (
+                <PickupDeadlineWarning />
+              )}
+
+              {/* Payment gateway selection */}
+              {user && (
+                <>
+                  {paymentMethod === "card" &&
+                    cardConfig?.provider === "payway" && (
+                      <PaymentAddressCard
+                        preferredId={selectedAddressId}
+                        onChange={(id, complete) => {
+                          setBillingAddressId(id);
+                          setBillingAddressComplete(complete);
+                        }}
+                      />
+                    )}
+                  <div className="cart-payment-methods">
+                    <label className="commercial-label">Medio de Pago</label>
+
+                    <div
+                      className={`payment-choice-card ${
+                        paymentMethod === "paycloud_qr"
+                          ? "payment-choice-card--active"
+                          : ""
+                      }`}
+                      onClick={() => setPaymentMethod("paycloud_qr")}
+                    >
+                      <QrCode size={20} />
+                      <div>
+                        <strong>QR Interoperable</strong>
+                        <p>
+                          Pagá con cualquier billetera (Mercado Pago, MODO,
+                          etc.)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`payment-choice-card ${
+                        paymentMethod === "card"
+                          ? "payment-choice-card--active"
+                          : ""
+                      }`}
+                      onClick={() => setPaymentMethod("card")}
+                    >
+                      <CreditCard size={20} />
+                      <div>
+                        <strong>Tarjeta de Crédito / Débito</strong>
+                        <p>Hasta 12 cuotas bancarias habilitadas</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Installments selector for Getnet */}
+                  {paymentMethod === "card" && (
+                    <div className="installments-box">
+                      <label className="commercial-label">
+                        Tarjeta guardada
+                      </label>
+                      <select
+                        className="installments-select"
+                        value={selectedCardId}
+                        onChange={(event) =>
+                          setSelectedCardId(event.target.value)
+                        }
+                      >
+                        <option value="">Seleccionar tarjeta</option>
+                        {cardConfig?.provider === "payway" && (
+                          <option value="new">Usar una tarjeta nueva</option>
+                        )}
+                        {savedCards.map((card) => (
+                          <option key={card.id} value={card.id}>
+                            {card.card_brand} terminada en {card.last_four}
+                          </option>
+                        ))}
+                      </select>
+                      {savedCards.length === 0 &&
+                        cardConfig?.provider !== "payway" && (
+                          <p>
+                            Guardá una tarjeta en tu perfil para usar este medio
+                            de pago.
+                          </p>
+                        )}
+                      {cardConfig?.provider === "payway" && (
+                        <>
+                          {!savedCards.some(
+                            (card) => card.id === selectedCardId,
+                          ) && (
+                            <>
+                              <label className="commercial-label cart-card-field">
+                                Número de tarjeta
+                                <input
+                                  className="installments-select"
+                                  autoComplete="cc-number"
+                                  value={paywayInput.number}
+                                  onChange={(e) =>
+                                    setPaywayInput({
+                                      ...paywayInput,
+                                      number: e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 19),
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label className="commercial-label cart-card-field">
+                                Titular
+                                <input
+                                  className="installments-select"
+                                  autoComplete="cc-name"
+                                  value={paywayInput.holder}
+                                  onChange={(e) =>
+                                    setPaywayInput({
+                                      ...paywayInput,
+                                      holder: e.target.value,
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label className="commercial-label cart-card-field">
+                                DNI
+                                <input
+                                  className="installments-select"
+                                  value={paywayInput.dni}
+                                  onChange={(e) =>
+                                    setPaywayInput({
+                                      ...paywayInput,
+                                      dni: e.target.value
+                                        .replace(/\D/g, "")
+                                        .slice(0, 9),
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label className="commercial-label cart-card-field">
+                                Vencimiento (MM/AA)
+                                <input
+                                  className="installments-select"
+                                  autoComplete="cc-exp"
+                                  inputMode="numeric"
+                                  maxLength={5}
+                                  placeholder="MM/AA"
+                                  value={paywayInput.expiry}
+                                  onChange={(e) => {
+                                    const digits = e.target.value
+                                      .replace(/\D/g, "")
+                                      .slice(0, 4);
+                                    setPaywayInput((current) => ({
+                                      ...current,
+                                      expiry:
+                                        digits.length > 2
+                                          ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+                                          : digits,
+                                    }));
+                                  }}
+                                />
+                              </label>
+                              <label className="commercial-label cart-card-field">
+                                Tipo de tarjeta
+                                <select
+                                  className="installments-select"
+                                  value={paywayInput.type}
+                                  onChange={(e) =>
+                                    setPaywayInput({
+                                      ...paywayInput,
+                                      type: e.target.value as
+                                        | "credit"
+                                        | "debit",
+                                    })
+                                  }
+                                >
+                                  <option value="credit">Crédito</option>
+                                  <option value="debit">Débito</option>
+                                </select>
+                              </label>
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={savePaywayCard}
+                                  onChange={(e) =>
+                                    setSavePaywayCard(e.target.checked)
+                                  }
+                                />{" "}
+                                Guardar tarjeta después del pago
+                              </label>
+                            </>
+                          )}
+                          <label className="commercial-label cart-card-field">
+                            Código de seguridad
+                            <input
+                              className="installments-select"
+                              type="password"
+                              autoComplete="cc-csc"
+                              maxLength={4}
+                              value={paywayInput.cvv}
+                              onChange={(e) =>
+                                setPaywayInput({
+                                  ...paywayInput,
+                                  cvv: e.target.value.replace(/\D/g, ""),
+                                })
+                              }
+                            />
+                          </label>
+                        </>
+                      )}
+                      <label className="commercial-label">
+                        Cuotas Disponibles
+                      </label>
+                      {hasPerishable ? (
+                        <div className="perishable-warning-pill">
+                          <AlertTriangle size={14} />
+                          <span>
+                            Los alimentos y perecederos solo se abonan en 1
+                            pago.
+                          </span>
+                        </div>
+                      ) : (
+                        <select
+                          className="installments-select"
+                          value={installments}
+                          onChange={(e) =>
+                            setInstallments(parseInt(e.target.value, 10))
+                          }
+                        >
+                          {availableInstallments.map((count) => {
+                            const surcharge =
+                              count > 1 && hasFinancedService
+                                ? items.reduce((sum, item) => {
+                                    if (
+                                      item.service
+                                        ? item.service.installments_enabled
+                                        : item.professional_product
+                                            ?.installments_enabled
+                                    )
+                                      return sum;
+                                    const quote = calculateInstallmentFinancing(
+                                      item.subtotal || 0,
+                                      count,
+                                      commissionRates,
+                                    );
+                                    return (
+                                      sum +
+                                      (quote
+                                        ? quote.totalAmount -
+                                          (item.subtotal || 0)
+                                        : 0)
+                                    );
+                                  }, 0)
+                                : 0;
+                            const installmentTotal =
+                              subtotal +
+                              surcharge +
+                              (activeDeliveryType === "shipment" &&
+                              quotedFor === quoteKey
+                                ? shippingCost
+                                : 0);
+                            return (
+                              <option key={count} value={count}>
+                                {count === 1 ? "1 pago" : `${count} cuotas`} de
+                                $
+                                {Number(
+                                  (installmentTotal / count).toFixed(2),
+                                ).toLocaleString("es-AR")}
+                                {surcharge > 0
+                                  ? " con recargo"
+                                  : " sin interés"}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+              <ReturnsPolicyLink />
+              <button
+                type="button"
+                className="btn-primary cart-checkout-btn"
+                disabled={
+                  checkoutMutation.isPending ||
+                  isAuthLoading ||
+                  (Boolean(user) &&
+                    paymentMethod === "card" &&
+                    cardConfig?.provider === "payway" &&
+                    !billingAddressComplete)
+                }
+                onClick={handleCheckout}
+              >
+                <span>
+                  {user ? "Pagar pedido" : "Iniciar sesión para pagar"}
+                </span>
+                <ArrowRight size={18} />
+              </button>
+
+              <div className="secure-checkout-notice">
+                <ShieldCheck size={16} />
+                <span>Pago protegido con custodia de fondos Sercio</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PayCloud Dynamic QR Modal */}
+      {qrModalOpen && activeQrData && (
+        <Modal
+          isOpen={qrModalOpen}
+          onClose={() => setQrModalOpen(false)}
+          title="Escaneá el QR con tu Billetera"
+        >
+          <div className="qr-modal-content">
+            <div className="qr-timer-pill">
+              <Clock size={16} />
+              <span>
+                Tiempo restante:{" "}
+                <strong>
+                  {Math.floor(qrTimerSeconds / 60)}:
+                  {String(qrTimerSeconds % 60).padStart(2, "0")}
+                </strong>
+              </span>
+            </div>
+
+            <div className="qr-image-frame">
+              {activeQrData.qr_image_url ? (
+                <img src={activeQrData.qr_image_url} alt="QR" />
+              ) : (
+                <QrCode size={180} />
+              )}
+            </div>
+
+            <p className="qr-hint">
+              Abrí tu app bancaria o billetera (Mercado Pago, MODO, BNA+, Ualá,
+              etc.) y escaneá este código QR interoperable.
+            </p>
+
+            <p className="qr-hint">
+              Después de escanear el código, esperá a que aparezca el cartel de
+              compra realizada.
+            </p>
+
+            <div className="qr-amount-pill">
+              <span>Total a transferir:</span>
+              <strong>
+                ${activeQrData.total_amount.toLocaleString("es-AR")}
+              </strong>
+            </div>
+
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => {
+                setQrModalOpen(false);
+                queryClient.invalidateQueries({ queryKey: ["user-cart"] });
+                router.push(`${ROUTES.dashboard}?view=purchases`);
+              }}
+            >
+              Consultar en Mis Compras
+            </button>
+            <ReturnsPolicyLink />
+          </div>
+        </Modal>
+      )}
+      {qrPaymentConfirmed && (
+        <QrPaymentConfirmedModal
+          isOpen
+          onContinue={() => {
+            setQrPaymentConfirmed(false);
+            router.push(`${ROUTES.dashboard}?view=purchases`);
+          }}
+        />
+      )}
+    </div>
+  );
+}

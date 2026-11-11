@@ -6,6 +6,7 @@ import {
   Building2,
   Store,
   Tag,
+  Truck,
 } from "lucide-react";
 import "./CompanyDisplaySection.css";
 import ArcaVerificationSection from "./ArcaVerificationSection";
@@ -128,6 +129,26 @@ export default function CompanyDisplaySection({
       />
 
       <div className="company-display-grid">
+        <div className="display-card">
+          <div className="display-card-icon"><Truck size={20} /></div>
+          <div className="display-card-content">
+            <h3>Envíos gratis</h3>
+            <div className="address-details-stack">
+              <div className="address-item">
+                <span className="address-label">Zona local</span>
+                <span className="address-value">{company.free_shipping
+                  ? `Desde $${Number(company.free_shipping_min_amount || 0).toLocaleString("es-AR")}${company.free_shipping_radius_km ? ` · hasta ${company.free_shipping_radius_km} km` : ""}`
+                  : "Desactivado"}</span>
+              </div>
+              <div className="address-item">
+                <span className="address-label">Fuera de la provincia</span>
+                <span className="address-value">{company.free_shipping_country
+                  ? `Desde $${Number(company.free_shipping_country_min_amount || 0).toLocaleString("es-AR")}`
+                  : "Desactivado"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="display-card">
           <div className="display-card-icon">
             <Store size={20} />

@@ -106,6 +106,23 @@
   flex-wrap: wrap;
 }
 
+.dash-products__commission-benefit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--success-color);
+  border-radius: var(--radius-md);
+  background: var(--action-add-bg);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+}
+
+.dash-products__commission-benefit svg {
+  flex: none;
+  color: var(--success-color);
+}
+
 .dash-products__search {
   display: flex;
   align-items: center;
@@ -421,9 +438,19 @@
 }
 
 /* Stock */
+.dash-products__stock-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  max-width: 100%;
+  gap: var(--space-4);
+}
+
 .dash-products__stock {
   font-weight: var(--weight-bold);
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .dash-products__stock--low {
@@ -1457,3 +1484,266 @@
   background: var(--surface-soft);
   color: var(--accent-color);
 }
+
+/* Free Shipping & Installments item badges */
+.dash-products__item-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.dash-products__badge--free-shipping {
+  background: rgba(64, 192, 87, 0.12);
+  color: var(--success-color);
+  border: 1px solid var(--success-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--text-xs);
+  padding: 1px 6px;
+}
+
+.dash-products__badge--installments {
+  background: rgba(29, 95, 191, 0.1);
+  color: var(--brand-blue);
+  border: 1px solid var(--brand-blue);
+  font-size: var(--text-xs);
+  padding: 1px 6px;
+}
+
+/* Bulk Free Shipping Modal */
+.dash-products__bulk-shipping-params {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.dash-products__modal--bulk-shipping {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 520px;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-content {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-field,
+.dash-products__modal--bulk-shipping .dash-products__bulk-shipping-params {
+  min-width: 0;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-header,
+.dash-products__modal--bulk-shipping .dash-products__modal-field-header {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-header h2,
+.dash-products__modal--bulk-shipping .product-creator__shipping-notice > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-toggle {
+  flex-wrap: wrap;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__modal-toggle button {
+  flex: 1 1 120px;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__chip {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.dash-products__modal--bulk-shipping .dash-products__chip span:last-child {
+  overflow-wrap: anywhere;
+}
+
+.dash-products__bulk-shipping-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.dash-products__bulk-shipping-inputs input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.dash-products__shipping-explanation {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  color: var(--text-primary);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.dash-products__shipping-explanation svg {
+  flex: 0 0 auto;
+}
+
+.dash-products__distant-minimum {
+  padding: var(--space-3);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.dash-products__distant-minimum-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dash-products__distant-minimum-controls input {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.dash-products__distant-minimum-controls button {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 640px) {
+  .dash-products__bulk-shipping-inputs {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== MODERATION NOTICE (TABLE ITEM) ===== */
+.dash-products__moderation-notice {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 400px;
+}
+
+.dash-products__moderation-notice--paused {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #b45309;
+}
+
+:root[data-theme="dark"] .dash-products__moderation-notice--paused {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+.dash-products__moderation-notice--blocked {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
+}
+
+:root[data-theme="dark"] .dash-products__moderation-notice--blocked {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #f87171;
+}
+
+.dash-products__moderation-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--weight-bold);
+}
+
+.dash-products__moderation-icon {
+  flex-shrink: 0;
+}
+
+.dash-products__moderation-label {
+  font-weight: var(--weight-bold);
+}
+
+.dash-products__moderation-reason {
+  margin: 0;
+  font-size: 0.72rem;
+  opacity: 0.95;
+  word-break: break-word;
+}
+
+/* ===== MODERATION BANNER (MODAL) ===== */
+.dash-products__moderation-banner {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dash-products__moderation-banner--paused {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #b45309;
+}
+
+:root[data-theme="dark"] .dash-products__moderation-banner--paused {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+.dash-products__moderation-banner--blocked {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
+}
+
+:root[data-theme="dark"] .dash-products__moderation-banner--blocked {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #f87171;
+}
+
+.dash-products__moderation-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-products__moderation-banner-title {
+  font-size: 0.85rem;
+  font-weight: var(--weight-bold);
+}
+
+.dash-products__moderation-banner-reason {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.dash-products__moderation-banner-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.85;
+  font-style: italic;
+}
+

@@ -33,7 +33,7 @@ export default function Footer() {
             <BrandLogo className="footer__brand-mark" />
           </div>
           <p className="footer__copy">
-            © 2026 Sercio. Tu red de servicios y comercios en un solo lugar.
+            Copyright © 2026 SERCIO SOFT SAS - CUIT: 30-71956593-6
           </p>
         </div>
 
@@ -125,6 +125,9 @@ export default function Footer() {
           </Link>
           <Link href={ROUTES.privacy} className="footer__link-btn">
             Privacidad
+          </Link>
+          <Link href="/devoluciones" className="footer__link-btn">
+            Devoluciones
           </Link>
           <button
             type="button"

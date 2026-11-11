@@ -1,5 +1,6 @@
 import { supabase } from "@/services/supabaseClient";
 import { getProfileAction } from "./profile";
+import { chatService } from "@/services/chatService";
 
 export const getProfileByUserIdAction = async ({ id }: { id: string }) => {
   if (!id || id === "undefined" || id === "null") return { data: null };
@@ -22,9 +23,20 @@ export const getMessagesAction = async ({ userId, receiverId }: { userId: string
     .from("messages")
     .select("*")
     .or(`and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId})`)
+    .is("order_id", null)
     .order("created_at", { ascending: true });
 
   if (error) {
+    // If order_id column does not exist yet in DB, fallback to query without it
+    if (error.message?.includes("order_id") || error.code === "42703" || error.code === "PGRST204") {
+      const fallback = await supabase
+        .from("messages")
+        .select("*")
+        .or(`and(sender_id.eq.${userId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${userId})`)
+        .order("created_at", { ascending: true });
+      if (fallback.error) throw new Error(fallback.error.message);
+      return { data: fallback.data };
+    }
     throw new Error(error.message);
   }
   return { data };
@@ -79,19 +91,8 @@ export const deleteChatAction = async ({ userId, otherUserId }: { userId: string
 };
 
 export const getUserConversationsAction = async ({ userId }: { userId: string }) => {
-  // Fetch all messages involving the user to determine active conversations
-  const { data, error } = await supabase
-    .from("messages")
-    .select("*")
-    .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-    .order("created_at", { ascending: false });
+  const { messages } = await chatService.listGeneralInboxMessages();
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const messages = data ?? [];
-  
   // Group by other user
   const conversationsMap = new Map();
   
@@ -157,5 +158,96 @@ export const getChatClientsAction = async ({ userId }: { userId: string }) => {
   } catch (error) {
     console.error("Exception in getChatClientsAction:", error);
     throw error;
+  }
+};
+
+export const getOrderMessagesAction = async ({
+  orderId,
+}: {
+  orderId: string;
+}) => {
+  if (!orderId) return { data: [] };
+
+  try {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.warn("Could not query order messages (column order_id may not exist yet):", error.message);
+      return { data: [], error: error.message };
+    }
+
+    return { data: data || [] };
+  } catch (err: any) {
+    console.error("Error in getOrderMessagesAction:", err);
+    return { data: [], error: err?.message };
+  }
+};
+
+export const sendOrderMessageAction = async ({
+  senderId,
+  receiverId,
+  orderId,
+  content,
+  fileUrl,
+}: {
+  senderId: string;
+  receiverId: string;
+  orderId: string;
+  content: string;
+  fileUrl?: string;
+}) => {
+  const messageToSend: any = {
+    sender_id: senderId,
+    receiver_id: receiverId,
+    order_id: orderId,
+    content: content,
+    is_read: false,
+    file_url: fileUrl || null,
+  };
+
+  const { data, error } = await supabase
+    .from("messages")
+    .insert([messageToSend])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error sending order message:", error.message);
+    if (error.message?.includes("order_id") || error.code === "42703" || error.code === "PGRST204") {
+      throw new Error(
+        "Falta agregar la columna 'order_id' en la tabla 'messages' de la base de datos para habilitar el chat por venta."
+      );
+    }
+    throw new Error(error.message);
+  }
+
+  return { data };
+};
+
+export const markOrderMessagesAsReadAction = async ({
+  orderId,
+  userId,
+}: {
+  orderId: string;
+  userId: string;
+}) => {
+  try {
+    const { error } = await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("order_id", orderId)
+      .eq("receiver_id", userId)
+      .eq("is_read", false);
+
+    if (error) {
+      console.warn("Could not mark order messages as read:", error.message);
+    }
+    return { success: !error };
+  } catch (e) {
+    return { success: false };
   }
 };

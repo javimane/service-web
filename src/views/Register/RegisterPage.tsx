@@ -10,9 +10,13 @@ import Modal from "../../components/Modal/Modal";
 import { supabase } from "../../services/supabaseClient";
 import { API_BASE_URL } from "../../services/api.config";
 import RegisterPlanSelection from "./RegisterPlanSelection";
+import ProfessionalRequirementsDialog from "../../components/ProfessionalRequirementsDialog/ProfessionalRequirementsDialog";
 import { useAuth } from "../../context/AuthContext";
+import "../Login/LoginPage.css";
 import "./RegisterPage.css";
 import Footer from "@/components/Footer/Footer";
+import { Check, Circle, Eye, EyeOff } from "lucide-react";
+import { TERMS_SECTIONS } from "../Terms/TermsPage";
 
 type RegisterPageProps = {
   isModal?: boolean;
@@ -27,12 +31,13 @@ export default function RegisterPage({
 }: RegisterPageProps) {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
-  const [role, setRole] = useState<"normal" | "professional">("professional");
+  const [role, setRole] = useState<"normal" | "professional">("normal");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -41,16 +46,31 @@ export default function RegisterPage({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
+  const [registrationNextStep, setRegistrationNextStep] = useState<"login" | "setup" | "plans">("login");
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [requirementsAction, setRequirementsAction] = useState<
+    "register" | "google" | null
+  >(null);
+  const [requirementsConfirmed, setRequirementsConfirmed] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const { refreshSession } = useAuth();
+  const passwordRequirements = [
+    { id: "length", label: "Mínimo 9 caracteres", met: formData.password.length >= 9 },
+    { id: "uppercase", label: "Al menos 1 mayúscula", met: /[A-Z]/.test(formData.password) },
+    { id: "number", label: "Al menos 1 número", met: /\d/.test(formData.password) },
+    { id: "special", label: "Al menos 1 carácter especial (!, @, #…)", met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(formData.password) },
+    { id: "spaces", label: "Sin espacios", met: formData.password.length > 0 && !/\s/.test(formData.password) },
+  ];
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name) {
-      newErrors.name = "El nombre es requerido";
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = "El nombre es muy corto";
+    if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = "Ingresá tu nombre";
+    }
+    if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = "Ingresá tu apellido";
     }
 
     if (!formData.email) {
@@ -63,15 +83,11 @@ export default function RegisterPage({
 
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Debe tener al menos 6 caracteres";
+    } else if (formData.password.length < 9) {
+      newErrors.password = "Debe tener al menos 9 caracteres";
     } else if (/\s/.test(formData.password)) {
       newErrors.password = "La contraseña no puede contener espacios";
-    } else if (
-      !/(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/.test(
-        formData.password,
-      )
-    ) {
+    } else if (passwordRequirements.some((requirement) => !requirement.met)) {
       newErrors.password =
         "Debe contener al menos una mayúscula, un número y un carácter especial";
     }
@@ -80,6 +96,11 @@ export default function RegisterPage({
       newErrors.confirmPassword = "Confirme su contraseña";
     } else if (formData.confirmPassword !== formData.password) {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
+    }
+
+    if (!acceptedTerms) {
+      newErrors.terms =
+        "Debes aceptar los términos y condiciones para continuar";
     }
 
     setErrors(newErrors);
@@ -95,23 +116,26 @@ export default function RegisterPage({
     setAuthError("");
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-
+  const submitRegistration = async () => {
     setIsLoading(true);
     setAuthError("");
+    setRegistrationNextStep("login");
 
     try {
       await authService.register({
-        profileName: formData.name,
+        profileName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         email: formData.email,
         password: formData.password,
         role: role,
+        acceptedTerms: true,
       });
 
       if (role === "professional" && typeof window !== "undefined") {
         localStorage.setItem("show_plans_on_login", "true");
+      } else if (typeof window !== "undefined") {
+        localStorage.setItem("show_setup_on_login", "true");
       }
 
       // Attempt to auto-login to create session
@@ -121,11 +145,9 @@ export default function RegisterPage({
           password: formData.password,
         });
 
-        // if login succeeds and role is professional, show plan modal
-        if (loginResp && role === "professional") {
+        if (loginResp) {
           await refreshSession();
-          setShowPlanModal(true);
-          return; // Skip the normal success modal
+          setRegistrationNextStep(role === "professional" ? "plans" : "setup");
         }
       } catch (e) {
         console.warn("Auto-login failed:", e);
@@ -133,7 +155,7 @@ export default function RegisterPage({
 
       setModalTitle("Registro exitoso");
       setModalMessage(
-        "¡Cuenta creada exitosamente! Por favor revise su correo o inicie sesión.",
+        `¡Tu cuenta fue creada! Enviamos un email a ${formData.email.trim()} para verificar tu correo electrónico. Abrí el mensaje y seguí el enlace de verificación. Si no lo encontrás, revisá la carpeta de spam o correo no deseado.`,
       );
       setModalOpen(true);
     } catch (err: any) {
@@ -145,19 +167,67 @@ export default function RegisterPage({
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    if (role === "professional" && !requirementsConfirmed) {
+      setRequirementsAction("register");
+      return;
+    }
+    void submitRegistration();
+  };
+
   const handleGoogleRegister = () => {
+    if (!acceptedTerms) {
+      setErrors((prev) => ({
+        ...prev,
+        terms:
+          "Debes aceptar los términos y condiciones antes de registrarte con Google",
+      }));
+      return;
+    }
+
+    if (role === "professional" && !requirementsConfirmed) {
+      setRequirementsAction("google");
+      return;
+    }
+    startGoogleRegister();
+  };
+
+  const startGoogleRegister = () => {
     setIsLoading(true);
     setAuthError("");
     try {
-      window.location.href = `${API_BASE_URL}/api/auth/login/google?role=${role}`;
+      localStorage.setItem(
+        role === "professional" ? "show_plans_on_login" : "show_setup_on_login",
+        "true",
+      );
+      window.location.href = `${API_BASE_URL}/api/auth/login/google?role=${role}&acceptedTerms=true`;
     } catch (err: any) {
       setAuthError(err.message || "Error al registrarse con Google.");
       setIsLoading(false);
     }
   };
 
+  const continueAfterRequirements = () => {
+    const action = requirementsAction;
+    setRequirementsAction(null);
+    setRequirementsConfirmed(true);
+    if (action === "register") void submitRegistration();
+    if (action === "google") startGoogleRegister();
+  };
+
   const handleModalClose = () => {
     setModalOpen(false);
+    if (registrationNextStep === "plans") {
+      setShowPlanModal(true);
+      return;
+    }
+    if (registrationNextStep === "setup") {
+      onClose?.();
+      router.push(ROUTES.accountSetup);
+      return;
+    }
     if (isModal) {
       onSwitchMode?.("login");
     } else {
@@ -177,10 +247,45 @@ export default function RegisterPage({
         onSubmit={handleSubmit}
         noValidate
       >
-        <div
-          className="role-selector"
-          style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}
-        >
+        <div className="role-selector">
+          <label
+            className={`role-option ${role === "normal" ? "active" : ""}`}
+            style={{
+              flex: 1,
+              padding: "1rem",
+              border: `1px solid ${role === "normal" ? "var(--accent-color)" : "var(--border-color)"}`,
+              borderRadius: "var(--radius-md)",
+              cursor: "pointer",
+              textAlign: "center",
+              background:
+                role === "normal"
+                  ? "var(--accent-transparent)"
+                  : "var(--bg-card)",
+            }}
+          >
+            <input
+              type="radio"
+              name="role"
+              value="normal"
+              checked={role === "normal"}
+              onChange={() => {
+                setRole("normal");
+                setRequirementsConfirmed(false);
+              }}
+              style={{ display: "none" }}
+            />
+            <span
+              style={{
+                fontWeight: "var(--weight-bold)",
+                color:
+                  role === "normal"
+                    ? "var(--accent-color)"
+                    : "var(--text-secondary)",
+              }}
+            >
+              Busco Servicios/Productos
+            </span>
+          </label>
           <label
             className={`role-option ${role === "professional" ? "active" : ""}`}
             style={{
@@ -213,60 +318,52 @@ export default function RegisterPage({
                     : "var(--text-secondary)",
               }}
             >
-              Soy Profesional
-            </span>
-          </label>
-          <label
-            className={`role-option ${role === "normal" ? "active" : ""}`}
-            style={{
-              flex: 1,
-              padding: "1rem",
-              border: `1px solid ${role === "normal" ? "var(--accent-color)" : "var(--border-color)"}`,
-              borderRadius: "var(--radius-md)",
-              cursor: "pointer",
-              textAlign: "center",
-              background:
-                role === "normal"
-                  ? "var(--accent-transparent)"
-                  : "var(--bg-card)",
-            }}
-          >
-            <input
-              type="radio"
-              name="role"
-              value="normal"
-              checked={role === "normal"}
-              onChange={() => setRole("normal")}
-              style={{ display: "none" }}
-            />
-            <span
-              style={{
-                fontWeight: "var(--weight-bold)",
-                color:
-                  role === "normal"
-                    ? "var(--accent-color)"
-                    : "var(--text-secondary)",
-              }}
-            >
-              Busco Servicios
+              Soy Profesional/Comercio
             </span>
           </label>
         </div>
 
-        <div className="input-group">
-          <label htmlFor="name">NOMBRE COMPLETO</label>
-          <div className={`input-wrapper ${errors.name ? "has-error" : ""}`}>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Ej. Juan Pérez"
-            />
-            <span className="input-icon">👤</span>
+        <div className="form-row">
+          <div className="input-group">
+            <label htmlFor="firstName">NOMBRE</label>
+            <div
+              className={`input-wrapper ${errors.firstName ? "has-error" : ""}`}
+            >
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                autoComplete="given-name"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="Ej. Juan"
+              />
+              <span className="input-icon">👤</span>
+            </div>
+            {errors.firstName && (
+              <span className="error-text">{errors.firstName}</span>
+            )}
           </div>
-          {errors.name && <span className="error-text">{errors.name}</span>}
+          <div className="input-group">
+            <label htmlFor="lastName">APELLIDO</label>
+            <div
+              className={`input-wrapper ${errors.lastName ? "has-error" : ""}`}
+            >
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                autoComplete="family-name"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Ej. Pérez"
+              />
+              <span className="input-icon">👤</span>
+            </div>
+            {errors.lastName && (
+              <span className="error-text">{errors.lastName}</span>
+            )}
+          </div>
         </div>
 
         <div className="input-group">
@@ -295,6 +392,9 @@ export default function RegisterPage({
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
+                minLength={9}
+                autoComplete="new-password"
+                aria-describedby="register-password-requirements"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
@@ -306,10 +406,26 @@ export default function RegisterPage({
                 aria-label={
                   showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
                 }
+                aria-pressed={showPassword}
               >
-                {showPassword ? "🔓" : "🔒"}
+                {showPassword ? (
+                  <EyeOff size={18} aria-hidden="true" />
+                ) : (
+                  <Eye size={18} aria-hidden="true" />
+                )}
               </button>
             </div>
+            <ul id="register-password-requirements" className="register-password__requirements" aria-label="Requisitos de la contraseña">
+              {passwordRequirements.map((requirement) => (
+                <li key={requirement.id}
+                  className={`register-password__requirement${requirement.met ? " register-password__requirement--met" : ""}`}
+                  aria-label={`${requirement.met ? "Cumplido" : "Pendiente"}: ${requirement.label}`}
+                >
+                  {requirement.met ? <Check size={14} aria-hidden="true" /> : <Circle size={14} aria-hidden="true" />}
+                  <span>{requirement.label}</span>
+                </li>
+              ))}
+            </ul>
             {errors.password && (
               <span className="error-text">{errors.password}</span>
             )}
@@ -337,14 +453,60 @@ export default function RegisterPage({
                     ? "Ocultar contraseña"
                     : "Mostrar contraseña"
                 }
+                aria-pressed={showConfirmPassword}
               >
-                {showConfirmPassword ? "🔓" : "🔒"}
+                {showConfirmPassword ? (
+                  <EyeOff size={18} aria-hidden="true" />
+                ) : (
+                  <Eye size={18} aria-hidden="true" />
+                )}
               </button>
             </div>
             {errors.confirmPassword && (
               <span className="error-text">{errors.confirmPassword}</span>
             )}
           </div>
+        </div>
+
+        <div className="register-terms">
+          <label
+            className="register-terms__label"
+            htmlFor="register-terms-checkbox"
+          >
+            <input
+              id="register-terms-checkbox"
+              type="checkbox"
+              className="register-terms__checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => {
+                setAcceptedTerms(e.target.checked);
+                if (errors.terms) {
+                  setErrors((prev) => ({ ...prev, terms: "" }));
+                }
+              }}
+            />
+            <span className="register-terms__text">
+              Acepto los{" "}
+              <button
+                type="button"
+                className="register-terms__link"
+                onClick={() => setShowTermsModal(true)}
+              >
+                términos y condiciones
+              </button>
+              {" y la "}
+              <Link
+                href={ROUTES.privacy}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="register-terms__link"
+                aria-label="Política de privacidad (abre en una nueva pestaña)"
+              >
+                Política de privacidad
+              </Link>
+            </span>
+          </label>
+          {errors.terms && <span className="error-text">{errors.terms}</span>}
         </div>
 
         {authError && <div className="auth-error-alert">{authError}</div>}
@@ -414,6 +576,52 @@ export default function RegisterPage({
         message={modalMessage}
         onClose={handleModalClose}
       />
+
+      <Modal
+        isOpen={showTermsModal}
+        title="Términos y Condiciones"
+        onClose={() => setShowTermsModal(false)}
+        maxWidth="800px"
+      >
+        <div className="terms-modal-body">
+          {TERMS_SECTIONS.map((section, index) => (
+            <div key={index} className="terms-modal-section">
+              <h3 className="terms-modal-section__title">{section.title}</h3>
+              <div className="terms-modal-section__content">
+                {section.content}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="terms-modal-actions">
+          <button
+            type="button"
+            data-action-tone="cancel"
+            className="btn-secondary"
+            onClick={() => setShowTermsModal(false)}
+          >
+            Volver al registro
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => {
+              setAcceptedTerms(true);
+              if (errors.terms) {
+                setErrors((prev) => ({ ...prev, terms: "" }));
+              }
+              setShowTermsModal(false);
+            }}
+          >
+            Aceptar y volver
+          </button>
+        </div>
+      </Modal>
+      <ProfessionalRequirementsDialog
+        open={requirementsAction !== null}
+        onBack={() => setRequirementsAction(null)}
+        onContinue={continueAfterRequirements}
+      />
     </div>
   );
 
@@ -441,29 +649,7 @@ export default function RegisterPage({
 
       <Footer />
 
-      {showPlanModal && (
-        <div
-          className="subscription-confirm-overlay"
-          style={{
-            zIndex: 1000,
-            padding: "20px",
-            overflowY: "auto",
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-        >
-          <div
-            style={{
-              position: "relative",
-              maxWidth: "1000px",
-              margin: "0 auto",
-            }}
-          >
-            <RegisterPlanSelection />
-          </div>
-        </div>
-      )}
+      {showPlanModal && <RegisterPlanSelection />}
     </div>
   );
 }

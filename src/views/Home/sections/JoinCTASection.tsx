@@ -5,7 +5,6 @@ const BENEFITS = [
   { icon: "✓", label: "Perfil verificado" },
   { icon: "◈", label: "Catálogo digital" },
   { icon: "◎", label: "Clientes directos" },
-  { icon: "◇", label: "Sin comisiones" },
 ];
 
 export default function JoinCTASection() {
@@ -19,19 +18,20 @@ export default function JoinCTASection() {
 
           <div className="join-cta__content">
             <h2 className="join-cta__title">
-              Únete al{" "}
-              <span className="join-cta__title-accent">Sistema</span>
+              Únete al <span className="join-cta__title-accent">Sistema</span>
             </h2>
 
             <p className="join-cta__subtitle">
-              Crea tu identidad digital, conecta con clientes reales
-              y hace crecer tu negocio desde un solo lugar.
+              Crea tu identidad digital, conecta con clientes reales y hace
+              crecer tu negocio desde un solo lugar.
             </p>
 
             <ul className="join-cta__benefits" role="list">
               {BENEFITS.map(({ icon, label }) => (
                 <li key={label} className="join-cta__benefit">
-                  <span className="join-cta__benefit-icon" aria-hidden="true">{icon}</span>
+                  <span className="join-cta__benefit-icon" aria-hidden="true">
+                    {icon}
+                  </span>
                   {label}
                 </li>
               ))}

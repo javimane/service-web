@@ -112,39 +112,50 @@
 .alert-modal__footer {
   padding: 0 var(--space-6) var(--space-6);
   display: flex;
-  gap: var(--space-3);
+  align-items: center;
   justify-content: center;
+  gap: var(--space-3);
 }
 
 .alert-modal__btn {
-  padding: var(--space-3) var(--space-6);
+  box-sizing: border-box;
+  height: 42px;
+  min-height: 42px;
+  padding: 0 var(--space-6);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   transition: all 0.2s ease;
   min-width: 120px;
 }
 
 .alert-modal__btn--primary {
   background: var(--accent-color);
-  color: white;
+  color: var(--white);
+  border-color: var(--accent-color);
 }
 
 .alert-modal__btn--primary:hover {
   background: var(--accent-hover);
+  border-color: var(--accent-hover);
   transform: translateY(-1px);
 }
 
 .alert-modal__btn--secondary {
-  background: var(--surface-soft);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background: var(--brand-blue);
+  color: var(--white);
+  border: 1px solid var(--brand-blue);
 }
 
 .alert-modal__btn--secondary:hover {
-  background: var(--border-color);
+  background: #154ca0;
+  border-color: #154ca0;
 }
 
 /* Animations */

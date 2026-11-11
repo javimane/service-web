@@ -7,6 +7,7 @@ import type {
 } from "../types/database.types";
 
 export interface CreateProductRequest {
+  product_condition?: 'original' | 'replica' | 'used' | 'alternative' | 'artisanal';
   ean: string;
   name: string;
   description?: string;
@@ -44,6 +45,7 @@ export interface UpdatePriceToManyRequest {
 }
 
 export interface AssignProductToProfessionalRequest {
+  product_condition?: 'original' | 'replica' | 'used' | 'alternative' | 'artisanal';
   professional_id: number;
   product_id: string;
   price: number;
@@ -218,17 +220,23 @@ export const productService = {
     professionalId: number,
     productId: string,
     updates: any,
-  ) =>
-    apiClient<ProfessionalProductRow>(
+  ) => {
+    const sanitized = { ...updates };
+    delete sanitized.variant_professional_product_id;
+    delete sanitized.professional_product_id;
+    delete sanitized.variant_parent_product_id;
+    delete sanitized.variant_parent_id;
+    return apiClient<ProfessionalProductRow>(
       API_ENDPOINTS.products.updateProfessionalProduct(
         professionalId,
         productId,
       ),
       {
         method: "PUT",
-        body: JSON.stringify(updates),
+        body: JSON.stringify(sanitized),
       },
-    ),
+    );
+  },
 
   /**
    * @route PUT /api/products/update-prices

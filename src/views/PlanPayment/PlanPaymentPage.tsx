@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Check,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
+import ProfessionalRequirementsDialog from "../../components/ProfessionalRequirementsDialog/ProfessionalRequirementsDialog";
 import { plans, type Plan } from "../../data/plans";
 import { useAlert } from "../../context/AlertContext";
 import "./PlanPaymentPage.css";
@@ -24,6 +26,7 @@ export default function PlanPaymentPage() {
   const router = useRouter();
   const planId = params?.planId;
   const { showInfo } = useAlert();
+  const [showRequirements, setShowRequirements] = useState(false);
 
   const plan: Plan | undefined = plans.find((p) => p.id === planId);
 
@@ -51,6 +54,7 @@ export default function PlanPaymentPage() {
   }
 
   const handlePay = () => {
+    setShowRequirements(false);
     showInfo(
       `Redirigiendo al pago del plan "${plan.name}" por $${formatPrice(plan.price)}/${plan.period}...`,
     );
@@ -149,7 +153,7 @@ export default function PlanPaymentPage() {
               <button
                 type="button"
                 className="plan-payment__pay-btn"
-                onClick={handlePay}
+                onClick={() => setShowRequirements(true)}
               >
                 <CreditCard size={18} />
                 Pagar plan
@@ -165,6 +169,11 @@ export default function PlanPaymentPage() {
       </main>
 
       <Footer />
+      <ProfessionalRequirementsDialog
+        open={showRequirements}
+        onBack={() => setShowRequirements(false)}
+        onContinue={handlePay}
+      />
     </div>
   );
 }

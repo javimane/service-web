@@ -13,16 +13,25 @@ export const favoritesService = {
   },
 
   /**
-   * Add a professional to the user's favorites.
+   * Add a professional, product, or service to the user's favorites.
    */
-  async addFavorite(professionalId: string) {
-    return userService.addFavorite(professionalId);
+  async addFavorite(
+    target:
+      | string
+      | number
+      | {
+          professionalId?: string | number;
+          productId?: string;
+          serviceId?: string;
+        },
+  ) {
+    return userService.addFavorite(target);
   },
 
   /**
-   * Remove a professional from the user's favorites.
+   * Remove a favorite by ID or target ID.
    */
-  async removeFavorite(professionalId: string) {
-    return userService.removeFavorite(professionalId);
+  async removeFavorite(id: string | number) {
+    return userService.removeFavorite(id);
   },
 };

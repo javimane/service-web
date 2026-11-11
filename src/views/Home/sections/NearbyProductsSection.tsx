@@ -8,6 +8,7 @@ import {
   Truck,
   Loader2,
   Sparkles,
+  Flame,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getProductsAction } from "../../../app/actions/products";
@@ -195,6 +196,32 @@ export default function NearbyProductsSection({
                   >
                     <div className="nearby-product-card__image">
                       <img src={mainImage} alt={item.name} draggable="false" />
+                      {(() => {
+                        const list = Array.isArray(item.ProfessionalProducts)
+                          ? item.ProfessionalProducts
+                          : Array.isArray(item.professional_products)
+                            ? item.professional_products
+                            : null;
+                        const isLastUnit =
+                          list && list.length > 0
+                            ? list.some(
+                                (pp: any) =>
+                                  pp &&
+                                  pp.is_active !== false &&
+                                  pp.stock !== null &&
+                                  pp.stock !== undefined &&
+                                  Number(pp.stock) === 1,
+                              )
+                            : item.stock !== null &&
+                              item.stock !== undefined &&
+                              Number(item.stock) === 1;
+                        return isLastUnit ? (
+                          <span className="nearby-product-card__last-unit">
+                            <Flame size={13} />
+                            Última unidad
+                          </span>
+                        ) : null;
+                      })()}
                       {hasOffer && (
                         <span className="nearby-product-card__badge">
                           OFERTA

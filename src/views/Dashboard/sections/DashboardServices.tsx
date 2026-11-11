@@ -1,6 +1,11 @@
 "use client";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  useQuery,
+} from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -13,6 +18,7 @@ import {
   Loader2,
   AlertTriangle,
   Share2,
+  Percent,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { getServicesByProfessionalAction } from "../../../app/actions/services";
@@ -23,6 +29,8 @@ import {
   updateServiceAction,
 } from "../../../app/actions/services";
 import { getAccessToken } from "../../../utils/auth";
+import { commerceService } from "../../../services/commerceService";
+import CommissionsModal from "../../../components/CommissionsModal/CommissionsModal";
 import "./DashboardServices.css";
 
 export default function DashboardServices() {
@@ -37,6 +45,7 @@ export default function DashboardServices() {
   const [submittedSearchQuery, setSubmittedSearchQuery] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [commissionsModalOpen, setCommissionsModalOpen] = useState(false);
 
   // Add/Edit modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -47,6 +56,9 @@ export default function DashboardServices() {
     description: "",
     categoryId: "",
     price: "",
+    installmentsEnabled: false,
+    maxInstallments: 3,
+    serviceLocationIds: [] as string[],
   });
 
   // Delete confirmation
@@ -94,7 +106,7 @@ export default function DashboardServices() {
   const services = useMemo(() => {
     if (!data) return [];
     return data.pages.flatMap((page: any) =>
-      Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : []
+      Array.isArray(page?.data) ? page.data : Array.isArray(page) ? page : [],
     );
   }, [data]);
 
@@ -107,7 +119,7 @@ export default function DashboardServices() {
           fetchNextPage();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (observerTarget.current) {
@@ -123,6 +135,11 @@ export default function DashboardServices() {
       const result = await getServiceCategoriesAction();
       return result?.data ?? [];
     },
+  });
+  const { data: serviceLocations = [] } = useQuery({
+    queryKey: ["professional-locations", professionalId],
+    queryFn: () => commerceService.professionalLocations(Number(professionalId)),
+    enabled: Boolean(professionalId),
   });
 
   // Mutations
@@ -211,6 +228,9 @@ export default function DashboardServices() {
       description: "",
       categoryId: "",
       price: "",
+      installmentsEnabled: false,
+      maxInstallments: 3,
+      serviceLocationIds: [],
     });
     setErrorMessage(null);
     setModalOpen(true);
@@ -224,6 +244,9 @@ export default function DashboardServices() {
       description: service.description || "",
       categoryId: String(service.category_services_id),
       price: String(service.base_price || ""),
+      installmentsEnabled: Boolean(service.installments_enabled),
+      maxInstallments: Math.max(1, Number(service.max_installments || 3)),
+      serviceLocationIds: service.service_location_ids ?? [],
     });
     setErrorMessage(null);
     setModalOpen(true);
@@ -249,6 +272,11 @@ export default function DashboardServices() {
       name: currentService.name,
       description: currentService.description,
       base_price: Number(currentService.price),
+      installments_enabled: currentService.installmentsEnabled,
+      max_installments: currentService.installmentsEnabled
+        ? currentService.maxInstallments
+        : 1,
+      service_location_ids: currentService.serviceLocationIds,
     };
 
     if (isEditing && currentService.id) {
@@ -277,10 +305,21 @@ export default function DashboardServices() {
           <span className="dash-services__label">GESTIÓN</span>
           <h1 className="dash-services__title">Servicios</h1>
         </div>
-        <button className="dash-services__add-btn" onClick={openAddModal}>
-          <Plus size={18} />
-          <span>Nuevo Servicio</span>
-        </button>
+        <div className="dash-services__actions">
+          <button
+            type="button"
+            className="dash-services__commissions-btn"
+            onClick={() => setCommissionsModalOpen(true)}
+            title="Ver tabla de comisiones por venta en 1 pago y cuotas + IVA"
+          >
+            <Percent size={16} />
+            <span>Comisiones</span>
+          </button>
+          <button className="dash-services__add-btn" onClick={openAddModal}>
+            <Plus size={18} />
+            <span>Nuevo Servicio</span>
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -394,10 +433,20 @@ export default function DashboardServices() {
             ))}
           </div>
         )}
-        
+
         {/* Infinite Scroll Observer Target */}
         {hasNextPage && (
-          <div ref={observerTarget} style={{ padding: "20px", textAlign: "center", display: "flex", justifyContent: "center", gap: "8px", alignItems: "center" }}>
+          <div
+            ref={observerTarget}
+            style={{
+              padding: "20px",
+              textAlign: "center",
+              display: "flex",
+              justifyContent: "center",
+              gap: "8px",
+              alignItems: "center",
+            }}
+          >
             {isFetchingNextPage && (
               <>
                 <Loader2 className="animate-spin" size={20} />
@@ -469,7 +518,9 @@ export default function DashboardServices() {
               </div>
 
               <div className="dash-services__field">
-                <label>Precio base (ARS) *</label>
+                <label>
+                  Precio base (ARS) * Si Requiere Presupuesto coloque 0 o 1
+                </label>
                 <div className="dash-services__price-input">
                   <DollarSign size={16} />
                   <input
@@ -500,10 +551,88 @@ export default function DashboardServices() {
                   }
                 />
               </div>
+              <div className="dash-services__field">
+                <label className="dash-services__checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={currentService.serviceLocationIds.length > 0}
+                    onChange={(e) => setCurrentService({
+                      ...currentService,
+                      serviceLocationIds: e.target.checked && serviceLocations.length
+                        ? [serviceLocations[0].id] : [],
+                    })}
+                  />
+                  Se realiza en una sucursal del comercio
+                </label>
+                {serviceLocations.length === 0 && (
+                  <p>Agregá una sucursal con dirección antes de ofrecer el servicio en el comercio.</p>
+                )}
+                {currentService.serviceLocationIds.length > 0 && (
+                  <div>
+                    <p>Elegí las sucursales donde atendés este servicio:</p>
+                    {serviceLocations.map((location) => (
+                      <label key={location.id} className="dash-services__checkbox-label">
+                        <input type="checkbox"
+                          checked={currentService.serviceLocationIds.includes(location.id)}
+                          onChange={(e) => setCurrentService({
+                            ...currentService,
+                            serviceLocationIds: e.target.checked
+                              ? [...currentService.serviceLocationIds, location.id]
+                              : currentService.serviceLocationIds.filter((id) => id !== location.id),
+                          })}
+                        />
+                        {location.name} — {location.street_name} {location.street_number ?? ""}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="dash-services__field">
+                <label className="dash-services__checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={currentService.installmentsEnabled}
+                    onChange={(e) =>
+                      setCurrentService({
+                        ...currentService,
+                        installmentsEnabled: e.target.checked,
+                        maxInstallments: e.target.checked
+                          ? Math.max(3, currentService.maxInstallments)
+                          : currentService.maxInstallments,
+                      })
+                    }
+                  />
+                  Habilitar cuotas sin interés
+                </label>
+              </div>
+              {currentService.installmentsEnabled && (
+                <div className="dash-services__field">
+                  <label htmlFor="service-max-installments">
+                    Máximo de cuotas sin interés
+                  </label>
+                  <select
+                    id="service-max-installments"
+                    value={currentService.maxInstallments}
+                    onChange={(e) =>
+                      setCurrentService({
+                        ...currentService,
+                        maxInstallments: Number(e.target.value),
+                      })
+                    }
+                  >
+                    {[3, 6, 9, 12, 18].map((count) => (
+                      <option key={count} value={count}>
+                        {count} cuotas
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="dash-services__modal-footer">
               <button
+                data-action-tone="cancel"
                 className="dash-services__modal-cancel"
                 onClick={closeModal}
               >
@@ -569,6 +698,7 @@ export default function DashboardServices() {
             </div>
             <div className="dash-services__floating-actions">
               <button
+                data-action-tone="cancel"
                 className="dash-services__floating-btn dash-services__floating-btn--secondary"
                 onClick={() => setDeleteConfirmOpen(false)}
               >
@@ -589,6 +719,13 @@ export default function DashboardServices() {
           </div>
         </div>
       )}
+
+      {/* Commissions Modal */}
+      <CommissionsModal
+        isOpen={commissionsModalOpen}
+        onClose={() => setCommissionsModalOpen(false)}
+        title="Comisiones por Venta de Servicios"
+      />
     </div>
   );
 }

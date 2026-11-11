@@ -10,6 +10,8 @@ import {
   Eye,
   AlertTriangle,
   X,
+  Award,
+  Star,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +20,7 @@ import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar
 import Modal from "../../components/Modal/Modal";
 import RegisterPlanSelection from "../Register/RegisterPlanSelection";
 import { useAuth } from "../../context/AuthContext";
+import { SELL_VERIFICATION_NOTICE_EVENT } from "../../context/sellVerificationNotice";
 import { useDashboardSidebar } from "../../hooks/useDashboardSidebar";
 import { ROUTES } from "../../routes/paths";
 import { getProfessionalMeAction } from "../../app/actions/professionals";
@@ -31,6 +34,7 @@ import ProposalsView from "./sections/ProposalsView";
 import PromotionCreator from "./sections/PromotionCreator";
 import AllPromotionsPage from "./sections/AllPromotionsPage";
 import ProductCreator from "./sections/ProductCreator";
+import ProductVariantsSection from "./sections/ProductVariantsSection";
 import NotificationsPage from "./sections/NotificationsPage";
 import DashboardProducts from "./sections/DashboardProducts";
 import SubscriptionSection from "./sections/SubscriptionSection";
@@ -49,6 +53,19 @@ import FAQSection from "../FAQ/FAQSection";
 import ErrorReportSection from "./sections/ErrorReportSection";
 import Navbar from "../../components/Navbar/Navbar";
 import UnverifiedAccountModal from "./sections/UnverifiedAccountModal";
+import SalesSection from "./sections/SalesSection";
+import LiquidationsSection from "./sections/LiquidationsSection";
+import CommercialDataSection from "./sections/CommercialDataSection";
+import BranchesSection from "./sections/BranchesSection";
+import RidersSection from "./sections/RidersSection";
+import FleetMapSection from "./sections/FleetMapSection";
+import BuyerOrdersSection from "./sections/BuyerOrdersSection";
+import FavoritesSection from "./sections/FavoritesSection";
+import PaymentMethodsSection from "./sections/PaymentMethodsSection";
+import CartSection from "./sections/CartSection";
+import ReputationSection from "./sections/ReputationSection";
+import DenunciasSection from "./sections/DenunciasSection";
+import { commerceService } from "../../services/commerceService";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -122,6 +139,13 @@ export default function DashboardPage() {
     enabled: !!professionalId,
   });
 
+  const { data: professionalScore } = useQuery({
+    queryKey: ["professional-score", professionalId],
+    queryFn: () => commerceService.getProfessionalScore(professionalId!),
+    enabled: !!professionalId,
+    staleTime: 60 * 1000,
+  });
+
   const profileViews = myProfessional?.profile_views ?? 0;
 
   const acceptedProposalsCount = proposalsCountData?.count ?? 0;
@@ -150,6 +174,12 @@ export default function DashboardPage() {
   };
   const handleShowProducts = () =>
     router.push(`${ROUTES.dashboard}?view=products`);
+  const handleShowProductVariants = (product?: any) => {
+    const id = product?.professional_product_id || product?.id;
+    router.push(
+      `${ROUTES.dashboard}?view=products-variants${id ? `&productId=${id}` : ""}`,
+    );
+  };
   const handleShowServices = () =>
     router.push(`${ROUTES.dashboard}?view=services`);
   const handleShowSubscription = () =>
@@ -267,6 +297,18 @@ export default function DashboardPage() {
     "referrals",
     "faq",
     "report-errors",
+    "sales",
+    "liquidations",
+    "commercial-data",
+    "branches",
+    "riders",
+    "fleet-map",
+    "purchases",
+    "favorites",
+    "payment-methods",
+    "cart",
+    "reputation",
+    "denuncias",
   ]);
   const shouldLockDashboardView =
     isProfessionalUser &&
@@ -276,6 +318,12 @@ export default function DashboardPage() {
   useEffect(() => {
     setView(routeView || "overview");
   }, [routeView]);
+
+  useEffect(() => {
+    if (sessionStatus?.sell_verification_required && (view === "products" || view === "services")) {
+      window.dispatchEvent(new Event(SELL_VERIFICATION_NOTICE_EVENT));
+    }
+  }, [view, sessionStatus?.sell_verification_required]);
 
   const [isUnverifiedBannerClosed, setIsUnverifiedBannerClosed] =
     useState(false);
@@ -311,7 +359,7 @@ export default function DashboardPage() {
 
   // Mostrar el modal de cuenta no verificada una vez por sesión de browser
   useEffect(() => {
-    if (!myProfessional || !isProfessionalUser) return;
+    if (!myProfessional || !isProfessionalUser || sessionStatus?.sell_verification_required) return;
 
     const isVerified =
       myProfessional?.companies_arca?.[0]?.is_verified ||
@@ -330,7 +378,7 @@ export default function DashboardPage() {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [myProfessional, isProfessionalUser]);
+  }, [myProfessional, isProfessionalUser, sessionStatus?.sell_verification_required]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -382,7 +430,7 @@ export default function DashboardPage() {
 
       {/* Modal flotante de verificación de cuenta */}
       <UnverifiedAccountModal
-        isOpen={isUnverifiedModalOpen}
+        isOpen={isUnverifiedModalOpen && !sessionStatus?.sell_verification_required}
         onClose={() => setIsUnverifiedModalOpen(false)}
       />
 
@@ -514,11 +562,46 @@ export default function DashboardPage() {
                 onBack={handleShowProducts}
                 productToEdit={editingProduct}
               />
+            ) : view === "products-variants" ? (
+              <ProductVariantsSection
+                productId={
+                  searchParams.get("productId") ||
+                  editingProduct?.id ||
+                  editingProduct?.professional_product_id ||
+                  undefined
+                }
+                onBack={handleShowProducts}
+              />
             ) : view === "products" ? (
               <DashboardProducts
                 onCreateNew={() => handleShowProductsCreate()}
                 onEdit={handleShowProductsCreate}
+                onManageVariants={handleShowProductVariants}
               />
+            ) : view === "sales" ? (
+              <SalesSection />
+            ) : view === "liquidations" ? (
+              <LiquidationsSection />
+            ) : view === "commercial-data" ? (
+              <CommercialDataSection />
+            ) : view === "branches" ? (
+              <BranchesSection />
+            ) : view === "riders" ? (
+              <RidersSection />
+            ) : view === "fleet-map" ? (
+              <FleetMapSection />
+            ) : view === "purchases" ? (
+              <BuyerOrdersSection />
+            ) : view === "favorites" ? (
+              <FavoritesSection />
+            ) : view === "payment-methods" ? (
+              <PaymentMethodsSection />
+            ) : view === "cart" ? (
+              <CartSection />
+            ) : view === "reputation" ? (
+              <ReputationSection professionalIdProp={professionalId} />
+            ) : view === "denuncias" ? (
+              <DenunciasSection />
             ) : view === "services" ? (
               <DashboardServices />
             ) : view === "notifications" ? (
@@ -593,10 +676,38 @@ export default function DashboardPage() {
                         <LayoutDashboard size={20} className="icon-purple" />
                       </div>
                       <div className="stat-value-group">
-                        <span className="card-label">PRESUPUESTOS ACEPTADOS</span>
+                        <span className="card-label">
+                          PRESUPUESTOS ACEPTADOS
+                        </span>
                         <h2 className="big-value">
                           {acceptedProposalsCount !== null
                             ? acceptedProposalsCount.toLocaleString("es-AR")
+                            : "--"}
+                        </h2>
+                      </div>
+                    </div>
+
+                    <div
+                      className="stat-card compact-stat-box stat-card--interactive"
+                      onClick={() =>
+                        router.push(`${ROUTES.dashboard}?view=reputation`)
+                      }
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          router.push(`${ROUTES.dashboard}?view=reputation`);
+                        }
+                      }}
+                    >
+                      <div className="stat-card__icon-wrap">
+                        <Award size={20} className="icon-blue" />
+                      </div>
+                      <div className="stat-value-group">
+                        <span className="card-label">REPUTACIÓN Y SCORE</span>
+                        <h2 className="big-value">
+                          {professionalScore?.score !== undefined
+                            ? `${professionalScore.score} pts`
                             : "--"}
                         </h2>
                       </div>
@@ -803,8 +914,8 @@ export default function DashboardPage() {
           title="Mejorá tu cuenta"
         >
           <p>
-            Para acceder a esta funcionalidad necesitás una suscripción
-            profesional.
+            Para acceder a esta funcionalidad necesitás una suscripción Básica o
+            Premium.
           </p>
           <div className="upgrade-actions">
             <button
@@ -977,6 +1088,18 @@ export default function DashboardPage() {
                   con tu portafolio de trabajos y reseñas de clientes.
                 </span>
               </li>
+              <li className="dashboard-welcome__benefit">
+                <span aria-hidden="true">✅</span>
+                <span>Ofrecé <strong>cuotas sin interés</strong> en tus productos y servicios.</span>
+              </li>
+              <li className="dashboard-welcome__benefit">
+                <span aria-hidden="true">✅</span>
+                <span>Ofrecé <strong>envíos gratis por delivery o a todo el país.</strong></span>
+              </li>
+              <li className="dashboard-welcome__benefit">
+                <span aria-hidden="true">✅</span>
+                <span>Integrá tu flota con tus propios <strong>deliverys y fleteros.</strong></span>
+              </li>
             </ul>
             <button
               className="btn-primary"
@@ -996,33 +1119,7 @@ export default function DashboardPage() {
         </Modal>
       </div>
 
-      {isUnsubscribedProfessional && (
-        <div
-          className="subscription-confirm-overlay"
-          style={{
-            zIndex: 1000,
-            padding: "20px",
-            overflowY: "auto",
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.8)",
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              position: "relative",
-              maxWidth: "1000px",
-              width: "100%",
-              marginTop: "5vh",
-            }}
-          >
-            <RegisterPlanSelection />
-          </div>
-        </div>
-      )}
+      {isUnsubscribedProfessional && <RegisterPlanSelection />}
     </div>
   );
 }

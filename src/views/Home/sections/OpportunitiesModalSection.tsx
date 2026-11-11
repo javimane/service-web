@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Building2, Store, UserRound } from "lucide-react";
+import { ArrowRight, Building2, Check, Store, UserRound } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
+import { useAuthModal } from "../../../context/AuthModalContext";
 import "./OpportunitiesModalSection.css";
 
 const MOBILE_AUTO_OPEN_KEY = "opportunities_modal_mobile_seen_v1";
 
 const PROFESSIONAL_ITEMS = [
   "Publicar tus servicios o productos y aparecer en búsquedas locales.",
+  "Vender productos y servicios con hasta 18 cuotas sin interés para tus clientes.",
+  "Integrar tu propia flota de riders y fleteros para realizar los envíos de tus ventas.",
+  "Vender con bajas comisiones por operación.",
   "Recibir consultas directas por chat y responder en tiempo real.",
   "Mostrar promociones, precios y horarios para atraer más clientes.",
   "Construir reputación con reseñas verificadas de usuarios reales.",
@@ -25,6 +29,7 @@ const USER_ITEMS = [
 
 export default function OpportunitiesModalSection() {
   const [isOpen, setIsOpen] = useState(false);
+  const { openAuth } = useAuthModal();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -54,18 +59,44 @@ export default function OpportunitiesModalSection() {
             Creá tu cuenta gratis y potenciá tu negocio hoy
           </h2>
           <p className="opportunities-modal-section__subtitle">
-            También te contamos todo lo que pueden hacer los usuarios para
-            conectar con vos y contratar más rápido.
+            Creá tu identidad digital, conectá con clientes reales y hacé crecer
+            tu negocio desde un solo lugar. Conocé también cómo los usuarios
+            pueden encontrarte y contratar más rápido.
           </p>
 
-          <button
-            type="button"
-            className="opportunities-modal-section__open-btn"
-            onClick={() => setIsOpen(true)}
-          >
-            Ver guía completa
-            <ArrowRight size={16} />
-          </button>
+          <ul className="opportunities-modal-section__benefits" role="list">
+            {["Perfil verificado", "Catálogo digital", "Clientes directos"].map((benefit) => (
+              <li key={benefit}>
+                <Check size={16} aria-hidden="true" />
+                {benefit}
+              </li>
+            ))}
+          </ul>
+
+          <div className="opportunities-modal-section__actions">
+            <button
+              type="button"
+              className="opportunities-modal-section__register-btn"
+              onClick={() => openAuth("register")}
+            >
+              Crear cuenta gratis
+            </button>
+            <button
+              type="button"
+              className="opportunities-modal-section__open-btn"
+              onClick={() => openAuth("login")}
+            >
+              Ya tengo cuenta
+            </button>
+            <button
+              type="button"
+              className="opportunities-modal-section__open-btn"
+              onClick={() => setIsOpen(true)}
+            >
+              Ver guía completa
+              <ArrowRight size={16} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
 

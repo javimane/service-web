@@ -1,0 +1,484 @@
+"use client";
+
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Award,
+  Star,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  TrendingUp,
+  ShieldCheck,
+  HelpCircle,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
+import {
+  commerceService,
+  ProfessionalScore,
+  ProfessionalReview,
+} from "@/services/commerceService";
+import "./ReputationSection.css";
+
+interface TierInfo {
+  name: string;
+  min: number;
+  badgeClass: string;
+  label: string;
+}
+
+const TIERS: TierInfo[] = [
+  {
+    name: "Novato",
+    min: 0,
+    badgeClass: "reputation-tier--novice",
+    label: "Nivel Inicial",
+  },
+  {
+    name: "Bronce",
+    min: 2500,
+    badgeClass: "reputation-tier--bronze",
+    label: "Nivel Bronce",
+  },
+  {
+    name: "Plata",
+    min: 22500,
+    badgeClass: "reputation-tier--silver",
+    label: "Nivel Plata",
+  },
+  {
+    name: "Oro",
+    min: 147500,
+    badgeClass: "reputation-tier--gold",
+    label: "Nivel Oro",
+  },
+  {
+    name: "Platino",
+    min: 247500,
+    badgeClass: "reputation-tier--platinum",
+    label: "Nivel Platino",
+  },
+  {
+    name: "Mercado Líder",
+    min: 597500,
+    badgeClass: "reputation-tier--leader",
+    label: "Mercado Líder",
+  },
+  {
+    name: "Supremo",
+    min: 2997500,
+    badgeClass: "reputation-tier--supreme",
+    label: "Nivel Supremo",
+  },
+];
+
+function getTierByScore(score: number): TierInfo {
+  return [...TIERS].reverse().find((tier) => score >= tier.min) || TIERS[0];
+}
+
+const formatPoints = (points: number) =>
+  new Intl.NumberFormat("es-AR").format(points);
+
+interface ReputationSectionProps {
+  professionalIdProp?: string | number;
+}
+
+export default function ReputationSection({
+  professionalIdProp,
+}: ReputationSectionProps) {
+  const token = getAccessToken();
+  setApiAccessToken(token);
+  const { sessionStatus } = useAuth();
+  const professionalId =
+    professionalIdProp ||
+    sessionStatus?.subscription?.professional_id ||
+    sessionStatus?.professional_id;
+
+  const [reviewFilter, setReviewFilter] = useState<number | null>(null);
+
+  const { data: scoreData, isLoading: isLoadingScore } =
+    useQuery<ProfessionalScore>({
+      queryKey: ["professional-score", professionalId],
+      queryFn: () => commerceService.getProfessionalScore(professionalId!),
+      enabled: Boolean(professionalId),
+      staleTime: 60 * 1000,
+    });
+
+  const { data: reviewsData = [], isLoading: isLoadingReviews } = useQuery<
+    ProfessionalReview[]
+  >({
+    queryKey: ["professional-reviews", professionalId],
+    queryFn: () => commerceService.getProfessionalReviews(professionalId!),
+    enabled: Boolean(professionalId),
+    staleTime: 60 * 1000,
+  });
+
+  const score = scoreData?.score ?? 0;
+  const tier =
+    TIERS.find(
+      (item) =>
+        item.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") ===
+        scoreData?.medal,
+    ) ?? getTierByScore(score);
+  const nextTier = scoreData?.next_tier_medal
+    ? (TIERS.find(
+        (item) =>
+          item.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") ===
+          scoreData.next_tier_medal,
+      ) ?? null)
+    : scoreData?.next_tier_score === null
+      ? null
+      : TIERS[TIERS.findIndex((item) => item.name === tier.name) + 1] || null;
+  const currentTierScore = scoreData?.current_tier_score ?? tier.min;
+  const nextTierScore = scoreData?.next_tier_score ?? nextTier?.min ?? null;
+  const pointsToNextTier =
+    scoreData?.points_to_next_tier ??
+    (nextTierScore === null ? null : Math.max(0, nextTierScore - score));
+
+  const progress =
+    nextTierScore !== null
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round(
+              ((score - currentTierScore) /
+                (nextTierScore - currentTierScore)) *
+                100,
+            ),
+          ),
+        )
+      : 100;
+
+  const reviews = Array.isArray(reviewsData) ? reviewsData : [];
+  const averageRating =
+    scoreData?.average_rating ??
+    (reviews.length
+      ? Number(
+          (
+            reviews.reduce((acc, r) => acc + (r.rating || 5), 0) /
+            reviews.length
+          ).toFixed(1),
+        )
+      : 0.0);
+
+  const filteredReviews = reviews.filter(
+    (review) => reviewFilter === null || review.rating === reviewFilter,
+  );
+
+  const completedRate = scoreData?.completed_services_rate ?? 100;
+  const penaltiesCount = scoreData?.penalties_count ?? 0;
+
+  return (
+    <div className="reputation-section">
+      <header className="reputation-section__header">
+        <div>
+          <span className="reputation-section__subtitle">
+            Rendimiento y Reputación
+          </span>
+          <h1 className="reputation-section__title">Scoring del Profesional</h1>
+        </div>
+      </header>
+
+      {/* Hero Score Card */}
+      <div className="reputation-hero-card">
+        <div className="reputation-hero-card__body">
+          <div className="reputation-score-box">
+            <div className={`reputation-medal-icon-wrap ${tier.badgeClass}`}>
+              <Award size={36} />
+            </div>
+            <div className="reputation-score-details">
+              <span className="reputation-score-details__label">
+                Puntaje de Reputación
+              </span>
+              <div className="reputation-score-details__value-row">
+                <span className="reputation-score-number">
+                  {isLoadingScore ? "--" : formatPoints(score)}
+                </span>
+                <span className="reputation-score-unit">pts</span>
+              </div>
+              <span className={`reputation-tier-badge ${tier.badgeClass}`}>
+                <Sparkles size={12} /> {tier.label}
+              </span>
+            </div>
+          </div>
+
+          <div className="reputation-rating-summary">
+            <div className="reputation-rating-stars-col">
+              <div className="reputation-stars-row">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    size={16}
+                    fill={
+                      s <= Math.round(averageRating) ? "currentColor" : "none"
+                    }
+                  />
+                ))}
+              </div>
+              <span className="reputation-stars-count">
+                {reviews.length}{" "}
+                {reviews.length === 1 ? "opinión" : "opiniones de clientes"}
+              </span>
+            </div>
+            <span className="reputation-rating-big-number">
+              {Number(averageRating).toFixed(1)}
+            </span>
+          </div>
+        </div>
+
+        {/* Progress to Next Tier */}
+        <div className="reputation-progress-wrap">
+          <div className="reputation-progress-labels">
+            <span>Nivel actual: {tier.name}</span>
+            <span>
+              {nextTier && nextTierScore !== null
+                ? `Próximo nivel: ${nextTier.name} (${formatPoints(nextTierScore)} pts). Faltan ${formatPoints(pointsToNextTier ?? 0)} pts`
+                : "¡Has alcanzado el nivel máximo!"}
+            </span>
+          </div>
+          <div className="reputation-progress-bar-bg">
+            <div
+              className="reputation-progress-bar-fill"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Operational Metrics Grid */}
+      <div className="reputation-metrics-grid">
+        <div className="reputation-metric-card">
+          <div className="reputation-metric-card__icon reputation-metric-card__icon--green">
+            <CheckCircle2 size={22} />
+          </div>
+          <div className="reputation-metric-card__info">
+            <span className="reputation-metric-card__label">
+              Servicios Completados
+            </span>
+            <span className="reputation-metric-card__value">
+              {completedRate}%
+            </span>
+            <span className="reputation-metric-card__hint">
+              Sin cancelaciones de tu parte
+            </span>
+          </div>
+        </div>
+
+        <div className="reputation-metric-card">
+          <div className="reputation-metric-card__icon reputation-metric-card__icon--blue">
+            <Clock size={22} />
+          </div>
+          <div className="reputation-metric-card__info">
+            <span className="reputation-metric-card__label">
+              Asignación de Turnos
+            </span>
+            <span className="reputation-metric-card__value">&lt; 2 hrs</span>
+            <span className="reputation-metric-card__hint">
+              Tiempo promedio de respuesta
+            </span>
+          </div>
+        </div>
+
+        <div className="reputation-metric-card">
+          <div className="reputation-metric-card__icon reputation-metric-card__icon--amber">
+            <ShieldCheck size={22} />
+          </div>
+          <div className="reputation-metric-card__info">
+            <span className="reputation-metric-card__label">
+              Penalizaciones Activas
+            </span>
+            <span className="reputation-metric-card__value">
+              {penaltiesCount}
+            </span>
+            <span className="reputation-metric-card__hint">
+              {penaltiesCount === 0
+                ? "Estado óptimo, sin penalizaciones"
+                : "Afecta negativamente tu puntuación"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="reputation-reviews-card">
+        <div className="reputation-reviews-header">
+          <h2 className="reputation-reviews-title">
+            Calificaciones y Opiniones de Compradores
+          </h2>
+          <div className="reputation-reviews-tabs">
+            <button
+              type="button"
+              className={`reputation-tab-btn ${
+                reviewFilter === null ? "reputation-tab-btn--active" : ""
+              }`}
+              aria-pressed={reviewFilter === null}
+              onClick={() => setReviewFilter(null)}
+            >
+              Todas ({reviews.length})
+            </button>
+            {[5, 4, 3, 2, 1].map((stars) => (
+              <button
+                key={stars}
+                type="button"
+                className={`reputation-tab-btn ${
+                  reviewFilter === stars ? "reputation-tab-btn--active" : ""
+                }`}
+                aria-pressed={reviewFilter === stars}
+                onClick={() => setReviewFilter(stars)}
+              >
+                {stars} {stars === 1 ? "estrella" : "estrellas"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="reputation-reviews-list">
+          {isLoadingReviews ? (
+            <div className="reputation-reviews-empty">
+              Cargando opiniones de clientes...
+            </div>
+          ) : filteredReviews.length === 0 ? (
+            <div className="reputation-reviews-empty">
+              No hay calificaciones registradas en este filtro.
+            </div>
+          ) : (
+            filteredReviews.map((review) => {
+              const customerName = review.customer_name || "Cliente verificado";
+              const initial = customerName.charAt(0).toUpperCase();
+
+              return (
+                <div key={review.id} className="reputation-review-item">
+                  <div className="reputation-review-item__top">
+                    <div className="reputation-review-user">
+                      <div className="reputation-review-avatar">{initial}</div>
+                      <span className="reputation-review-name">
+                        {customerName}
+                      </span>
+                    </div>
+                    <span className="reputation-review-date">
+                      {review.created_at
+                        ? new Date(review.created_at).toLocaleDateString(
+                            "es-AR",
+                          )
+                        : "Reciente"}
+                    </span>
+                  </div>
+
+                  <div className="reputation-stars-row">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={14}
+                        fill={star <= review.rating ? "currentColor" : "none"}
+                      />
+                    ))}
+                  </div>
+
+                  {review.comment && (
+                    <p className="reputation-review-comment">
+                      {review.comment}
+                    </p>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Scoring Explanatory Guide Box */}
+      <div className="reputation-guide-card">
+        <div className="reputation-guide-header">
+          <HelpCircle size={18} className="icon-blue" />
+          <h3 className="reputation-guide-title">
+            ¿Cómo funciona el sistema de reputación en Sercio?
+          </h3>
+        </div>
+
+        <div className="reputation-guide-grid">
+          <div className="reputation-guide-block">
+            <h4 className="reputation-guide-block__title">
+              <TrendingUp size={16} /> Reglas de Puntaje
+            </h4>
+            <ul className="reputation-rules-list">
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--pos">
+                  +10 pts
+                </span>
+                <span>Por cada venta liquidada.</span>
+              </li>
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--pos">
+                  +5 pts
+                </span>
+                <span>Por cada opinión de 4 o 5 estrellas.</span>
+              </li>
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--pos">
+                  +1 pt
+                </span>
+                <span>Por cada opinión de 3 estrellas.</span>
+              </li>
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--neg">
+                  −5 pts
+                </span>
+                <span>Por cada opinión de 1 o 2 estrellas.</span>
+              </li>
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--neg">
+                  −10 pts
+                </span>
+                <span>
+                  Por un reclamo de venta que sigue abierto después de 7 días.
+                </span>
+              </li>
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--neg">
+                  −20 pts
+                </span>
+                <span>Por un reclamo resuelto por Sercio con reembolso.</span>
+              </li>
+            </ul>
+            <p>
+              Si resolvés el problema directamente con el comprador, este puede
+              confirmar la solución desde su compra. Un reclamo cerrado antes de
+              los 7 días no recibe la penalización por demora. Si más tarde
+              termina en reembolso, ambas deducciones pueden acumularse.
+            </p>
+          </div>
+
+          <div className="reputation-guide-block">
+            <h4 className="reputation-guide-block__title">
+              <Award size={16} /> Beneficios de Subir de Nivel
+            </h4>
+            <ul className="reputation-rules-list">
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--pos">
+                  Visibilidad
+                </span>
+                <span>
+                  Mayor exposición en las búsquedas locales del marketplace y
+                  mapa.
+                </span>
+              </li>
+              <li className="reputation-rule-item">
+                <span className="reputation-rule-tag reputation-rule-tag--pos">
+                  Confianza
+                </span>
+                <span>
+                  Insignia y medalla de distinción visible en tu perfil público.
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

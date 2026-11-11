@@ -1,7 +1,13 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PlusCircle, Building2, AlertTriangle, Lock, ExternalLink } from "lucide-react";
+import {
+  PlusCircle,
+  Building2,
+  AlertTriangle,
+  Lock,
+  ExternalLink,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Modal from "../../components/Modal/Modal";
 import DashboardSidebar from "../../components/DashboardSidebar/DashboardSidebar";
@@ -13,6 +19,8 @@ import HeadquartersSection from "./sections/HeadquartersSection";
 import OperationsSection from "./sections/OperationsSection";
 import PaymentMethodsSection from "./sections/PaymentMethodsSection";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
+import BillingDataSection from "./sections/BillingDataSection";
+import DeliveryAddressSection from "./sections/DeliveryAddressSection";
 import ProvinceNovedadesSection from "./sections/ProvinceNovedadesSection";
 import ActionsSection from "./sections/ActionsSection";
 import CompanyDisplaySection from "./sections/CompanyDisplaySection";
@@ -49,7 +57,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!searchParams) return;
     const isWelcomeParam = searchParams.get("welcome") === "true";
-    const isMissingCompanyParam = searchParams.get("missing_company") === "true";
+    const isMissingCompanyParam =
+      searchParams.get("missing_company") === "true";
     if (isWelcomeParam) {
       setShowWelcomeModal(true);
     }
@@ -59,7 +68,13 @@ export default function SettingsPage() {
   }, [searchParams]);
   const queryClient = useQueryClient();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useDashboardSidebar();
-  const { user, sessionStatus, logout, hasProfessionalSubscription, refreshSession } = useAuth();
+  const {
+    user,
+    sessionStatus,
+    logout,
+    hasProfessionalSubscription,
+    refreshSession,
+  } = useAuth();
   const { showAlert, showSuccess, showError } = useAlert();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -68,6 +83,15 @@ export default function SettingsPage() {
     sessionStatus?.subscription?.professional_id ??
     sessionStatus?.professional_id;
   const isProfessional = Boolean(professionalId);
+  const primaryProvider = user?.app_metadata?.provider?.toLowerCase();
+  const linkedProviders: string[] = user?.app_metadata?.providers ?? [];
+  const isSocialAccount =
+    primaryProvider === "google" ||
+    primaryProvider === "apple" ||
+    (!primaryProvider &&
+      !linkedProviders.includes("email") &&
+      (linkedProviders.includes("google") ||
+        linkedProviders.includes("apple")));
 
   const { data: apiSubscription } = useQuery({
     queryKey: ["professional-subscription"],
@@ -84,7 +108,11 @@ export default function SettingsPage() {
   const isSubscriptionActive = useMemo(() => {
     if (!subscriptionData && !hasProfessionalSubscription) return false;
     if (subStatus === "cancelled" || subStatus === "canceled") return false;
-    return subStatus === "active" || subStatus === "past_due" || Boolean(hasProfessionalSubscription);
+    return (
+      subStatus === "active" ||
+      subStatus === "past_due" ||
+      Boolean(hasProfessionalSubscription)
+    );
   }, [subscriptionData, subStatus, hasProfessionalSubscription]);
 
   const [isEditingCompany, setIsEditingCompany] = useState(false);
@@ -418,7 +446,9 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     if (!tradeName || tradeName.trim() === "") {
-      showError("Por favor, ingresa el nombre de la empresa o comercio (Campo obligatorio).");
+      showError(
+        "Por favor, ingresa el nombre de la empresa o comercio (Campo obligatorio).",
+      );
       return;
     }
     const cleanCuit = cuit.replace(/\D/g, "");
@@ -427,11 +457,15 @@ export default function SettingsPage() {
       return;
     }
     if (selectedCategories.length === 0) {
-      showError("Debes seleccionar al menos una categoría de servicio (Campo obligatorio).");
+      showError(
+        "Debes seleccionar al menos una categoría de servicio (Campo obligatorio).",
+      );
       return;
     }
     if (selectedProvinces.length === 0) {
-      showError("Debes indicar tu cobertura geográfica seleccionando al menos una provincia.");
+      showError(
+        "Debes indicar tu cobertura geográfica seleccionando al menos una provincia.",
+      );
       return;
     }
     if (
@@ -467,7 +501,9 @@ export default function SettingsPage() {
   return (
     <div className="dashboard-page-wrapper">
       <Navbar />
-      <div className={`dashboard-page settings-page-layout ${isMobileSidebarMode ? "dashboard-page--mobile" : ""}`}>
+      <div
+        className={`dashboard-page settings-page-layout ${isMobileSidebarMode ? "dashboard-page--mobile" : ""}`}
+      >
         {!isMobileSidebarMode && (
           <DashboardSidebar
             activeItem="settings"
@@ -481,7 +517,9 @@ export default function SettingsPage() {
             onNotificationsClick={() =>
               router.push(`${ROUTES.dashboard}?view=notifications`)
             }
-            onProfileClick={() => router.push(`${ROUTES.dashboard}?view=profile`)}
+            onProfileClick={() =>
+              router.push(`${ROUTES.dashboard}?view=profile`)
+            }
           />
         )}
 
@@ -503,16 +541,31 @@ export default function SettingsPage() {
               </div>
             </section>
 
+            <button
+              type="button"
+              className="settings-setup-link"
+              onClick={() => router.push(ROUTES.accountSetup)}
+            >
+              Completar cuenta paso a paso
+            </button>
+
             <section className="settings-grid">
               {/* Always show personal info */}
               <PersonalInfoSection
                 userId={user?.id}
+                isSocialAccount={isSocialAccount}
                 initialData={{
                   displayName:
                     user?.user_metadata?.full_name || user?.display_name || "",
                   email: user?.email || "",
                 }}
               />
+
+              {/* Billing and fiscal data for invoice generation */}
+              <BillingDataSection userId={user?.id} />
+
+              {/* Delivery address for receiving product orders */}
+              <DeliveryAddressSection userId={user?.id} />
 
               {/* Province news feed selection (for all authenticated users) */}
               {user?.id && (
@@ -528,152 +581,64 @@ export default function SettingsPage() {
                 <AvatarSection userId={user.id} />
               )}
 
-              {/* Business Sections */}
-              {showSummary && (
-                <CompanyDisplaySection
-                  prof={{ ...profMe, companies: actualCompany }}
-                  onEdit={() => setIsEditingCompany(true)}
-                  provinceList={provinceList}
-                  departmentList={storeDepartmentList}
-                  arcaStatus={effectiveArcaStatus}
-                  loadingArca={loadingArca}
-                  categoryList={serviceCategoryList}
-                />
-              )}
-
-              {showEditForms && (
-                <div className="settings-forms-two-cols">
-                  <div className="settings-col-left">
-                    <BusinessInfoSection
-                      businessType={businessType}
-                      setBusinessType={setBusinessType}
-                      tradeName={tradeName}
-                      setTradeName={setTradeName}
-                      cuit={cuit}
-                      setCuit={setCuit}
-                    />
-
-                    <CategoriesSection
-                      selectedCategories={selectedCategories}
-                      onToggleCategory={(id: number) =>
-                        setSelectedCategories((curr) =>
-                          curr.includes(id)
-                            ? curr.filter((c) => c !== id)
-                            : [...curr, id],
-                        )
-                      }
-                      categoryList={serviceCategoryList}
-                    />
+              {/* Enlace a Datos Comerciales */}
+              {isProfessional && (
+                <div className="settings-commercial-redirect-card">
+                  <div className="settings-commercial-redirect-icon">
+                    <Building2 size={24} />
                   </div>
-
-                  <div className="settings-col-right">
-                    <HeadquartersSection
-                      selectedProvinces={selectedProvinces}
-                      onToggleProvince={(option) =>
-                        toggleSelection(setSelectedProvinces, option)
+                  <div className="settings-commercial-redirect-content">
+                    <h4>Datos Comerciales y Fiscales</h4>
+                    <p>
+                      La información fiscal, razón social, CUIT, CBU de cobro y
+                      sucursales se gestionan de forma centralizada en la
+                      sección
+                      <strong> Datos comerciales</strong> de tu panel.
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() =>
+                        router.push(`${ROUTES.dashboard}?view=commercial-data`)
                       }
-                      selectedDepartments={selectedDepartments}
-                      onToggleDepartment={(option) =>
-                        toggleSelection(setSelectedDepartments, option)
-                      }
-                      provinceList={provinceList}
-                      departmentList={departmentList}
-                    />
-
-                    <OperationsSection
-                      hasStorefront={hasStorefront}
-                      setHasStorefront={setHasStorefront}
-                      provinceList={provinceList}
-                      departmentList={storeDepartmentList}
-                      storeStreet={storeStreet}
-                      setStoreStreet={setStoreStreet}
-                      storeNumber={storeNumber}
-                      setStoreNumber={setStoreNumber}
-                      storeFloor={storeFloor}
-                      setStoreFloor={setStoreFloor}
-                      storeZip={storeZip}
-                      setStoreZip={setStoreZip}
-                      storeProvinceId={storeProvinceId}
-                      setStoreProvinceId={setStoreProvinceId}
-                      storeDepartmentId={storeDepartmentId}
-                      setStoreDepartmentId={setStoreDepartmentId}
-                      storeLat={storeLat}
-                      setStoreLat={setStoreLat}
-                      storeLng={storeLng}
-                      setStoreLng={setStoreLng}
-                    />
-
-                    <PaymentMethodsSection
-                      selectedPayments={selectedPayments}
-                      onTogglePayment={(option) =>
-                        toggleSelection(setSelectedPayments, option)
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-
-              {showEditForms && (
-                <>
-                  {saveStatus !== "idle" && (
-                    <div
-                      className={`settings-status-banner settings-status-banner--${saveStatus}`}
                     >
-                      {saveMessage}
-                    </div>
-                  )}
-
-                  <ActionsSection
-                    onSave={handleSave}
-                    onCancel={() => setIsEditingCompany(false)}
-                    isSaving={saveMutation.isPending}
-                  />
-                </>
-              )}
-
-              {showCTA && (
-                <div className="register-company-cta">
-                  <div className="cta-icon">
-                    <Building2 size={40} />
+                      <span>Ir a Datos Comerciales</span>
+                      <ExternalLink size={14} />
+                    </button>
                   </div>
-                  <h3>Completar Perfil Comercial</h3>
-                  <p>
-                    Aún no has registrado los datos de tu comercio o actividad
-                    autónoma. Completalos para aparecer en las búsquedas.
-                  </p>
-                  <button
-                    className="cta-register-btn"
-                    onClick={() => setIsEditingCompany(true)}
-                  >
-                    <PlusCircle size={18} />
-                    Comenzar Registro
-                  </button>
                 </div>
               )}
 
               {/* Danger Zone */}
               <div className="settings-danger-zone">
-                <h3 className="settings-danger-zone__title">
-                  Zona de peligro
-                </h3>
+                <h3 className="settings-danger-zone__title">Zona de peligro</h3>
                 <p className="settings-danger-zone__desc">
-                  Una vez que elimines tu cuenta, no hay vuelta atrás. Por
+                  Una vez que desactivas tu cuenta, no hay vuelta atrás. Por
                   favor, tené cuidado.
                 </p>
 
                 {isSubscriptionActive && (
                   <div className="settings-danger-zone__warning">
                     <div className="settings-danger-zone__warning-header">
-                      <AlertTriangle size={20} className="settings-danger-zone__warning-icon" />
-                      <h4>No podés eliminar tu cuenta con una suscripción activa</h4>
+                      <AlertTriangle
+                        size={20}
+                        className="settings-danger-zone__warning-icon"
+                      />
+                      <h4>
+                        No podés dar de baja tu cuenta con una suscripción
+                        activa
+                      </h4>
                     </div>
                     <p>
-                      Para poder eliminar tu cuenta, primero debés cancelar tu suscripción desde el panel de suscripciones.
+                      Para poder dar de baja tu cuenta, primero debés cancelar
+                      tu suscripción desde el panel de suscripciones.
                     </p>
                     <button
                       type="button"
                       className="settings-danger-zone__sub-btn"
-                      onClick={() => router.push(`${ROUTES.dashboard}?view=subscription`)}
+                      onClick={() =>
+                        router.push(`${ROUTES.dashboard}?view=subscription`)
+                      }
                     >
                       <span>Ir a Mi Suscripción</span>
                       <ExternalLink size={14} />
@@ -690,7 +655,7 @@ export default function SettingsPage() {
                   {isSubscriptionActive ? (
                     <>
                       <Lock size={16} />
-                      <span>Eliminar cuenta (Suscripción activa)</span>
+                      <span>Dar de baja cuenta (Suscripción activa)</span>
                     </>
                   ) : isDeleting ? (
                     "Eliminando..."
@@ -728,7 +693,9 @@ export default function SettingsPage() {
               fontSize: "var(--text-md)",
             }}
           >
-            Para comenzar a recibir clientes y publicar tus servicios en la plataforma, por favor completá los datos comerciales obligatorios a continuación:
+            Para comenzar a recibir clientes y publicar tus servicios en la
+            plataforma, por favor completá los datos comerciales obligatorios a
+            continuación:
           </p>
           <ul
             style={{
@@ -751,7 +718,8 @@ export default function SettingsPage() {
                 ✅
               </span>
               <span>
-                <strong>Nombre Comercial y CUIT:</strong> Identificá tu empresa o servicio profesional.
+                <strong>Nombre Comercial y CUIT:</strong> Identificá tu empresa
+                o servicio profesional.
               </span>
             </li>
             <li
@@ -765,7 +733,8 @@ export default function SettingsPage() {
                 ✅
               </span>
               <span>
-                <strong>Categorías y Cobertura:</strong> Seleccioná qué servicios ofrecés y en qué provincias operás.
+                <strong>Categorías y Cobertura:</strong> Seleccioná qué
+                servicios ofrecés y en qué provincias operás.
               </span>
             </li>
             <li
@@ -779,13 +748,18 @@ export default function SettingsPage() {
                 ✅
               </span>
               <span>
-                <strong>Atención al público:</strong> Si atendés en local, marcá tu ubicación en el mapa.
+                <strong>Atención al público:</strong> Si atendés en local, marcá
+                tu ubicación en el mapa.
               </span>
             </li>
           </ul>
           <button
             className="btn-primary"
-            style={{ width: "100%", padding: "var(--space-4)", fontSize: "var(--text-md)" }}
+            style={{
+              width: "100%",
+              padding: "var(--space-4)",
+              fontSize: "var(--text-md)",
+            }}
             onClick={() => setShowWelcomeModal(false)}
           >
             Completar mi perfil
@@ -817,7 +791,9 @@ export default function SettingsPage() {
               fontSize: "var(--text-md)",
             }}
           >
-            Para que tu perfil sea visible en las búsquedas y puedas recibir clientes en la plataforma, es necesario que completes los siguientes datos comerciales obligatorios:
+            Para que tu perfil sea visible en las búsquedas y puedas recibir
+            clientes en la plataforma, es necesario que completes los siguientes
+            datos comerciales obligatorios:
           </p>
           <ul
             style={{
@@ -840,7 +816,8 @@ export default function SettingsPage() {
                 📌
               </span>
               <span>
-                <strong>Nombre Comercial:</strong> El nombre de tu marca, negocio o servicio profesional.
+                <strong>Nombre Comercial:</strong> El nombre de tu marca,
+                negocio o servicio profesional.
               </span>
             </li>
             <li
@@ -854,7 +831,8 @@ export default function SettingsPage() {
                 📌
               </span>
               <span>
-                <strong>CUIT / CUIL:</strong> Tu número de identificación tributaria.
+                <strong>CUIT / CUIL:</strong> Tu número de identificación
+                tributaria.
               </span>
             </li>
             <li
@@ -868,13 +846,18 @@ export default function SettingsPage() {
                 📌
               </span>
               <span>
-                <strong>Categorías y Cobertura:</strong> Rubro de servicio y provincias donde trabajás.
+                <strong>Categorías y Cobertura:</strong> Rubro de servicio y
+                provincias donde trabajás.
               </span>
             </li>
           </ul>
           <button
             className="btn-primary"
-            style={{ width: "100%", padding: "var(--space-4)", fontSize: "var(--text-md)" }}
+            style={{
+              width: "100%",
+              padding: "var(--space-4)",
+              fontSize: "var(--text-md)",
+            }}
             onClick={() => setShowMissingCompanyModal(false)}
           >
             Completar datos comerciales

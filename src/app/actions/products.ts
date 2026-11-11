@@ -25,6 +25,13 @@ const productListSchema = z.object({
   brand: z.string().optional(),
   ean: z.string().optional(),
   wholesale: z.boolean().optional(),
+  interest_free_installments: z.boolean().optional(),
+  free_shipping: z.boolean().optional(),
+  is_offer: z.boolean().optional(),
+  has_offer: z.boolean().optional(),
+  offer_price: z.number().optional(),
+  offer_price_min: z.number().optional(),
+  offer_price_max: z.number().optional(),
 });
 const authTokenSchema = z.string().optional();
 const tokenizedRecordSchema = z
@@ -89,6 +96,7 @@ export const getProductsByProfessionalAction = publicAction
   .schema(
     z.object({
       professionalId: z.number(),
+      manage: z.boolean().optional(),
       wholesale: z.boolean().optional(),
       ean: z.string().optional(),
       name: z.string().optional(),
@@ -96,13 +104,28 @@ export const getProductsByProfessionalAction = publicAction
       subcategoryId: z.string().optional(),
       page: z.number().optional(),
       limit: z.number().optional(),
+      is_offer: z.boolean().optional(),
+      has_offer: z.boolean().optional(),
+      offer_price: z.number().optional(),
+      offer_price_min: z.number().optional(),
+      offer_price_max: z.number().optional(),
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
-    const { professionalId, ...queryParams } = parsedInput;
+    const { professionalId, manage, ...queryParams } = parsedInput;
     const query = new URLSearchParams();
     if (queryParams.wholesale !== undefined)
       query.append("wholesale", String(queryParams.wholesale));
+    if (queryParams.is_offer !== undefined)
+      query.append("is_offer", String(queryParams.is_offer));
+    if (queryParams.has_offer !== undefined)
+      query.append("has_offer", String(queryParams.has_offer));
+    if (queryParams.offer_price !== undefined)
+      query.append("offer_price", String(queryParams.offer_price));
+    if (queryParams.offer_price_min !== undefined)
+      query.append("offer_price_min", String(queryParams.offer_price_min));
+    if (queryParams.offer_price_max !== undefined)
+      query.append("offer_price_max", String(queryParams.offer_price_max));
     if (queryParams.ean) query.append("ean", queryParams.ean);
     if (queryParams.name) query.append("name", queryParams.name);
     if (queryParams.categoryId !== undefined)
@@ -115,12 +138,12 @@ export const getProductsByProfessionalAction = publicAction
       query.append("limit", String(queryParams.limit));
 
     const queryString = query.toString() ? `?${query.toString()}` : "";
-    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${professionalId}${queryString}`;
+    const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${professionalId}${manage ? '/manage' : ''}${queryString}`;
 
     try {
       const response = await axios.get(url, {
         headers: {
-          ...ctx.headers,
+          ...(manage ? await buildActionHeaders(ctx) : ctx.headers),
         },
       });
 
@@ -191,7 +214,7 @@ export const updateProductAction = publicAction
         description: z.string().optional(),
         brand: z.string().optional(),
         categories_products_id: z.number().optional(),
-        sub_categories_products_id: z.string().optional(),
+        sub_categories_products_id: z.string().nullable().optional(),
         weight: z.number().optional(),
         width: z.number().optional(),
         has_ean: z.boolean().optional(),
@@ -258,8 +281,14 @@ export const updateProfessionalProductAction = publicAction
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/products/professional/${parsedInput.professionalId}/product/${parsedInput.productId}`;
 
+    const sanitizedUpdates = { ...parsedInput.updates };
+    delete sanitizedUpdates.variant_professional_product_id;
+    delete sanitizedUpdates.professional_product_id;
+    delete sanitizedUpdates.variant_parent_product_id;
+    delete sanitizedUpdates.variant_parent_id;
+
     try {
-      const response = await axios.put(url, parsedInput.updates, {
+      const response = await axios.put(url, sanitizedUpdates, {
         headers: await buildActionHeaders(ctx, parsedInput.token),
       });
       return response.data;

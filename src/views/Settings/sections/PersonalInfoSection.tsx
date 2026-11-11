@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   User,
   Mail,
+  Phone,
   Lock,
   Edit2,
   Check,
@@ -16,17 +17,18 @@ import {
   EyeOff,
 } from "lucide-react";
 import { authService } from "../../../services/authService";
-import { userService } from "../../../services/userService";
+import { useAuth } from "../../../context/AuthContext";
 import {
   getProfileAction,
   updateProfileAction,
 } from "../../../app/actions/profile";
 import { getAccessToken } from "../../../utils/auth";
-import { getFirebaseMessagingToken } from "../../../services/firebaseMessaging";
+import { enableDesktopNotifications } from "../../../services/desktopNotifications";
 import "./PersonalInfoSection.css";
 
 interface PersonalInfoSectionProps {
   userId: string;
+  isSocialAccount: boolean;
   initialData: {
     displayName: string;
     email: string;
@@ -35,22 +37,29 @@ interface PersonalInfoSectionProps {
 
 export default function PersonalInfoSection({
   userId,
+  isSocialAccount,
   initialData,
 }: PersonalInfoSectionProps) {
   const queryClient = useQueryClient();
+  const { sessionStatus, refreshSession } = useAuth();
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingPersonalName, setIsEditingPersonalName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
 
   const notificationPermissionState =
-    typeof window === "undefined"
+    typeof window === "undefined" || !("Notification" in window)
       ? "pending"
       : Notification.permission === "granted"
         ? "allowed"
@@ -79,8 +88,14 @@ export default function PersonalInfoSection({
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || "");
+      setFirstName(profile.first_name || "");
+      setLastName(profile.last_name || "");
+      setPhone(profile.phone || profile.phone_number || "");
     } else {
       setDisplayName(initialData.displayName);
+      setFirstName("");
+      setLastName("");
+      setPhone("");
     }
     setEmail(initialData.email);
   }, [profile, initialData]);
@@ -120,6 +135,44 @@ export default function PersonalInfoSection({
     },
   });
 
+  const updatePersonalNameMutation = useMutation({
+    mutationFn: async ({ first, last }: { first: string; last: string }) => {
+      const result = await updateProfileAction({
+        id: userId,
+        data: {
+          first_name: first,
+          last_name: last,
+          display_name: `${first} ${last}`,
+        },
+        token: await getAccessToken(),
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      const updatedSession = await refreshSession();
+      if (updatedSession?.requires_personal_name) {
+        setNotification({
+          type: "error",
+          message:
+            "El nombre guardado aún coincide con el nombre comercial. Ingresá el nombre personal de tu DNI.",
+        });
+        return;
+      }
+      setIsEditingPersonalName(false);
+      setNotification({
+        type: "success",
+        message: "Nombre y apellido guardados para verificar tu identidad.",
+      });
+    },
+    onError: () =>
+      setNotification({
+        type: "error",
+        message: "No se pudieron guardar el nombre y apellido.",
+      }),
+  });
+
   const updateEmailMutation = useMutation({
     mutationFn: (newEmail: string) => authService.updateEmail(newEmail),
     onSuccess: () => {
@@ -136,6 +189,37 @@ export default function PersonalInfoSection({
       });
     },
   });
+
+  const updatePhoneMutation = useMutation({
+    mutationFn: async (newPhone: string) => {
+      const token = await getAccessToken();
+      const result = await updateProfileAction({
+        id: userId,
+        data: { phone: newPhone, phone_number: newPhone },
+        token,
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      return result?.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      setIsEditingPhone(false);
+      setNotification({
+        type: "success",
+        message: "Número de teléfono actualizado con éxito.",
+      });
+    },
+    onError: () => {
+      setNotification({
+        type: "error",
+        message: "Error al actualizar el teléfono.",
+      });
+    },
+  });
+
+  const handleUpdatePhone = () => {
+    updatePhoneMutation.mutate(phone.trim());
+  };
 
   const updatePasswordMutation = useMutation({
     mutationFn: (newPass: string) => authService.updatePassword(newPass),
@@ -162,6 +246,33 @@ export default function PersonalInfoSection({
     updateNameMutation.mutate(displayName);
   };
 
+  const handleUpdatePersonalName = () => {
+    const first = firstName.trim().replace(/\s+/g, " ");
+    const last = lastName.trim().replace(/\s+/g, " ");
+    if (!first || !last) {
+      setNotification({
+        type: "error",
+        message: "Ingresá tu nombre y apellido tal como figuran en el DNI.",
+      });
+      return;
+    }
+    const companyName = String(sessionStatus?.company_name || "")
+      .trim()
+      .replace(/\s+/g, " ");
+    if (
+      companyName &&
+      `${first} ${last}`.toLocaleLowerCase() === companyName.toLocaleLowerCase()
+    ) {
+      setNotification({
+        type: "error",
+        message:
+          "Usá tu nombre personal. El nombre de la empresa se guarda en los datos comerciales.",
+      });
+      return;
+    }
+    updatePersonalNameMutation.mutate({ first, last });
+  };
+
   const handleUpdateEmail = () => {
     if (!email.trim()) return;
     updateEmailMutation.mutate(email);
@@ -185,6 +296,7 @@ export default function PersonalInfoSection({
   };
 
   const handleUpdatePassword = () => {
+    if (isSocialAccount) return;
     const validationErrors = validatePassword(password);
     if (validationErrors.length > 0) {
       setNotification({
@@ -208,32 +320,20 @@ export default function PersonalInfoSection({
 
     setIsEnablingNotifications(true);
     try {
-      const token = await getFirebaseMessagingToken(true);
-
-      if (!token) {
-        const permission = Notification.permission;
-        if (permission === "denied") {
-          setNotification({
-            type: "error",
-            message:
-              "Las notificaciones estan bloqueadas en el navegador. Habilitalas desde la configuracion del sitio.",
-          });
-        } else {
-          setNotification({
-            type: "error",
-            message:
-              "No se pudo obtener el token de notificaciones. Revisá la configuracion de Firebase.",
-          });
-        }
-        return;
-      }
-
-      await userService.registerDeviceToken(token, "web");
-      localStorage.setItem("firebase_token", token);
-      localStorage.setItem("registered_device_token", token);
+      const status = await enableDesktopNotifications();
       setNotification({
-        type: "success",
-        message: "Notificaciones activadas correctamente en este dispositivo.",
+        type:
+          status === "enabled" || status === "browser-only"
+            ? "success"
+            : "error",
+        message:
+          status === "enabled"
+            ? "Avisos de escritorio activados en este dispositivo."
+            : status === "browser-only"
+              ? "Permiso concedido. Recibirás avisos mientras la web esté abierta; el envío en segundo plano no está disponible."
+              : status === "blocked"
+                ? "Los avisos están bloqueados. Permitilos desde la configuración de este sitio."
+                : "Los avisos requieren HTTPS y un navegador compatible.",
       });
     } catch (error) {
       setNotification({
@@ -247,7 +347,9 @@ export default function PersonalInfoSection({
 
   const loading =
     updateNameMutation.isPending ||
+    updatePersonalNameMutation.isPending ||
     updateEmailMutation.isPending ||
+    updatePhoneMutation.isPending ||
     updatePasswordMutation.isPending;
 
   return (
@@ -338,6 +440,77 @@ export default function PersonalInfoSection({
               </div>
             </div>
 
+            <div className="personal-field-row">
+              <div className="personal-field-content">
+                <span className="personal-field-label">
+                  <User size={16} /> Nombre y apellido del titular
+                </span>
+                {isEditingPersonalName ? (
+                  <div className="personal-name-inputs">
+                    <input
+                      className="personal-input"
+                      autoComplete="given-name"
+                      aria-label="Nombre"
+                      placeholder="Nombre"
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                    />
+                    <input
+                      className="personal-input"
+                      autoComplete="family-name"
+                      aria-label="Apellido"
+                      placeholder="Apellido"
+                      value={lastName}
+                      onChange={(event) => setLastName(event.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <span className="personal-field-value">
+                    {firstName && lastName
+                      ? `${firstName} ${lastName}`
+                      : "Sin completar"}
+                  </span>
+                )}
+                <small>
+                  Ingresá los datos personales del DNI, tanto si comprás como si
+                  tenés un negocio.
+                </small>
+              </div>
+              <div className="personal-field-actions">
+                {isEditingPersonalName ? (
+                  <>
+                    <button
+                      type="button"
+                      className="personal-action-btn personal-action-btn--save"
+                      onClick={handleUpdatePersonalName}
+                      disabled={loading}
+                    >
+                      <Check size={16} /> Guardar
+                    </button>
+                    <button
+                      type="button"
+                      className="personal-action-btn personal-action-btn--cancel"
+                      onClick={() => {
+                        setFirstName(profile?.first_name || "");
+                        setLastName(profile?.last_name || "");
+                        setIsEditingPersonalName(false);
+                      }}
+                    >
+                      <X size={16} /> Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="personal-action-btn"
+                    onClick={() => setIsEditingPersonalName(true)}
+                  >
+                    <Edit2 size={16} /> Modificar
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Email Field */}
             <div className="personal-field-row">
               <div className="personal-field-content">
@@ -387,94 +560,168 @@ export default function PersonalInfoSection({
               </div>
             </div>
 
-            {/* Password Field */}
-            <div className="personal-field-row personal-field-row--column">
+            {/* Phone Field */}
+            <div className="personal-field-row">
               <div className="personal-field-content">
                 <span className="personal-field-label">
-                  <Lock size={16} /> Contraseña
+                  <Phone size={16} /> Teléfono
                 </span>
-                {isEditingPassword ? (
-                  <div className="personal-password-inputs">
-                    <div className="personal-input-wrapper">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        className="personal-input"
-                        placeholder="Nueva contraseña"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="personal-password-toggle"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-
-                    <div className="personal-input-wrapper">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        className="personal-input"
-                        placeholder="Confirmar contraseña"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="personal-password-toggle"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-
-                    {password && (
-                      <div className="personal-password-errors">
-                        {validatePassword(password).map((err, idx) => (
-                          <div key={idx} className="personal-password-error-item">
-                            • {err}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                {isEditingPhone ? (
+                  <input
+                    type="tel"
+                    className="personal-input"
+                    placeholder="Ej: 11 2345 6789"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    autoFocus
+                  />
                 ) : (
-                  <span className="personal-field-value">••••••••••••</span>
+                  <span className="personal-field-value">
+                    {phone || "Sin definir"}
+                  </span>
                 )}
               </div>
               <div className="personal-field-actions">
-                {isEditingPassword ? (
-                  <div className="personal-password-actions">
+                {isEditingPhone ? (
+                  <>
                     <button
                       className="personal-action-btn personal-action-btn--save"
-                      onClick={handleUpdatePassword}
+                      onClick={handleUpdatePhone}
                       disabled={loading}
                     >
-                      <Check size={16} /> Guardar
+                      <Check size={16} />
                     </button>
                     <button
                       className="personal-action-btn personal-action-btn--cancel"
                       onClick={() => {
-                        setIsEditingPassword(false);
-                        setShowPassword(false);
+                        setIsEditingPhone(false);
+                        setPhone(profile?.phone || profile?.phone_number || "");
                       }}
                     >
-                      <X size={16} /> Cancelar
+                      <X size={16} />
                     </button>
-                  </div>
+                  </>
                 ) : (
                   <button
                     className="personal-action-btn"
-                    onClick={() => setIsEditingPassword(true)}
+                    onClick={() => setIsEditingPhone(true)}
                   >
                     <Edit2 size={16} /> Modificar
                   </button>
                 )}
               </div>
             </div>
+
+            {/* Password Field */}
+            {!isSocialAccount && (
+              <div className="personal-field-row personal-field-row--column">
+                <div className="personal-field-content">
+                  <span className="personal-field-label">
+                    <Lock size={16} /> Contraseña
+                  </span>
+                  {isEditingPassword ? (
+                    <div className="personal-password-inputs">
+                      <div className="personal-input-wrapper">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          className="personal-input"
+                          placeholder="Nueva contraseña"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="personal-password-toggle"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={
+                            showPassword
+                              ? "Ocultar contraseña"
+                              : "Mostrar contraseña"
+                          }
+                        >
+                          {showPassword ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="personal-input-wrapper">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          className="personal-input"
+                          placeholder="Confirmar contraseña"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="personal-password-toggle"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={
+                            showPassword
+                              ? "Ocultar contraseña"
+                              : "Mostrar contraseña"
+                          }
+                        >
+                          {showPassword ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
+                      </div>
+
+                      {password && (
+                        <div className="personal-password-errors">
+                          {validatePassword(password).map((err, idx) => (
+                            <div
+                              key={idx}
+                              className="personal-password-error-item"
+                            >
+                              • {err}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="personal-field-value">••••••••••••</span>
+                  )}
+                </div>
+                <div className="personal-field-actions">
+                  {isEditingPassword ? (
+                    <div className="personal-password-actions">
+                      <button
+                        className="personal-action-btn personal-action-btn--save"
+                        onClick={handleUpdatePassword}
+                        disabled={loading}
+                      >
+                        <Check size={16} /> Guardar
+                      </button>
+                      <button
+                        data-action-tone="cancel"
+                        className="personal-action-btn personal-action-btn--cancel"
+                        onClick={() => {
+                          setIsEditingPassword(false);
+                          setShowPassword(false);
+                        }}
+                      >
+                        <X size={16} /> Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="personal-action-btn"
+                      onClick={() => setIsEditingPassword(true)}
+                    >
+                      <Edit2 size={16} /> Modificar
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Notifications */}
             <div className="personal-field-row">

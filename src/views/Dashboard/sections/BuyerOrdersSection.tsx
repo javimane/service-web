@@ -1,0 +1,2744 @@
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+import QRCode from "qrcode";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  ShoppingBag,
+  Clock,
+  CheckCircle2,
+  PackageCheck,
+  AlertCircle,
+  QrCode,
+  ExternalLink,
+  MapPin,
+  Truck,
+  Eye,
+  FileText,
+  Calendar,
+  CalendarCheck,
+  CalendarClock,
+  Star,
+  MessageSquare,
+  RotateCcw,
+  RefreshCw,
+  Loader2,
+} from "lucide-react";
+import {
+  commerceService,
+  OrderSummary,
+  OrderStatus,
+  PageResponse,
+  ReturnTicket,
+} from "@/services/commerceService";
+import Pagination from "@/components/Pagination/Pagination";
+import Modal from "@/components/Modal/Modal";
+import ReturnsPolicyLink from "@/components/ReturnsPolicyLink/ReturnsPolicyLink";
+import { useAlert } from "@/context/AlertContext";
+import { useAuth } from "@/context/AuthContext";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
+import {
+  hasActiveOrderClaim,
+  hasOrderClaimHistory,
+} from "@/utils/orderClaimState";
+import OrderReviewModal from "./OrderReviewModal";
+import OrderChatModal from "./OrderChatModal";
+import { getProductImage } from "./orderTicketData";
+import ReturnTicketModal from "./ReturnTicketModal";
+import "./BuyerOrdersSection.css";
+import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
+import { compressDocumentImage } from "@/services/storageUploads";
+import { isServiceOrderSummary as isServiceOrder } from "@/utils/orderKind";
+import {
+  getPurchaseDeliveryText,
+  isServiceAtBranch,
+} from "./purchaseDeliveryText";
+import PickupDeadlineWarning from "@/components/PickupDeadlineWarning/PickupDeadlineWarning";
+import BuyerShipmentMap from "./BuyerShipmentMap";
+import BuyerRiderReview from "./BuyerRiderReview";
+
+const refundSummary = (order: Partial<OrderSummary>) => {
+  const refunded = Number(order.refunded_amount ?? 0);
+  const total = Number(order.total_amount ?? 0);
+  if (!Number.isFinite(refunded) || refunded <= 0) return null;
+  const partial =
+    Number.isFinite(total) &&
+    total > 0 &&
+    Math.round(refunded * 100) < Math.round(total * 100);
+  const amount = refunded.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+  });
+  const percent = partial
+    ? ` (${((refunded / total) * 100).toLocaleString("es-AR", { maximumFractionDigits: 2 })}%)`
+    : "";
+  return `${partial ? "Reembolso parcial confirmado" : "Reembolso confirmado"}: ${amount}${percent}`;
+};
+
+const isOrderDelivered = (order?: Partial<OrderSummary> | null) => {
+  if (!order) return false;
+  const status = (order.status as string)?.toLowerCase();
+  if (status === "delivered" || status === "settled" || status === "completed")
+    return true;
+  if (order.delivered_at) return true;
+  if (order.shipment_status === "delivered") return true;
+  return false;
+};
+
+const CLAIM_STATUS_LABELS: Record<string, string> = {
+  open: "Abierto",
+  in_review: "En revisión por Sercio",
+  received: "Recibido",
+  resolved: "Resuelto",
+  rejected: "Rechazado",
+  refunded: "Reembolsado",
+};
+
+const serviceProgressStep = (order?: Partial<OrderSummary> | null) => {
+  if (
+    !order ||
+    ["pending", "pending_payment", "cancelled", "refunded"].includes(
+      order.status || "",
+    )
+  )
+    return 0;
+  if (
+    isOrderDelivered(order) ||
+    order.appointment_status === "completed" ||
+    order.appointment?.status === "completed"
+  )
+    return 3;
+  if (
+    order.status === "confirmed" ||
+    order.appointment_status === "scheduled" ||
+    order.appointment?.status === "scheduled"
+  )
+    return 2;
+  return order.paid_at || order.status === "paid" ? 1 : 0;
+};
+
+const hasOrderReview = (order?: Partial<OrderSummary> | null) =>
+  Boolean(
+    order?.review &&
+    (Array.isArray(order.review) ? order.review.length > 0 : true),
+  );
+
+const canReviewOrder = (order?: Partial<OrderSummary> | null) => {
+  if (
+    !order ||
+    ["pending", "pending_payment", "cancelled", "refunded"].includes(
+      order.status || "",
+    )
+  ) {
+    return false;
+  }
+  return isServiceOrder(order)
+    ? serviceProgressStep(order) >= 3
+    : isOrderDelivered(order);
+};
+
+export default function BuyerOrdersSection() {
+  const token = getAccessToken();
+  setApiAccessToken(token);
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useAlert();
+  const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const orderIdParam = searchParams?.get("orderId");
+  const openOrderChat = searchParams?.get("openChat") === "1";
+  const openOrderMap = searchParams?.get("openMap") === "1";
+  const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!orderIdParam) setDismissedOrderId(null);
+  }, [orderIdParam]);
+
+  const [page, setPage] = useState(1);
+  const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
+  const [showShipmentMap, setShowShipmentMap] = useState(false);
+  const shipmentMapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showShipmentMap || !selectedOrder) return;
+    const frame = requestAnimationFrame(() =>
+      shipmentMapRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [showShipmentMap, selectedOrder]);
+  const [claimClock, setClaimClock] = useState(0);
+  useEffect(() => {
+    setClaimClock(Date.now());
+    const interval = window.setInterval(
+      () => setClaimClock(Date.now()),
+      60_000,
+    );
+    return () => window.clearInterval(interval);
+  }, []);
+  const [pickupQrUrl, setPickupQrUrl] = useState<string | null>(null);
+  const { data: buyerShipment } = useQuery({
+    queryKey: ["buyer-order-shipment", selectedOrder?.id],
+    queryFn: () => commerceService.orderShipment(selectedOrder!.id),
+    enabled:
+      selectedOrder?.delivery_type === "shipment" &&
+      !["pending_payment", "cancelled", "refunded"].includes(
+        selectedOrder.status,
+      ),
+    refetchInterval: 15_000,
+  });
+  const shipmentDelivered =
+    isOrderDelivered(selectedOrder) || buyerShipment?.status === "delivered";
+  const deliveryCode = buyerShipment?.buyer_security_code as string | undefined;
+  const [deliveryQrUrl, setDeliveryQrUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setDeliveryQrUrl(null);
+    if (deliveryCode && buyerShipment?.id) {
+      QRCode.toDataURL(`SERCIO-DELIVERY:${buyerShipment.id}:${deliveryCode}`, {
+        width: 200,
+        margin: 1,
+      })
+        .then((url) => {
+          if (active) setDeliveryQrUrl(url);
+        })
+        .catch(() => {
+          if (active) setDeliveryQrUrl(null);
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [deliveryCode, buyerShipment?.id]);
+  useEffect(() => {
+    let active = true;
+    setPickupQrUrl(null);
+    if (selectedOrder?.pickup_code) {
+      QRCode.toDataURL(selectedOrder.pickup_code, { width: 200, margin: 1 })
+        .then((url) => {
+          if (active) setPickupQrUrl(url);
+        })
+        .catch(() => {
+          if (active) setPickupQrUrl(null);
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [selectedOrder?.pickup_code]);
+  const [chatOrder, setChatOrder] = useState<OrderSummary | null>(null);
+  useEffect(() => {
+    if (openOrderChat && orderIdParam && selectedOrder?.id === orderIdParam) {
+      setChatOrder(selectedOrder);
+    }
+  }, [openOrderChat, orderIdParam, selectedOrder]);
+
+  const closeOrderChat = () => {
+    setChatOrder(null);
+    if (openOrderChat) {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.delete("openChat");
+      router.replace(
+        `${pathname}${params.size ? `?${params.toString()}` : ""}`,
+        {
+          scroll: false,
+        },
+      );
+    }
+  };
+  const [reviewOrder, setReviewOrder] = useState<OrderSummary | null>(null);
+  const [withdrawalOpen, setWithdrawalOpen] = useState(false);
+  const [selectedReturnItems, setSelectedReturnItems] = useState<
+    Record<string, number>
+  >({});
+  const [withdrawalReason, setWithdrawalReason] = useState("");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [confirmClaimResolutionOpen, setConfirmClaimResolutionOpen] =
+    useState(false);
+  const [claimReason, setClaimReason] = useState("");
+  const [claimType, setClaimType] = useState("Reclamo");
+  const [claimImages, setClaimImages] = useState<File[]>([]);
+  const [claimVideo, setClaimVideo] = useState<File | null>(null);
+  const [returnTicket, setReturnTicket] = useState<ReturnTicket | null>(null);
+
+  const {
+    data: ordersData,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useQuery<PageResponse<OrderSummary>>({
+    queryKey: ["buyer-orders", page],
+    queryFn: () => commerceService.buyerOrders(page, 10),
+  });
+
+  const orders = React.useMemo(
+    () => ordersData?.items ?? ordersData?.data ?? [],
+    [ordersData],
+  );
+  const { data: activeOrdersData } = useQuery<PageResponse<OrderSummary>>({
+    queryKey: ["buyer-active-shipments"],
+    queryFn: () => commerceService.buyerOrders(1, 30),
+    refetchInterval: 30_000,
+  });
+  const activeOrders = React.useMemo(
+    () => activeOrdersData?.items ?? activeOrdersData?.data ?? orders,
+    [activeOrdersData, orders],
+  );
+  const activeShipment = activeOrders.find(
+    (order) =>
+      order.delivery_type === "shipment" &&
+      (order.shipment_status === "in_transit" ||
+        (Array.isArray(order.shipments)
+          ? order.shipments[0]?.status
+          : order.shipments?.status) === "in_transit" ||
+        order.status === "in_transit"),
+  );
+  const total = ordersData?.total ?? orders.length;
+  const totalPages = ordersData?.totalPages ?? (Math.ceil(total / 10) || 1);
+
+  const activeOrderId =
+    (openOrderChat && orderIdParam ? orderIdParam : selectedOrder?.id) ||
+    (orderIdParam !== dismissedOrderId ? orderIdParam : undefined) ||
+    undefined;
+
+  const {
+    data: orderClaims = [],
+    isError: orderClaimsError,
+    isFetching: orderClaimsFetching,
+    isPending: orderClaimsPending,
+  } = useQuery({
+    queryKey: ["order-claims", selectedOrder?.id],
+    queryFn: () => commerceService.orderClaims(selectedOrder!.id),
+    enabled: Boolean(selectedOrder?.id),
+    refetchInterval: (query) =>
+      query.state.data?.some((claim) =>
+        claim.media.some((item) => item.status === "processing"),
+      )
+        ? 15_000
+        : false,
+  });
+  const activeOrderClaim = hasActiveOrderClaim(selectedOrder, orderClaims);
+  const orderHasClaimHistory = hasOrderClaimHistory(selectedOrder, orderClaims);
+  const claimsUnavailable =
+    orderClaimsPending || orderClaimsFetching || orderClaimsError;
+  const answerOfferMutation = useMutation({
+    mutationFn: ({
+      claimId,
+      accept,
+      offerRevision,
+    }: {
+      claimId: string;
+      accept: boolean;
+      offerRevision: number;
+    }) =>
+      commerceService.answerPartialOffer(
+        selectedOrder!.id,
+        claimId,
+        accept,
+        offerRevision,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["order-claims", selectedOrder?.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      showSuccess("Tu respuesta quedó registrada.");
+      queryClient.invalidateQueries({
+        queryKey: ["buyer-order-detail", selectedOrder?.id],
+      });
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo responder la propuesta."),
+    onSettled: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["order-claims", selectedOrder?.id],
+      }),
+  });
+
+  const closeOrderDetail = () => {
+    if (orderIdParam) {
+      setDismissedOrderId(orderIdParam);
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.delete("orderId");
+      params.delete("openChat");
+      params.delete("openMap");
+      router.replace(
+        `${pathname}${params.size ? `?${params.toString()}` : ""}`,
+        { scroll: false },
+      );
+    }
+    setSelectedOrder(null);
+    setShowShipmentMap(false);
+    setWithdrawalOpen(false);
+  };
+
+  const {
+    data: detailedOrder,
+    isFetching: isLoadingDetail,
+    isError: isDetailError,
+    refetch: refetchDetail,
+  } = useQuery({
+    queryKey: ["buyer-order-detail", activeOrderId],
+    queryFn: () => commerceService.orderDetail(activeOrderId!),
+    enabled: Boolean(activeOrderId),
+  });
+
+  useEffect(() => {
+    if (
+      orderIdParam &&
+      (!selectedOrder || selectedOrder.id !== orderIdParam) &&
+      orderIdParam !== dismissedOrderId
+    ) {
+      const match =
+        orders.find((o) => o.id === orderIdParam) ||
+        activeOrders.find((o) => o.id === orderIdParam);
+      if (match) {
+        setSelectedOrder(match);
+      }
+    }
+  }, [orderIdParam, selectedOrder, orders, activeOrders, dismissedOrderId]);
+
+  useEffect(() => {
+    if (detailedOrder && detailedOrder.id === activeOrderId) {
+      setSelectedOrder(detailedOrder);
+    }
+  }, [detailedOrder, activeOrderId]);
+
+  useEffect(() => {
+    if (
+      openOrderMap &&
+      selectedOrder &&
+      (!orderIdParam || selectedOrder.id === orderIdParam) &&
+      selectedOrder.delivery_type === "shipment"
+    ) {
+      setShowShipmentMap(true);
+    }
+  }, [openOrderMap, selectedOrder, orderIdParam]);
+
+  const withdrawalMutation = useMutation({
+    mutationFn: () => {
+      if (!selectedOrder) throw new Error("No hay orden seleccionada");
+      if (orderHasClaimHistory || claimsUnavailable) {
+        throw new Error(
+          orderHasClaimHistory
+            ? "Esta compra ya tiene un reclamo registrado. Revisá la devolución desde ese reclamo."
+            : "Esperá a que se carguen los reclamos antes de solicitar una devolución.",
+        );
+      }
+      const items = (selectedOrder.items || [])
+        .filter((item) => item.product_id)
+        .map((item) => ({
+          order_item_id: item.id,
+          quantity: selectedReturnItems[item.id] || 0,
+        }))
+        .filter((item) => item.quantity > 0);
+      if (
+        (selectedOrder.items || []).some((item) => item.product_id) &&
+        !items.length
+      )
+        throw new Error("Elegí al menos un producto para devolver.");
+      if (
+        isServiceOrder(selectedOrder) &&
+        (serviceProgressStep(selectedOrder) >= 3 ||
+          isOrderDelivered(selectedOrder))
+      ) {
+        throw new Error(
+          "El servicio ya fue realizado. Podés iniciar un reclamo si tuviste algún problema.",
+        );
+      }
+      return commerceService.requestWithdrawal(
+        selectedOrder.id,
+        withdrawalReason || undefined,
+        items.length ? items : undefined,
+      );
+    },
+    onSuccess: async () => {
+      showSuccess(
+        "Aceptamos tu solicitud. Si ya recibiste el producto, entregalo al comercio para completar el reembolso.",
+      );
+      setWithdrawalOpen(false);
+      setWithdrawalReason("");
+      queryClient.invalidateQueries({
+        queryKey: ["buyer-order-detail", selectedOrder?.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      queryClient.invalidateQueries({
+        queryKey: ["order-claims", selectedOrder?.id],
+      });
+
+      const order = selectedOrder;
+      if (
+        order &&
+        (order.status === "delivered" || isOrderDelivered(order)) &&
+        !order.service_id
+      ) {
+        try {
+          setReturnTicket(await commerceService.returnTicket(order.id));
+        } catch {
+          showError(
+            "La solicitud se envió, pero no se pudo cargar el comprobante. Podés abrirlo desde el detalle de la compra.",
+          );
+        }
+      }
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo enviar la solicitud."),
+  });
+
+  const syncPaymentMutation = useMutation({
+    mutationFn: (id: string) => commerceService.syncPaywayPayment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["buyer-order-detail"] });
+      showSuccess("Estado del pago actualizado.");
+    },
+    onError: (error: Error) => showError(error.message),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: () => {
+      if (orderHasClaimHistory || claimsUnavailable)
+        throw new Error(
+          "No se puede solicitar otra devolución de una compra con un reclamo registrado.",
+        );
+      return commerceService.cancelOrder(
+        selectedOrder!.id,
+        cancelReason.trim() || undefined,
+      );
+    },
+    onSuccess: (updated) => {
+      setSelectedOrder(updated);
+      setCancelOpen(false);
+      setCancelReason("");
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      queryClient.invalidateQueries({
+        queryKey: ["buyer-order-detail", selectedOrder?.id],
+      });
+      showSuccess("Compra pendiente cancelada.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo cancelar la compra."),
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: async () => {
+      if (activeOrderClaim || claimsUnavailable)
+        throw new Error(
+          "Ya hay un reclamo en curso o pendiente de consultar para esta compra.",
+        );
+      const items = (selectedOrder!.items || [])
+        .filter((item) => item.product_id)
+        .map((item) => ({
+          order_item_id: item.id,
+          quantity: selectedReturnItems[item.id] || 0,
+        }))
+        .filter((item) => item.quantity > 0);
+      if (
+        (selectedOrder!.items || []).some((item) => item.product_id) &&
+        !items.length
+      )
+        throw new Error("Elegí al menos un producto del reclamo.");
+      const compressedImages = await Promise.all(
+        claimImages.map(compressDocumentImage),
+      );
+      return commerceService.createClaim(
+        selectedOrder!.id,
+        `${claimType}: ${claimReason.trim()}`,
+        [...compressedImages, ...(claimVideo ? [claimVideo] : [])],
+        items.length ? items : undefined,
+      );
+    },
+    onSuccess: async () => {
+      setClaimOpen(false);
+      setClaimReason("");
+      setClaimImages([]);
+      setClaimVideo(null);
+      queryClient.invalidateQueries({
+        queryKey: ["order-claims", selectedOrder?.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      queryClient.invalidateQueries({
+        queryKey: ["buyer-order-detail", selectedOrder?.id],
+      });
+      showSuccess("Reclamo iniciado. Te avisaremos cuando haya novedades.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo iniciar el reclamo."),
+  });
+
+  const confirmClaimResolutionMutation = useMutation({
+    mutationFn: () => commerceService.confirmClaimResolved(selectedOrder!.id),
+    onSuccess: async () => {
+      setConfirmClaimResolutionOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      await refetchDetail();
+      showSuccess("Confirmaste que el reclamo se resolvió.");
+    },
+    onError: (error: Error) =>
+      showError(
+        error.message || "No se pudo confirmar la solución del reclamo.",
+      ),
+  });
+
+  const openReturnTicket = async (orderId: string) => {
+    try {
+      setReturnTicket(await commerceService.returnTicket(orderId));
+    } catch (error) {
+      showError(
+        (error as Error).message ||
+          "No se pudo cargar el comprobante de devolución.",
+      );
+    }
+  };
+
+  const confirmReceiptMutation = useMutation({
+    mutationFn: ({ shipmentId, code }: { shipmentId: string; code: string }) =>
+      commerceService.confirmReceipt(shipmentId, code),
+    onSuccess: () => {
+      showSuccess("Recepción confirmada. ¡Gracias por tu compra!");
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      if (selectedOrder?.id) {
+        queryClient.invalidateQueries({
+          queryKey: ["buyer-order-detail", selectedOrder.id],
+        });
+      }
+      refetch();
+      refetchDetail();
+      if (selectedOrder) {
+        const updated = {
+          ...selectedOrder,
+          status: "delivered" as OrderStatus,
+          delivered_at: new Date().toISOString(),
+        };
+        setSelectedOrder(updated);
+        setReviewOrder(updated);
+      }
+    },
+    onError: () => showError("No se pudo confirmar la recepción."),
+  });
+
+  const confirmCoordinatedDeliveryMutation = useMutation({
+    mutationFn: (orderId: string) =>
+      commerceService.confirmCoordinatedDelivery(orderId),
+    onSuccess: (updated) => {
+      showSuccess("Entrega confirmada. ¡Gracias por tu compra!");
+      setSelectedOrder((current) =>
+        current ? { ...current, ...updated } : updated,
+      );
+      queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+      queryClient.invalidateQueries({
+        queryKey: ["buyer-order-detail", updated.id],
+      });
+    },
+    onError: (error) =>
+      showError(
+        (error as Error).message || "No se pudo confirmar la recepción.",
+      ),
+  });
+
+  const isOrderPickupReady = (order?: Partial<OrderSummary> | null) => {
+    if (!order) return false;
+    if (isOrderDelivered(order)) return false;
+    if (order.status === "ready_for_pickup") return true;
+    const hasPickupReadyTimestamp = Boolean(
+      order.pickup_ready_at || (order as any)?.pickup_ready_ap,
+    );
+    return Boolean(
+      order.delivery_type === "pickup" &&
+      hasPickupReadyTimestamp &&
+      order.status !== "delivered" &&
+      (order.status as string) !== "settled" &&
+      !order.delivered_at &&
+      order.status !== "cancelled" &&
+      order.status !== "refunded",
+    );
+  };
+
+  const isOrderWithdrawalEligible = (order?: Partial<OrderSummary> | null) => {
+    if (!order) return false;
+    if (
+      hasOrderClaimHistory(order) ||
+      (order.id === selectedOrder?.id &&
+        (orderHasClaimHistory || claimsUnavailable))
+    )
+      return false;
+    if (
+      isServiceOrder(order) &&
+      (serviceProgressStep(order) >= 3 || isOrderDelivered(order))
+    ) {
+      return false;
+    }
+    return order.withdrawal_eligible === true;
+  };
+
+  const getStatusBadge = (
+    status: OrderStatus | "delivered" | string,
+    order?: Partial<OrderSummary> | null,
+  ) => {
+    if (isServiceOrder(order) && serviceProgressStep(order) > 0) {
+      const step = serviceProgressStep(order);
+      return (
+        <span
+          className={`buyer-badge buyer-badge--${step === 3 ? "delivered" : "confirmed"}`}
+        >
+          {step === 3
+            ? "Realizado"
+            : step === 2
+              ? "Servicio confirmado"
+              : "Pago confirmado"}
+        </span>
+      );
+    }
+    if (
+      isOrderDelivered(order) ||
+      status === "delivered" ||
+      (status as string) === "settled"
+    ) {
+      return (
+        <span className="buyer-badge buyer-badge--delivered">Entregado</span>
+      );
+    }
+
+    if (isOrderPickupReady(order)) {
+      return (
+        <span className="buyer-badge buyer-badge--ready">
+          Listo para retirar
+        </span>
+      );
+    }
+
+    switch (status) {
+      case "pending":
+        return (
+          <span className="buyer-badge buyer-badge--pending">
+            Pendiente de confirmación
+          </span>
+        );
+      case "pending_payment":
+        return (
+          <span className="buyer-badge buyer-badge--pending">
+            Pendiente de pago
+          </span>
+        );
+      case "paid":
+        return (
+          <span className="buyer-badge buyer-badge--confirmed">
+            Pago confirmado
+          </span>
+        );
+      case "confirmed":
+        return (
+          <span className="buyer-badge buyer-badge--confirmed">Confirmado</span>
+        );
+      case "preparing":
+        return (
+          <span className="buyer-badge buyer-badge--preparing">
+            En preparación
+          </span>
+        );
+      case "ready_for_pickup":
+        return (
+          <span className="buyer-badge buyer-badge--ready">
+            Listo para retirar
+          </span>
+        );
+      case "ready_for_dispatch":
+        return (
+          <span className="buyer-badge buyer-badge--ready">
+            Listo para enviar
+          </span>
+        );
+      case "returning_to_store":
+        return (
+          <span className="buyer-badge buyer-badge--cancelled">
+            Cancelado · regresa al comercio
+          </span>
+        );
+      case "returned":
+        return (
+          <span className="buyer-badge buyer-badge--cancelled">
+            Devuelto al comercio
+          </span>
+        );
+      case "dispatched":
+      case "in_transit":
+        return (
+          <span className="buyer-badge buyer-badge--transit">En camino</span>
+        );
+      case "delivered":
+      case "settled":
+        return (
+          <span className="buyer-badge buyer-badge--delivered">Entregado</span>
+        );
+      case "cancelled":
+        return (
+          <span className="buyer-badge buyer-badge--cancelled">Cancelado</span>
+        );
+      case "refunded":
+        return (
+          <span className="buyer-badge buyer-badge--cancelled">
+            Reembolsado
+          </span>
+        );
+      default:
+        return <span className="buyer-badge">{status}</span>;
+    }
+  };
+
+  const buildGoogleCalendarUrl = (
+    title: string,
+    dateStr: string,
+    timeStr: string,
+    notes?: string | null,
+  ) => {
+    try {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      const start = new Date(year, month - 1, day, hours, minutes);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const formatGCal = (d: Date) =>
+        `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+
+      const dates = `${formatGCal(start)}/${formatGCal(end)}`;
+      const details = notes
+        ? `Turno coordinado en Sercio. Notas: ${notes}`
+        : "Turno coordinado en Sercio.";
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+        title,
+      )}&dates=${dates}&details=${encodeURIComponent(details)}`;
+    } catch {
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+        title,
+      )}`;
+    }
+  };
+
+  const renderProductSelection = (withdrawal: boolean) => {
+    const products = (selectedOrder?.items || []).filter(
+      (item) => item.product_id,
+    );
+    if (!products.length) return null;
+    const eligible =
+      selectedOrder?.withdrawal_eligible_items ||
+      products.map((item) => item.id);
+    return (
+      <fieldset className="buyer-order-modal__product-selection">
+        <legend>
+          Productos y cantidades {withdrawal ? "a devolver" : "del reclamo"}
+        </legend>
+        {products.map((item) => {
+          const allowed = !withdrawal || eligible.includes(item.id);
+          const quantity = selectedReturnItems[item.id] || 0;
+          return (
+            <div className="buyer-order-modal__product-choice" key={item.id}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={quantity > 0}
+                  disabled={!allowed}
+                  onChange={(event) =>
+                    setSelectedReturnItems((current) => ({
+                      ...current,
+                      [item.id]: event.target.checked ? item.quantity : 0,
+                    }))
+                  }
+                />
+                {item.product?.name || item.product_name || "Producto"} (
+                {item.quantity} comprado{item.quantity === 1 ? "" : "s"})
+              </label>
+              {quantity > 0 && (
+                <input
+                  type="number"
+                  min={1}
+                  max={item.quantity}
+                  value={quantity}
+                  aria-label={`Cantidad de ${item.product?.name || "producto"}`}
+                  onChange={(event) =>
+                    setSelectedReturnItems((current) => ({
+                      ...current,
+                      [item.id]: Math.max(
+                        1,
+                        Math.min(
+                          item.quantity,
+                          Number(event.target.value) || 1,
+                        ),
+                      ),
+                    }))
+                  }
+                />
+              )}
+              {!allowed && (
+                <small>
+                  Para este producto corresponde iniciar un reclamo.
+                </small>
+              )}
+            </div>
+          );
+        })}
+        <small>
+          En una devolución parcial se reintegra el precio pagado por las
+          unidades elegidas.
+        </small>
+      </fieldset>
+    );
+  };
+
+  return (
+    <div className="buyer-orders-section">
+      {activeShipment && !selectedOrder && (
+        <button
+          type="button"
+          className="buyer-orders-section__tracking-shortcut"
+          onClick={() => {
+            setSelectedOrder(activeShipment);
+            setShowShipmentMap(true);
+          }}
+        >
+          <MapPin size={19} />
+          Seguir envío
+        </button>
+      )}
+      <header className="buyer-orders-section__header">
+        <div>
+          <span className="buyer-orders-section__subtitle">Mis Compras</span>
+          <h1 className="buyer-orders-section__title">Historial de Pedidos</h1>
+        </div>
+        <div className="buyer-orders-section__actions">
+          <button
+            type="button"
+            className="btn-secondary buyer-orders-section__refresh-btn"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            title="Refrescar pedidos"
+            aria-label="Refrescar lista de pedidos"
+          >
+            <RefreshCw
+              size={16}
+              className={
+                isFetching ? "buyer-orders-section__refresh-icon--spinning" : ""
+              }
+            />
+            <span>{isFetching ? "Actualizando..." : "Refrescar"}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* List or States */}
+      {isLoading ? (
+        <div className="buyer-state buyer-state--loading">
+          <Clock className="buyer-state__spinner" size={32} />
+          <p>Cargando tus compras...</p>
+        </div>
+      ) : isError ? (
+        <div className="buyer-state buyer-state--error">
+          <AlertCircle size={32} />
+          <p>Error al obtener tus compras.</p>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => refetch()}
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="buyer-state buyer-state--empty">
+          <ShoppingBag size={48} />
+          <h3>Aún no realizaste ninguna compra</h3>
+          <p>
+            Explorá los productos y servicios de comercios locales en Sercio.
+          </p>
+        </div>
+      ) : (
+        <div className="buyer-orders-list">
+          {orders.map((order) => {
+            const article =
+              order.items?.find((item) => item.product)?.product?.name ||
+              order.professional_product?.product?.name ||
+              order.service?.name ||
+              (order.items && order.items[0]?.product_name) ||
+              "Artículo";
+            const imageUrl =
+              getProductImage(
+                order.items?.find((item) => item.product)?.product,
+              ) ||
+              getProductImage(order.professional_product?.product) ||
+              order.items?.find((item) => item.product_image)?.product_image;
+
+            return (
+              <div key={order.id} className="buyer-order-card">
+                <div className="buyer-order-card__header">
+                  <div>
+                    <span className="buyer-order-number">
+                      Orden: {order.order_number || order.id.slice(0, 8)}
+                    </span>
+                    <span className="buyer-order-date">
+                      {new Date(order.created_at).toLocaleDateString("es-AR")}
+                    </span>
+                  </div>
+                  {getStatusBadge(order.status, order)}
+                </div>
+
+                {refundSummary(order) && (
+                  <p className="buyer-order-refund" role="status">
+                    {refundSummary(order)}
+                  </p>
+                )}
+                <div className="buyer-order-card__body">
+                  <div className="buyer-order-product">
+                    {imageUrl && (
+                      <img
+                        src={imageUrl}
+                        alt={article}
+                        className="buyer-order-thumb"
+                      />
+                    )}
+                    <div>
+                      <h3 className="buyer-order-title">{article}</h3>
+                      <span className="buyer-order-delivery">
+                        {getPurchaseDeliveryText(order)}
+                      </span>
+                      {order.delivery_type === "pickup" &&
+                        !isServiceOrder(order) &&
+                        !isOrderDelivered(order) &&
+                        !["pending_payment", "cancelled", "refunded"].includes(
+                          order.status,
+                        ) && (
+                          <PickupDeadlineWarning
+                            pickupReadyAt={order.pickup_ready_at}
+                          />
+                        )}
+                      {order.scheduled_delivery_date && (
+                        <span className="buyer-order-schedule">
+                          Envío programado:{" "}
+                          {order.scheduled_delivery_date
+                            .split("-")
+                            .reverse()
+                            .join("/")}
+                        </span>
+                      )}
+                      {(order.service_id || order.service) && (
+                        <div className="buyer-order-service-tag">
+                          {order.appointment ? (
+                            <span className="buyer-badge buyer-badge--scheduled">
+                              <CalendarCheck size={12} /> Turno:{" "}
+                              {order.appointment.appointment_date}{" "}
+                              {order.appointment.appointment_time}hs
+                            </span>
+                          ) : (
+                            <span className="buyer-badge buyer-badge--pending-appointment">
+                              <CalendarClock size={12} /> Turno en coordinación
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {(order.delivery_type === "pickup" ||
+                        isServiceOrder(order)) &&
+                        Boolean(order.pickup_code) &&
+                        !isOrderDelivered(order) &&
+                        ![
+                          "pending_payment",
+                          "cancelled",
+                          "refunded",
+                          "delivered",
+                          "settled",
+                        ].includes(order.status) && (
+                          <div className="buyer-order-pickup-code-chip">
+                            <QrCode size={13} />
+                            <span>
+                              {isServiceOrder(order)
+                                ? "Código del servicio:"
+                                : "Código de retiro:"}
+                            </span>
+                            <strong>{order.pickup_code}</strong>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  <div className="buyer-order-summary">
+                    <span className="buyer-order-total-label">
+                      Total de la orden:
+                    </span>
+                    <span className="buyer-order-total-amount">
+                      ${Number(order.total_amount ?? 0).toLocaleString("es-AR")}
+                    </span>
+                    {order.has_return && (
+                      <span className="buyer-order-refund">
+                        Devolución registrada por el comercio
+                      </span>
+                    )}
+                    {order.has_chargeback && (
+                      <span className="buyer-order-refund">
+                        Pago en disputa
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="buyer-order-card__footer">
+                  {order.status === "pending_payment" &&
+                    order.payment_provider === "payway" && (
+                      <button
+                        type="button"
+                        className="btn-secondary buyer-order-action"
+                        disabled={syncPaymentMutation.isPending}
+                        onClick={() => syncPaymentMutation.mutate(order.id)}
+                      >
+                        Consultar pago
+                      </button>
+                    )}
+                  {!hasOrderClaimHistory(order) &&
+                    (order.status === "pending_payment" ||
+                      (["paid", "confirmed"].includes(order.status) &&
+                        ["payway", "getnet"].includes(
+                          order.payment_provider || "",
+                        ))) && (
+                      <button
+                        type="button"
+                        className="btn-secondary buyer-order-action"
+                        data-action-tone="cancel"
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setCancelOpen(true);
+                        }}
+                      >
+                        <span>Cancelar compra</span>
+                      </button>
+                    )}
+
+                  <button
+                    type="button"
+                    className="btn-secondary buyer-view-detail-btn"
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    <Eye size={16} />
+                    <span>Ver detalle y seguimiento</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-secondary buyer-order-chat-btn"
+                    onClick={() => setChatOrder(order)}
+                  >
+                    <MessageSquare size={15} />
+                    <span>Chat</span>
+                  </button>
+
+                  {(hasOrderReview(order) || canReviewOrder(order)) && (
+                    <button
+                      type="button"
+                      className="buyer-review-btn"
+                      onClick={() => setReviewOrder(order)}
+                    >
+                      <Star size={15} />
+                      <span>
+                        {hasOrderReview(order)
+                          ? "Ver mi calificación"
+                          : "Calificar compra"}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            hasPrev={page > 1}
+            hasNext={page < totalPages}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => p + 1)}
+            onPage={setPage}
+          />
+        </div>
+      )}
+
+      {/* Order Detail Modal */}
+      {selectedOrder && (
+        <Modal
+          isOpen={Boolean(selectedOrder)}
+          onClose={closeOrderDetail}
+          title={`Pedido N°: ${selectedOrder.order_number || selectedOrder.id.slice(0, 8)}`}
+        >
+          <div className="buyer-order-modal">
+            {selectedOrder.delivery_type === "pickup" &&
+              !isServiceOrder(selectedOrder) &&
+              !isOrderDelivered(selectedOrder) &&
+              !["pending_payment", "cancelled", "refunded"].includes(
+                selectedOrder.status,
+              ) && (
+                <PickupDeadlineWarning
+                  pickupReadyAt={selectedOrder.pickup_ready_at}
+                />
+              )}
+            {/* Status step tracker */}
+            {selectedOrder.status === "pending_payment" ||
+            selectedOrder.status === "cancelled" ||
+            selectedOrder.status === "refunded" ? (
+              <div className="buyer-order-modal__current-status">
+                {getStatusBadge(selectedOrder.status, selectedOrder)}
+                {selectedOrder.status === "pending_payment" && (
+                  <span>La compra todavía no tiene un pago confirmado.</span>
+                )}
+              </div>
+            ) : isServiceOrder(selectedOrder) ? (
+              <div
+                className="buyer-step-tracker buyer-step-tracker--service"
+                aria-label="Seguimiento del servicio"
+              >
+                <div
+                  className={`tracker-step ${serviceProgressStep(selectedOrder) >= 1 ? "tracker-step--done" : ""}`}
+                >
+                  <CheckCircle2 size={22} aria-hidden="true" />
+                  <span>Pago confirmado</span>
+                </div>
+                <div
+                  className={`tracker-step ${serviceProgressStep(selectedOrder) >= 2 ? "tracker-step--done" : ""}`}
+                >
+                  <CalendarCheck size={22} aria-hidden="true" />
+                  <span>Servicio confirmado</span>
+                </div>
+                <div
+                  className={`tracker-step ${serviceProgressStep(selectedOrder) >= 3 ? "tracker-step--done" : ""}`}
+                >
+                  <CheckCircle2 size={22} aria-hidden="true" />
+                  <span>Realizado</span>
+                </div>
+              </div>
+            ) : (
+              <div className="buyer-step-tracker">
+                <div className="tracker-step tracker-step--done">
+                  <CheckCircle2 size={18} />
+                  <span>Pago confirmado</span>
+                </div>
+                <div
+                  className={`tracker-step ${
+                    selectedOrder.status === "preparing" ||
+                    selectedOrder.status === "ready_for_pickup" ||
+                    selectedOrder.status === "ready_for_dispatch" ||
+                    selectedOrder.status === "dispatched" ||
+                    selectedOrder.status === "delivered" ||
+                    isOrderDelivered(selectedOrder) ||
+                    isOrderPickupReady(selectedOrder)
+                      ? "tracker-step--done"
+                      : ""
+                  }`}
+                >
+                  <PackageCheck size={18} />
+                  <span>Preparación</span>
+                </div>
+                <div
+                  className={`tracker-step ${
+                    selectedOrder.status === "ready_for_pickup" ||
+                    selectedOrder.status === "ready_for_dispatch" ||
+                    selectedOrder.status === "dispatched" ||
+                    selectedOrder.status === "delivered" ||
+                    isOrderDelivered(selectedOrder) ||
+                    isOrderPickupReady(selectedOrder)
+                      ? "tracker-step--done"
+                      : ""
+                  }`}
+                >
+                  <Truck size={18} />
+                  <span>
+                    {selectedOrder.delivery_type === "pickup"
+                      ? "Listo retiro"
+                      : selectedOrder.delivery_type === "shipment" &&
+                          selectedOrder.status === "ready_for_dispatch"
+                        ? "Listo para despacho"
+                        : "En camino"}
+                  </span>
+                </div>
+                <div
+                  className={`tracker-step ${
+                    selectedOrder.status === "delivered" ||
+                    isOrderDelivered(selectedOrder)
+                      ? "tracker-step--done"
+                      : ""
+                  }`}
+                >
+                  <CheckCircle2 size={18} />
+                  <span>Entregado</span>
+                </div>
+              </div>
+            )}
+
+            {refundSummary(selectedOrder) && (
+              <p className="buyer-order-refund" role="status">
+                {refundSummary(selectedOrder)}
+              </p>
+            )}
+            <ReturnsPolicyLink />
+
+            {isLoadingDetail && (
+              <p className="buyer-order-modal__loading">
+                Cargando detalles de la compra...
+              </p>
+            )}
+            {isDetailError && (
+              <div className="buyer-order-modal__detail-error">
+                <span>No se pudieron cargar todos los datos del pedido.</span>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => refetchDetail()}
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+            <section
+              className="buyer-order-modal__details"
+              aria-label="Datos de la compra"
+            >
+              <h4>Datos de la compra</h4>
+              <div className="buyer-order-modal__detail-grid">
+                <div>
+                  <span>Realizada el</span>
+                  <strong>
+                    {new Date(selectedOrder.created_at).toLocaleString(
+                      "es-AR",
+                      { dateStyle: "long", timeStyle: "short" },
+                    )}
+                  </strong>
+                </div>
+                <div>
+                  <span>Forma de entrega</span>
+                  <strong>{getPurchaseDeliveryText(selectedOrder)}</strong>
+                </div>
+                {(selectedOrder.delivery_type === "pickup" ||
+                  isServiceOrder(selectedOrder)) &&
+                  !isOrderDelivered(selectedOrder) &&
+                  !["delivered", "settled", "cancelled", "refunded"].includes(
+                    selectedOrder.status,
+                  ) &&
+                  Boolean(selectedOrder.pickup_code) && (
+                    <div>
+                      <span>Código de retiro</span>
+                      <strong className="buyer-order-modal__pickup-code">
+                        {selectedOrder.pickup_code}
+                      </strong>
+                    </div>
+                  )}
+                <div>
+                  <span>Medio de pago</span>
+                  <strong>
+                    {selectedOrder.payment_method === "paycloud_qr"
+                      ? "QR"
+                      : (
+                            selectedOrder.card_type ||
+                            (selectedOrder as any).card_details?.card_type
+                          )?.toLowerCase() === "credit"
+                        ? "Crédito"
+                        : (
+                              selectedOrder.card_type ||
+                              (selectedOrder as any).card_details?.card_type
+                            )?.toLowerCase() === "debit"
+                          ? "Débito"
+                          : selectedOrder.payment_method === "payway_card" ||
+                              selectedOrder.payment_method === "getnet_card"
+                            ? "Tarjeta"
+                            : selectedOrder.payment_method || "Sin información"}
+                    {selectedOrder.payment_method !== "paycloud_qr" &&
+                    selectedOrder.card_brand
+                      ? ` · ${selectedOrder.card_brand}`
+                      : ""}
+                  </strong>
+                </div>
+                <div>
+                  <span>Cuotas</span>
+                  <strong>
+                    {selectedOrder.installments
+                      ? `${selectedOrder.installments} ${selectedOrder.installments === 1 ? "cuota" : "cuotas"}`
+                      : "Sin información"}
+                  </strong>
+                </div>
+                {selectedOrder.paid_at && (
+                  <div>
+                    <span>Pago confirmado el</span>
+                    <strong>
+                      {new Date(selectedOrder.paid_at).toLocaleString("es-AR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </strong>
+                  </div>
+                )}
+                {(selectedOrder.pickup_ready_at ||
+                  (selectedOrder as any).pickup_ready_ap) && (
+                  <div>
+                    <span>Listo para retirar el</span>
+                    <strong>
+                      {new Date(
+                        selectedOrder.pickup_ready_at ||
+                          (selectedOrder as any).pickup_ready_ap,
+                      ).toLocaleString("es-AR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </strong>
+                  </div>
+                )}
+                {(selectedOrder.delivered_at ||
+                  (selectedOrder as any).settled_at) && (
+                  <div>
+                    <span>Entregado el</span>
+                    <strong>
+                      {new Date(
+                        selectedOrder.delivered_at ||
+                          (selectedOrder as any).settled_at,
+                      ).toLocaleString("es-AR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </strong>
+                  </div>
+                )}
+                {selectedOrder.cancelled_at && (
+                  <div>
+                    <span>Cancelada el</span>
+                    <strong>
+                      {new Date(selectedOrder.cancelled_at).toLocaleString(
+                        "es-AR",
+                        { dateStyle: "short", timeStyle: "short" },
+                      )}
+                    </strong>
+                  </div>
+                )}
+                <div>
+                  <span>Envío</span>
+                  <strong>
+                    $
+                    {Number(selectedOrder.shipping_cost ?? 0).toLocaleString(
+                      "es-AR",
+                    )}
+                  </strong>
+                </div>
+                <div>
+                  <span>Total</span>
+                  <strong>
+                    $
+                    {Number(selectedOrder.total_amount ?? 0).toLocaleString(
+                      "es-AR",
+                    )}
+                  </strong>
+                </div>
+              </div>
+              {selectedOrder.cancel_reason && (
+                <p className="buyer-order-modal__cancel-reason">
+                  <strong>Motivo de cancelación o error:</strong>{" "}
+                  {selectedOrder.cancel_reason}
+                </p>
+              )}
+            </section>
+
+            {selectedOrder.items && selectedOrder.items.length > 0 && (
+              <section
+                className="buyer-order-modal__items"
+                aria-label="Artículos comprados"
+              >
+                <h4>Artículos de la compra</h4>
+                {selectedOrder.items.map((item) => {
+                  const attributes = item.product?.attributes;
+                  const attributeText = Array.isArray(attributes)
+                    ? attributes
+                        .filter(
+                          (attribute) => attribute.name && attribute.value,
+                        )
+                        .map(
+                          (attribute) =>
+                            `${attribute.name}: ${attribute.value}`,
+                        )
+                        .join(" · ")
+                    : attributes
+                      ? Object.entries(attributes)
+                          .map(([name, value]) => `${name}: ${value}`)
+                          .join(" · ")
+                      : "";
+                  return (
+                    <div className="buyer-order-modal__item" key={item.id}>
+                      <div>
+                        <strong>
+                          {item.product?.name ||
+                            item.service?.name ||
+                            item.product_name ||
+                            "Artículo"}
+                        </strong>
+                        {attributeText && <span>{attributeText}</span>}
+                        {item.product?.brand && (
+                          <span>Marca: {item.product.brand}</span>
+                        )}
+                        {item.product?.ean && (
+                          <span>EAN: {item.product.ean}</span>
+                        )}
+                        <span>Cantidad: {item.quantity}</span>
+                        <OrderItemPricing
+                          pricing={item.pricing_snapshot}
+                          unitPrice={Number(item.unit_price)}
+                        />
+                      </div>
+                      <strong>
+                        ${Number(item.subtotal).toLocaleString("es-AR")}
+                      </strong>
+                    </div>
+                  );
+                })}
+              </section>
+            )}
+
+            {/* Service Appointment Section */}
+            {(selectedOrder.service_id || selectedOrder.service) &&
+              !["pending_payment", "cancelled", "refunded"].includes(
+                selectedOrder.status,
+              ) && (
+                <div className="buyer-appointment-card">
+                  {selectedOrder.appointment ? (
+                    <div className="buyer-appointment-content buyer-appointment-content--scheduled">
+                      <div className="buyer-appointment-header">
+                        <div className="buyer-appointment-icon-box buyer-appointment-icon-box--success">
+                          <CalendarCheck size={24} />
+                        </div>
+                        <div>
+                          <h4 className="buyer-appointment-title">
+                            Turno Confirmado
+                          </h4>
+                          <span className="buyer-appointment-sub">
+                            Coordinado con el profesional
+                          </span>
+                        </div>
+                      </div>
+                      <div className="buyer-appointment-details">
+                        <div className="buyer-appointment-detail-item">
+                          <span className="buyer-appointment-label">
+                            Fecha programada:
+                          </span>
+                          <strong className="buyer-appointment-value">
+                            {selectedOrder.appointment.appointment_date}
+                          </strong>
+                        </div>
+                        <div className="buyer-appointment-detail-item">
+                          <span className="buyer-appointment-label">
+                            Horario:
+                          </span>
+                          <strong className="buyer-appointment-value">
+                            {selectedOrder.appointment.appointment_time} hs
+                          </strong>
+                        </div>
+                        {selectedOrder.appointment.notes && (
+                          <div className="buyer-appointment-detail-item buyer-appointment-detail-item--full">
+                            <span className="buyer-appointment-label">
+                              Indicaciones:
+                            </span>
+                            <p className="buyer-appointment-notes">
+                              {selectedOrder.appointment.notes}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <a
+                        data-action-tone="add"
+                        href={buildGoogleCalendarUrl(
+                          `Turno Sercio: ${selectedOrder.service?.name || "Servicio Contratado"}`,
+                          selectedOrder.appointment.appointment_date,
+                          selectedOrder.appointment.appointment_time,
+                          selectedOrder.appointment.notes,
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="buyer-gcal-btn"
+                      >
+                        <Calendar size={16} />
+                        <span>Agregar a Google Calendar</span>
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="buyer-appointment-content buyer-appointment-content--pending">
+                      <div className="buyer-appointment-header">
+                        <div className="buyer-appointment-icon-box buyer-appointment-icon-box--pending">
+                          <CalendarClock size={24} />
+                        </div>
+                        <div>
+                          <h4 className="buyer-appointment-title">
+                            Turno en Coordinación
+                          </h4>
+                          <span className="buyer-appointment-sub">
+                            Pendiente de asignación por el profesional
+                          </span>
+                        </div>
+                      </div>
+                      <p className="buyer-appointment-notice">
+                        El profesional está coordinando la fecha y hora de tu
+                        turno. Te notificaremos en cuanto esté listo.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+            {/* Pickup QR & Code */}
+            {(selectedOrder.delivery_type === "pickup" ||
+              isServiceOrder(selectedOrder)) &&
+              !isOrderDelivered(selectedOrder) &&
+              ![
+                "pending_payment",
+                "cancelled",
+                "refunded",
+                "delivered",
+                "settled",
+              ].includes(selectedOrder.status) &&
+              Boolean(selectedOrder.pickup_code) && (
+                <div className="buyer-pickup-info-card">
+                  {!isServiceOrder(selectedOrder) &&
+                    isOrderPickupReady(selectedOrder) && (
+                      <div className="buyer-pickup-ready-banner">
+                        <CheckCircle2 size={18} />
+                        <span>
+                          ¡Tu pedido ya está listo para retirar en la sucursal!
+                        </span>
+                      </div>
+                    )}
+                  <h4>
+                    {isServiceOrder(selectedOrder)
+                      ? "Código para confirmar el servicio"
+                      : "Código para Retiro en Sucursal"}
+                  </h4>
+                  <p>
+                    {isServiceOrder(selectedOrder)
+                      ? "Entregá este código al profesional para iniciar el servicio. Sin él no podrá confirmar que se realizó."
+                      : "Presentá este código de 7 caracteres o mostrá la pantalla al llegar al comercio:"}
+                  </p>
+                  <div className="pickup-code-display">
+                    <span>{selectedOrder.pickup_code}</span>
+                  </div>
+                  <div className="pickup-qr-visual">
+                    <>
+                      {pickupQrUrl ? (
+                        <img
+                          src={pickupQrUrl}
+                          alt="Código QR para confirmar la entrega"
+                        />
+                      ) : (
+                        <QrCode size={64} />
+                      )}
+                      <span>
+                        {isServiceOrder(selectedOrder)
+                          ? "QR del servicio"
+                          : "Código QR de entrega"}
+                      </span>
+                    </>
+                  </div>
+                </div>
+              )}
+
+            {/* Shipment tracking */}
+            {selectedOrder.delivery_type === "shipment" &&
+              !["pending_payment", "cancelled", "refunded"].includes(
+                selectedOrder.status,
+              ) && (
+                <div className="buyer-shipment-tracking-card">
+                  <h4>Seguimiento de Envío a Domicilio</h4>
+                  {selectedOrder.scheduled_delivery_date && (
+                    <p>
+                      Envío programado para el{" "}
+                      {selectedOrder.scheduled_delivery_date
+                        .split("-")
+                        .reverse()
+                        .join("/")}
+                      .
+                    </p>
+                  )}
+                  <p>
+                    {shipmentDelivered
+                      ? "El pedido fue entregado. Ya podés calificar al rider."
+                      : "Tu pedido se encuentra asignado a la red de logística local."}
+                  </p>
+                  {(shipmentDelivered || selectedOrder.shipment_status) && (
+                    <p>
+                      Estado del envío:{" "}
+                      {shipmentDelivered
+                        ? "Entregado"
+                        : selectedOrder.shipment_status === "ready_for_pickup"
+                          ? "Listo para que lo retire el rider"
+                          : selectedOrder.shipment_status ===
+                              "returning_to_store"
+                            ? "Cancelado · el rider regresa al comercio"
+                            : selectedOrder.shipment_status ===
+                                "returned_to_store"
+                              ? "Devuelto al comercio"
+                              : selectedOrder.shipment_status === "in_transit"
+                                ? "En camino"
+                                : selectedOrder.shipment_status === "preparing"
+                                  ? "En preparación"
+                                  : selectedOrder.shipment_status}
+                    </p>
+                  )}
+                  {deliveryCode &&
+                    buyerShipment?.id &&
+                    !shipmentDelivered &&
+                    !["returning_to_store", "returned"].includes(
+                      selectedOrder.status,
+                    ) &&
+                    buyerShipment.status !== "returning_to_store" && (
+                      <div className="buyer-delivery-code">
+                        <h4>Código para confirmar la entrega</h4>
+                        <p>
+                          Mostrá el QR al rider o dictale el código solo antes
+                          de recibir el paquete.
+                        </p>
+                        <strong>{deliveryCode}</strong>
+                        {deliveryQrUrl && (
+                          <img
+                            src={deliveryQrUrl}
+                            alt="QR para confirmar la entrega al rider"
+                          />
+                        )}
+                      </div>
+                    )}
+                  {!shipmentDelivered &&
+                    !["returning_to_store", "returned"].includes(
+                      selectedOrder.status,
+                    ) &&
+                    buyerShipment?.status !== "returning_to_store" && (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => setShowShipmentMap((value) => !value)}
+                      >
+                        <MapPin size={16} />{" "}
+                        {showShipmentMap
+                          ? "Ocultar mapa"
+                          : "Ver mapa del envío"}
+                      </button>
+                    )}
+                  {showShipmentMap &&
+                    !shipmentDelivered &&
+                    !["returning_to_store", "returned"].includes(
+                      selectedOrder.status,
+                    ) &&
+                    buyerShipment?.status !== "returning_to_store" && (
+                      <div ref={shipmentMapRef}>
+                        <BuyerShipmentMap
+                          orderId={selectedOrder.id}
+                          orderNumber={selectedOrder.order_number}
+                          currentUserId={String(user?.id || "")}
+                        />
+                      </div>
+                    )}
+                  {shipmentDelivered && buyerShipment?.delivery_driver_id && (
+                    <BuyerRiderReview orderId={selectedOrder.id} />
+                  )}
+                </div>
+              )}
+
+            {isServiceAtBranch(selectedOrder) &&
+              (selectedOrder.branch || selectedOrder.origin_address) && (
+                <div className="buyer-shipment-tracking-card">
+                  <h4>Lugar del servicio</h4>
+                  <p>
+                    {selectedOrder.branch?.name ?? "Sucursal principal"} —{" "}
+                    {selectedOrder.branch?.street_name ??
+                      selectedOrder.origin_address?.street_name}{" "}
+                    {selectedOrder.branch?.street_number ??
+                      selectedOrder.origin_address?.street_number ??
+                      ""}
+                  </p>
+                </div>
+              )}
+
+            {selectedOrder.delivery_type === "coordinate_with_merchant" &&
+              !isServiceOrder(selectedOrder) && (
+                <div className="buyer-shipment-tracking-card">
+                  <h4>Envío coordinado con el vendedor</h4>
+                  <p>
+                    {["delivered", "settled"].includes(selectedOrder.status)
+                      ? "Confirmaste la recepción de este pedido."
+                      : ["dispatched", "in_transit"].includes(
+                            selectedOrder.status,
+                          )
+                        ? "El vendedor despachó tu pedido."
+                        : selectedOrder.status === "preparing"
+                          ? "El vendedor está preparando tu pedido."
+                          : "El vendedor te avisará cuando prepare y despache tu pedido."}
+                  </p>
+                  {(() => {
+                    const relation = selectedOrder.transport_shipments;
+                    const shipment = Array.isArray(relation)
+                      ? relation[0]
+                      : (relation ?? selectedOrder.transport_shipment);
+                    if (
+                      !shipment ||
+                      ![
+                        "dispatched",
+                        "in_transit",
+                        "delivered",
+                        "settled",
+                      ].includes(selectedOrder.status)
+                    )
+                      return null;
+                    return (
+                      <div className="transport-info-box">
+                        <p>
+                          <strong>Empresa de transporte:</strong>{" "}
+                          {shipment.company_name ?? shipment.carrier_name}
+                        </p>
+                        <p>
+                          <strong>Número de guía:</strong>{" "}
+                          {shipment.tracking_number}
+                        </p>
+                        {shipment.tracking_url && (
+                          <a
+                            href={shipment.tracking_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="external-track-link"
+                          >
+                            <ExternalLink size={16} /> Rastrear en el sitio
+                            oficial
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {selectedOrder.status === "dispatched" && (
+                    <div className="buyer-confirm-receipt-box">
+                      <p>
+                        Confirmá únicamente si ya recibiste el producto. Si no
+                        llegó o hay un problema, contactá al comercio o iniciá
+                        un reclamo.
+                      </p>
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={confirmCoordinatedDeliveryMutation.isPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "¿Ya recibiste el producto? La entrega quedará registrada y se programará la liquidación al comercio.",
+                            )
+                          ) {
+                            confirmCoordinatedDeliveryMutation.mutate(
+                              selectedOrder.id,
+                            );
+                          }
+                        }}
+                      >
+                        {confirmCoordinatedDeliveryMutation.isPending ? (
+                          <>
+                            <Loader2
+                              size={16}
+                              className="btn-spinner"
+                              aria-hidden="true"
+                            />
+                            <span>Confirmando...</span>
+                          </>
+                        ) : (
+                          "Confirmar que recibí el producto"
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+            {/* Invoice download */}
+            {selectedOrder.invoice_url && (
+              <div className="buyer-invoice-row">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const tab = window.open("", "_blank");
+                    try {
+                      const { url } = await commerceService.getInvoiceUrl(
+                        selectedOrder.id,
+                      );
+                      if (tab) tab.location.href = url;
+                      else window.location.href = url;
+                    } catch (error) {
+                      tab?.close();
+                      showError(
+                        error instanceof Error
+                          ? error.message
+                          : "No se pudo abrir la factura.",
+                      );
+                    }
+                  }}
+                  className="btn-secondary"
+                >
+                  <FileText size={16} />
+                  <span>Descargar Factura del Pedido</span>
+                </button>
+              </div>
+            )}
+
+            {/* Confirm Receipt Action */}
+            {buyerShipment?.status === "in_transit" &&
+              !isOrderDelivered(selectedOrder) &&
+              (selectedOrder.shipment_id || buyerShipment?.id) &&
+              deliveryCode && (
+                <div className="buyer-confirm-receipt-box">
+                  <p>¿Ya recibiste tu producto en tus manos y está en orden?</p>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={confirmReceiptMutation.isPending}
+                    onClick={() =>
+                      confirmReceiptMutation.mutate({
+                        shipmentId: (selectedOrder.shipment_id ||
+                          buyerShipment.id) as string,
+                        code: deliveryCode,
+                      })
+                    }
+                  >
+                    {confirmReceiptMutation.isPending ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className="btn-spinner"
+                          aria-hidden="true"
+                        />
+                        <span>Confirmando...</span>
+                      </>
+                    ) : (
+                      "Confirmar recepción del producto"
+                    )}
+                  </button>
+                </div>
+              )}
+
+            {/* Review Purchase Action */}
+            {(hasOrderReview(selectedOrder) ||
+              canReviewOrder(selectedOrder)) && (
+              <div className="buyer-review-action-row">
+                <button
+                  type="button"
+                  className="buyer-review-btn"
+                  onClick={() => setReviewOrder(selectedOrder)}
+                >
+                  <Star size={16} />
+                  <span>
+                    {hasOrderReview(selectedOrder)
+                      ? "Ver mi calificación"
+                      : "Dejar reseña sobre esta compra"}
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {/* Contact merchant by Chat */}
+            <div className="buyer-order-chat-action">
+              <button
+                type="button"
+                className="btn-primary buyer-chat-modal-btn"
+                onClick={() => setChatOrder(selectedOrder)}
+              >
+                <MessageSquare size={18} />
+                <span>Contactar al comercio por Chat</span>
+              </button>
+            </div>
+
+            {selectedOrder.status === "pending_payment" &&
+              !orderHasClaimHistory &&
+              !claimsUnavailable && (
+                <div className="buyer-order-modal__withdrawal">
+                  <p>
+                    Esta compra todavía no tiene un pago confirmado. Podés
+                    cancelarla sin solicitar una devolución.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-secondary buyer-order-action"
+                    data-action-tone="cancel"
+                    onClick={() => setCancelOpen(true)}
+                  >
+                    Cancelar compra
+                  </button>
+                </div>
+              )}
+
+            {isOrderWithdrawalEligible(selectedOrder) && (
+              <div className="buyer-order-modal__withdrawal">
+                <p>
+                  {isServiceOrder(selectedOrder)
+                    ? selectedOrder.appointment_status === "scheduled" &&
+                      selectedOrder.appointment
+                      ? selectedOrder.appointment.appointment_at &&
+                        new Date(
+                          selectedOrder.appointment.appointment_at,
+                        ).getTime() -
+                          claimClock <
+                          24 * 60 * 60 * 1000
+                        ? "Todavía podés solicitar el arrepentimiento de esta compra. El turno está a menos de 24 horas; si el servicio no se prestó, iniciá un reclamo."
+                        : "Podés cancelar el servicio hasta 24 horas antes del turno confirmado, dentro del plazo de reintegro automático. Si no se prestó, iniciá un reclamo."
+                      : "Podés cancelar el servicio mientras no tenga un turno confirmado y siga disponible el reintegro automático."
+                    : (selectedOrder.status === "delivered" ||
+                          isOrderDelivered(selectedOrder)) &&
+                        !selectedOrder.service_id
+                      ? "Podés solicitar la devolución del producto. Se aceptará al instante; el reembolso se hará cuando el comercio registre su recepción."
+                      : selectedOrder.delivery_type === "pickup" ||
+                          isOrderPickupReady(selectedOrder)
+                        ? "Podés solicitar el arrepentimiento de esta compra de retiro en tienda. Si ya la retiraste, entregala en el comercio; si todavía está allí, Sercio coordinará la reversión."
+                        : "Podés solicitar la cancelación de esta compra. Si ya está en camino, primero se coordinará la devolución."}
+                </p>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setSelectedReturnItems(
+                      Object.fromEntries(
+                        (selectedOrder.items || [])
+                          .filter(
+                            (item) =>
+                              item.product_id &&
+                              (
+                                selectedOrder.withdrawal_eligible_items || []
+                              ).includes(item.id),
+                          )
+                          .map((item) => [item.id, item.quantity]),
+                      ),
+                    );
+                    setWithdrawalOpen(true);
+                  }}
+                >
+                  {isServiceOrder(selectedOrder)
+                    ? "Cancelar servicio"
+                    : (selectedOrder.status === "delivered" ||
+                          isOrderDelivered(selectedOrder)) &&
+                        !selectedOrder.service_id
+                      ? "Solicitar devolución"
+                      : selectedOrder.delivery_type === "pickup" ||
+                          isOrderPickupReady(selectedOrder)
+                        ? "Solicitar arrepentimiento"
+                        : "Solicitar cancelación"}
+                </button>
+              </div>
+            )}
+            {orderHasClaimHistory && (
+              <p className="buyer-order-modal__withdrawal-status">
+                Esta compra ya tiene un reclamo registrado. Consultá el
+                historial para ver cómo se gestionó o se está gestionando la
+                devolución.
+              </p>
+            )}
+            {selectedOrder.withdrawal_requested && (
+              <div className="buyer-order-modal__withdrawal">
+                <p className="buyer-order-modal__withdrawal-status">
+                  {selectedOrder.status === "refunded" &&
+                  ["returning_to_store", "returned_to_store"].includes(
+                    selectedOrder.shipment_status ?? "",
+                  )
+                    ? "El reintegro fue confirmado. El rider devolverá el paquete al comercio si aún lo tiene."
+                    : selectedOrder.status === "refunded"
+                      ? "El reintegro fue confirmado."
+                      : selectedOrder.status === "returning_to_store" ||
+                          selectedOrder.shipment_status === "returning_to_store"
+                        ? "Tu cancelación fue aceptada y el reintegro se tramita automáticamente. El rider llevará el paquete al comercio."
+                        : orderClaims.some(
+                              (claim) =>
+                                claim.status === "open" &&
+                                claim.merchant_action ===
+                                  "full_refund_with_return",
+                            )
+                          ? "Tu devolución fue aceptada. Entregá el producto para completar el reembolso."
+                          : "Tu solicitud está en proceso."}
+                </p>
+                {selectedOrder.return_ticket_available && (
+                  <>
+                    <p>
+                      {selectedOrder.delivery_type === "pickup"
+                        ? "Llevá el producto a la sucursal donde lo retiraste. Si estás lejos, contactá al comercio para coordinar la devolución."
+                        : "Contactá al comercio para coordinar el envío de regreso del producto."}
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-secondary buyer-order-action"
+                      onClick={() => openReturnTicket(selectedOrder.id)}
+                    >
+                      <RotateCcw size={16} />
+                      Ver e imprimir comprobante de devolución
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            {!selectedOrder.withdrawal_requested &&
+              selectedOrder.return_ticket_available && (
+                <div className="buyer-order-modal__withdrawal">
+                  <p>Tenés una solicitud de devolución o garantía abierta.</p>
+                  <button
+                    type="button"
+                    className="btn-secondary buyer-order-action"
+                    onClick={() => openReturnTicket(selectedOrder.id)}
+                  >
+                    <RotateCcw size={16} />
+                    Ver e imprimir comprobante de devolución
+                  </button>
+                </div>
+              )}
+            {orderClaims.length > 0 && (
+              <div className="buyer-order-modal__withdrawal">
+                <strong>Reclamos de esta compra</strong>
+                {orderClaims.map((claim) => (
+                  <article className="buyer-order-modal__claim" key={claim.id}>
+                    <strong>{claim.reason}</strong>
+                    {!!claim.items?.length && (
+                      <span>
+                        Productos:{" "}
+                        {claim.items
+                          .map((item) => `${item.quantity} × ${item.name}`)
+                          .join(", ")}
+                      </span>
+                    )}
+                    <span>
+                      Estado:{" "}
+                      {claim.status === "open" &&
+                      claim.merchant_action === "full_refund_with_return"
+                        ? "Aceptado; esperando devolución del producto"
+                        : CLAIM_STATUS_LABELS[claim.status] || claim.status}
+                    </span>
+                    <span>
+                      Enviado:{" "}
+                      {new Date(claim.created_at).toLocaleString("es-AR")}
+                    </span>
+                    {claim.admin_notes && <p>Respuesta: {claim.admin_notes}</p>}
+                    {claim.merchant_response && (
+                      <p>Respuesta del comercio: {claim.merchant_response}</p>
+                    )}
+                    {claim.merchant_action === "full_refund_with_return" &&
+                      ["open", "in_review"].includes(claim.status) &&
+                      !claim.return_received_at &&
+                      !(
+                        Number(selectedOrder.total_amount) > 0 &&
+                        Number(selectedOrder.refunded_amount ?? 0) >=
+                          Number(selectedOrder.total_amount)
+                      ) &&
+                      selectedOrder.status !== "returning_to_store" &&
+                      selectedOrder.status !== "returned" &&
+                      selectedOrder.status !== "refunded" &&
+                      selectedOrder.shipment_status !== "returning_to_store" &&
+                      selectedOrder.shipment_status !== "returned_to_store" && (
+                        <>
+                          <p>
+                            El comercio aceptó el reembolso total al recibir el
+                            producto. Usá el comprobante de devolución para
+                            enviarlo.
+                          </p>
+                          <button
+                            type="button"
+                            className="buyer-order-modal__claim-ticket"
+                            onClick={() => openReturnTicket(selectedOrder.id)}
+                          >
+                            Ver comprobante de devolución
+                          </button>
+                        </>
+                      )}
+                    {claim.merchant_action === "full_refund_with_return" &&
+                      (selectedOrder.status === "returned" ||
+                        selectedOrder.status === "returning_to_store" ||
+                        selectedOrder.shipment_status ===
+                          "returning_to_store") && (
+                        <p>
+                          El rider devolverá el paquete al comercio. No
+                          necesitás imprimir un comprobante.
+                        </p>
+                      )}
+                    {claim.merchant_action === "full_refund_no_return" && (
+                      <p>
+                        {isServiceOrder(selectedOrder)
+                          ? "El profesional aprobó el reembolso total del servicio."
+                          : "El comercio aprobó el reembolso total sin pedir la devolución del producto."}
+                      </p>
+                    )}
+                    {(claim.offer_history?.length ?? 0) > 1 && (
+                      <details>
+                        <summary>Historial de propuestas</summary>
+                        {claim.offer_history?.map((offer) => (
+                          <p key={offer.revision}>
+                            Propuesta {offer.revision}: {offer.percent}% ($
+                            {Number(offer.amount).toLocaleString("es-AR")}) —{" "}
+                            {offer.buyer_decision === "rejected"
+                              ? "Rechazada"
+                              : offer.buyer_decision === "accepted"
+                                ? "Aceptada"
+                                : "Pendiente"}
+                            . {offer.response}
+                          </p>
+                        ))}
+                      </details>
+                    )}
+                    {claim.merchant_action === "partial_offer" && (
+                      <p>
+                        Oferta de reintegro: {claim.partial_offer_percent}% ($
+                        {claim.partial_offer_amount}).{" "}
+                        {claim.buyer_decision === "accepted"
+                          ? claim.status === "resolved"
+                            ? "Reintegro confirmado"
+                            : "Aceptada; reintegro en revisión"
+                          : claim.buyer_decision === "rejected"
+                            ? ["resolved", "refunded", "rejected"].includes(
+                                claim.status,
+                              )
+                              ? "Oferta rechazada; consultá la resolución del reclamo"
+                              : claim.status === "open"
+                                ? "Oferta rechazada; el comercio puede enviar una nueva propuesta. El mismo reclamo sigue abierto"
+                                : "Oferta rechazada; Sercio revisará el mismo reclamo"
+                            : "Pendiente de tu respuesta"}
+                        .
+                      </p>
+                    )}
+                    {claim.status === "open" &&
+                      claim.merchant_action === "partial_offer" &&
+                      claim.buyer_decision !== "rejected" && (
+                        <div className="buyer-order-modal__claim-actions">
+                          {!claim.buyer_decision && (
+                            <button
+                              type="button"
+                              data-action-tone="cancel"
+                              disabled={answerOfferMutation.isPending}
+                              onClick={() =>
+                                answerOfferMutation.mutate({
+                                  claimId: claim.id,
+                                  accept: false,
+                                  offerRevision: claim.offer_revision ?? 1,
+                                })
+                              }
+                            >
+                              {answerOfferMutation.isPending &&
+                              answerOfferMutation.variables?.claimId ===
+                                claim.id &&
+                              answerOfferMutation.variables?.accept ===
+                                false ? (
+                                <>
+                                  <Loader2
+                                    size={16}
+                                    className="btn-spinner"
+                                    aria-hidden="true"
+                                  />
+                                  <span>Rechazando...</span>
+                                </>
+                              ) : (
+                                "Rechazar oferta"
+                              )}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            data-action-tone="add"
+                            disabled={answerOfferMutation.isPending}
+                            onClick={() =>
+                              answerOfferMutation.mutate({
+                                claimId: claim.id,
+                                accept: true,
+                                offerRevision: claim.offer_revision ?? 1,
+                              })
+                            }
+                          >
+                            {answerOfferMutation.isPending &&
+                            answerOfferMutation.variables?.claimId ===
+                              claim.id &&
+                            answerOfferMutation.variables?.accept === true ? (
+                              <>
+                                <Loader2
+                                  size={16}
+                                  className="btn-spinner"
+                                  aria-hidden="true"
+                                />
+                                <span>
+                                  {claim.buyer_decision === "accepted"
+                                    ? "Consultando..."
+                                    : "Aceptando..."}
+                                </span>
+                              </>
+                            ) : claim.buyer_decision === "accepted" ? (
+                              "Reintentar o consultar reintegro"
+                            ) : (
+                              "Aceptar reintegro parcial"
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    {claim.status === "open" &&
+                      !claim.merchant_action &&
+                      claim.due_date &&
+                      new Date(claim.due_date).getTime() <= claimClock && (
+                        <p>
+                          El plazo del comercio venció. Sercio decidirá el caso.
+                        </p>
+                      )}
+                    {claim.media.length > 0 && (
+                      <div className="buyer-order-modal__claim-media">
+                        {claim.media.map((item, index) =>
+                          !item.url ? (
+                            <span key={item.id}>Video en procesamiento</span>
+                          ) : item.media_type === "image" ? (
+                            <a
+                              key={item.id}
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`Ver imagen ${index + 1} del reclamo`}
+                            >
+                              <img
+                                src={item.url}
+                                alt={`Evidencia ${index + 1} del reclamo`}
+                              />
+                            </a>
+                          ) : (
+                            <video
+                              key={item.id}
+                              src={item.url}
+                              controls
+                              preload="metadata"
+                              aria-label="Video del reclamo"
+                            />
+                          ),
+                        )}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+            {orderClaimsError && (
+              <p role="alert">
+                No se pudieron cargar los reclamos de esta compra.
+              </p>
+            )}
+            {!["pending_payment", "cancelled", "refunded"].includes(
+              selectedOrder.status,
+            ) && (
+              <div className="buyer-order-modal__withdrawal">
+                <p>
+                  {isServiceOrder(selectedOrder)
+                    ? serviceProgressStep(selectedOrder) >= 3
+                      ? "Si el servicio realizado fue distinto de lo acordado o tuviste otro problema, iniciá un reclamo. El profesional podrá proponer una solución y Sercio revisará el caso si no se resuelve."
+                      : "Si el servicio todavía no se realizó y tenés un problema, podés informar que no se prestó."
+                    : isOrderDelivered(selectedOrder)
+                      ? "Si el producto entregado tiene un problema, necesitás garantía o querés informar otra incidencia, iniciá un reclamo. Si estás lejos de la sucursal, contactá también al comercio para coordinar cómo devolverlo."
+                      : "Si todavía no recibiste el producto y hay un problema con la entrega, podés informarlo."}
+                </p>
+                {activeOrderClaim ? (
+                  <strong>
+                    Ya tenés una solicitud abierta para esta compra.
+                  </strong>
+                ) : claimsUnavailable ? (
+                  <p>
+                    Consultando los reclamos de esta compra. Si la consulta
+                    falló, actualizá el detalle antes de iniciar otra solicitud.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-secondary buyer-order-action"
+                    onClick={() => {
+                      setClaimType(
+                        isServiceOrder(selectedOrder)
+                          ? serviceProgressStep(selectedOrder) >= 3
+                            ? "Servicio diferente"
+                            : "Servicio no realizado"
+                          : isOrderDelivered(selectedOrder)
+                            ? "Reclamo"
+                            : "Producto no entregado",
+                      );
+                      setSelectedReturnItems(
+                        Object.fromEntries(
+                          (selectedOrder.items || [])
+                            .filter((item) => item.product_id)
+                            .map((item) => [item.id, item.quantity]),
+                        ),
+                      );
+                      setClaimOpen(true);
+                    }}
+                  >
+                    {(
+                      isServiceOrder(selectedOrder)
+                        ? serviceProgressStep(selectedOrder) >= 3
+                        : isOrderDelivered(selectedOrder)
+                    )
+                      ? "Iniciar reclamo"
+                      : isServiceOrder(selectedOrder)
+                        ? "Informar servicio no realizado"
+                        : "Informar problema de entrega"}
+                  </button>
+                )}
+                {selectedOrder.claim_resolution_confirmable && (
+                  <button
+                    type="button"
+                    className="btn-secondary buyer-order-action"
+                    onClick={() => setConfirmClaimResolutionOpen(true)}
+                  >
+                    <CheckCircle2 size={16} />
+                    Confirmar que se resolvió el reclamo
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {selectedOrder && withdrawalOpen && (
+        <Modal
+          isOpen
+          onClose={() => setWithdrawalOpen(false)}
+          title={
+            isServiceOrder(selectedOrder)
+              ? "Cancelar servicio"
+              : (selectedOrder.status === "delivered" ||
+                    isOrderDelivered(selectedOrder)) &&
+                  !selectedOrder.service_id
+                ? "Solicitar devolución"
+                : "Solicitar cancelación"
+          }
+        >
+          <div className="buyer-order-modal__withdrawal-form">
+            <p>
+              {isServiceOrder(selectedOrder)
+                ? "Si el servicio aún no se prestó y cumple el plazo de cancelación, tramitaremos el reintegro por el medio de pago original. Podés indicar un motivo, pero no es obligatorio."
+                : "Aceptaremos la solicitud si la compra cumple las condiciones de arrepentimiento. Si ya recibiste el producto, coordiná la entrega con el comercio: el reembolso se hará al registrar su recepción. Podés indicar un motivo, pero no es obligatorio."}
+            </p>
+            {renderProductSelection(true)}
+            <label htmlFor="buyer-withdrawal-reason">Motivo (opcional)</label>
+            <select
+              id="buyer-withdrawal-reason"
+              value={withdrawalReason}
+              onChange={(event) => setWithdrawalReason(event.target.value)}
+            >
+              <option value="">Prefiero no indicar un motivo</option>
+              <option value="Cambié de opinión">Cambié de opinión</option>
+              <option value="Ya no necesito el producto o servicio">
+                Ya no lo necesito
+              </option>
+              <option value="Compré por error">Compré por error</option>
+              <option value="Otro motivo">Otro motivo</option>
+            </select>
+            <div className="buyer-order-modal__withdrawal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                data-action-tone="cancel"
+                onClick={() => setWithdrawalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={
+                  withdrawalMutation.isPending ||
+                  orderHasClaimHistory ||
+                  claimsUnavailable
+                }
+                onClick={() => withdrawalMutation.mutate()}
+              >
+                {withdrawalMutation.isPending ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="btn-spinner"
+                      aria-hidden="true"
+                    />
+                    <span>Enviando...</span>
+                  </>
+                ) : (
+                  "Enviar solicitud"
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {selectedOrder && cancelOpen && (
+        <Modal
+          isOpen
+          onClose={() => setCancelOpen(false)}
+          title="Cancelar compra pendiente"
+        >
+          <div className="buyer-order-modal__withdrawal-form">
+            <p>
+              Solo podés cancelar directamente una compra que todavía está
+              pendiente de pago.
+            </p>
+            <label htmlFor="buyer-cancel-reason">Motivo (opcional)</label>
+            <textarea
+              id="buyer-cancel-reason"
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+              rows={3}
+            />
+            <div className="buyer-order-modal__withdrawal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setCancelOpen(false)}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                data-action-tone="cancel"
+                disabled={
+                  cancelMutation.isPending ||
+                  orderHasClaimHistory ||
+                  claimsUnavailable
+                }
+                onClick={() => cancelMutation.mutate()}
+              >
+                {cancelMutation.isPending ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="btn-spinner"
+                      aria-hidden="true"
+                    />
+                    <span>Cancelando...</span>
+                  </>
+                ) : (
+                  "Confirmar cancelación"
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {selectedOrder && claimOpen && (
+        <Modal
+          isOpen
+          onClose={() => setClaimOpen(false)}
+          title={
+            (
+              isServiceOrder(selectedOrder)
+                ? serviceProgressStep(selectedOrder) >= 3
+                : isOrderDelivered(selectedOrder)
+            )
+              ? "Iniciar reclamo"
+              : "Informar problema con la compra"
+          }
+        >
+          <div className="buyer-order-modal__withdrawal-form">
+            <p>
+              {isServiceOrder(selectedOrder)
+                ? serviceProgressStep(selectedOrder) >= 3
+                  ? "Contanos qué ocurrió con el servicio realizado y adjuntá evidencia si la tenés."
+                  : "Contanos por qué el servicio no se realizó y adjuntá evidencia si la tenés."
+                : isOrderDelivered(selectedOrder)
+                  ? "Contanos qué ocurrió. Para garantía o devolución desde lejos, coordiná con el comercio antes de enviar el producto."
+                  : "Contanos qué pasó con la entrega y adjuntá evidencia si la tenés."}
+            </p>
+            {renderProductSelection(false)}
+            <label htmlFor="buyer-claim-type">Tipo de reclamo</label>
+            <select
+              id="buyer-claim-type"
+              value={claimType}
+              onChange={(event) => setClaimType(event.target.value)}
+            >
+              {isServiceOrder(selectedOrder) &&
+              serviceProgressStep(selectedOrder) < 3 ? (
+                <option value="Servicio no realizado">
+                  El servicio no se realizó
+                </option>
+              ) : isServiceOrder(selectedOrder) ? (
+                <>
+                  <option value="Servicio diferente">
+                    Servicio distinto de lo acordado
+                  </option>
+                  <option value="Reclamo">Otro problema con el servicio</option>
+                </>
+              ) : !isOrderDelivered(selectedOrder) ? (
+                <option value="Producto no entregado">
+                  El producto no se entregó
+                </option>
+              ) : (
+                <>
+                  <option value="Reclamo">Problema con la compra</option>
+                  <option value="Garantía">Garantía</option>
+                  <option value="Devolución">Devolución por otro motivo</option>
+                </>
+              )}
+            </select>
+            <label htmlFor="buyer-claim-reason">Descripción del problema</label>
+            <textarea
+              id="buyer-claim-reason"
+              value={claimReason}
+              onChange={(event) => setClaimReason(event.target.value)}
+              rows={5}
+              minLength={10}
+              maxLength={980}
+              required
+              placeholder={
+                isServiceOrder(selectedOrder)
+                  ? "Describí qué ocurrió con el servicio y qué solución necesitás"
+                  : "Describí el producto, el problema y qué solución necesitás"
+              }
+            />
+            <label htmlFor="buyer-claim-images">
+              Imágenes (hasta 5, 5 MB cada una)
+            </label>
+            <input
+              id="buyer-claim-images"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={(event) => {
+                const files = Array.from(event.target.files || []);
+                if (
+                  files.length > 5 ||
+                  files.some((file) => file.size > 5 * 1024 * 1024)
+                ) {
+                  showError("Elegí hasta 5 imágenes de 5 MB cada una.");
+                  event.target.value = "";
+                  return;
+                }
+                setClaimImages(files);
+              }}
+            />
+            {claimImages.length > 0 && (
+              <p>{claimImages.map((file) => file.name).join(", ")}</p>
+            )}
+            <label htmlFor="buyer-claim-video">
+              Video (opcional, hasta 25 MB)
+            </label>
+            <input
+              id="buyer-claim-video"
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              onChange={(event) => {
+                const file = event.target.files?.[0] || null;
+                if (file && file.size > 25 * 1024 * 1024) {
+                  showError("El video no puede superar 25 MB.");
+                  event.target.value = "";
+                  return;
+                }
+                setClaimVideo(file);
+              }}
+            />
+            {claimVideo && <p>{claimVideo.name}</p>}
+            <div className="buyer-order-modal__withdrawal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                data-action-tone="cancel"
+                onClick={() => setClaimOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                data-action-tone="add"
+                disabled={
+                  claimMutation.isPending || claimReason.trim().length < 10
+                }
+                onClick={() => claimMutation.mutate()}
+              >
+                {claimMutation.isPending ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="btn-spinner"
+                      aria-hidden="true"
+                    />
+                    <span>Enviando...</span>
+                  </>
+                ) : (
+                  "Enviar reclamo"
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {selectedOrder && confirmClaimResolutionOpen && (
+        <Modal
+          isOpen
+          onClose={() => setConfirmClaimResolutionOpen(false)}
+          title="Confirmar solución del reclamo"
+        >
+          <div className="buyer-order-modal__withdrawal-form">
+            <p>
+              Confirmá solo si el problema se resolvió con el vendedor. El
+              reclamo se cerrará sin intervención de Sercio y esta acción no
+              solicita un reembolso.
+            </p>
+            <div className="buyer-order-modal__withdrawal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setConfirmClaimResolutionOpen(false)}
+                disabled={confirmClaimResolutionMutation.isPending}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => confirmClaimResolutionMutation.mutate()}
+                disabled={confirmClaimResolutionMutation.isPending}
+              >
+                {confirmClaimResolutionMutation.isPending ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className="btn-spinner"
+                      aria-hidden="true"
+                    />
+                    <span>Confirmando...</span>
+                  </>
+                ) : (
+                  "Sí, quedó resuelto"
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {returnTicket && (
+        <ReturnTicketModal
+          ticket={returnTicket}
+          onClose={() => setReturnTicket(null)}
+        />
+      )}
+
+      <OrderReviewModal
+        isOpen={Boolean(reviewOrder)}
+        onClose={() => setReviewOrder(null)}
+        order={reviewOrder}
+        onSuccess={(review) => {
+          setReviewOrder((current) =>
+            current ? { ...current, review } : current,
+          );
+          setSelectedOrder((current) =>
+            current && current.id === reviewOrder?.id
+              ? { ...current, review }
+              : current,
+          );
+          queryClient.invalidateQueries({ queryKey: ["buyer-orders"] });
+        }}
+      />
+
+      {chatOrder && (!openOrderChat || chatOrder.id === orderIdParam) && (
+        <OrderChatModal
+          isOpen={Boolean(chatOrder)}
+          onClose={closeOrderChat}
+          order={chatOrder}
+          currentUserId={String(user?.id || "")}
+        />
+      )}
+    </div>
+  );
+}

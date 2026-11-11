@@ -8,6 +8,7 @@ import { ROUTES } from "@/routes/paths";
 import { getPublicationsAction, Publication } from "@/app/actions/publications";
 import "./PublicationPage.css";
 import Link from "next/link";
+import ListingReportButton from "@/components/ListingReport/ListingReportButton";
 
 interface PublicationPageProps {
   publication: Publication;
@@ -117,6 +118,7 @@ export default function PublicationPage({ publication }: PublicationPageProps) {
                 <button className="pub-page__share-btn" onClick={handleShare}>
                   <Share2 size={18} /> Compartir
                 </button>
+                <ListingReportButton targetType="professional_publication" targetId={publication.id} />
               </div>
             </header>
 

@@ -644,7 +644,7 @@ export default function ProposalCreator({ onBack }) {
                       </ul>
                     )}
                   </div>
-                  <button
+                  <button data-action-tone="add"
                     className="add-new-btn"
                     onClick={() => {
                       setIsCustomClientMode(true);
@@ -770,7 +770,7 @@ export default function ProposalCreator({ onBack }) {
                 <h3>Detalle de Servicios y Productos</h3>
               </div>
               <div className="items-header-actions">
-                <button
+                <button data-action-tone="add"
                   className="add-item-trigger"
                   onClick={() => {
                     setModalInitialTab("services");
@@ -779,7 +779,7 @@ export default function ProposalCreator({ onBack }) {
                 >
                   <Plus size={14} /> AÑADIR SERVICIO
                 </button>
-                <button
+                <button data-action-tone="add"
                   className="add-item-trigger"
                   onClick={() => {
                     setModalInitialTab("products");

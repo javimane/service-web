@@ -67,6 +67,22 @@
   align-items: center;
   background: transparent;
   border: none;
+  overflow: visible !important;
+}
+
+.custom-map-marker__wrapper {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s ease;
+  overflow: visible;
+}
+
+.custom-map-marker:hover .custom-map-marker__wrapper {
+  transform: scale(1.12);
 }
 
 .custom-map-marker__pin {
@@ -81,13 +97,8 @@
   position: relative;
   z-index: 2;
   border: 3px solid var(--purple-accent);
-  transition: transform 0.2s ease;
   overflow: hidden;
   padding: 2px;
-}
-
-.custom-map-marker:hover .custom-map-marker__pin {
-  transform: scale(1.1);
 }
 
 .custom-map-marker__pin img {
@@ -219,17 +230,23 @@
 
 .custom-map-marker__promo-badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  background: #ff4500;
-  color: #fff;
-  font-size: 8px;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #ff4500 0%, #e94823 100%);
+  color: #ffffff;
+  font-size: 8.5px;
   font-weight: var(--weight-black);
-  padding: 2px 4px;
+  padding: 2px 7px;
   border-radius: var(--radius-full);
-  border: 1px solid #ffd700;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border: 1.5px solid #ffd700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   z-index: 10;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  pointer-events: none;
+  line-height: 1.2;
 }
 
 .map-info-window__btn--promo {

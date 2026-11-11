@@ -312,7 +312,6 @@ export default function PromotionCreator({
 
   return (
     <div className="promo-creator">
-
       {/* Header */}
       <div className="promo-creator__header">
         <div>
@@ -608,7 +607,7 @@ export default function PromotionCreator({
       {/* Footer */}
       <footer className="promo-creator__footer">
         <div className="promo-creator__footer-actions">
-          <button
+          <button data-action-tone="cancel"
             type="button"
             className="promo-btn promo-btn--outline"
             onClick={onViewAll}

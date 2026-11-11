@@ -148,40 +148,49 @@
 
 .map-picker-actions {
   display: flex;
+  align-items: center;
   gap: 12px;
 }
 
 .map-picker-btn {
-  padding: 12px 20px;
-  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  height: 42px;
+  min-height: 42px;
+  padding: 0 20px;
+  border-radius: var(--radius-md);
   font-weight: var(--weight-bold);
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  border: 1px solid transparent;
+  line-height: 1;
 }
 
 .map-picker-btn--secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #f5f5f7;
+  background: var(--brand-blue);
+  border: 1px solid var(--brand-blue);
+  color: var(--white);
 }
 
 .map-picker-btn--secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: #154ca0;
+  border-color: #154ca0;
 }
 
 .map-picker-btn--primary {
   background: #7b61ff;
-  border: none;
+  border: 1px solid #7b61ff;
   color: var(--white);
   box-shadow: 0 8px 16px rgba(123, 97, 255, 0.25);
 }
 
 .map-picker-btn--primary:hover:not(:disabled) {
   background: #8e77ff;
+  border-color: #8e77ff;
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(123, 97, 255, 0.35);
 }

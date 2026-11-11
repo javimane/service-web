@@ -1,6 +1,8 @@
 "use client";
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import WhatsAppContactButton from "@/components/WhatsAppContactButton/WhatsAppContactButton";
+import ProfessionalReputation from "@/components/ProfessionalReputation/ProfessionalReputation";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAuth } from "../../context/AuthContext";
 import { useAlert } from "../../context/AlertContext";
@@ -58,10 +60,12 @@ import "./ProfilePage.css";
 import ProductCard from "../../components/Cards/ProductCard";
 import PromotionDetailModal from "../../components/Modals/PromotionDetailModal";
 import ProfileServiceDetailModal from "./sections/ProfileServiceDetailModal";
+import ProfileBranches from "./sections/ProfileBranches";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import ReelCard from "../../components/Cards/ReelCard";
 import ReelsTheaterModal from "../../components/ReelsTheater/ReelsTheaterModal";
+import FavoriteButton from "../../components/FavoriteButton/FavoriteButton";
 
 // Custom hook for drag-to-scroll
 function useDraggableScroll() {
@@ -835,12 +839,7 @@ export default function ProfilePage({
   }, [professional, name, avatar, company, reviews]);
 
   const handleShareProfile = async () => {
-    const seo = professional?.seo_path
-      ? professional.seo_path.startsWith("/")
-        ? professional.seo_path
-        : `/${professional.seo_path}`
-      : `/${rawId}`;
-    const shareUrl = `${window.location.origin}/perfil${seo}`;
+    const shareUrl = `${window.location.origin}${getProfilePath(professional?.id || rawId, professional?.seo_path)}`;
 
     if (navigator.share) {
       try {
@@ -902,6 +901,24 @@ export default function ProfilePage({
                 </div>
               )}
             </div>
+            <div className="profile-sidebar__icon-actions" role="group" aria-label="Acciones del perfil">
+              <button
+                type="button"
+                className="profile-sidebar__icon-button"
+                onClick={handleShareProfile}
+                aria-label="Compartir perfil"
+                title="Compartir perfil"
+              >
+                <Share2 size={20} aria-hidden="true" />
+              </button>
+              <FavoriteButton
+                type="professional"
+                targetId={professional?.id || id}
+                variant="icon"
+                size={20}
+                className="profile-sidebar__icon-button"
+              />
+            </div>
           </div>
 
           <div className="profile-sidebar__info">
@@ -910,6 +927,7 @@ export default function ProfilePage({
               {professional.specialty?.slice(0, 50) ||
                 "Servicios Profesionales"}
             </p>
+            <ProfessionalReputation professionalId={professionalId} />
             {professional.professional_categories &&
               professional.professional_categories.length > 0 && (
                 <div className="profile-sidebar__categories">
@@ -948,6 +966,10 @@ export default function ProfilePage({
                 </button>
               )}
             </div>
+          )}
+
+          {professionalId && (
+            <ProfileBranches professionalId={Number(professionalId)} />
           )}
 
           <div
@@ -1005,22 +1027,6 @@ export default function ProfilePage({
             </div>
           </div>
 
-          {products.length > 0 && (
-            <button
-              className="cta-button store-btn"
-              onClick={() => {
-                const seo = professional?.seo_path
-                  ? professional.seo_path.startsWith("/")
-                    ? professional.seo_path
-                    : `/${professional.seo_path}`
-                  : `/${rawId}`;
-                router.push(`/perfil${seo}/tienda`);
-              }}
-            >
-              INGRESAR A LA TIENDA <ShoppingBag size={18} />
-            </button>
-          )}
-
           <PaymentMethodsCard methods={paymentMethods} />
 
           <BankPromosCard
@@ -1037,24 +1043,6 @@ export default function ProfilePage({
             </button>
           )}
 
-          <button
-            className="cta-button message-btn"
-            onClick={() => {
-              const msg = `Hola, te contacto desde tu perfil profesional.`;
-              const encodedMsg = encodeURIComponent(msg);
-              router.push(`/mensajes?to=${rawId}&initialMessage=${encodedMsg}`);
-            }}
-          >
-            ENVIAR MENSAJE <MessageCircle size={18} />
-          </button>
-
-          <button
-            className="cta-button share-profile-btn"
-            onClick={handleShareProfile}
-          >
-            COMPARTIR PERFIL <Share2 size={18} />
-          </button>
-
           {/* Review Button — only for authenticated users who've chatted with this professional */}
           {user && hasChattedWithProfessional && (
             <button
@@ -1063,15 +1051,6 @@ export default function ProfilePage({
               onClick={() => setIsReviewModalOpen(true)}
             >
               DEJAR UNA OPINIÓN <Star size={18} />
-            </button>
-          )}
-
-          {professional.web_url && professional?.web_url && (
-            <button
-              className="cta-button store-btn"
-              onClick={() => window.open(professional.web_url, "_blank")}
-            >
-              VISITAR PÁGINA WEB <ArrowUpRight size={18} />
             </button>
           )}
         </aside>
@@ -1086,22 +1065,61 @@ export default function ProfilePage({
               {professional.bio || "Sin biografía disponible."}
             </p>
 
+            <div className="profile-contact-actions">
+              {products.length > 0 && (
+                <button
+                  type="button" className="profile-contact-actions__button profile-contact-actions__button--store"
+                  onClick={() => {
+                    router.push(`${getProfilePath(professional?.id || rawId, professional?.seo_path)}/tienda`);
+                  }}
+                >
+                  Tienda <ShoppingBag size={18} />
+                </button>
+              )}
+
+              <WhatsAppContactButton
+                professionalId={id}
+                professional={professional}
+                profile={profile}
+                phone={
+                  profile?.phone ||
+                  profile?.phone_number ||
+                  professional?.phone ||
+                  professional?.phone_number ||
+                  company?.phone ||
+                  company?.phone_number
+                }
+                message="Hola, te contacto desde tu perfil profesional."
+                label="WhatsApp" className="profile-contact-actions__button"
+              />
+
+              <button
+                type="button" className="profile-contact-actions__button profile-contact-actions__button--message"
+                onClick={() => {
+                  const msg = `Hola, te contacto desde tu perfil profesional.`;
+                  const encodedMsg = encodeURIComponent(msg);
+                  router.push(`/mensajes?to=${rawId}&initialMessage=${encodedMsg}`);
+                }}
+              >
+                Enviar mensaje <MessageCircle size={18} />
+              </button>
+            </div>
+
             {companyLocations && (
               <div className="scope-of-work">
                 <button
                   type="button"
                   className="scope-toggle-btn"
-                  onClick={() => setShowScope(!showScope)}
+                  onClick={() => setShowScope(true)}
+                  aria-haspopup="dialog"
                 >
                   <MapPin size={16} />
                   <span>
-                    {showScope
-                      ? "Ocultar alcance de cobertura"
-                      : "Ver alcance de cobertura"}
+                    Ver alcance de cobertura
                   </span>
                 </button>
-                {showScope && (
-                  <div className="scope-grid mt-4">
+                <Modal isOpen={showScope} onClose={() => setShowScope(false)} title="Alcance de cobertura" maxWidth="720px">
+                  <div className="scope-grid profile-coverage__grid">
                     {companyLocations.provinces?.map((p: any) => {
                       const provinceId = p.Province?.id;
                       const provinceDepartments =
@@ -1136,7 +1154,8 @@ export default function ProfilePage({
                       );
                     })}
                   </div>
-                )}
+                  {!companyLocations.provinces?.length && <p>No hay zonas de cobertura informadas.</p>}
+                </Modal>
               </div>
             )}
           </header>
@@ -1774,6 +1793,21 @@ export default function ProfilePage({
                     "Sin descripción disponible."}
                 </p>
               </div>
+              <WhatsAppContactButton
+                professionalId={id}
+                professional={professional}
+                profile={profile}
+                phone={
+                  profile?.phone ||
+                  profile?.phone_number ||
+                  professional?.phone ||
+                  professional?.phone_number ||
+                  company?.phone ||
+                  company?.phone_number
+                }
+                message={`Hola, te contacto por el producto: ${selectedProductForDetail.name || "Producto"}`}
+                className="contact-professional-btn"
+              />
               <button
                 className="contact-professional-btn"
                 onClick={() => {

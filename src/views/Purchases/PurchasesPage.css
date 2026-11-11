@@ -1,0 +1,14 @@
+.purchases-page-wrapper {
+  min-height: 100vh;
+  background: var(--bg-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.purchases-page-main {
+  flex: 1;
+  max-width: var(--content-max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--section-padding-y) var(--section-padding-x);
+}

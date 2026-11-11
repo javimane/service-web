@@ -1,0 +1,37 @@
+.qr-payment-confirmed {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.qr-payment-confirmed__icon {
+  color: var(--success-color);
+}
+
+.qr-payment-confirmed__countdown {
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+}
+
+.qr-payment-confirmed__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.qr-payment-confirmed__actions button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  min-height: 42px;
+  border: 1px solid var(--accent-color);
+  line-height: 1;
+  transition: all 0.2s ease;
+}

@@ -1,0 +1,121 @@
+.buyer-shipment-map {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.buyer-shipment-map__map {
+  position: relative;
+  height: 380px;
+  background: var(--bg-card);
+}
+
+.buyer-shipment-map__canvas,
+.buyer-shipment-map__map-empty {
+  width: 100%;
+  height: 100%;
+}
+
+.buyer-shipment-map__map-empty {
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
+.buyer-shipment-map__map-label {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  color: var(--brand-blue);
+  background: var(--white);
+  box-shadow: var(--shadow-md);
+  font-weight: var(--weight-semibold);
+  pointer-events: none;
+}
+
+.buyer-shipment-map__panel {
+  position: relative;
+  z-index: 1;
+  margin-top: calc(-1 * var(--space-6));
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.buyer-shipment-map__handle {
+  width: 42px;
+  height: 4px;
+  margin: 0 auto var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--border-color);
+}
+
+.buyer-shipment-map__heading,
+.buyer-shipment-map__rider,
+.buyer-shipment-map__chat-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.buyer-shipment-map__heading h4 { margin: var(--space-1) 0 0; }
+.buyer-shipment-map__eyebrow { color: var(--text-secondary); font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: .08em; }
+.buyer-shipment-map__status { padding: var(--space-2) var(--space-3); border-radius: var(--radius-full); color: var(--brand-blue); background: var(--brand-blue-soft); font-size: var(--text-sm); font-weight: var(--weight-semibold); white-space: nowrap; }
+.buyer-shipment-map__progress { height: 5px; margin: var(--space-4) 0; border-radius: var(--radius-full); background: var(--brand-blue-soft); }
+.buyer-shipment-map__progress span { display: block; width: 70%; height: 100%; border-radius: inherit; background: var(--brand-blue); }
+.buyer-shipment-map__eta { margin: 0 0 var(--space-4); color: var(--brand-blue); font-weight: var(--weight-semibold); }
+.buyer-shipment-map__locations { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.buyer-shipment-map__locations > div { display: flex; align-items: flex-start; gap: var(--space-2); min-width: 0; }
+.buyer-shipment-map__locations svg { flex-shrink: 0; color: var(--brand-blue); }
+.buyer-shipment-map__locations span { min-width: 0; overflow-wrap: anywhere; }
+.buyer-shipment-map__locations small { display: block; margin-bottom: var(--space-1); color: var(--text-secondary); }
+.buyer-shipment-map__route-note { margin: var(--space-4) 0 0; color: var(--text-secondary); font-size: var(--text-sm); }
+.buyer-shipment-map__rider { margin-top: var(--space-4); padding: var(--space-4); border-radius: var(--radius-lg); background: var(--brand-blue-soft); }
+.buyer-shipment-map__avatar { display: grid; flex-shrink: 0; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-full); background: var(--brand-blue); color: var(--white); }
+.buyer-shipment-map__rider-info { flex: 1; min-width: 0; }
+.buyer-shipment-map__rider-info strong,
+.buyer-shipment-map__rider-info span { display: block; }
+.buyer-shipment-map__rider-info span { margin-top: var(--space-1); color: var(--text-secondary); font-size: var(--text-sm); }
+.buyer-shipment-map__chat-button,
+.buyer-shipment-map__composer button { display: grid; place-items: center; flex-shrink: 0; width: 42px; height: 42px; border: 0; border-radius: var(--radius-full); background: var(--brand-blue); color: var(--white); cursor: pointer; }
+.buyer-shipment-map__code { margin: var(--space-4) 0 0; padding: var(--space-3); border-radius: var(--radius-md); background: var(--brand-blue-soft); }
+
+.buyer-shipment-map__chat {
+  position: absolute;
+  z-index: 3;
+  inset: auto var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  max-height: 420px;
+  min-height: 280px;
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-xl);
+}
+.buyer-shipment-map__chat-heading button { border: 0; background: transparent; color: var(--text-primary); cursor: pointer; }
+.buyer-shipment-map__messages { display: flex; flex: 1; flex-direction: column; gap: var(--space-2); overflow-y: auto; margin: var(--space-4) 0; }
+.buyer-shipment-map__message { align-self: flex-start; max-width: 80%; padding: var(--space-2) var(--space-3); border-radius: var(--radius-lg); background: var(--brand-blue-soft); overflow-wrap: anywhere; }
+.buyer-shipment-map__message--mine { align-self: flex-end; background: var(--brand-blue); color: var(--white); }
+.buyer-shipment-map__composer { display: flex; gap: var(--space-2); }
+.buyer-shipment-map__composer input { flex: 1; min-width: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-full); background: var(--bg-card); color: var(--text-primary); }
+.buyer-shipment-map__chat-error { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .buyer-shipment-map__map { height: 330px; }
+  .buyer-shipment-map__panel { padding-inline: var(--space-4); }
+  .buyer-shipment-map__locations { grid-template-columns: 1fr; }
+  .buyer-shipment-map__chat { inset-inline: var(--space-2); }
+}

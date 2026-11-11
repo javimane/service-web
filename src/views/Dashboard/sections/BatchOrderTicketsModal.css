@@ -1,0 +1,13 @@
+.batch-tickets-modal { display: flex; flex-direction: column; gap: var(--space-4); }
+.batch-tickets-modal__header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+.batch-tickets-modal__header p { margin: 0; color: var(--text-secondary); }
+.batch-tickets-modal__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.batch-tickets-modal__button { min-height: 40px; display: inline-flex; justify-content: center; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--surface-soft); color: var(--text-primary); font: inherit; cursor: pointer; transition: all 0.2s ease; }
+.batch-tickets-modal__button--primary { background: var(--accent-color); color: var(--input-bg); border-color: var(--accent-color); }
+.batch-tickets-modal__button:disabled { opacity: .6; cursor: not-allowed; }
+.batch-tickets-modal__preview { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); max-height: 65vh; overflow: auto; padding: var(--space-4); border-radius: var(--radius-lg); background: var(--surface-soft); }
+@media (max-width: 640px) { .batch-tickets-modal__actions { width: 100%; } .batch-tickets-modal__button { flex: 1; } }
+@media print {
+  .batch-tickets-modal__preview { position: absolute; inset: 0 auto auto 0; display: block; width: 80mm; max-height: none; overflow: visible; padding: 0; background: var(--input-bg); }
+  .batch-tickets-modal__preview .thermal-order-ticket { break-after: page; page-break-after: always; }
+}

@@ -1,5 +1,6 @@
 import type { RawAxiosRequestHeaders } from "axios";
-import { cookies } from "next/headers";
+import { cookies, headers as requestHeaders } from "next/headers";
+import { apiAccessToken, apiCookieHeader, parseApiCookies, stripApiTokenHeaders } from "@/utils/apiAuth";
 
 type ActionContext = {
   headers?: RawAxiosRequestHeaders | Record<string, unknown>;
@@ -7,40 +8,24 @@ type ActionContext = {
 
 export async function buildActionHeaders(
   ctx: ActionContext,
-  token?: string,
+  _token?: string,
 ): Promise<RawAxiosRequestHeaders> {
-  const rawHeaders = (ctx?.headers ?? {}) as Record<string, unknown>;
-  const baseHeaders = Object.fromEntries(
-    Object.entries(rawHeaders).map(([key, value]) => [key, String(value)]),
+  // Keep the legacy argument for callers; only the request cookies establish
+  // the API session. Browser storage may contain a separate chat session.
+  const headers = Object.fromEntries(
+    Object.entries(ctx?.headers ?? {}).map(([key, value]) => [key, String(value)]),
   ) as RawAxiosRequestHeaders;
-
-  // SIEMPRE leer la cookie del servidor primero: es la única fuente que se
-  // actualiza cuando el backend rota el JWT. El token que viene del cliente
-  // puede estar desactualizado y causar el error "unrecognized JWT kid".
-  let finalToken: string | undefined;
-  try {
-    const cookieStore = await cookies();
-    const accessCookie = cookieStore.get("access_token");
-    if (accessCookie?.value) {
-      finalToken = accessCookie.value;
-    }
-  } catch {
-    // Si no estamos en un contexto que permite leer cookies (edge case),
-    // usar el token del cliente como fallback.
-    finalToken = undefined;
+  stripApiTokenHeaders(headers);
+  for (const name of Object.keys(headers)) {
+    if (name.toLowerCase() === "cookie") delete headers[name];
   }
-
-  // Fallback: si la cookie no existe, usar el token del cliente
-  if (!finalToken && token && token !== "$undefined" && token !== "undefined") {
-    finalToken = token;
-  }
-
-  if (!finalToken) {
-    return baseHeaders;
-  }
-
-  return {
-    ...baseHeaders,
-    Authorization: `Bearer ${finalToken}`,
-  };
+  const requestCookies = [
+    ...(await cookies()).getAll(),
+    ...parseApiCookies((await requestHeaders()).get("cookie")),
+  ];
+  const cookieHeader = apiCookieHeader(requestCookies);
+  const accessToken = apiAccessToken(requestCookies);
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  if (cookieHeader) headers.Cookie = cookieHeader;
+  return headers;
 }

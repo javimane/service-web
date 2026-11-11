@@ -12,7 +12,7 @@ export function useDashboardSidebar() {
       return savedState === "true";
     }
 
-    return window.innerWidth <= 1100;
+    return false;
   });
 
   useEffect(() => {
@@ -28,11 +28,12 @@ export function useDashboardSidebar() {
     if (typeof window === "undefined") return undefined;
 
     const handleResize = () => {
-      if (window.innerWidth <= 1024) {
+      if (window.innerWidth <= 768) {
         setIsSidebarCollapsed(true);
       }
     };
 
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);

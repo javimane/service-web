@@ -604,7 +604,7 @@ export default function CalendarSection() {
             </div>
 
             <div className="cal-modal__footer">
-              <button
+              <button data-action-tone="cancel"
                 type="button"
                 className="cal-btn cal-btn--secondary"
                 onClick={() => setShowModal(false)}

@@ -1,9 +1,11 @@
-import { get } from "node:http";
-
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 export const API_ENDPOINTS = {
+  listingReports: {
+    base: `${API_BASE_URL}/api/listing-reports`,
+    mine: `${API_BASE_URL}/api/listing-reports/mine`,
+  },
   auth: {
     register: `${API_BASE_URL}/api/auth/register`,
     login: `${API_BASE_URL}/api/auth/login`,
@@ -31,6 +33,121 @@ export const API_ENDPOINTS = {
     benefits: (userId: string) =>
       `${API_BASE_URL}/api/users/${userId}/benefits`,
     mobilePhone: `${API_BASE_URL}/api/users/mobile-phone`,
+    profile: `${API_BASE_URL}/api/users/me/profile`,
+    cart: `${API_BASE_URL}/api/users/me/cart`,
+    cartItem: (id: string) => `${API_BASE_URL}/api/users/me/cart/items/${id}`,
+    cartItems: `${API_BASE_URL}/api/users/me/cart/items`,
+  },
+  orders: {
+    merchant: `${API_BASE_URL}/api/orders/merchant`,
+    mine: `${API_BASE_URL}/api/orders/me`,
+    detail: (id: string) => `${API_BASE_URL}/api/orders/${id}`,
+    syncPaycloudPayment: (id: string) => `${API_BASE_URL}/api/orders/${id}/sync-paycloud-payment`,
+    serviceAppointment: (id: string) => `${API_BASE_URL}/api/orders/${id}/service-appointment`,
+    transportShipment: (id: string) => `${API_BASE_URL}/api/orders/${id}/transport-shipment`,
+    dispatchEvidence: (id: string) => `${API_BASE_URL}/api/orders/${id}/dispatch-evidence`,
+    dispatchEvidenceUploadUrl: (id: string) => `${API_BASE_URL}/api/orders/${id}/dispatch-evidence/upload-url`,
+    dispatchEvidenceComplete: (id: string) => `${API_BASE_URL}/api/orders/${id}/dispatch-evidence/complete`,
+    confirm: (id: string) => `${API_BASE_URL}/api/orders/${id}/confirm`,
+    coordinatedPreparing: (id: string) => `${API_BASE_URL}/api/orders/${id}/coordinated-preparing`,
+    coordinatedDispatched: (id: string) => `${API_BASE_URL}/api/orders/${id}/coordinated-dispatched`,
+    pickupReady: (id: string) => `${API_BASE_URL}/api/orders/${id}/pickup-ready`,
+    confirmCoordinatedDelivery: (id: string) => `${API_BASE_URL}/api/orders/${id}/confirm-coordinated-delivery`,
+    pickupVerify: (id: string) => `${API_BASE_URL}/api/orders/${id}/pickup-verify`,
+    invoice: (id: string) => `${API_BASE_URL}/api/orders/${id}/invoice`,
+    calculateShipping: `${API_BASE_URL}/api/orders/calculate-shipping`,
+    productCheckoutQuote: `${API_BASE_URL}/api/orders/product-checkout-quote`,
+    checkout: `${API_BASE_URL}/api/orders/checkout`,
+    commissions: `${API_BASE_URL}/api/orders/commissions`,
+    publicCommissions: `${API_BASE_URL}/api/orders/commissions/public`,
+    shippingRates: `${API_BASE_URL}/api/orders/shipping-rates`,
+    attachBillingData: (id: string) => `${API_BASE_URL}/api/orders/${id}/billing-data`,
+    cancel: (id: string) => `${API_BASE_URL}/api/orders/${id}/cancel`,
+    withdrawal: (id: string) => `${API_BASE_URL}/api/orders/${id}/withdrawal`,
+    claim: (id: string) => `${API_BASE_URL}/api/orders/${id}/claim`,
+    claims: (id: string) => `${API_BASE_URL}/api/orders/${id}/claims`,
+    merchantClaimResponse: (id: string, claimId: string) => `${API_BASE_URL}/api/orders/${id}/claims/${claimId}/merchant-response`,
+    answerPartialOffer: (id: string, claimId: string) => `${API_BASE_URL}/api/orders/${id}/claims/${claimId}/partial-offer/answer`,
+    confirmClaimResolved: (id: string) => `${API_BASE_URL}/api/orders/${id}/claim/confirm-resolution`,
+    returnTicket: (id: string) => `${API_BASE_URL}/api/orders/${id}/return-ticket`,
+    receiveReturn: (code: string) => `${API_BASE_URL}/api/orders/returns/${code}/receive`,
+  },
+  billingData: {
+    my: `${API_BASE_URL}/api/user-billing-data/my`,
+    base: `${API_BASE_URL}/api/user-billing-data`,
+    detail: (id: string) => `${API_BASE_URL}/api/user-billing-data/${id}`,
+  },
+  userAddresses: {
+    base: `${API_BASE_URL}/api/user-addresses`,
+    detail: (id: string) => `${API_BASE_URL}/api/user-addresses/${id}`,
+    setDefault: (id: string) => `${API_BASE_URL}/api/user-addresses/${id}/set-default`,
+  },
+  paymentMethods: {
+    base: `${API_BASE_URL}/api/payment-methods`,
+    detail: (id: string) => `${API_BASE_URL}/api/payment-methods/${id}`,
+    setDefault: (id: string) => `${API_BASE_URL}/api/payment-methods/${id}/set-default`,
+  },
+  identityVerification: {
+    me: `${API_BASE_URL}/api/identity-verification/me`,
+  },
+  shipments: {
+    merchant: `${API_BASE_URL}/api/shipments/merchant`,
+    receiveReturn: `${API_BASE_URL}/api/shipments/return/scan`,
+    carrier: `${API_BASE_URL}/api/shipments/carrier`,
+    byOrder: (orderId: string) => `${API_BASE_URL}/api/shipments/order/${orderId}`,
+    riderReview: (orderId: string) => `${API_BASE_URL}/api/shipments/order/${orderId}/rider-review`,
+    confirmReceipt: (id: string) => `${API_BASE_URL}/api/shipments/${id}/confirm-receipt`,
+    uploadImage: (id: string) => `${API_BASE_URL}/api/shipments/${id}/upload-image`,
+    handToCarrier: (id: string) => `${API_BASE_URL}/api/shipments/${id}/hand-to-carrier`,
+    merchantPickupCode: (id: string) => `${API_BASE_URL}/api/shipments/${id}/merchant-pickup-code`,
+    inTransit: (id: string) => `${API_BASE_URL}/api/shipments/${id}/in-transit`,
+    delivered: (id: string) => `${API_BASE_URL}/api/shipments/${id}/delivered`,
+    assign: (id: string) => `${API_BASE_URL}/api/shipments/${id}/assign`,
+    assignOwnRider: (id: string) => `${API_BASE_URL}/api/shipments/${id}/assign-own-rider`,
+    scan: (id: string) => `${API_BASE_URL}/api/shipments/scan/${id}`,
+    startTrip: (id: string) => `${API_BASE_URL}/api/shipments/${id}/start-trip`,
+    location: (id: string) => `${API_BASE_URL}/api/shipments/${id}/location`,
+    preparing: (id: string) => `${API_BASE_URL}/api/shipments/${id}/preparing`,
+    ready: (id: string) => `${API_BASE_URL}/api/shipments/${id}/ready`,
+    arrivedAtStore: (id: string) => `${API_BASE_URL}/api/shipments/${id}/arrived-at-store`,
+    cancel: (id: string) => `${API_BASE_URL}/api/shipments/${id}/cancel`,
+  },
+  branches: {
+    riderCoverage: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}/rider-coverage`,
+    enableOwnRidersForAll: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}/own-riders/enable-all`,
+    base: `${API_BASE_URL}/api/branches`,
+    byCompany: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}`,
+    locations: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}/locations`,
+    professionalLocations: (professionalId: number) => `${API_BASE_URL}/api/branches/professional/${professionalId}/locations`,
+    main: (companyId: number) => `${API_BASE_URL}/api/branches/company/${companyId}/main`,
+    detail: (id: string) => `${API_BASE_URL}/api/branches/${id}`,
+  },
+  liquidations: {
+    base: `${API_BASE_URL}/api/liquidations`,
+    detail: (id: string) => `${API_BASE_URL}/api/liquidations/${id}`,
+  },
+  reports: {
+    merchantLiquidations: `${API_BASE_URL}/api/reports/merchant/liquidations`,
+  },
+  logistics: {
+    dashboard: `${API_BASE_URL}/api/logistics/dashboard`,
+    metrics: `${API_BASE_URL}/api/logistics/dashboard/metrics`,
+    history: `${API_BASE_URL}/api/logistics/dashboard/history`,
+    fleetTracking: `${API_BASE_URL}/api/logistics/dashboard/fleet-tracking`,
+    employees: `${API_BASE_URL}/api/logistics/employees`,
+    fleetVehicles: `${API_BASE_URL}/api/logistics/employees/fleet-vehicles`,
+    fleetVehicle: (vehicleId: string) => `${API_BASE_URL}/api/logistics/employees/fleet-vehicles/${vehicleId}`,
+    fleetVehicleDocuments: (vehicleId: string) => `${API_BASE_URL}/api/logistics/employees/fleet-vehicles/${vehicleId}/documents`,
+    fleetVehicleDocumentUrl: (vehicleId: string, documentId: string) => `${API_BASE_URL}/api/logistics/employees/fleet-vehicles/${vehicleId}/documents/${documentId}/view-url`,
+    fleetVehicleDocumentUploadUrl: (vehicleId: string) => `${API_BASE_URL}/api/logistics/employees/fleet-vehicles/${vehicleId}/documents/upload-url`,
+    assignedVehicle: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/assigned-vehicle`,
+    ownVehicle: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/own-vehicle`,
+    employeeDetail: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}`,
+    employeePassword: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/password`,
+    vehicles: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/vehicles`,
+    documents: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents`,
+    documentUrl: (employeeId: string, documentId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents/${documentId}/view-url`,
+    documentUploadUrl: (employeeId: string) => `${API_BASE_URL}/api/logistics/employees/${employeeId}/documents/upload-url`,
   },
   chats: {
     base: `${API_BASE_URL}/api/chats`,
@@ -93,6 +210,14 @@ export const API_ENDPOINTS = {
     unassignProfessional: (productId: string, professionalId: number) =>
       `${API_BASE_URL}/api/products/${productId}/professional/${professionalId}`,
     byEan: (ean: string) => `${API_BASE_URL}/api/products/ean/${ean}`,
+    variants: (professionalProductId: string) =>
+      `${API_BASE_URL}/api/products/variants/${professionalProductId}`,
+    variantDetail: (id: string) =>
+      `${API_BASE_URL}/api/products/variants/${id}`,
+    freeShippingBulk: (professionalId: number) =>
+      `${API_BASE_URL}/api/products/professional/${professionalId}/free-shipping-bulk`,
+    shippingPolicy: (professionalId: number) =>
+      `${API_BASE_URL}/api/products/professional/${professionalId}/shipping-policy`,
   },
   categoriesProducts: {
     list: `${API_BASE_URL}/api/categories/products`,
@@ -124,6 +249,7 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/api/communications/requests/professional/${professionalId}`,
   },
   notifications: {
+    base: `${API_BASE_URL}/api/notifications`,
     stream: `${API_BASE_URL}/api/notifications/stream`,
   },
   payments: {
@@ -186,6 +312,8 @@ export const API_ENDPOINTS = {
   },
   storage: {
     products: `${API_BASE_URL}/api/storage/products`,
+    productComments: (productId: string) =>
+      `${API_BASE_URL}/api/storage/products/${encodeURIComponent(productId)}/comments`,
     promotions: `${API_BASE_URL}/api/storage/promotions`,
     profile: `${API_BASE_URL}/api/storage/profile`,
     portfolio: `${API_BASE_URL}/api/storage/portfolio`,
@@ -208,6 +336,13 @@ export const API_ENDPOINTS = {
     byProfessional: (professionalId: string | number) =>
       `${API_BASE_URL}/api/reviews/professional/${professionalId}`,
   },
+  scoring: {
+    professional: (id: string | number) => `${API_BASE_URL}/api/scoring/professionals/${id}`,
+    professionalPublic: (id: string | number) => `${API_BASE_URL}/api/scoring/professionals/${id}/public`,
+    rider: (id: string) => `${API_BASE_URL}/api/scoring/riders/${id}`,
+    transport: (companyName: string) =>
+      `${API_BASE_URL}/api/scoring/transport/${encodeURIComponent(companyName)}`,
+  },
   arca: {
     verify: (
       cuit: string,
@@ -228,5 +363,8 @@ export const API_ENDPOINTS = {
   },
   googleCalendar: {
     events: `${API_BASE_URL}/api/google-calendar/events`,
+  },
+  banners: {
+    base: `${API_BASE_URL}/api/banners`,
   },
 };

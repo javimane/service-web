@@ -2,6 +2,7 @@ export interface ProfileRow {
   readonly id: string;
   readonly email: string | null;
   readonly display_name: string | null;
+  readonly first_name?: string | null;
   readonly avatar_url: string | null;
   readonly portfolio_image_url?: string | null;
   readonly updated_at: string | null;
@@ -221,6 +222,7 @@ export interface ProfessionalImageRow {
 }
 
 export interface ProfessionalProductRow {
+  readonly product_condition?: 'original' | 'replica' | 'used' | 'alternative' | 'artisanal' | null;
   readonly id: number;
   readonly professional_id: number;
   readonly product_id: number;
@@ -232,6 +234,9 @@ export interface ProfessionalProductRow {
   readonly updated_at: string | null;
   readonly currency_code: string | null;
   readonly offer_price: number | null;
+  readonly free_shipping?: boolean | null;
+  readonly free_shipping_country?: boolean | null;
+  readonly free_shipping_country_min_amount?: number | null;
 
   // Relationships
   readonly Professional?: ProfessionalRow;
@@ -411,6 +416,7 @@ export interface RoleRow {
 
 export interface ServiceRow {
   readonly id: number;
+  readonly service_location_ids?: string[];
   readonly professional_id: number;
   readonly category_services_id: number;
   readonly name: string;

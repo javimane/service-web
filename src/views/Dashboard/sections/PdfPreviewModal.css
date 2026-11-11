@@ -108,6 +108,7 @@
 
 .preview-footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 1rem;
   padding-top: 1rem;
@@ -115,21 +116,46 @@
 }
 
 .btn-close-preview {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  padding: 12px 24px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  min-height: 42px;
+  background: var(--action-cancel-bg);
+  border: 1px solid var(--error-color);
+  color: var(--text-primary);
+  padding: 0 24px;
   border-radius: var(--radius-md);
   font-weight: var(--weight-semibold);
+  line-height: 1;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-close-preview:hover {
+  background: var(--action-cancel-hover);
 }
 
 .btn-save-pdf {
-  background: var(--white);
-  color: var(--text-primary);
-  border: none;
-  padding: 12px 24px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  min-height: 42px;
+  background: var(--brand-blue);
+  color: var(--white);
+  border: 1px solid var(--brand-blue);
+  padding: 0 24px;
   border-radius: var(--radius-md);
-  font-weight: var(--weight-extrabold);
+  font-weight: var(--weight-bold);
+  line-height: 1;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save-pdf:hover {
+  background: #154ca0;
+  border-color: #154ca0;
 }

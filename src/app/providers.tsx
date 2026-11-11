@@ -8,6 +8,8 @@ import { AuthModalProvider } from "@/context/AuthModalContext";
 import { AlertProvider } from "@/context/AlertContext";
 import AuthModal from "@/components/AuthModal/AuthModal";
 import SessionTimeoutOverlay from "@/components/SessionTimeoutOverlay/SessionTimeoutOverlay";
+import LegalConsentGate from "@/components/LegalConsentGate/LegalConsentGate";
+import PurchaseVerificationPrompt from "@/components/PurchaseVerificationPrompt/PurchaseVerificationPrompt";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "sileo";
 import "sileo/styles.css";
@@ -28,7 +30,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "1028741369344-placeholder.apps.googleusercontent.com"}>
+      <GoogleOAuthProvider
+        clientId={
+          process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+          "1028741369344-placeholder.apps.googleusercontent.com"
+        }
+      >
         <ThemeProvider>
           <AuthProvider>
             <AuthModalProvider>
@@ -36,7 +43,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 {children}
                 <AuthModal />
                 <SessionTimeoutOverlay />
+                <PurchaseVerificationPrompt />
                 <Toaster />
+                <LegalConsentGate />
               </AlertProvider>
             </AuthModalProvider>
           </AuthProvider>

@@ -1,0 +1,13 @@
+.withdrawal-review-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #6b4700;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.withdrawal-review-notice svg { flex: 0 0 auto; margin-top: 1px; }

@@ -1,0 +1,3570 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { refreshMerchantSales } from "./refreshMerchantSales";
+import { isServiceAppointmentScheduled } from "@/utils/serviceAppointment";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Clock,
+  PackageCheck,
+  AlertCircle,
+  ExternalLink,
+  DollarSign,
+  Calendar,
+  Eye,
+  MessageCircle,
+  MessageSquare,
+  Printer,
+  QrCode,
+  AlertTriangle,
+  CheckCircle2,
+  Store,
+  CheckSquare,
+  Square,
+  ToggleLeft,
+  ToggleRight,
+  RefreshCw,
+  Loader2,
+  Upload,
+} from "lucide-react";
+import {
+  commerceService,
+  OrderSummary,
+  OrderStatus,
+  PageResponse,
+  Branch,
+} from "@/services/commerceService";
+import { useAuth } from "@/context/AuthContext";
+import Pagination from "@/components/Pagination/Pagination";
+import Modal from "@/components/Modal/Modal";
+import { useAlert } from "@/context/AlertContext";
+import { getAccessToken } from "@/utils/auth";
+import { setApiAccessToken } from "@/services/apiClient";
+import { getProfessionalMeAction } from "@/app/actions/professionals";
+import AssignServiceAppointmentModal from "./AssignServiceAppointmentModal";
+import PackageThermalLabelModal from "./PackageThermalLabelModal";
+import BatchOrderTicketsModal from "./BatchOrderTicketsModal";
+import ReturnReceiptModal from "./ReturnReceiptModal";
+import BarcodeScanner from "@/components/BarcodeScanner/BarcodeScanner";
+import OrderChatModal from "./OrderChatModal";
+import {
+  getBuyerEmail,
+  getBuyerName,
+  getBuyerPhone,
+  getDeliveryAddress,
+  getOrderLines,
+  getProductImage,
+  isPrintableOrder,
+} from "./orderTicketData";
+import DateRangeFilter, {
+  DateRangeValue,
+  toUtcDateRange,
+} from "./DateRangeFilter";
+import "./SalesSection.css";
+import MerchantShipmentPickupCode from "./MerchantShipmentPickupCode";
+import OrderItemPricing from "@/components/OrderItemPricing/OrderItemPricing";
+import { isServiceOrderSummary as isServiceSale } from "@/utils/orderKind";
+import { getSaleRefundStatus } from "./saleRefundStatus";
+
+const STATUS_FILTERS: Array<{ label: string; value: string }> = [
+  { label: "Todas", value: "" },
+  { label: "Pendientes", value: "pending" },
+  { label: "Pendiente de Pago", value: "pending_payment" },
+  { label: "Pagadas", value: "paid" },
+  { label: "Confirmadas", value: "confirmed" },
+  { label: "En preparación", value: "preparing" },
+  { label: "Listas para despacho", value: "ready_for_dispatch" },
+  { label: "Listas para retiro", value: "ready_for_pickup" },
+  { label: "Despachadas", value: "dispatched" },
+  { label: "Entregadas", value: "delivered" },
+  { label: "Canceladas", value: "cancelled" },
+  { label: "Reembolsadas", value: "refunded" },
+];
+
+const SERVICE_COMPLETION_WINDOW_DAYS = 30;
+
+export default function SalesSection() {
+  const token = getAccessToken();
+  setApiAccessToken(token);
+  const queryClient = useQueryClient();
+  const { sessionStatus, user } = useAuth();
+  const { showSuccess, showError } = useAlert();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const orderIdParam = searchParams?.get("orderId");
+  const openOrderChat = searchParams?.get("openChat") === "1";
+  const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!orderIdParam) setDismissedOrderId(null);
+  }, [orderIdParam]);
+
+  const professionalId =
+    sessionStatus?.subscription?.professional_id ??
+    sessionStatus?.professional_id;
+  const { data: professional } = useQuery({
+    queryKey: ["professional-me", professionalId],
+    queryFn: async () =>
+      (await getProfessionalMeAction({ token: await getAccessToken() }))
+        ?.data ?? null,
+    enabled: Boolean(professionalId),
+    staleTime: 1000 * 60 * 5,
+  });
+  const companyData = professional?.companies ?? professional?.Company;
+  const company = Array.isArray(companyData) ? companyData[0] : companyData;
+  const companyId =
+    Number(company?.id ?? sessionStatus?.company_id) || undefined;
+
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [dateRange, setDateRange] = useState<DateRangeValue>({
+    field: "sale",
+    from: "",
+    to: "",
+  });
+  const [isAutoPrintActive, setIsAutoPrintActive] = useState<boolean>(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [selectedOrdersForBatchPrint, setSelectedOrdersForBatchPrint] =
+    useState<OrderSummary[]>([]);
+  const [batchPrintModalOpen, setBatchPrintModalOpen] = useState(false);
+  const [returnReceiptOpen, setReturnReceiptOpen] = useState(false);
+
+  const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
+  const [claimClock, setClaimClock] = useState(0);
+  useEffect(() => {
+    setClaimClock(Date.now());
+    const interval = window.setInterval(
+      () => setClaimClock(Date.now()),
+      60_000,
+    );
+    return () => window.clearInterval(interval);
+  }, []);
+  const [respondingClaimId, setRespondingClaimId] = useState<string | null>(
+    null,
+  );
+  const [claimAction, setClaimAction] = useState<
+    "full_refund_with_return" | "full_refund_no_return" | "partial_offer"
+  >("full_refund_with_return");
+  const [claimOfferRevision, setClaimOfferRevision] = useState(0);
+  const [claimResponse, setClaimResponse] = useState("");
+  const [claimPercent, setClaimPercent] = useState("10");
+  const [retryingClaimId, setRetryingClaimId] = useState<string | null>(null);
+  const parsedClaimPercent = Number(
+    String(claimPercent).replace(",", ".").trim(),
+  );
+  const isValidClaimPercent =
+    claimAction !== "partial_offer" ||
+    (String(claimPercent).trim() !== "" &&
+      Number.isFinite(parsedClaimPercent) &&
+      parsedClaimPercent >= 0.01 &&
+      parsedClaimPercent <= 99.99);
+  const claimResponseMutation = useMutation({
+    mutationFn: ({ claimId }: { claimId: string }) =>
+      commerceService.respondToClaim(selectedOrder!.id, claimId, {
+        action: claimAction,
+        response: claimResponse.trim(),
+        offer_revision: claimOfferRevision,
+        ...(claimAction === "partial_offer"
+          ? { percent: Math.round(parsedClaimPercent * 100) / 100 }
+          : {}),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["order-claims", selectedOrder?.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
+      setRespondingClaimId(null);
+      setClaimResponse("");
+      setClaimPercent("10");
+      showSuccess("La respuesta al reclamo se registró.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo responder el reclamo."),
+    onSettled: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["order-claims", selectedOrder?.id],
+      }),
+  });
+
+  // Auto-cargar orden si viene orderId por URL (ej. desde notificación)
+  const activeOrderId =
+    (openOrderChat && orderIdParam ? orderIdParam : selectedOrder?.id) ||
+    (orderIdParam !== dismissedOrderId ? orderIdParam : undefined) ||
+    undefined;
+  const {
+    data: orderClaims = [],
+    error: orderClaimsError,
+    isSuccess: orderClaimsLoaded,
+    refetch: refetchOrderClaims,
+  } = useQuery({
+    queryKey: ["order-claims", selectedOrder?.id],
+    queryFn: () => commerceService.orderClaims(selectedOrder!.id),
+    enabled: Boolean(selectedOrder?.id),
+    refetchInterval: (query) =>
+      query.state.data?.some((claim) =>
+        claim.media.some((item) => item.status === "processing"),
+      )
+        ? 15_000
+        : false,
+  });
+  const closeOrderDetail = () => {
+    if (orderIdParam) {
+      setDismissedOrderId(orderIdParam);
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.delete("orderId");
+      params.delete("openChat");
+      router.replace(
+        `${pathname}${params.size ? `?${params.toString()}` : ""}`,
+        { scroll: false },
+      );
+    }
+    setSelectedOrder(null);
+  };
+  const { data: routeOrderDetail } = useQuery({
+    queryKey: ["merchant-order-detail", activeOrderId],
+    queryFn: () => commerceService.orderDetail(activeOrderId!),
+    enabled: Boolean(activeOrderId && selectedOrder?.id !== activeOrderId),
+  });
+
+  useEffect(() => {
+    if (
+      routeOrderDetail &&
+      routeOrderDetail.id === activeOrderId &&
+      selectedOrder?.id !== activeOrderId
+    ) {
+      setSelectedOrder(routeOrderDetail);
+    }
+  }, [routeOrderDetail, selectedOrder?.id, activeOrderId]);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [pickupCode, setPickupCode] = useState("");
+  const [pickupScannerOpen, setPickupScannerOpen] = useState(false);
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [packageImageFile, setPackageImageFile] = useState<File | null>(null);
+  useEffect(() => setPackageImageFile(null), [selectedOrder?.id]);
+  const [ownRiderId, setOwnRiderId] = useState("");
+  const [sellerCode, setSellerCode] = useState("");
+  const assignedOwnRiderId = Array.isArray(selectedOrder?.shipments)
+    ? (selectedOrder.shipments[0]?.delivery_driver_id ?? null)
+    : (selectedOrder?.shipments?.delivery_driver_id ?? null);
+  useEffect(() => {
+    setOwnRiderId(assignedOwnRiderId ?? "");
+    setSellerCode("");
+  }, [selectedOrder?.id, assignedOwnRiderId]);
+  const { data: ownRiders = [] } = useQuery({
+    queryKey: ["logistics-employees"],
+    queryFn: commerceService.employees,
+    enabled: Boolean(selectedOrder?.uses_merchant_riders),
+  });
+  const assignedOwnRider = ownRiders.find(
+    (rider) => rider.id === assignedOwnRiderId,
+  );
+  const assignedOwnRiderName = assignedOwnRider
+    ? [assignedOwnRider.first_name, assignedOwnRider.last_name]
+        .filter(Boolean)
+        .join(" ") ||
+      assignedOwnRider.username ||
+      assignedOwnRider.id
+    : assignedOwnRiderId;
+  const { data: selectedOrderDetail } = useQuery({
+    queryKey: ["merchant-selected-order-detail", selectedOrder?.id],
+    queryFn: () => commerceService.orderDetail(selectedOrder!.id),
+    enabled: Boolean(selectedOrder?.id),
+    staleTime: 15_000,
+  });
+  useEffect(() => {
+    if (selectedOrderDetail) {
+      setSelectedOrder((current) =>
+        current?.id === selectedOrderDetail.id ? selectedOrderDetail : current,
+      );
+    }
+  }, [selectedOrderDetail]);
+  const [transportCarrier, setTransportCarrier] = useState("");
+  const [transportTrackingNumber, setTransportTrackingNumber] = useState("");
+  const [transportTrackingUrl, setTransportTrackingUrl] = useState("");
+  useEffect(() => {
+    const relation = selectedOrder?.transport_shipments;
+    const shipment = Array.isArray(relation)
+      ? relation[0]
+      : (relation ?? selectedOrder?.transport_shipment);
+    setTransportCarrier(shipment?.company_name ?? shipment?.carrier_name ?? "");
+    setTransportTrackingNumber(shipment?.tracking_number ?? "");
+    setTransportTrackingUrl(shipment?.tracking_url ?? "");
+  }, [
+    selectedOrder?.id,
+    selectedOrder?.transport_shipments,
+    selectedOrder?.transport_shipment,
+  ]);
+  const [selectedOrderForAppointment, setSelectedOrderForAppointment] =
+    useState<OrderSummary | null>(null);
+  const [selectedOrderForLabel, setSelectedOrderForLabel] =
+    useState<OrderSummary | null>(null);
+  const [selectedOrderForServiceVoucher, setSelectedOrderForServiceVoucher] =
+    useState<OrderSummary | null>(null);
+  const [isOrderChatOpen, setIsOrderChatOpen] = useState(false);
+  useEffect(() => {
+    if (openOrderChat && orderIdParam && selectedOrder?.id === orderIdParam) {
+      setIsOrderChatOpen(true);
+    }
+  }, [openOrderChat, orderIdParam, selectedOrder?.id]);
+
+  const closeOrderChat = () => {
+    setIsOrderChatOpen(false);
+    if (openOrderChat) {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.delete("openChat");
+      router.replace(
+        `${pathname}${params.size ? `?${params.toString()}` : ""}`,
+        {
+          scroll: false,
+        },
+      );
+    }
+  };
+  const [whatsAppWarningOpen, setWhatsAppWarningOpen] = useState(false);
+
+  // Fetch branches
+  const { data: rawBranches, isError: branchesError } = useQuery({
+    queryKey: ["merchant-branches", companyId],
+    queryFn: () => commerceService.branches(companyId!),
+    enabled: Boolean(companyId),
+  });
+
+  const branches: Branch[] = React.useMemo(
+    () =>
+      Array.isArray(rawBranches)
+        ? rawBranches
+        : Array.isArray((rawBranches as any)?.data)
+          ? (rawBranches as any).data
+          : Array.isArray((rawBranches as any)?.items)
+            ? (rawBranches as any).items
+            : [],
+    [rawBranches],
+  );
+
+  // Restore active branch and auto-print preference from localStorage
+  useEffect(() => {
+    try {
+      const savedBranch = localStorage.getItem("sercio_sales_branch_id");
+      if (savedBranch) {
+        setSelectedBranchId(savedBranch);
+      }
+      const savedAutoPrint = localStorage.getItem("sercio_autoprint_active");
+      if (savedAutoPrint !== null) {
+        setIsAutoPrintActive(savedAutoPrint === "true");
+      }
+    } catch {
+      // ignore storage error
+    }
+  }, []);
+
+  useEffect(() => {
+    if (rawBranches === undefined || !selectedBranchId) return;
+    if (branches.some((branch) => branch.id === selectedBranchId)) return;
+    setSelectedBranchId("");
+    setPage(1);
+    try {
+      localStorage.removeItem("sercio_sales_branch_id");
+    } catch {
+      // El filtro en memoria también se limpia si el almacenamiento no está disponible.
+    }
+  }, [rawBranches, branches, selectedBranchId]);
+
+  const {
+    data: ordersData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useQuery<PageResponse<OrderSummary>>({
+    queryKey: [
+      "merchant-orders",
+      page,
+      statusFilter,
+      selectedBranchId,
+      dateRange,
+    ],
+    queryFn: () =>
+      commerceService.merchantOrders(
+        page,
+        10,
+        statusFilter || undefined,
+        selectedBranchId || undefined,
+        {
+          [`${dateRange.field}_date_from`]: toUtcDateRange(dateRange).from,
+          [`${dateRange.field}_date_to`]: toUtcDateRange(dateRange).to,
+        },
+      ),
+    refetchInterval: isAutoPrintActive ? 10000 : false,
+    enabled:
+      (!dateRange.from || !dateRange.to || dateRange.from <= dateRange.to) &&
+      (!selectedBranchId ||
+        branchesError ||
+        (rawBranches !== undefined &&
+          branches.some((branch) => branch.id === selectedBranchId))),
+  });
+  const ordersRouteMissing =
+    (error as { response?: { status?: number } } | null)?.response?.status ===
+    404;
+  const waitingForBranches =
+    Boolean(selectedBranchId) && rawBranches === undefined && !branchesError;
+
+  const refreshSalesMutation = useMutation({
+    mutationFn: () => refreshMerchantSales(queryClient),
+    onError: () =>
+      showError(
+        "No se pudieron actualizar todas las ventas y reclamos. Volvé a intentar.",
+      ),
+  });
+  const refreshingSales = isFetching || refreshSalesMutation.isPending;
+
+  const orders = React.useMemo(
+    () => ordersData?.items ?? ordersData?.data ?? [],
+    [ordersData],
+  );
+  const totalOrders = ordersData?.total ?? orders.length;
+  const totalPages =
+    ordersData?.totalPages ?? (Math.ceil(totalOrders / 10) || 1);
+
+  // Header quick metrics
+  const todaySalesCount = orders.filter((o) => {
+    const d = new Date(o.created_at);
+    const today = new Date();
+    return d.toDateString() === today.toDateString();
+  }).length;
+
+  const pendingPrepCount = orders.filter(
+    (o) => o.status === "confirmed" || o.status === "preparing",
+  ).length;
+
+  const readyForDispatchCount = orders.filter(
+    (o) =>
+      o.status === "ready_for_pickup" ||
+      o.status === "ready_for_dispatch" ||
+      (o.delivery_type === "shipment" &&
+        (Array.isArray(o.shipments)
+          ? o.shipments[0]?.status
+          : o.shipments?.status) === "ready_for_pickup"),
+  ).length;
+
+  const monthlyBilling = orders
+    .filter((o) => o.status !== "cancelled")
+    .reduce((acc, curr) => acc + (curr.total_amount ?? 0), 0);
+
+  const updateBranchAutoPrintMutation = useMutation({
+    mutationFn: ({
+      branchId,
+      auto_print_tickets,
+    }: {
+      branchId: string;
+      auto_print_tickets: boolean;
+    }) => commerceService.updateBranch(branchId, { auto_print_tickets }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["merchant-branches"] });
+    },
+  });
+
+  const handleBranchChange = (branchId: string) => {
+    setSelectedBranchId(branchId);
+    setPage(1);
+    try {
+      localStorage.setItem("sercio_sales_branch_id", branchId);
+    } catch {
+      // ignore
+    }
+
+    if (branchId) {
+      const found = branches.find((b) => b.id === branchId);
+      if (found && typeof found.auto_print_tickets === "boolean") {
+        setIsAutoPrintActive(found.auto_print_tickets);
+        try {
+          localStorage.setItem(
+            "sercio_autoprint_active",
+            String(found.auto_print_tickets),
+          );
+        } catch {
+          // ignore
+        }
+      }
+    }
+  };
+
+  const toggleAutoPrint = () => {
+    const nextVal = !isAutoPrintActive;
+    setIsAutoPrintActive(nextVal);
+    try {
+      localStorage.setItem("sercio_autoprint_active", String(nextVal));
+    } catch {
+      // ignore
+    }
+
+    if (selectedBranchId) {
+      updateBranchAutoPrintMutation.mutate({
+        branchId: selectedBranchId,
+        auto_print_tickets: nextVal,
+      });
+    }
+
+    if (nextVal) {
+      showSuccess(
+        selectedBranchId
+          ? "Impresión automática activada para la sucursal seleccionada."
+          : "Impresión automática activada para órdenes entrantes.",
+      );
+    } else {
+      showSuccess("Impresión automática pausada.");
+    }
+  };
+
+  const toggleSelectAll = () => {
+    const printableOrders = orders.filter(isPrintableOrder);
+    if (printableOrders.length === 0) return;
+    const allVisibleSelected = printableOrders.every((o) =>
+      selectedOrderIds.includes(o.id),
+    );
+    if (allVisibleSelected) {
+      setSelectedOrderIds((prev) =>
+        prev.filter((id) => !orders.some((o) => o.id === id)),
+      );
+    } else {
+      const newIds = new Set([
+        ...selectedOrderIds,
+        ...printableOrders.map((o) => o.id),
+      ]);
+      setSelectedOrderIds(Array.from(newIds));
+    }
+  };
+
+  const toggleSelectOrder = (orderId: string) => {
+    setSelectedOrderIds((prev) =>
+      prev.includes(orderId)
+        ? prev.filter((id) => id !== orderId)
+        : [...prev, orderId],
+    );
+  };
+
+  const handleOpenBatchPrint = () => {
+    const selectedList = orders.filter(
+      (o) => selectedOrderIds.includes(o.id) && isPrintableOrder(o),
+    );
+    if (selectedList.length === 0) {
+      showError("Selecciona al menos una venta para imprimir.");
+      return;
+    }
+    setSelectedOrdersForBatchPrint(selectedList);
+    setBatchPrintModalOpen(true);
+  };
+
+  // Auto-print effect when new unprinted orders arrive
+  useEffect(() => {
+    if (!isAutoPrintActive || orders.length === 0) return;
+
+    const unprinted = orders.filter((o) => {
+      if (!isPrintableOrder(o)) return false;
+      if (selectedBranchId) {
+        const orderLocation =
+          o.branch_id || (o.origin_address_id ? `main:${companyId}` : "");
+        if (orderLocation !== selectedBranchId) return false;
+      }
+      try {
+        return !localStorage.getItem(`sercio_printed_ticket_${o.id}`);
+      } catch {
+        return false;
+      }
+    });
+
+    if (unprinted.length > 0) {
+      setSelectedOrdersForBatchPrint(unprinted);
+      setBatchPrintModalOpen(true);
+      showSuccess(
+        `¡Venta entrante! Preparando ticket de ${unprinted.length} orden(es)...`,
+      );
+    }
+  }, [orders, isAutoPrintActive, selectedBranchId, companyId, showSuccess]);
+
+  // Mutations
+  const refreshSelectedOrder = async (id: string) => {
+    queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
+    await refetch();
+    const updated = await commerceService.orderDetail(id);
+    queryClient.setQueryData(["merchant-selected-order-detail", id], updated);
+    setSelectedOrder((current) => (current?.id === id ? updated : current));
+  };
+
+  const confirmMutation = useMutation({
+    mutationFn: (id: string) => commerceService.confirmOrder(id),
+    onSuccess: async (result, id) => {
+      await refreshSelectedOrder(id);
+      if (result?.dispatch?.dispatched === false) {
+        showError(
+          `Venta confirmada, pero ${result.dispatch.message || "no se encontró un rider disponible"}`,
+        );
+      } else {
+        showSuccess("Pedido confirmado con éxito.");
+      }
+    },
+    onError: () => showError("No se pudo confirmar el pedido."),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      commerceService.cancelOrder(id, reason),
+    onSuccess: () => {
+      showSuccess("Pedido cancelado.");
+      queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
+      setCancelModalOpen(false);
+      setSelectedOrder(null);
+    },
+    onError: () => showError("No se pudo cancelar el pedido."),
+  });
+
+  const returnReceiptMutation = useMutation({
+    mutationFn: ({
+      code,
+      conditionVerified,
+    }: {
+      code: string;
+      conditionVerified: boolean;
+    }) => commerceService.receiveReturn(code, conditionVerified),
+    onSuccess: () =>
+      showSuccess(
+        "Producto recibido. Consultá el reclamo para ver el estado del reintegro.",
+      ),
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo registrar la devolución."),
+  });
+
+  const preparingMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const order = await commerceService.orderDetail(id);
+      const shipmentId = Array.isArray(order.shipments)
+        ? order.shipments[0]?.id
+        : (order.shipments?.id ?? order.shipment_id);
+      if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
+      return commerceService.preparingShipment(shipmentId);
+    },
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
+      showSuccess("Pedido marcado en preparación.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "Error al actualizar estado."),
+  });
+
+  const readyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const order = await commerceService.orderDetail(id);
+      const shipmentId = Array.isArray(order.shipments)
+        ? order.shipments[0]?.id
+        : (order.shipments?.id ?? order.shipment_id);
+      if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
+      return commerceService.readyShipment(shipmentId);
+    },
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
+      showSuccess("Pedido listo para retirar por el rider.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "Error al actualizar estado."),
+  });
+
+  const assignOwnRiderMutation = useMutation({
+    mutationFn: async ({
+      orderId,
+      riderId,
+    }: {
+      orderId: string;
+      riderId: string;
+    }) => {
+      const order = await commerceService.orderDetail(orderId);
+      const shipmentId = Array.isArray(order.shipments)
+        ? order.shipments[0]?.id
+        : (order.shipments?.id ?? order.shipment_id);
+      if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
+      return commerceService.assignOwnRider(shipmentId, riderId);
+    },
+    onSuccess: async (_, { orderId }) => {
+      await refreshSelectedOrder(orderId);
+      showSuccess("Rider actualizado en el envío.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo asignar el rider."),
+  });
+
+  const handToRiderMutation = useMutation({
+    mutationFn: async ({
+      orderId,
+      code,
+    }: {
+      orderId: string;
+      code: string;
+    }) => {
+      const order = await commerceService.orderDetail(orderId);
+      const shipmentId = Array.isArray(order.shipments)
+        ? order.shipments[0]?.id
+        : (order.shipments?.id ?? order.shipment_id);
+      if (!shipmentId) throw new Error("No se encontró el envío del pedido.");
+      return commerceService.handToCarrier(shipmentId, code);
+    },
+    onSuccess: async (_, { orderId }) => {
+      setSellerCode("");
+      await refreshSelectedOrder(orderId);
+      showSuccess(
+        "Retiro del paquete confirmado. El rider ya puede iniciar el viaje.",
+      );
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo confirmar el retiro."),
+  });
+
+  const pickupReadyMutation = useMutation({
+    mutationFn: (id: string) => commerceService.markPickupReady(id),
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
+      showSuccess("Pedido listo para retiro en sucursal.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo marcar listo para retiro."),
+  });
+
+  const coordinatedPreparingMutation = useMutation({
+    mutationFn: (id: string) => commerceService.markCoordinatedPreparing(id),
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
+      showSuccess("Pedido marcado en preparación.");
+    },
+    onError: () => showError("No se pudo marcar el pedido en preparación."),
+  });
+
+  const coordinatedDispatchedMutation = useMutation({
+    mutationFn: (id: string) => commerceService.markCoordinatedDispatched(id),
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
+      showSuccess("Pedido despachado. Ya podés cargar los datos del envío.");
+    },
+    onError: () => showError("No se pudo confirmar el despacho."),
+  });
+
+  const dispatchEvidenceMutation = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      commerceService.uploadDispatchEvidence(id, file),
+    onSuccess: async (_, variables) => {
+      setPackageImageFile(null);
+      await refreshSelectedOrder(variables.id);
+      showSuccess("Foto del paquete guardada.");
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo subir la foto."),
+  });
+
+  const pickupVerifyMutation = useMutation({
+    mutationFn: ({ id, code }: { id: string; code: string }) =>
+      commerceService.verifyPickup(id, code),
+    onSuccess: () => {
+      showSuccess("Código verificado. Entrega completada.");
+      queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
+      setSelectedOrder(null);
+    },
+    onError: (error: any) => showError(error?.response?.data?.message || error?.message || "No se pudo validar el código de entrega."),
+  });
+
+  const invoiceMutation = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      commerceService.uploadInvoice(id, file),
+    onSuccess: (result) => {
+      showSuccess("Factura subida al bucket y registrada.");
+      setInvoiceFile(null);
+      setSelectedOrder((current) =>
+        current ? { ...current, invoice_url: result.invoice_url } : current,
+      );
+      queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
+      refetch();
+    },
+    onError: (error: Error) =>
+      showError(error.message || "No se pudo subir la factura."),
+  });
+
+  const transportMutation = useMutation({
+    mutationFn: ({
+      id,
+      company_name,
+      tracking_number,
+      tracking_url,
+    }: {
+      id: string;
+      company_name: string;
+      tracking_number: string;
+      tracking_url: string;
+    }) =>
+      commerceService.updateTransportShipment(id, {
+        company_name,
+        tracking_number,
+        tracking_url,
+      }),
+    onSuccess: async (_, variables) => {
+      showSuccess("Datos de transporte larga distancia actualizados.");
+      await refreshSelectedOrder(variables.id);
+    },
+    onError: () =>
+      showError("No se pudo guardar la información de transporte."),
+  });
+
+  const isOrderPickupReady = (order?: Partial<OrderSummary> | null) => {
+    if (!order) return false;
+    if (order.status === "ready_for_pickup") return true;
+    const hasPickupReadyTimestamp = Boolean(
+      order.pickup_ready_at || (order as any)?.pickup_ready_ap,
+    );
+    return Boolean(
+      order.delivery_type === "pickup" &&
+      hasPickupReadyTimestamp &&
+      order.status !== "delivered" &&
+      (order.status as string) !== "settled" &&
+      !order.delivered_at &&
+      order.status !== "cancelled" &&
+      order.status !== "refunded",
+    );
+  };
+
+  const isOrderDelivered = (order?: Partial<OrderSummary> | null) =>
+    Boolean(
+      order &&
+      (order.status === "delivered" ||
+        (order.status as string) === "settled" ||
+        Boolean(order.delivered_at) ||
+        order.shipment_status === "delivered" ||
+        order.appointment_status === "completed" ||
+        (order.appointment as { status?: string } | undefined)?.status ===
+          "completed"),
+    );
+
+  const isClosedServiceAppointment = (order?: Partial<OrderSummary> | null) => {
+    if (!order?.status) return false;
+    return (
+      order.status === "cancelled" ||
+      getSaleRefundStatus({
+        status: order.status,
+        refunded_amount: order.refunded_amount,
+        total_amount: order.total_amount ?? null,
+      }) === "full"
+    );
+  };
+
+  const getStatusBadge = (
+    status: OrderStatus,
+    order?: Partial<OrderSummary> | null,
+  ) => {
+    const refundStatus = getSaleRefundStatus({
+      status,
+      refunded_amount: order?.refunded_amount,
+      total_amount: order?.total_amount ?? null,
+    });
+    if (refundStatus === "full") {
+      return (
+        <span className="sales-badge sales-badge--refunded">Reembolsado</span>
+      );
+    }
+    if (refundStatus === "partial") {
+      return (
+        <span className="sales-badge sales-badge--partial-refund">
+          Reembolso parcial
+        </span>
+      );
+    }
+    if (
+      status === "delivered" ||
+      (status as string) === "settled" ||
+      isOrderDelivered(order)
+    ) {
+      return (
+        <span className="sales-badge sales-badge--delivered">Entregado</span>
+      );
+    }
+
+    if (isOrderPickupReady(order)) {
+      return (
+        <span className="sales-badge sales-badge--ready">
+          Listo para retiro
+        </span>
+      );
+    }
+
+    const shipmentStatus = Array.isArray(order?.shipments)
+      ? order.shipments[0]?.status
+      : order?.shipments?.status;
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      shipmentStatus === "in_transit"
+    ) {
+      return (
+        <span className="sales-badge sales-badge--transit">En camino</span>
+      );
+    }
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      shipmentStatus === "picked_up"
+    ) {
+      return (
+        <span className="sales-badge sales-badge--transit">
+          Retirado por rider
+        </span>
+      );
+    }
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      shipmentStatus === "driver_at_store"
+    ) {
+      return (
+        <span className="sales-badge sales-badge--ready">
+          Rider en sucursal
+        </span>
+      );
+    }
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      shipmentStatus === "driver_assigned"
+    ) {
+      return (
+        <span className="sales-badge sales-badge--ready">Rider asignado</span>
+      );
+    }
+    if (
+      ["confirmed", "preparing"].includes(status) &&
+      ["ready_for_pickup", "ready", "ready_for_dispatch"].includes(
+        shipmentStatus ?? "",
+      )
+    ) {
+      return (
+        <span className="sales-badge sales-badge--ready">Listo despacho</span>
+      );
+    }
+    if (status === "preparing" && shipmentStatus === "preparing") {
+      return (
+        <span className="sales-badge sales-badge--preparing">
+          En preparación
+        </span>
+      );
+    }
+
+    switch (status) {
+      case "pending":
+        return (
+          <span className="sales-badge sales-badge--pending">Pendiente</span>
+        );
+      case "pending_payment":
+        return (
+          <span className="sales-badge sales-badge--pending-payment">
+            Pendiente de Pago
+          </span>
+        );
+      case "paid":
+        return (
+          <span className="sales-badge sales-badge--confirmed">Pagado</span>
+        );
+      case "confirmed":
+        return (
+          <span className="sales-badge sales-badge--confirmed">Confirmado</span>
+        );
+      case "preparing":
+        return (
+          <span className="sales-badge sales-badge--preparing">
+            En preparación
+          </span>
+        );
+      case "ready_for_pickup":
+        return (
+          <span className="sales-badge sales-badge--ready">
+            Listo para retiro
+          </span>
+        );
+      case "ready_for_dispatch":
+        return (
+          <span className="sales-badge sales-badge--ready">Listo despacho</span>
+        );
+      case "dispatched":
+        return (
+          <span className="sales-badge sales-badge--transit">Despachado</span>
+        );
+      case "in_transit":
+        return (
+          <span className="sales-badge sales-badge--transit">En tránsito</span>
+        );
+      case "returning_to_store":
+        return (
+          <span className="sales-badge sales-badge--cancelled">
+            Cancelado · rider regresa
+          </span>
+        );
+      case "returned":
+        return (
+          <span className="sales-badge sales-badge--cancelled">
+            Devuelto al comercio
+          </span>
+        );
+      case "settled":
+        return (
+          <span className="sales-badge sales-badge--delivered">Entregado</span>
+        );
+      case "cancelled":
+        return (
+          <span className="sales-badge sales-badge--cancelled">Cancelado</span>
+        );
+      default:
+        return <span className="sales-badge">{status}</span>;
+    }
+  };
+
+  const formatPaymentMethod = (order: OrderSummary) => {
+    const method = (
+      order.payment_method ||
+      order.payment_provider ||
+      ""
+    ).toLowerCase();
+    const cardType = (
+      (order as any).card_type ||
+      (order as any).card_details?.card_type ||
+      (order as any).payment_data?.card_type ||
+      ""
+    ).toLowerCase();
+
+    if (method.includes("qr") || method.includes("paycloud")) {
+      return "QR";
+    }
+
+    if (cardType.includes("deb") || method.includes("deb")) {
+      return "Débito";
+    }
+
+    if (cardType.includes("cred") || method.includes("cred")) {
+      return "Crédito";
+    }
+
+    if (
+      method.includes("getnet") ||
+      method.includes("card") ||
+      method.includes("tarjeta") ||
+      method.includes("cart")
+    ) {
+      return "Crédito";
+    }
+
+    if (!method) return "No informado";
+    return order.payment_method || order.payment_provider || "No informado";
+  };
+
+  const getDeliveryLabel = (type: string) => {
+    switch (type) {
+      case "pickup":
+        return "Retiro en sucursal";
+      case "shipment":
+        return "Envío por rider / flete";
+      case "coordinate_with_merchant":
+        return "Acordar con vendedor";
+      default:
+        return type;
+    }
+  };
+
+  const selectedShipmentStatus = Array.isArray(selectedOrder?.shipments)
+    ? selectedOrder.shipments[0]?.status
+    : selectedOrder?.shipments?.status;
+  const selectedShipmentId = Array.isArray(selectedOrder?.shipments)
+    ? selectedOrder.shipments[0]?.id
+    : selectedOrder?.shipments?.id;
+  const canChangeOwnRider = Boolean(
+    selectedOrder &&
+    ["confirmed", "preparing", "ready_for_dispatch"].includes(
+      selectedOrder.status,
+    ) &&
+    [
+      "pending",
+      "created",
+      "confirmed",
+      "preparing",
+      "ready_for_pickup",
+      "driver_assigned",
+      "driver_at_store",
+    ].includes(selectedShipmentStatus ?? ""),
+  );
+  const canUploadSelectedEvidence = Boolean(
+    selectedOrder &&
+    !isServiceSale(selectedOrder) &&
+    ((selectedOrder.delivery_type === "coordinate_with_merchant" &&
+      ["confirmed", "preparing"].includes(selectedOrder.status)) ||
+      (selectedOrder.delivery_type === "shipment" &&
+        ["confirmed", "preparing"].includes(selectedOrder.status) &&
+        ["pending", "created", "confirmed", "preparing"].includes(
+          selectedShipmentStatus ?? "",
+        ))),
+  );
+
+  return (
+    <div className="sales-section">
+      <header className="sales-section__header">
+        <div>
+          <span className="sales-section__subtitle">Gestión Comercial</span>
+          <h1 className="sales-section__title">Ventas</h1>
+        </div>
+        <div className="sales-section__actions">
+          <button
+            type="button"
+            className="btn-secondary sales-section__refresh-btn"
+            onClick={() => refreshSalesMutation.mutate()}
+            disabled={refreshingSales}
+            title="Refrescar ventas"
+            aria-label="Refrescar lista de ventas"
+          >
+            {refreshingSales ? (
+              <Loader2 size={16} className="btn-spinner" aria-hidden="true" />
+            ) : (
+              <RefreshCw size={16} aria-hidden="true" />
+            )}
+            <span>{refreshingSales ? "Actualizando..." : "Refrescar"}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Metric Cards */}
+      <div className="sales-metrics">
+        <div className="sales-metric-card">
+          <div className="sales-metric-card__icon sales-metric-card__icon--blue">
+            <Calendar size={20} />
+          </div>
+          <div className="sales-metric-card__info">
+            <span className="sales-metric-card__label">VENTAS DE HOY</span>
+            <span className="sales-metric-card__value">{todaySalesCount}</span>
+          </div>
+        </div>
+
+        <div className="sales-metric-card">
+          <div className="sales-metric-card__icon sales-metric-card__icon--amber">
+            <Clock size={20} />
+          </div>
+          <div className="sales-metric-card__info">
+            <span className="sales-metric-card__label">
+              PENDIENTES PREPARACIÓN
+            </span>
+            <span className="sales-metric-card__value">{pendingPrepCount}</span>
+          </div>
+        </div>
+
+        <div className="sales-metric-card">
+          <div className="sales-metric-card__icon sales-metric-card__icon--teal">
+            <PackageCheck size={20} />
+          </div>
+          <div className="sales-metric-card__info">
+            <span className="sales-metric-card__label">
+              LISTAS PARA ENTREGA / DESPACHO
+            </span>
+            <span className="sales-metric-card__value">
+              {readyForDispatchCount}
+            </span>
+          </div>
+        </div>
+
+        <div className="sales-metric-card">
+          <div className="sales-metric-card__icon sales-metric-card__icon--green">
+            <DollarSign size={20} />
+          </div>
+          <div className="sales-metric-card__info">
+            <span className="sales-metric-card__label">
+              FACTURACIÓN ESTIMADA
+            </span>
+            <span className="sales-metric-card__value">
+              ${monthlyBilling.toLocaleString("es-AR")}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Branch & Auto-print Toolbar */}
+      <div className="sales-branch-toolbar">
+        <button
+          type="button"
+          className="btn-secondary sales-return-receipt-button"
+          onClick={() => setReturnReceiptOpen(true)}
+        >
+          <QrCode size={17} />
+          Registrar devolución recibida
+        </button>
+        <div className="sales-branch-control">
+          <div className="sales-branch-control__icon">
+            <Store size={20} />
+          </div>
+          <label
+            htmlFor="sales-branch-select"
+            className="sales-branch-control__label"
+          >
+            Sucursal de este puesto:
+          </label>
+          <select
+            id="sales-branch-select"
+            className="sales-branch-select"
+            value={selectedBranchId}
+            onChange={(e) => handleBranchChange(e.target.value)}
+          >
+            <option value="">Todas las sucursales</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}{" "}
+                {b.street_name
+                  ? `(${b.street_name} ${b.street_number || ""})`
+                  : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="sales-autoprint-control">
+          <button
+            type="button"
+            className={`sales-autoprint-toggle-btn ${
+              isAutoPrintActive ? "sales-autoprint-toggle-btn--active" : ""
+            }`}
+            onClick={toggleAutoPrint}
+            title={
+              isAutoPrintActive
+                ? "Click para pausar la impresión automática de tickets"
+                : "Click para activar la impresión automática de tickets al ingresar ventas"
+            }
+          >
+            <Printer size={16} />
+            <span>
+              {isAutoPrintActive
+                ? "Impresión automática: ACTIVADA"
+                : "Impresión automática: DESACTIVADA"}
+            </span>
+            {isAutoPrintActive ? (
+              <ToggleRight size={22} />
+            ) : (
+              <ToggleLeft size={22} />
+            )}
+          </button>
+          <span className="sales-autoprint-hint">
+            {isAutoPrintActive
+              ? "🟢 Detectando e imprimiendo tickets automáticamente."
+              : "⚪ Impresión manual individual o por lote."}
+          </span>
+        </div>
+      </div>
+
+      {/* Batch Action Bar */}
+      {selectedOrderIds.length > 0 && (
+        <div className="sales-batch-bar">
+          <div className="sales-batch-bar__info">
+            <CheckSquare size={18} />
+            <span>
+              <strong>{selectedOrderIds.length}</strong>{" "}
+              {selectedOrderIds.length === 1
+                ? "venta seleccionada"
+                : "ventas seleccionadas"}
+            </span>
+          </div>
+          <div className="sales-batch-bar__actions">
+            <button
+              type="button"
+              className="sales-batch-bar__print-btn"
+              onClick={handleOpenBatchPrint}
+            >
+              <Printer size={16} />
+              <span>
+                Imprimir tickets seleccionados ({selectedOrderIds.length})
+              </span>
+            </button>
+            <button
+              type="button"
+              className="btn-secondary sales-batch-bar__clear-btn"
+              onClick={() => setSelectedOrderIds([])}
+            >
+              Deseleccionar todas
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Tabs */}
+      <div className="sales-filters">
+        {STATUS_FILTERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            className={`sales-filter-btn ${
+              statusFilter === f.value ? "sales-filter-btn--active" : ""
+            }`}
+            onClick={() => {
+              setStatusFilter(f.value);
+              setPage(1);
+            }}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <DateRangeFilter
+        label="Filtrar ventas por fecha"
+        options={[
+          { value: "sale", label: "venta" },
+          { value: "paid", label: "pago" },
+          { value: "delivered", label: "entrega" },
+        ]}
+        value={dateRange}
+        onChange={(value) => {
+          setDateRange(value);
+          setPage(1);
+        }}
+      />
+
+      {/* Content Table / States */}
+      {dateRange.from &&
+      dateRange.to &&
+      dateRange.from > dateRange.to ? null : isLoading || waitingForBranches ? (
+        <div className="sales-state sales-state--loading">
+          <Clock className="sales-state__spinner" size={32} />
+          <p>Cargando ventas...</p>
+        </div>
+      ) : isError ? (
+        <div className="sales-state sales-state--error">
+          <AlertCircle size={32} />
+          <p>
+            {ordersRouteMissing
+              ? "La ruta de ventas no está disponible en la API. Es necesario actualizar o reiniciar la API."
+              : "Hubo un error al cargar las ventas."}
+          </p>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => refreshSalesMutation.mutate()}
+            disabled={refreshingSales}
+          >
+            {refreshingSales && (
+              <Loader2 size={16} className="btn-spinner" aria-hidden="true" />
+            )}
+            {refreshingSales ? "Actualizando..." : "Reintentar"}
+          </button>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="sales-state sales-state--empty">
+          <PackageCheck size={48} />
+          <h3>
+            {statusFilter || selectedBranchId || dateRange.from || dateRange.to
+              ? "No hay ventas para este filtro"
+              : "Todavía no tenés ventas"}
+          </h3>
+          <p>
+            {statusFilter || selectedBranchId || dateRange.from || dateRange.to
+              ? "Probá con otro estado, sucursal o período."
+              : "Cuando recibas un pedido, aparecerá acá."}
+          </p>
+        </div>
+      ) : (
+        <div className="sales-table-card">
+          <div className="sales-table-wrap">
+            <table className="sales-table">
+              <thead>
+                <tr>
+                  <th className="sales-table__col-check">
+                    <input
+                      type="checkbox"
+                      className="sales-checkbox"
+                      checked={
+                        orders.some(isPrintableOrder) &&
+                        orders
+                          .filter(isPrintableOrder)
+                          .every((o) => selectedOrderIds.includes(o.id))
+                      }
+                      onChange={toggleSelectAll}
+                      aria-label="Seleccionar todas las ventas visibles"
+                    />
+                  </th>
+                  <th>Orden</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Artículo / Productos</th>
+                  <th>Sucursal</th>
+                  <th>Entrega</th>
+                  <th>Estado</th>
+                  <th>Total</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => {
+                  const shipmentStatus = Array.isArray(order.shipments)
+                    ? order.shipments[0]?.status
+                    : order.shipments?.status;
+                  const ownRiderRequired =
+                    order.delivery_type === "shipment" &&
+                    Boolean(order.uses_merchant_riders) &&
+                    !(Array.isArray(order.shipments)
+                      ? order.shipments[0]?.delivery_driver_id
+                      : order.shipments?.delivery_driver_id);
+                  const canMarkPreparing =
+                    ["confirmed", "preparing"].includes(order.status) &&
+                    !isServiceSale(order) &&
+                    ((order.delivery_type === "shipment" &&
+                      (!shipmentStatus ||
+                        ["pending", "created", "confirmed"].includes(
+                          shipmentStatus,
+                        ) ||
+                        (order.status === "confirmed" &&
+                          [
+                            "preparing",
+                            "driver_assigned",
+                            "driver_at_store",
+                          ].includes(shipmentStatus ?? "")))) ||
+                      (order.status === "confirmed" &&
+                        order.delivery_type === "coordinate_with_merchant"));
+                  const canMarkShipmentReady =
+                    order.status === "preparing" &&
+                    !isServiceSale(order) &&
+                    order.delivery_type === "shipment" &&
+                    (shipmentStatus === "preparing" ||
+                      (order.status === "preparing" &&
+                        ["driver_assigned", "driver_at_store"].includes(
+                          shipmentStatus ?? "",
+                        )));
+                  const article =
+                    order.professional_product?.product?.name ||
+                    order.service?.name ||
+                    (order.items && order.items[0]?.product_name) ||
+                    "Producto";
+                  const buyerName = getBuyerName(order);
+
+                  return (
+                    <tr key={order.id}>
+                      <td className="sales-table__cell-check">
+                        <input
+                          type="checkbox"
+                          className="sales-checkbox"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={() => toggleSelectOrder(order.id)}
+                          disabled={!isPrintableOrder(order)}
+                          aria-label={`Seleccionar orden ${order.id}`}
+                        />
+                      </td>
+                      <td className="sales-table__order-id">
+                        {order.order_number || order.id.slice(0, 8)}
+                      </td>
+                      <td>
+                        {new Date(order.created_at).toLocaleDateString("es-AR")}
+                      </td>
+                      <td>{buyerName}</td>
+                      <td>
+                        <div className="sales-table__product-cell">
+                          {getProductImage(
+                            order.items?.[0]?.product ||
+                              order.professional_product?.product,
+                          ) && (
+                            <img
+                              src={
+                                getProductImage(
+                                  order.items?.[0]?.product ||
+                                    order.professional_product?.product,
+                                ) || ""
+                              }
+                              alt={article}
+                              className="sales-table__thumb"
+                            />
+                          )}
+                          <div className="sales-table__article-col">
+                            <span>{article}</span>
+                            {(order.service_id || order.service) &&
+                              !isClosedServiceAppointment(order) &&
+                              (isOrderDelivered(order) ? (
+                                <span className="sales-badge sales-badge--appointment-scheduled">
+                                  ✅ Turno realizado
+                                </span>
+                              ) : !isServiceAppointmentScheduled(order) ? (
+                                <span className="sales-badge sales-badge--appointment-pending">
+                                  ⚠️ Turno Pendiente
+                                </span>
+                              ) : (
+                                <span className="sales-badge sales-badge--appointment-scheduled">
+                                  📅 Turno Asignado
+                                </span>
+                              ))}
+                            {isServiceSale(order) &&
+                              ["paid", "confirmed"].includes(order.status) &&
+                              !isOrderDelivered(order) &&
+                              order.appointment_status !== "completed" &&
+                              order.paid_at && (
+                                <span className="sales-badge sales-badge--appointment-pending">
+                                  Validar código antes del{" "}
+                                  {new Date(
+                                    new Date(order.paid_at).getTime() +
+                                      SERVICE_COMPLETION_WINDOW_DAYS *
+                                        24 *
+                                        60 *
+                                        60 *
+                                        1000,
+                                  ).toLocaleDateString("es-AR")}
+                                </span>
+                              )}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="sales-table__branch-tag">
+                          {order.branch?.name ||
+                            (order.branch_id
+                              ? "Sucursal asignada"
+                              : "Sucursal Principal")}
+                        </span>
+                      </td>
+                      <td>
+                        {getDeliveryLabel(order.delivery_type)}
+                        {order.scheduled_delivery_date && (
+                          <span className="sales-table__schedule">
+                            Programado:{" "}
+                            {order.scheduled_delivery_date
+                              .split("-")
+                              .reverse()
+                              .join("/")}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        {getStatusBadge(order.status, order)}
+                        {order.has_active_claim && (
+                          <span className="sales-badge sales-badge--active-claim">
+                            <AlertTriangle size={13} aria-hidden="true" />
+                            Reclamo activo
+                          </span>
+                        )}
+                      </td>
+                      <td className="sales-table__total">
+                        $
+                        {Number(order.total_amount ?? 0).toLocaleString(
+                          "es-AR",
+                        )}
+                        {Number(order.refunded_amount ?? 0) > 0 && (
+                          <small className="sales-table__refund">
+                            Devuelto: $
+                            {Number(order.refunded_amount).toLocaleString(
+                              "es-AR",
+                            )}
+                          </small>
+                        )}
+                        {order.has_return && (
+                          <small className="sales-table__refund">
+                            Devolución registrada por el comercio
+                          </small>
+                        )}
+                        {order.has_chargeback && (
+                          <small className="sales-table__refund">
+                            Pago en disputa
+                          </small>
+                        )}
+                      </td>
+                      <td>
+                        <div className="sales-row-actions">
+                          {order.status === "confirmed" &&
+                            order.delivery_type === "pickup" &&
+                            !order.pickup_ready_at &&
+                            !isServiceSale(order) && (
+                              <button
+                                type="button"
+                                className="sales-action-btn sales-action-btn--preparing"
+                                disabled={pickupReadyMutation.isPending}
+                                onClick={() =>
+                                  pickupReadyMutation.mutate(order.id)
+                                }
+                              >
+                                <PackageCheck size={15} aria-hidden="true" />
+                                <span>
+                                  {pickupReadyMutation.isPending &&
+                                  pickupReadyMutation.variables === order.id
+                                    ? "Actualizando..."
+                                    : "Marcar listo para retirar"}
+                                </span>
+                              </button>
+                            )}
+                          {canMarkPreparing && (
+                            <button
+                              type="button"
+                              className="sales-action-btn sales-action-btn--preparing"
+                              disabled={
+                                preparingMutation.isPending ||
+                                coordinatedPreparingMutation.isPending
+                              }
+                              onClick={() => {
+                                if (ownRiderRequired) {
+                                  showError(
+                                    "Asigna un Rider para cambiar el estado del pedido.",
+                                  );
+                                  return;
+                                }
+                                if (order.delivery_type === "shipment") {
+                                  preparingMutation.mutate(order.id);
+                                } else {
+                                  coordinatedPreparingMutation.mutate(order.id);
+                                }
+                              }}
+                            >
+                              <PackageCheck size={15} aria-hidden="true" />
+                              <span>
+                                {(preparingMutation.isPending &&
+                                  preparingMutation.variables === order.id) ||
+                                (coordinatedPreparingMutation.isPending &&
+                                  coordinatedPreparingMutation.variables ===
+                                    order.id)
+                                  ? "Actualizando..."
+                                  : "En preparación"}
+                              </span>
+                            </button>
+                          )}
+                          {canMarkShipmentReady && (
+                            <button
+                              type="button"
+                              className="sales-action-btn sales-action-btn--preparing"
+                              disabled={readyMutation.isPending}
+                              onClick={() => {
+                                if (!order.dispatch_evidence_path) {
+                                  setSelectedOrder(order);
+                                  showError(
+                                    "Subí una foto del paquete en el detalle antes de avisar al rider.",
+                                  );
+                                  return;
+                                }
+                                readyMutation.mutate(order.id);
+                              }}
+                            >
+                              <PackageCheck size={15} aria-hidden="true" />
+                              <span>
+                                {readyMutation.isPending &&
+                                readyMutation.variables === order.id
+                                  ? "Actualizando..."
+                                  : "Listo para retirar"}
+                              </span>
+                            </button>
+                          )}
+                          {order.status === "paid" &&
+                            !order.has_return &&
+                            !order.has_chargeback &&
+                            Number(order.refunded_amount ?? 0) === 0 && (
+                              <button
+                                type="button"
+                                className="sales-action-btn sales-action-btn--confirm"
+                                disabled={confirmMutation.isPending}
+                                onClick={() => confirmMutation.mutate(order.id)}
+                                aria-label={`Confirmar venta ${order.order_number || order.id.slice(0, 8)}`}
+                              >
+                                <CheckCircle2 size={15} aria-hidden="true" />
+                                <span>
+                                  {confirmMutation.isPending &&
+                                  confirmMutation.variables === order.id
+                                    ? "Confirmando..."
+                                    : "Confirmar venta"}
+                                </span>
+                              </button>
+                            )}
+                          <button
+                            type="button"
+                            className="sales-action-btn"
+                            onClick={() => setSelectedOrder(order)}
+                          >
+                            <Eye size={15} />
+                            <span>Detalle</span>
+                          </button>
+
+                          {(order.service_id || order.service) &&
+                            !isClosedServiceAppointment(order) &&
+                            !isOrderDelivered(order) &&
+                            !isServiceAppointmentScheduled(order) && (
+                              <button
+                                type="button"
+                                className="sales-action-btn sales-action-btn--appointment"
+                                title="Asignar fecha y hora de turno"
+                                onClick={() =>
+                                  setSelectedOrderForAppointment(order)
+                                }
+                              >
+                                <Calendar size={14} />
+                                <span>Turno</span>
+                              </button>
+                            )}
+
+                          {isPrintableOrder(order) &&
+                            !order.service_id &&
+                            !order.service && (
+                              <button
+                                type="button"
+                                className="sales-action-btn sales-action-btn--label"
+                                title="Imprimir Etiqueta Térmica de Paquete"
+                                onClick={() => setSelectedOrderForLabel(order)}
+                              >
+                                <Printer size={14} />
+                                <span>Etiqueta</span>
+                              </button>
+                            )}
+
+                          {isPrintableOrder(order) &&
+                            (order.service_id || order.service) && (
+                              <button
+                                type="button"
+                                className="sales-action-btn sales-action-btn--label"
+                                title="Imprimir Ficha y Comprobante de Servicio"
+                                onClick={() =>
+                                  setSelectedOrderForServiceVoucher(order)
+                                }
+                              >
+                                <Printer size={14} />
+                                <span>Ficha</span>
+                              </button>
+                            )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            hasPrev={page > 1}
+            hasNext={page < totalPages}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => p + 1)}
+            onPage={setPage}
+          />
+        </div>
+      )}
+
+      {/* Order Detail Modal */}
+      {selectedOrder && (
+        <Modal
+          isOpen={Boolean(selectedOrder)}
+          onClose={closeOrderDetail}
+          title={`Detalle de Venta:${
+            selectedOrder.order_number || selectedOrder.id.slice(0, 8)
+          }`}
+        >
+          <div className="order-detail-modal">
+            {orderClaimsError && (
+              <div className="order-detail-claim__load-error" role="alert">
+                <span>
+                  No se pudieron cargar los reclamos: {orderClaimsError.message}
+                </span>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => refetchOrderClaims()}
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+            {orderClaims.length > 0 && (
+              <section className="order-detail-section">
+                <h4 className="order-detail-section__title">
+                  Reclamos de esta compra
+                </h4>
+                {orderClaims.map((claim) => (
+                  <article className="order-detail-claim" key={claim.id}>
+                    <strong>{claim.reason}</strong>
+                    {!!claim.items?.length && (
+                      <span>
+                        Productos:{" "}
+                        {claim.items
+                          .map((item) => `${item.quantity} × ${item.name}`)
+                          .join(", ")}
+                      </span>
+                    )}
+                    <span>
+                      Estado:{" "}
+                      {claim.status === "in_review"
+                        ? "En revisión por Sercio"
+                        : claim.status === "refunded"
+                          ? "Reembolsado"
+                          : claim.status === "resolved"
+                            ? claim.resolution === "partial_refund"
+                              ? "Reembolso parcial"
+                              : "Resuelto"
+                            : claim.status === "open" &&
+                                claim.merchant_action ===
+                                  "full_refund_with_return"
+                              ? "Aceptado; esperando devolución del producto"
+                              : claim.status === "open"
+                                ? "Abierto"
+                                : claim.status}
+                    </span>
+                    <span>
+                      Enviado:{" "}
+                      {new Date(claim.created_at).toLocaleString("es-AR")}
+                    </span>
+                    {claim.due_date && (
+                      <span>
+                        Plazo para responder:{" "}
+                        {new Date(claim.due_date).toLocaleString("es-AR")}
+                      </span>
+                    )}
+                    {claim.merchant_response && (
+                      <p>Tu respuesta: {claim.merchant_response}</p>
+                    )}
+                    {claim.merchant_action === "full_refund_with_return" &&
+                      ["open", "in_review"].includes(claim.status) &&
+                      !claim.return_received_at &&
+                      !["refunded", "returning_to_store", "returned"].includes(
+                        selectedOrder.status,
+                      ) &&
+                      !["returning_to_store", "returned_to_store"].includes(
+                        selectedOrder.shipment_status ?? "",
+                      ) &&
+                      !(
+                        Number(selectedOrder.total_amount) > 0 &&
+                        Number(selectedOrder.refunded_amount ?? 0) >=
+                          Number(selectedOrder.total_amount)
+                      ) && (
+                        <p>
+                          El reintegro total se iniciará al registrar la
+                          recepción del producto.
+                        </p>
+                      )}
+                    {claim.merchant_action === "full_refund_no_return" && (
+                      <p>Devolución total sin retorno del producto.</p>
+                    )}
+                    {claim.status === "open" &&
+                      claim.merchant_action === "full_refund_no_return" && (
+                        <button
+                          type="button"
+                          className="order-detail-claim__respond"
+                          disabled={
+                            claimResponseMutation.isPending ||
+                            retryingClaimId === claim.id
+                          }
+                          onClick={async () => {
+                            setRetryingClaimId(claim.id);
+                            try {
+                              await commerceService.respondToClaim(
+                                selectedOrder.id,
+                                claim.id,
+                                {
+                                  action: "full_refund_no_return",
+                                  response:
+                                    claim.merchant_response ||
+                                    "Reembolso total sin devolución física",
+                                },
+                              );
+                              await queryClient.invalidateQueries({
+                                queryKey: ["order-claims", selectedOrder.id],
+                              });
+                              showSuccess("Reintegro confirmado.");
+                            } catch (error) {
+                              showError(
+                                error instanceof Error
+                                  ? error.message
+                                  : "Sercio debe revisar el reintegro.",
+                              );
+                            } finally {
+                              setRetryingClaimId(null);
+                            }
+                          }}
+                        >
+                          {retryingClaimId === claim.id ? (
+                            <>
+                              <Loader2
+                                size={16}
+                                className="btn-spinner"
+                                aria-hidden="true"
+                              />
+                              <span>Consultando...</span>
+                            </>
+                          ) : (
+                            "Consultar o reintentar reintegro"
+                          )}
+                        </button>
+                      )}
+                    {(claim.offer_history?.length ?? 0) > 1 && (
+                      <details>
+                        <summary>Historial de propuestas</summary>
+                        {claim.offer_history?.map((offer) => (
+                          <p key={offer.revision}>
+                            Propuesta {offer.revision}: {offer.percent}% ($
+                            {Number(offer.amount).toLocaleString("es-AR")}) —{" "}
+                            {offer.buyer_decision === "rejected"
+                              ? "Rechazada"
+                              : offer.buyer_decision === "accepted"
+                                ? "Aceptada"
+                                : "Pendiente"}
+                            . {offer.response}
+                          </p>
+                        ))}
+                      </details>
+                    )}
+                    {claim.merchant_action === "partial_offer" && (
+                      <p>
+                        Oferta: {claim.partial_offer_percent}% ($
+                        {claim.partial_offer_amount}).{" "}
+                        {claim.buyer_decision === "accepted"
+                          ? claim.status === "resolved"
+                            ? "Reintegro confirmado"
+                            : "Aceptada; reintegro en revisión"
+                          : claim.buyer_decision === "rejected"
+                            ? ["resolved", "refunded", "rejected"].includes(
+                                claim.status,
+                              )
+                              ? "Oferta rechazada; consultá la resolución del reclamo"
+                              : claim.status === "open"
+                                ? "Rechazada; podés enviar una nueva propuesta dentro del plazo indicado"
+                                : "Rechazada; Sercio decidirá el caso"
+                            : "Esperando al comprador"}
+                        .
+                      </p>
+                    )}
+                    {claim.status === "open" &&
+                      ((!claim.merchant_action &&
+                        !claim.merchant_response_at) ||
+                        (claim.merchant_action === "partial_offer" &&
+                          claim.buyer_decision === "rejected" &&
+                          (claim.offer_revision ?? 1) === 1)) &&
+                      (!claim.due_date ||
+                        new Date(claim.due_date).getTime() > claimClock) &&
+                      (respondingClaimId === claim.id ? (
+                        <div className="order-detail-claim__response">
+                          <label htmlFor={`claim-action-${claim.id}`}>
+                            Solución
+                          </label>
+                          <select
+                            id={`claim-action-${claim.id}`}
+                            value={claimAction}
+                            onChange={(event) =>
+                              setClaimAction(
+                                event.target.value as typeof claimAction,
+                              )
+                            }
+                          >
+                            {!isServiceSale(selectedOrder) &&
+                              !claim.merchant_action && (
+                                <option value="full_refund_with_return">
+                                  Reembolso total al recibir el producto
+                                </option>
+                              )}
+                            {!claim.merchant_action && (
+                              <option value="full_refund_no_return">
+                                Reembolso total sin devolución física
+                              </option>
+                            )}
+                            <option value="partial_offer">
+                              Ofrecer reembolso parcial
+                            </option>
+                          </select>
+                          <p>
+                            El reintegro se hace por el medio de pago original.
+                            Si ya cobraste la liquidación, el saldo a descontar
+                            se registra y Sercio concilia los cargos que
+                            correspondan.
+                          </p>
+                          {claimAction === "partial_offer" && (
+                            <>
+                              <label htmlFor={`claim-percent-${claim.id}`}>
+                                Porcentaje a reintegrar (%)
+                              </label>
+                              <input
+                                id={`claim-percent-${claim.id}`}
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="Ej: 25"
+                                value={claimPercent}
+                                onChange={(event) => {
+                                  const raw = event.target.value.replace(
+                                    ",",
+                                    ".",
+                                  );
+                                  if (
+                                    raw === "" ||
+                                    /^\d{0,2}(\.\d{0,2})?$/.test(raw)
+                                  ) {
+                                    setClaimPercent(raw);
+                                  }
+                                }}
+                              />
+                              <div className="order-detail-claim__percent-helpers">
+                                <div className="order-detail-claim__percent-presets">
+                                  {[10, 25, 50, 75].map((preset) => (
+                                    <button
+                                      key={preset}
+                                      type="button"
+                                      className={`order-detail-claim__preset-btn ${
+                                        parsedClaimPercent === preset
+                                          ? "order-detail-claim__preset-btn--active"
+                                          : ""
+                                      }`}
+                                      onClick={() =>
+                                        setClaimPercent(String(preset))
+                                      }
+                                    >
+                                      {preset}%
+                                    </button>
+                                  ))}
+                                </div>
+                                {isValidClaimPercent ? (
+                                  <span className="order-detail-claim__percent-preview">
+                                    Monto a reintegrar: $
+                                    {(
+                                      ((Number(
+                                        selectedOrder.total_amount ?? 0,
+                                      ) -
+                                        Number(
+                                          selectedOrder.shipping_cost ?? 0,
+                                        )) *
+                                        parsedClaimPercent) /
+                                      100
+                                    ).toLocaleString("es-AR", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
+                                  </span>
+                                ) : (
+                                  <span className="order-detail-claim__percent-error">
+                                    Ingresá un porcentaje válido entre 0,01% y
+                                    99,99%.
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                          )}
+                          <label htmlFor={`claim-response-${claim.id}`}>
+                            Mensaje al comprador
+                          </label>
+                          <textarea
+                            id={`claim-response-${claim.id}`}
+                            rows={3}
+                            maxLength={1000}
+                            value={claimResponse}
+                            onChange={(event) =>
+                              setClaimResponse(event.target.value)
+                            }
+                          />
+                          <div className="order-detail-claim__actions">
+                            <button
+                              type="button"
+                              data-action-tone="cancel"
+                              disabled={claimResponseMutation.isPending}
+                              onClick={() => setRespondingClaimId(null)}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              data-action-tone="add"
+                              disabled={
+                                claimResponse.trim().length < 10 ||
+                                (claimAction === "partial_offer" &&
+                                  !isValidClaimPercent) ||
+                                claimResponseMutation.isPending
+                              }
+                              onClick={() =>
+                                claimResponseMutation.mutate({
+                                  claimId: claim.id,
+                                })
+                              }
+                            >
+                              {claimResponseMutation.isPending ? (
+                                <>
+                                  <Loader2
+                                    size={16}
+                                    className="btn-spinner"
+                                    aria-hidden="true"
+                                  />
+                                  <span>Enviando...</span>
+                                </>
+                              ) : (
+                                "Enviar propuesta"
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="order-detail-claim__respond"
+                          onClick={() => {
+                            setClaimAction(
+                              claim.merchant_action === "partial_offer"
+                                ? "partial_offer"
+                                : isServiceSale(selectedOrder)
+                                  ? "full_refund_no_return"
+                                  : "full_refund_with_return",
+                            );
+                            setClaimOfferRevision(claim.offer_revision ?? 0);
+                            setRespondingClaimId(claim.id);
+                          }}
+                        >
+                          {claim.merchant_action === "partial_offer"
+                            ? "Enviar nueva propuesta"
+                            : "Resolver reclamo"}
+                        </button>
+                      ))}
+                    {claim.status === "open" &&
+                      !claim.merchant_action &&
+                      claim.due_date &&
+                      new Date(claim.due_date).getTime() <= claimClock && (
+                        <p>El plazo venció. Sercio decidirá el caso.</p>
+                      )}
+                    {claim.media.map((item, index) =>
+                      item.url ? (
+                        <a
+                          key={item.id}
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {item.media_type === "video"
+                            ? "Ver video"
+                            : `Ver imagen ${index + 1}`}
+                        </a>
+                      ) : (
+                        <span key={item.id}>Video en procesamiento</span>
+                      ),
+                    )}
+                  </article>
+                ))}
+              </section>
+            )}
+            {/* Buyer Info */}
+            <div className="order-detail-section">
+              <h4 className="order-detail-section__title">
+                Datos del Comprador
+              </h4>
+              <div className="order-detail-grid">
+                <div>
+                  <span className="order-detail-label">
+                    Estado de la venta:
+                  </span>
+                  <span className="order-detail-value">
+                    {getStatusBadge(selectedOrder.status, selectedOrder)}
+                  </span>
+                </div>
+                {selectedOrder.has_return && (
+                  <div>
+                    <span className="order-detail-label">
+                      Estado de la devolución:
+                    </span>
+                    <span className="order-detail-value">
+                      Devolución registrada por el comercio
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <span className="order-detail-label">Fecha de compra:</span>
+                  <span className="order-detail-value">
+                    {new Date(selectedOrder.created_at).toLocaleString("es-AR")}
+                  </span>
+                </div>
+                <div>
+                  <span className="order-detail-label">Nombre:</span>
+                  <span className="order-detail-value">
+                    {getBuyerName(selectedOrder)}
+                  </span>
+                </div>
+                <div>
+                  <span className="order-detail-label">Email:</span>
+                  <span className="order-detail-value">
+                    {getBuyerEmail(selectedOrder)}
+                  </span>
+                </div>
+                <div>
+                  <span className="order-detail-label">Teléfono:</span>
+                  <span className="order-detail-value">
+                    {getBuyerPhone(selectedOrder)}
+                  </span>
+                </div>
+                <div>
+                  <span className="order-detail-label">
+                    {isServiceSale(selectedOrder)
+                      ? "Modalidad del servicio:"
+                      : "Método de entrega:"}
+                  </span>
+                  <span className="order-detail-value">
+                    {isServiceSale(selectedOrder) &&
+                    (selectedOrder.branch || selectedOrder.origin_address)
+                      ? "En sucursal del comercio"
+                      : isServiceSale(selectedOrder) &&
+                          selectedOrder.delivery_type ===
+                            "coordinate_with_merchant"
+                        ? "A coordinar con el profesional"
+                        : getDeliveryLabel(selectedOrder.delivery_type)}
+                  </span>
+                </div>
+                {selectedOrder.scheduled_delivery_date && (
+                  <div>
+                    <span className="order-detail-label">
+                      {isServiceSale(selectedOrder)
+                        ? "Fecha prevista:"
+                        : "Envío programado:"}
+                    </span>
+                    <span className="order-detail-value">
+                      {selectedOrder.scheduled_delivery_date
+                        .split("-")
+                        .reverse()
+                        .join("/")}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <span className="order-detail-label">Medio de pago:</span>
+                  <span className="order-detail-value">
+                    {formatPaymentMethod(selectedOrder)}
+                  </span>
+                </div>
+                {selectedOrder.installments && (
+                  <div>
+                    <span className="order-detail-label">Cuotas:</span>
+                    <span className="order-detail-value">
+                      {selectedOrder.installments}
+                    </span>
+                  </div>
+                )}
+                {selectedOrder.paid_at && (
+                  <div>
+                    <span className="order-detail-label">Fecha de pago:</span>
+                    <span className="order-detail-value">
+                      {new Date(selectedOrder.paid_at).toLocaleString("es-AR")}
+                    </span>
+                  </div>
+                )}
+                {selectedOrder.cancel_reason && (
+                  <div>
+                    <span className="order-detail-label">
+                      Motivo de cancelación:
+                    </span>
+                    <span className="order-detail-value">
+                      {selectedOrder.cancel_reason}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {isServiceSale(selectedOrder) &&
+                (selectedOrder.branch || selectedOrder.origin_address) && (
+                  <div className="order-detail-address">
+                    <span className="order-detail-label">
+                      Sucursal del servicio:
+                    </span>
+                    <p className="order-detail-address__text">
+                      {selectedOrder.branch?.name ?? "Sucursal principal"} —{" "}
+                      {selectedOrder.branch?.street_name ??
+                        selectedOrder.origin_address?.street_name}{" "}
+                      {selectedOrder.branch?.street_number ??
+                        selectedOrder.origin_address?.street_number ??
+                        ""}
+                    </p>
+                  </div>
+                )}
+              {!isServiceSale(selectedOrder) &&
+                (selectedOrder.delivery_address ||
+                  selectedOrder.shipping_address) && (
+                  <div className="order-detail-address">
+                    <span className="order-detail-label">
+                      {isServiceSale(selectedOrder)
+                        ? "Lugar del servicio:"
+                        : "Dirección de entrega:"}
+                    </span>
+                    <p className="order-detail-address__text">
+                      {getDeliveryAddress(selectedOrder)}
+                    </p>
+                    {selectedOrder.delivery_address?.notes && (
+                      <p className="order-detail-address__text">
+                        Indicaciones: {selectedOrder.delivery_address.notes}
+                      </p>
+                    )}
+                  </div>
+                )}
+            </div>
+
+            {/* Billing Data Info for Invoice */}
+            <div className="order-detail-section">
+              <h4 className="order-detail-section__title">
+                Datos de Facturación para Factura
+              </h4>
+              {selectedOrder.billing_data || selectedOrder.billing_profile ? (
+                (() => {
+                  const bd =
+                    selectedOrder.billing_data || selectedOrder.billing_profile;
+                  const isRespInscripto =
+                    bd.tax_condition === "responsable_inscripto";
+                  return (
+                    <div className="order-detail-grid">
+                      <div>
+                        <span className="order-detail-label">
+                          Nombre / Razón Social:
+                        </span>
+                        <span className="order-detail-value">
+                          {bd.company_name || bd.full_name}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="order-detail-label">Titular:</span>
+                        <span className="order-detail-value">
+                          {bd.full_name}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="order-detail-label">CUIT / CUIL:</span>
+                        <span className="order-detail-value order-detail-value--cuit">
+                          {bd.cuit}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="order-detail-label">
+                          Condición frente al IVA:
+                        </span>
+                        <span className="order-detail-value">
+                          <span
+                            className={`sales-billing-badge ${
+                              isRespInscripto
+                                ? "sales-billing-badge--company"
+                                : "sales-billing-badge--final"
+                            }`}
+                          >
+                            {isRespInscripto
+                              ? "Responsable Inscripto (Factura A)"
+                              : "Consumidor Final (Factura B)"}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="sales-billing-empty">
+                  <p>
+                    El comprador no registró CUIT específico. Emitir como{" "}
+                    <strong>Consumidor Final (Factura B)</strong> a nombre de:{" "}
+                    <strong>{getBuyerName(selectedOrder)}</strong>.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="order-detail-section">
+              <h4 className="order-detail-section__title">
+                Productos y servicios
+              </h4>
+              <div className="sales-order-items">
+                {getOrderLines(selectedOrder).map((item) => (
+                  <div key={item.id} className="sales-order-items__item">
+                    {item.imageUrl && (
+                      <img
+                        className="sales-order-items__image"
+                        src={item.imageUrl}
+                        alt={item.name}
+                      />
+                    )}
+                    <div className="sales-order-items__content">
+                      <strong>{item.name}</strong>
+                      {item.brand && <span>Marca: {item.brand}</span>}
+                      {item.attributes && (
+                        <span>Características: {item.attributes}</span>
+                      )}
+                      {item.ean && (
+                        <span>Código de barras (EAN): {item.ean}</span>
+                      )}
+                      <span>Cantidad: {item.quantity}</span>
+                      <OrderItemPricing
+                        pricing={item.pricing}
+                        unitPrice={item.unitPrice}
+                      />
+                      <span>
+                        Subtotal: ${item.subtotal.toLocaleString("es-AR")}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Financial Summary */}
+            <div className="order-detail-section">
+              <h4 className="order-detail-section__title">Desglose de Pago</h4>
+              <div className="order-detail-row">
+                <span>
+                  {isServiceSale(selectedOrder)
+                    ? "Subtotal del servicio:"
+                    : "Subtotal artículos:"}
+                </span>
+                <span>
+                  $
+                  {(
+                    (selectedOrder.total_amount ?? 0) -
+                    (selectedOrder.shipping_cost ?? 0)
+                  ).toLocaleString("es-AR")}
+                </span>
+              </div>
+              {(!selectedOrder.shipping_amount_hidden && (!isServiceSale(selectedOrder) ||
+                Number(selectedOrder.shipping_cost ?? 0) > 0)) && (
+                <div className="order-detail-row">
+                  <span>
+                    {isServiceSale(selectedOrder)
+                      ? "Costo de traslado:"
+                      : "Costo de envío:"}
+                  </span>
+                  <span>
+                    $
+                    {Number(selectedOrder.shipping_cost ?? 0).toLocaleString(
+                      "es-AR",
+                    )}
+                  </span>
+                </div>
+              )}
+              <div className="order-detail-row order-detail-row--total">
+                <span>Total:</span>
+                <span>
+                  $
+                  {Number(selectedOrder.total_amount ?? 0).toLocaleString(
+                    "es-AR",
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Contextual Actions */}
+            <div className="order-detail-section">
+              <h4 className="order-detail-section__title">
+                Acciones del Pedido
+              </h4>
+
+              {selectedOrder.status === "paid" && (
+                <div className="order-actions-group">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={confirmMutation.isPending}
+                    onClick={() => confirmMutation.mutate(selectedOrder.id)}
+                  >
+                    {confirmMutation.isPending ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className="btn-spinner"
+                          aria-hidden="true"
+                        />
+                        <span>Confirmando...</span>
+                      </>
+                    ) : (
+                      "Confirmar pedido"
+                    )}
+                  </button>
+                  {!selectedOrder.has_return &&
+                    !selectedOrder.has_chargeback &&
+                    Number(selectedOrder.refunded_amount ?? 0) === 0 &&
+                    !selectedOrder.claim_requested &&
+                    !selectedOrder.withdrawal_requested &&
+                    orderClaimsLoaded &&
+                    orderClaims.length === 0 && (
+                      <button
+                        data-action-tone="cancel"
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => setCancelModalOpen(true)}
+                      >
+                        Cancelar pedido
+                      </button>
+                    )}
+                </div>
+              )}
+
+              {/* Service Appointment assignment if order has service */}
+              {isServiceSale(selectedOrder) &&
+                !isClosedServiceAppointment(selectedOrder) && (
+                  <div className="order-service-appointment-box">
+                    <h5>Turno del Servicio</h5>
+                    {["paid", "confirmed"].includes(selectedOrder.status) &&
+                      !isOrderDelivered(selectedOrder) &&
+                      selectedOrder.appointment_status !== "completed" && (
+                        <div
+                          className="order-service-appointment-box__deadline"
+                          role="alert"
+                        >
+                          <AlertTriangle size={20} aria-hidden="true" />
+                          <span>
+                            Debés realizar el servicio y validar el código del
+                            comprador dentro de los{" "}
+                            {SERVICE_COMPLETION_WINDOW_DAYS} días posteriores al
+                            pago. Si no se valida, el caso pasa a revisión para
+                            gestionar el reintegro.
+                            {selectedOrder.paid_at && (
+                              <>
+                                {" "}
+                                Fecha límite:{" "}
+                                <strong>
+                                  {new Date(
+                                    new Date(selectedOrder.paid_at).getTime() +
+                                      SERVICE_COMPLETION_WINDOW_DAYS *
+                                        24 *
+                                        60 *
+                                        60 *
+                                        1000,
+                                  ).toLocaleString("es-AR")}
+                                </strong>
+                                .
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                    {isOrderDelivered(selectedOrder) ? (
+                      <div className="appointment-scheduled-banner">
+                        <CheckCircle2 size={20} className="icon-green" />
+                        <div className="appointment-scheduled-details">
+                          <strong>
+                            Turno realizado
+                            {selectedOrder.appointment
+                              ? `: ${selectedOrder.appointment.appointment_date} a las ${selectedOrder.appointment.appointment_time} hs`
+                              : ""}
+                          </strong>
+                          {selectedOrder.appointment?.notes && (
+                            <p className="appointment-notes">
+                              Indicaciones: {selectedOrder.appointment.notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : !isServiceAppointmentScheduled(selectedOrder) ? (
+                      <div className="appointment-pending-banner">
+                        <div className="appointment-pending-text">
+                          <AlertTriangle size={20} className="icon-amber" />
+                          <div>
+                            <strong>
+                              ⚠️ Turno Pendiente de Asignación Obligatoria
+                            </strong>
+                            <p>
+                              El cliente espera que le programes la fecha y hora
+                              de atención para este servicio.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() =>
+                            setSelectedOrderForAppointment(selectedOrder)
+                          }
+                        >
+                          <Calendar size={15} />
+                          <span>Asignar Turno al Cliente</span>
+                        </button>
+                      </div>
+                    ) : selectedOrder.appointment ? (
+                      <div className="appointment-scheduled-banner">
+                        <CheckCircle2 size={20} className="icon-green" />
+                        <div className="appointment-scheduled-details">
+                          <strong>
+                            Turno Programado:{" "}
+                            {selectedOrder.appointment.appointment_date} a las{" "}
+                            {selectedOrder.appointment.appointment_time} hs
+                          </strong>
+                          {selectedOrder.appointment.notes && (
+                            <p className="appointment-notes">
+                              Indicaciones: {selectedOrder.appointment.notes}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() =>
+                            setSelectedOrderForAppointment(selectedOrder)
+                          }
+                        >
+                          Reprogramar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="appointment-pending-banner">
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() =>
+                            setSelectedOrderForAppointment(selectedOrder)
+                          }
+                        >
+                          <Calendar size={15} />
+                          <span>Gestionar Turno</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              {/* Thermal Label Print button for product orders */}
+              {isPrintableOrder(selectedOrder) &&
+                !isServiceSale(selectedOrder) && (
+                  <div className="order-print-label-row">
+                    <button
+                      type="button"
+                      className="btn-secondary order-print-label-btn"
+                      onClick={() => setSelectedOrderForLabel(selectedOrder)}
+                    >
+                      <Printer size={16} />
+                      <span>
+                        🖨️ Imprimir Etiqueta de Paquete (Térmica 80mm /
+                        Bluetooth POS)
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+              {/* Service Voucher Print button for service orders */}
+              {isPrintableOrder(selectedOrder) &&
+                isServiceSale(selectedOrder) && (
+                  <div className="order-print-label-row">
+                    <button
+                      type="button"
+                      className="btn-secondary order-print-label-btn"
+                      onClick={() =>
+                        setSelectedOrderForServiceVoucher(selectedOrder)
+                      }
+                    >
+                      <Printer size={16} />
+                      <span>🖨️ Imprimir Ficha de Servicio (con Domicilio)</span>
+                    </button>
+                  </div>
+                )}
+
+              {["confirmed", "preparing"].includes(selectedOrder.status) &&
+                selectedOrder.delivery_type === "shipment" &&
+                ((selectedOrder.uses_merchant_riders &&
+                  !selectedShipmentStatus) ||
+                  ["pending", "created", "confirmed"].includes(
+                    (Array.isArray(selectedOrder.shipments)
+                      ? selectedOrder.shipments[0]?.status
+                      : selectedOrder.shipments?.status) ?? "",
+                  ) ||
+                  (selectedOrder.status === "confirmed" &&
+                    [
+                      "preparing",
+                      "driver_assigned",
+                      "driver_at_store",
+                    ].includes(
+                      (Array.isArray(selectedOrder.shipments)
+                        ? selectedOrder.shipments[0]?.status
+                        : selectedOrder.shipments?.status) ?? "",
+                    ))) &&
+                !isServiceSale(selectedOrder) && (
+                  <div className="order-actions-group">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={preparingMutation.isPending}
+                      onClick={() => {
+                        if (
+                          selectedOrder.uses_merchant_riders &&
+                          !assignedOwnRiderId
+                        ) {
+                          showError(
+                            "Asigna un Rider para cambiar el estado del pedido.",
+                          );
+                          return;
+                        }
+                        preparingMutation.mutate(selectedOrder.id);
+                      }}
+                    >
+                      {preparingMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        "Marcar en preparación"
+                      )}
+                    </button>
+                  </div>
+                )}
+
+              {selectedOrder.delivery_type === "shipment" &&
+                selectedOrder.uses_merchant_riders &&
+                (assignedOwnRiderId || canChangeOwnRider) && (
+                  <div className="shipment-rider-actions">
+                    {assignedOwnRiderId && (
+                      <p className="shipment-rider-actions__assigned">
+                        Rider asignado:{" "}
+                        <strong>
+                          {assignedOwnRiderName || assignedOwnRiderId}
+                        </strong>
+                      </p>
+                    )}
+                    {canChangeOwnRider && !assignedOwnRiderId && (
+                      <p>
+                        Asigná un rider de tu flota antes de pasar a
+                        preparación.
+                      </p>
+                    )}
+                    {canChangeOwnRider && (
+                      <>
+                        <label htmlFor="sale-own-rider">
+                          {assignedOwnRiderId
+                            ? "Cambiar rider de flota"
+                            : "Rider propio para retirar el pedido"}
+                        </label>
+                        <div className="shipment-rider-actions__row">
+                          <select
+                            id="sale-own-rider"
+                            value={ownRiderId}
+                            onChange={(event) =>
+                              setOwnRiderId(event.target.value)
+                            }
+                          >
+                            <option value="">Seleccioná un rider</option>
+                            {ownRiders
+                              .filter(
+                                (rider) =>
+                                  rider.activation?.is_active ||
+                                  rider.id === assignedOwnRiderId,
+                              )
+                              .map((rider) => (
+                                <option key={rider.id} value={rider.id}>
+                                  {[rider.first_name, rider.last_name]
+                                    .filter(Boolean)
+                                    .join(" ") ||
+                                    rider.username ||
+                                    rider.id}
+                                </option>
+                              ))}
+                          </select>
+                          <button
+                            type="button"
+                            data-action-tone={
+                              assignedOwnRiderId ? undefined : "add"
+                            }
+                            className={
+                              assignedOwnRiderId
+                                ? "btn-secondary"
+                                : "btn-primary"
+                            }
+                            disabled={
+                              !ownRiderId ||
+                              ownRiderId === assignedOwnRiderId ||
+                              assignOwnRiderMutation.isPending
+                            }
+                            onClick={() =>
+                              assignOwnRiderMutation.mutate({
+                                orderId: selectedOrder.id,
+                                riderId: ownRiderId,
+                              })
+                            }
+                          >
+                            {assignOwnRiderMutation.isPending ? (
+                              <>
+                                <Loader2
+                                  size={16}
+                                  className="btn-spinner"
+                                  aria-hidden="true"
+                                />
+                                <span>Asignando...</span>
+                              </>
+                            ) : assignedOwnRiderId ? (
+                              "Cambiar rider"
+                            ) : (
+                              "Asignar rider"
+                            )}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+              {selectedOrder.delivery_type === "shipment" &&
+                Boolean(
+                  Array.isArray(selectedOrder.shipments)
+                    ? selectedOrder.shipments[0]?.delivery_driver_id
+                    : selectedOrder.shipments?.delivery_driver_id,
+                ) &&
+                ["ready_for_pickup"].includes(
+                  Array.isArray(selectedOrder.shipments)
+                    ? (selectedOrder.shipments[0]?.status ?? "")
+                    : (selectedOrder.shipments?.status ?? ""),
+                ) && (
+                  <div className="shipment-rider-actions">
+                    {selectedShipmentId && (
+                      <MerchantShipmentPickupCode
+                        shipmentId={selectedShipmentId}
+                      />
+                    )}
+                    <label htmlFor="sale-seller-code">
+                      Código de entrega al rider
+                    </label>
+                    <div className="shipment-rider-actions__row">
+                      <input
+                        id="sale-seller-code"
+                        type="text"
+                        value={sellerCode}
+                        onChange={(event) =>
+                          setSellerCode(event.target.value.toUpperCase())
+                        }
+                        placeholder="Ingresá el código del retiro"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={
+                          !sellerCode.trim() || handToRiderMutation.isPending
+                        }
+                        onClick={() =>
+                          handToRiderMutation.mutate({
+                            orderId: selectedOrder.id,
+                            code: sellerCode.trim(),
+                          })
+                        }
+                      >
+                        {handToRiderMutation.isPending ? (
+                          <>
+                            <Loader2
+                              size={16}
+                              className="btn-spinner"
+                              aria-hidden="true"
+                            />
+                            <span>Confirmando...</span>
+                          </>
+                        ) : (
+                          "Confirmar entrega al rider"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              {selectedOrder.status === "confirmed" &&
+                selectedOrder.delivery_type === "pickup" &&
+                !selectedOrder.pickup_ready_at &&
+                !isServiceSale(selectedOrder) && (
+                  <div className="order-actions-group">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={pickupReadyMutation.isPending}
+                      onClick={() =>
+                        pickupReadyMutation.mutate(selectedOrder.id)
+                      }
+                    >
+                      {pickupReadyMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        "Marcar listo para retiro en sucursal"
+                      )}
+                    </button>
+                  </div>
+                )}
+
+              {selectedOrder.status === "preparing" &&
+                selectedOrder.delivery_type === "shipment" &&
+                ((Array.isArray(selectedOrder.shipments)
+                  ? selectedOrder.shipments[0]?.status
+                  : selectedOrder.shipments?.status) === "preparing" ||
+                  (selectedOrder.status === "preparing" &&
+                    ["driver_assigned", "driver_at_store"].includes(
+                      (Array.isArray(selectedOrder.shipments)
+                        ? selectedOrder.shipments[0]?.status
+                        : selectedOrder.shipments?.status) ?? "",
+                    ))) &&
+                !isServiceSale(selectedOrder) && (
+                  <div className="order-actions-group">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={
+                        readyMutation.isPending ||
+                        !selectedOrder.dispatch_evidence_path
+                      }
+                      onClick={() => readyMutation.mutate(selectedOrder.id)}
+                    >
+                      {readyMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        "Marcar listo para despacho"
+                      )}
+                    </button>
+                  </div>
+                )}
+
+              {selectedOrder.delivery_type === "coordinate_with_merchant" &&
+                !isServiceSale(selectedOrder) &&
+                selectedOrder.status === "confirmed" && (
+                  <div className="order-actions-group">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={coordinatedPreparingMutation.isPending}
+                      onClick={() =>
+                        coordinatedPreparingMutation.mutate(selectedOrder.id)
+                      }
+                    >
+                      {coordinatedPreparingMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Actualizando...</span>
+                        </>
+                      ) : (
+                        "Marcar en preparación"
+                      )}
+                    </button>
+                  </div>
+                )}
+
+              {selectedOrder.delivery_type === "coordinate_with_merchant" &&
+                !isServiceSale(selectedOrder) &&
+                selectedOrder.status === "preparing" && (
+                  <div className="order-actions-group">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={
+                        coordinatedDispatchedMutation.isPending ||
+                        !selectedOrder.dispatch_evidence_path
+                      }
+                      onClick={() =>
+                        coordinatedDispatchedMutation.mutate(selectedOrder.id)
+                      }
+                    >
+                      {coordinatedDispatchedMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Confirmando...</span>
+                        </>
+                      ) : (
+                        "Confirmar que ya se despachó"
+                      )}
+                    </button>
+                  </div>
+                )}
+
+              {/* Pickup Verification */}
+              {(isServiceSale(selectedOrder)
+                ? selectedOrder.status === "confirmed" &&
+                  isServiceAppointmentScheduled(selectedOrder) &&
+                  !isOrderDelivered(selectedOrder)
+                : isOrderPickupReady(selectedOrder)) && (
+                <div className="pickup-verify-box">
+                  <h5>
+                    {isServiceSale(selectedOrder)
+                      ? "Confirmar servicio realizado"
+                      : "Validar Entrega en Sucursal"}
+                  </h5>
+                  <p>
+                    Escaneá el QR o ingresá el código de 7 caracteres que te
+                    entregue el comprador al finalizar.
+                  </p>
+                  <div className="pickup-verify-input-group">
+                    <input
+                      type="text"
+                      maxLength={7}
+                      placeholder="Ej: AB2CD34"
+                      value={pickupCode}
+                      onChange={(e) =>
+                        setPickupCode(e.target.value.toUpperCase())
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={
+                        pickupCode.length !== 7 ||
+                        pickupVerifyMutation.isPending
+                      }
+                      onClick={() =>
+                        pickupVerifyMutation.mutate({
+                          id: selectedOrder.id,
+                          code: pickupCode,
+                        })
+                      }
+                    >
+                      {pickupVerifyMutation.isPending ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className="btn-spinner"
+                            aria-hidden="true"
+                          />
+                          <span>Validando...</span>
+                        </>
+                      ) : isServiceSale(selectedOrder) ? (
+                        "Validar y completar servicio"
+                      ) : (
+                        "Validar y completar"
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setPickupScannerOpen(true)}
+                    >
+                      Escanear QR
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Local shipment image / dispatch */}
+              {(canUploadSelectedEvidence ||
+                Boolean(selectedOrder.dispatch_evidence_path)) && (
+                <div className="shipment-dispatch-box">
+                  <h5>Foto de evidencia del paquete</h5>
+                  <p>
+                    {selectedOrder.dispatch_evidence_path
+                      ? "Foto guardada. Ya podés confirmar el despacho o marcar el paquete listo para el rider."
+                      : "Subí una foto antes de confirmar el despacho o avisar al rider."}
+                  </p>
+                  {selectedOrder.dispatch_evidence_path && (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={async () => {
+                        try {
+                          const { url } =
+                            await commerceService.viewDispatchEvidence(
+                              selectedOrder.id,
+                            );
+                          window.open(url, "_blank", "noopener,noreferrer");
+                        } catch (error) {
+                          showError(
+                            error instanceof Error
+                              ? error.message
+                              : "No se pudo abrir la foto.",
+                          );
+                        }
+                      }}
+                    >
+                      Ver foto guardada
+                    </button>
+                  )}
+                  {canUploadSelectedEvidence && (
+                    <>
+                      <label htmlFor="dispatch-evidence-file">
+                        Foto del paquete (JPG, PNG o WebP; hasta 8 MB)
+                      </label>
+                      <div className="pickup-verify-input-group">
+                        <input
+                          id="dispatch-evidence-file"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            if (
+                              file &&
+                              (![
+                                "image/jpeg",
+                                "image/png",
+                                "image/webp",
+                              ].includes(file.type) ||
+                                file.size > 8 * 1024 * 1024)
+                            ) {
+                              showError(
+                                "Elegí una foto JPG, PNG o WebP de hasta 8 MB.",
+                              );
+                              setPackageImageFile(null);
+                              e.target.value = "";
+                            } else {
+                              setPackageImageFile(file);
+                            }
+                          }}
+                        />
+                        <button
+                          data-action-tone="upload"
+                          type="button"
+                          className="btn-secondary"
+                          disabled={
+                            !packageImageFile ||
+                            dispatchEvidenceMutation.isPending
+                          }
+                          onClick={() =>
+                            packageImageFile &&
+                            dispatchEvidenceMutation.mutate({
+                              id: selectedOrder.id,
+                              file: packageImageFile,
+                            })
+                          }
+                        >
+                          {dispatchEvidenceMutation.isPending ? (
+                            <>
+                              <Loader2
+                                size={16}
+                                className="btn-spinner"
+                                aria-hidden="true"
+                              />
+                              <span>Subiendo...</span>
+                            </>
+                          ) : (
+                            "Subir foto"
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Customer contact actions */}
+              <div className="order-contact-actions">
+                <button
+                  type="button"
+                  className="order-chat-btn"
+                  onClick={() => setIsOrderChatOpen(true)}
+                >
+                  <MessageSquare size={18} />
+                  <span>Contactar al cliente por Chat</span>
+                </button>
+
+                {(selectedOrder.buyer?.phone ||
+                  selectedOrder.buyer?.phone_number ||
+                  selectedOrder.user?.phone ||
+                  selectedOrder.user?.phone_number) && (
+                  <button
+                    type="button"
+                    onClick={() => setWhatsAppWarningOpen(true)}
+                    className="whatsapp-btn"
+                  >
+                    <MessageCircle size={18} />
+                    <span>Contactar al cliente por WhatsApp</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Long distance transport guide */}
+              {selectedOrder.delivery_type === "coordinate_with_merchant" &&
+                !isServiceSale(selectedOrder) && (
+                  <div className="transport-guide-box">
+                    <h5>Transporte Larga Distancia / Encomienda</h5>
+                    {selectedOrder.status === "dispatched" ? (
+                      <div className="transport-guide-fields">
+                        <p>
+                          Despachado. La entrega se completará cuando el
+                          comprador confirme la recepción.
+                        </p>
+                        <input
+                          type="text"
+                          placeholder="Empresa de transporte (ej: Andreani, Vía Cargo)"
+                          value={transportCarrier}
+                          onChange={(e) => setTransportCarrier(e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Número de guía / remito"
+                          value={transportTrackingNumber}
+                          onChange={(e) =>
+                            setTransportTrackingNumber(e.target.value)
+                          }
+                        />
+                        <input
+                          type="url"
+                          placeholder="URL de seguimiento externo"
+                          value={transportTrackingUrl}
+                          onChange={(e) =>
+                            setTransportTrackingUrl(e.target.value)
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          disabled={
+                            !transportCarrier.trim() ||
+                            !transportTrackingNumber.trim() ||
+                            transportMutation.isPending
+                          }
+                          onClick={() =>
+                            transportMutation.mutate({
+                              id: selectedOrder.id,
+                              company_name: transportCarrier.trim(),
+                              tracking_number: transportTrackingNumber.trim(),
+                              tracking_url: transportTrackingUrl.trim(),
+                            })
+                          }
+                        >
+                          {transportMutation.isPending ? (
+                            <>
+                              <Loader2
+                                size={16}
+                                className="btn-spinner"
+                                aria-hidden="true"
+                              />
+                              <span>Guardando...</span>
+                            </>
+                          ) : (
+                            "Guardar guía de transporte"
+                          )}
+                        </button>
+                      </div>
+                    ) : selectedOrder.status === "settled" ||
+                      selectedOrder.status === "delivered" ? (
+                      <p>El comprador confirmó que recibió el producto.</p>
+                    ) : (
+                      <p>
+                        Confirmá la preparación y el despacho para cargar los
+                        datos del envío.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+              {/* Invoice section */}
+              <div className="invoice-box">
+                <h5>Comprobante de Factura</h5>
+                <p>
+                  Estado actual:{" "}
+                  <strong>
+                    {selectedOrder.invoice_url ? "Emitida" : "No emitida"}
+                  </strong>
+                </p>
+                {selectedOrder.invoice_url && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const tab = window.open("", "_blank");
+                      try {
+                        const { url } = await commerceService.getInvoiceUrl(
+                          selectedOrder.id,
+                        );
+                        if (tab) tab.location.href = url;
+                        else window.location.href = url;
+                      } catch (error) {
+                        tab?.close();
+                        showError(
+                          error instanceof Error
+                            ? error.message
+                            : "No se pudo abrir la factura.",
+                        );
+                      }
+                    }}
+                    className="invoice-download-link"
+                  >
+                    <ExternalLink size={16} /> Ver factura actual
+                  </button>
+                )}
+                <div className="pickup-verify-input-group">
+                  <input
+                    key={selectedOrder.invoice_url ?? "new"}
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png,image/webp"
+                    aria-label="Archivo de la factura"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      if (file && file.size > 10 * 1024 * 1024) {
+                        showError("La factura no puede superar los 10 MB.");
+                        event.target.value = "";
+                        setInvoiceFile(null);
+                      } else {
+                        setInvoiceFile(file);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    data-action-tone="upload"
+                    className="btn-secondary"
+                    disabled={!invoiceFile || invoiceMutation.isPending}
+                    onClick={() =>
+                      invoiceMutation.mutate({
+                        id: selectedOrder.id,
+                        file: invoiceFile!,
+                      })
+                    }
+                  >
+                    {invoiceMutation.isPending ? (
+                      <Loader2
+                        size={16}
+                        className="btn-spinner"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Upload size={16} aria-hidden="true" />
+                    )}
+                    <span>
+                      {invoiceMutation.isPending
+                        ? "Subiendo..."
+                        : "Subir factura"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Cancel Order Modal */}
+      {cancelModalOpen &&
+        selectedOrder?.status === "paid" &&
+        !selectedOrder.has_return &&
+        !selectedOrder.has_chargeback &&
+        Number(selectedOrder.refunded_amount ?? 0) === 0 &&
+        !selectedOrder.claim_requested &&
+        !selectedOrder.withdrawal_requested &&
+        orderClaimsLoaded &&
+        orderClaims.length === 0 && (
+          <Modal
+            isOpen={cancelModalOpen}
+            onClose={() => setCancelModalOpen(false)}
+            title="Cancelar Pedido"
+          >
+            <div className="cancel-order-modal">
+              <div className="cancel-penalty-alert" role="alert">
+                <AlertTriangle
+                  size={24}
+                  className="cancel-penalty-alert__icon"
+                />
+                <div className="cancel-penalty-alert__content">
+                  <strong>Penalización en tu Reputación</strong>
+                  <p>
+                    Atención: Cancelar este pedido afectará negativamente tu
+                    puntuación de reputación <strong>(-20 pts)</strong> y tu
+                    visibilidad en el catálogo. ¿Deseas continuar?
+                  </p>
+                </div>
+              </div>
+
+              <p>
+                ¿Estás seguro de que deseás cancelar este pedido? Esta acción no
+                se puede deshacer.
+              </p>
+              <label className="order-detail-label">
+                Motivo de cancelación:
+              </label>
+              <textarea
+                className="cancel-textarea"
+                rows={3}
+                placeholder="Indica el motivo al cliente (ej: falta de stock, dirección inaccesible)..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+              <div className="modal-actions-row">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setCancelModalOpen(false)}
+                >
+                  Volver
+                </button>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  disabled={cancelMutation.isPending}
+                  onClick={() =>
+                    cancelMutation.mutate({
+                      id: selectedOrder.id,
+                      reason: cancelReason,
+                    })
+                  }
+                >
+                  {cancelMutation.isPending ? (
+                    <>
+                      <Loader2
+                        size={16}
+                        className="btn-spinner"
+                        aria-hidden="true"
+                      />
+                      <span>Cancelando...</span>
+                    </>
+                  ) : (
+                    "Confirmar cancelación"
+                  )}
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+      {/* Assign Service Appointment Modal */}
+      {selectedOrderForAppointment && (
+        <AssignServiceAppointmentModal
+          order={selectedOrderForAppointment}
+          isOpen={Boolean(selectedOrderForAppointment)}
+          onClose={() => setSelectedOrderForAppointment(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
+            refetch();
+          }}
+        />
+      )}
+
+      {/* Package Thermal Label Modal */}
+      {selectedOrderForLabel && (
+        <PackageThermalLabelModal
+          order={selectedOrderForLabel}
+          isOpen={Boolean(selectedOrderForLabel)}
+          onClose={() => setSelectedOrderForLabel(null)}
+          storeName={
+            company?.name ||
+            company?.business_name ||
+            professional?.name ||
+            "SERCIO COMERCIO"
+          }
+        />
+      )}
+
+      {/* La ficha de servicio usa el mismo diseño térmico que la impresión automática. */}
+      {selectedOrderForServiceVoucher && (
+        <PackageThermalLabelModal
+          order={selectedOrderForServiceVoucher}
+          isOpen={Boolean(selectedOrderForServiceVoucher)}
+          onClose={() => setSelectedOrderForServiceVoucher(null)}
+          storeName={
+            company?.name ||
+            company?.business_name ||
+            professional?.name ||
+            "SERCIO COMERCIO"
+          }
+        />
+      )}
+
+      {/* Batch Order Tickets Modal */}
+      {batchPrintModalOpen && selectedOrdersForBatchPrint.length > 0 && (
+        <BatchOrderTicketsModal
+          isOpen={batchPrintModalOpen}
+          onClose={() => {
+            setBatchPrintModalOpen(false);
+            setSelectedOrdersForBatchPrint([]);
+          }}
+          orders={selectedOrdersForBatchPrint}
+          storeName={
+            company?.name ||
+            company?.business_name ||
+            professional?.name ||
+            "SERCIO COMERCIO"
+          }
+          branchName={
+            branches.find((b) => b.id === selectedBranchId)?.name ||
+            "Sucursal Principal"
+          }
+          onPrinted={(printedIds) => {
+            setSelectedOrderIds((prev) =>
+              prev.filter((id) => !printedIds.includes(id)),
+            );
+          }}
+        />
+      )}
+      {returnReceiptOpen && (
+        <ReturnReceiptModal
+          onClose={() => setReturnReceiptOpen(false)}
+          onReceive={(code, conditionVerified) =>
+            returnReceiptMutation
+              .mutateAsync({ code, conditionVerified })
+              .then(() => undefined)
+          }
+        />
+      )}
+
+      {/* WhatsApp Warning Modal */}
+      {whatsAppWarningOpen && selectedOrder && (
+        <Modal
+          isOpen={whatsAppWarningOpen}
+          onClose={() => setWhatsAppWarningOpen(false)}
+          title="Aviso de Comunicación"
+        >
+          <div className="whatsapp-warning-modal">
+            <div className="whatsapp-warning-alert" role="alert">
+              <AlertTriangle
+                size={32}
+                className="whatsapp-warning-alert__icon"
+              />
+              <div className="whatsapp-warning-alert__content">
+                <strong className="whatsapp-warning-alert__title">
+                  Aviso de Seguridad
+                </strong>
+                <p className="whatsapp-warning-alert__text">
+                  Sercio no recomienda los acuerdos por fuera de la plataforma,
+                  mejor contactar por chat para poder tener evidencia de los
+                  reclamos ante cualquier improvisto.
+                </p>
+              </div>
+            </div>
+
+            <div className="whatsapp-warning-modal__actions">
+              <button
+                type="button"
+                className="btn-primary whatsapp-warning-modal__btn-chat"
+                onClick={() => {
+                  setWhatsAppWarningOpen(false);
+                  setIsOrderChatOpen(true);
+                }}
+              >
+                <MessageSquare size={16} />
+                <span>Contactar por Chat</span>
+              </button>
+              <a
+                href={`https://wa.me/${(selectedOrder.buyer?.phone || selectedOrder.buyer?.phone_number || selectedOrder.user?.phone || selectedOrder.user?.phone_number)?.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="whatsapp-continue-btn"
+                onClick={() => setWhatsAppWarningOpen(false)}
+              >
+                <MessageCircle size={16} />
+                <span>Continuar a WhatsApp</span>
+              </a>
+              <button
+                data-action-tone="cancel"
+                type="button"
+                className="btn-secondary"
+                onClick={() => setWhatsAppWarningOpen(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {pickupScannerOpen && selectedOrder && (
+        <BarcodeScanner
+          title="Escanear código del comprador"
+          hint="Apuntá la cámara al QR del comprador para completar el pedido."
+          onClose={() => setPickupScannerOpen(false)}
+          onScan={(value) => {
+            setPickupScannerOpen(false);
+            const code = value
+              .replace(/^PICKUP:/i, "")
+              .trim()
+              .toUpperCase();
+            setPickupCode(code);
+            pickupVerifyMutation.mutate({ id: selectedOrder.id, code });
+          }}
+        />
+      )}
+
+      {/* Order-scoped Chat Modal */}
+      {isOrderChatOpen &&
+        selectedOrder &&
+        (!openOrderChat || selectedOrder.id === orderIdParam) && (
+          <OrderChatModal
+            isOpen={isOrderChatOpen}
+            onClose={closeOrderChat}
+            order={selectedOrder}
+            currentUserId={String(user?.id || sessionStatus?.user_id || "")}
+          />
+        )}
+    </div>
+  );
+}

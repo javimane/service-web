@@ -22,24 +22,38 @@ export const userService = {
   /**
    * @route POST /api/users/me/favorites
    * @auth Bearer
-   * @param {string | number} professionalId - ID of the professional to favorite
+   * @param {string | number | { professionalId?: string | number; productId?: string; serviceId?: string }} target
    * @returns {Promise<UserFavoriteRow>}
    */
-  addFavorite: (professionalId: string | number) =>
-    apiClient<UserFavoriteRow>(API_ENDPOINTS.users.favorites, {
+  addFavorite: (
+    target:
+      | string
+      | number
+      | {
+          professionalId?: string | number;
+          productId?: string;
+          serviceId?: string;
+        },
+  ) => {
+    const payload =
+      typeof target === "object"
+        ? target
+        : { professionalId: target };
+    return apiClient<UserFavoriteRow>(API_ENDPOINTS.users.favorites, {
       method: "POST",
-      body: JSON.stringify({ professionalId }),
-    }),
+      body: JSON.stringify(payload),
+    });
+  },
 
   /**
-   * @route DELETE /api/users/me/favorites/:professionalId
+   * @route DELETE /api/users/me/favorites/:id
    * @auth Bearer
-   * @param {string | number} professionalId
+   * @param {string | number} id
    * @returns {Promise<void>}
    */
-  removeFavorite: (professionalId: string | number) =>
+  removeFavorite: (id: string | number) =>
     apiClient<void>(
-      API_ENDPOINTS.users.favoriteDetail(professionalId.toString()),
+      API_ENDPOINTS.users.favoriteDetail(id.toString()),
       {
         method: "DELETE",
       },

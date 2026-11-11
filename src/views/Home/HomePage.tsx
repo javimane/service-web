@@ -41,14 +41,15 @@ const NearbyProductsSection = dynamic(
   () => import("./sections/NearbyProductsSection"),
   { ssr: false },
 );
+const OfferProductsSection = dynamic(
+  () => import("./sections/OfferProductsSection"),
+  { ssr: false },
+);
 const ProfessionalReelsSection = dynamic(
   () => import("./sections/ProfessionalReelsSection"),
   { ssr: false },
 );
 const JobSlider = dynamic(() => import("@/components/JobSlider/JobSlider"), {
-  ssr: false,
-});
-const JoinCTASection = dynamic(() => import("./sections/JoinCTASection"), {
   ssr: false,
 });
 const OpportunitiesModalSection = dynamic(
@@ -102,14 +103,14 @@ const quickLinks = [
   {
     label: "Inmuebles",
     path: `${ROUTES.products}?category=46`,
-    icon: "/inmuebles.jpg",
+    icon: "/Icono casa 3d.png",
     badge: "BUSCÁ",
     badgeColor: "blue",
   },
   {
     label: "Vehículos",
     path: `${ROUTES.products}?category=45`,
-    icon: "/vehiculos.jpg",
+    icon: "/Icono Auto 3d.png",
     badge: "DESCUBRÍ",
     badgeColor: "blue",
   },
@@ -211,6 +212,7 @@ export default function HomePage() {
       <Navbar />
 
       <main className="home-page__main">
+        <OpportunitiesModalSection />
         {/* ── Hero ──────────────────────────────────── */}
         <section className="home-hero">
           <div className="home-hero__glow" aria-hidden="true" />
@@ -310,6 +312,10 @@ export default function HomePage() {
           userProvince={userProvince}
           userProvinceId={userProvinceId}
         />
+        <OfferProductsSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
         <NearbyProductsSection
           userProvince={userProvince}
           userProvinceId={userProvinceId}
@@ -320,11 +326,9 @@ export default function HomePage() {
         />
 
         <JobSlider provinceId={userProvinceId} />
-        <JoinCTASection />
       </main>
 
       <Footer />
-      <OpportunitiesModalSection />
       <MobileAppBanner />
 
       <Modal

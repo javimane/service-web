@@ -18,6 +18,7 @@ import Footer from "../../components/Footer/Footer";
 import SEO from "../../components/SEO/SEO";
 import { extractIdFromSlug, getProfilePath } from "../../utils/utils";
 import { useAlert } from "../../context/AlertContext";
+import WhatsAppContactButton from "@/components/WhatsAppContactButton/WhatsAppContactButton";
 import "./PromotionDetailPage.css";
 
 export default function PromotionDetailPage({
@@ -263,6 +264,18 @@ export default function PromotionDetailPage({
             </div>
 
             <div className="promotion-detail__actions">
+              <WhatsAppContactButton
+                professionalId={promotion.professional_id}
+                professional={promotion.Professional || promotion.professional}
+                phone={
+                  promotion.Professional?.phone ||
+                  promotion.Professional?.phone_number ||
+                  promotion.Professional?.Profile?.phone ||
+                  promotion.Professional?.Profile?.phone_number
+                }
+                message={`Hola, qué tal, te contacto por la promoción: ${promotion.title}`}
+                className="promotion-detail__btn"
+              />
               <button
                 className="promotion-detail__btn promotion-detail__btn--primary"
                 onClick={() =>

@@ -8,6 +8,7 @@ import {
   Globe,
   Filter,
   Loader2,
+  Flame,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getProductsAction } from "../../app/actions/products";
@@ -45,6 +46,9 @@ const defaultFilters = {
   brand: "",
   ean: "",
   wholesale: "all",
+  is_offer: "all",
+  interest_free_installments: "all",
+  free_shipping: "all",
   limit: "10",
   sortBy: "price-asc",
 };
@@ -55,20 +59,33 @@ export default function ProductsPage() {
   const pathname = usePathname();
   const professionalIdParam = searchParams?.get("professionalId") ?? null;
 
-  const urlCategory = searchParams?.get("category") || searchParams?.get("categoryId");
-  const urlSubcategory = searchParams?.get("subcategory") || searchParams?.get("subcategoryId");
-  const urlProvince = searchParams?.get("provinceId") || searchParams?.get("province");
+  const urlCategory =
+    searchParams?.get("category") || searchParams?.get("categoryId");
+  const urlSubcategory =
+    searchParams?.get("subcategory") || searchParams?.get("subcategoryId");
+  const urlProvince =
+    searchParams?.get("provinceId") || searchParams?.get("province");
   const urlSearch = searchParams?.get("search") || searchParams?.get("q") || "";
   const urlWholesale = searchParams?.get("wholesale");
   const urlBrand = searchParams?.get("brand");
+  const urlIsOffer =
+    searchParams?.get("is_offer") || searchParams?.get("has_offer");
+  const urlInterestFree = searchParams?.get("interest_free_installments");
+  const urlFreeShipping = searchParams?.get("free_shipping");
 
   const [filters, setFilters] = useState(() => ({
     ...defaultFilters,
-    categoryId: urlCategory && !isNaN(Number(urlCategory)) ? String(urlCategory) : defaultFilters.categoryId,
+    categoryId:
+      urlCategory && !isNaN(Number(urlCategory))
+        ? String(urlCategory)
+        : defaultFilters.categoryId,
     subcategoryId: urlSubcategory || defaultFilters.subcategoryId,
     provinceId: urlProvince || defaultFilters.provinceId,
     search: urlSearch || defaultFilters.search,
     wholesale: urlWholesale || defaultFilters.wholesale,
+    is_offer: urlIsOffer || defaultFilters.is_offer,
+    interest_free_installments: urlInterestFree === "true" ? "true" : "all",
+    free_shipping: urlFreeShipping === "true" ? "true" : "all",
     brand: urlBrand || defaultFilters.brand,
   }));
 
@@ -133,11 +150,19 @@ export default function ProductsPage() {
   useEffect(() => {
     if (!searchParams) return;
     const cat = searchParams.get("category") || searchParams.get("categoryId");
-    const subcat = searchParams.get("subcategory") || searchParams.get("subcategoryId");
+    const subcat =
+      searchParams.get("subcategory") || searchParams.get("subcategoryId");
     const prov = searchParams.get("provinceId") || searchParams.get("province");
     const q = searchParams.get("search") || searchParams.get("q");
     const ws = searchParams.get("wholesale");
+    const ofr = searchParams.get("is_offer") || searchParams.get("has_offer");
     const br = searchParams.get("brand");
+    const interestFree =
+      searchParams.get("interest_free_installments") === "true"
+        ? "true"
+        : "all";
+    const freeShipping =
+      searchParams.get("free_shipping") === "true" ? "true" : "all";
 
     setFilters((prev) => {
       let nextCat = prev.categoryId;
@@ -158,6 +183,7 @@ export default function ProductsPage() {
       const nextProv = prov ?? prev.provinceId;
       const nextSearch = q !== null ? q : prev.search;
       const nextWs = ws ?? prev.wholesale;
+      const nextOfr = ofr ?? prev.is_offer;
       const nextBr = br !== null ? br : prev.brand;
 
       // Do not trigger state update if identical
@@ -167,6 +193,9 @@ export default function ProductsPage() {
         prev.provinceId === nextProv &&
         prev.search === nextSearch &&
         prev.wholesale === nextWs &&
+        prev.is_offer === nextOfr &&
+        prev.interest_free_installments === interestFree &&
+        prev.free_shipping === freeShipping &&
         prev.brand === nextBr
       ) {
         return prev;
@@ -179,6 +208,9 @@ export default function ProductsPage() {
         provinceId: nextProv,
         search: nextSearch,
         wholesale: nextWs,
+        is_offer: nextOfr,
+        interest_free_installments: interestFree,
+        free_shipping: freeShipping,
         brand: nextBr,
       };
     });
@@ -257,6 +289,13 @@ export default function ProductsPage() {
             ? undefined
             : effectiveFilters.is_foreign === "external",
         wholesale: effectiveFilters.wholesale === "true" ? true : undefined,
+        is_offer: effectiveFilters.is_offer === "true" ? true : undefined,
+        interest_free_installments:
+          effectiveFilters.interest_free_installments === "true"
+            ? true
+            : undefined,
+        free_shipping:
+          effectiveFilters.free_shipping === "true" ? true : undefined,
       };
       const result = await getProductsAction(params);
       return result?.data;
@@ -324,8 +363,15 @@ export default function ProductsPage() {
         product?.image_url ||
         "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80";
 
-      const sellers = product.ProfessionalProducts || [];
-      const firstSeller = sellers[0] || {};
+      const sellers = Array.isArray(product.ProfessionalProducts)
+        ? product.ProfessionalProducts
+        : [];
+      const visibleSellers = professionalId
+        ? sellers.filter(
+            (seller: any) => Number(seller?.professional_id) === professionalId,
+          )
+        : sellers;
+      const firstSeller = visibleSellers[0] || {};
 
       let displayPrice = product.price || firstSeller.price || 0;
       let displayDiscount =
@@ -335,7 +381,7 @@ export default function ProductsPage() {
         0;
       let displayOriginalPrice = firstSeller.original_price;
 
-      if (sellers.length === 1 && firstSeller.offer_price) {
+      if (visibleSellers.length === 1 && firstSeller.offer_price) {
         const originalP = firstSeller.price || product.price;
         const offerP = firstSeller.offer_price;
 
@@ -370,19 +416,36 @@ export default function ProductsPage() {
         discount: displayDiscount,
         currencyCode: currencyCode,
         seller:
-          sellers.length > 1
-            ? `Varios vendedores (${sellers.length})`
+          visibleSellers.length > 1
+            ? `Varios vendedores (${visibleSellers.length})`
             : sellerName,
         image: primaryImage,
         rating: firstSeller.Professional?.rating_avg || 5,
         reviews: 0,
-        freeShipping: false,
+        freeShipping: visibleSellers.some((seller: any) =>
+          Boolean(seller?.free_shipping),
+        ),
         description: product.description || "",
         is_foreign: product.is_foreign,
         wholesale: firstSeller.wholesale,
         wholesale_price: firstSeller.wholesale_price,
         wholesale_unit: firstSeller.wholesale_unit,
+        offer_2x1: firstSeller.offer_2x1,
+        offer_3x2: firstSeller.offer_3x2,
         sellers: sellers,
+        hasLastUnit:
+          (visibleSellers.length > 0 ? visibleSellers : sellers).some(
+            (seller: any) =>
+              seller &&
+              seller.is_active !== false &&
+              seller.stock !== null &&
+              seller.stock !== undefined &&
+              Number(seller.stock) === 1,
+          ) ||
+          (sellers.length === 0 &&
+            product?.stock !== null &&
+            product?.stock !== undefined &&
+            Number(product.stock) === 1),
         _original: item,
       };
     });
@@ -400,6 +463,15 @@ export default function ProductsPage() {
 
       return { ...prev, [key]: value };
     });
+    if (key === "interest_free_installments" || key === "free_shipping") {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      if (value === "true") params.set(key, "true");
+      else params.delete(key);
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`, {
+        scroll: false,
+      });
+    }
     setPage(1);
   };
 
@@ -449,6 +521,11 @@ export default function ProductsPage() {
 
   const clearFilters = () => {
     setFilters({ ...defaultFilters });
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    params.delete("interest_free_installments");
+    params.delete("free_shipping");
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
     setSearchInput("");
     setDebouncedTextFilters({
       search: "",
@@ -588,13 +665,7 @@ export default function ProductsPage() {
           <div className="products-results">
             {/* Header controls inside results for better flow */}
             <div className="results-header">
-              <div className="results-header__info">
-                <p>
-                  {isLoading
-                    ? "Buscando..."
-                    : `${normalizedProductsResponse.count} productos encontrados`}
-                </p>
-              </div>
+              <div className="results-header__info"></div>
               <div className="results-header__controls">
                 <div className="products-page__sort">
                   <SlidersHorizontal size={16} />
@@ -619,30 +690,37 @@ export default function ProductsPage() {
                 skeleton={
                   <>
                     {[...Array(8)].map((_, i) => (
-                      <Skeleton key={i} variant="card" height={360} />
+                      <Skeleton key={i} variant="card" height={300} />
                     ))}
                   </>
                 }
               >
                 {productsList.map((product) => (
-                  <button
+                  <div
                     key={product.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     className="product-card"
                     onClick={() => {
                       router.push(`/productos${product._original.seo_path}`);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        router.push(`/productos${product._original.seo_path}`);
+                      }
+                    }}
                   >
                     <div className="product-card__image">
                       <img src={product.image} alt={product.title} />
-                      {product.is_foreign && (
-                        <span className="product-card__badge-foreign">
-                          <Globe size={10} /> EXTERNO
+                      {product.hasLastUnit && (
+                        <span className="product-card__badge-last-unit">
+                          <Flame size={13} />
+                          Última unidad
                         </span>
                       )}
                       {product.discount > 0 && (
                         <span className="product-card__badge-discount">
-                          -{product.discount}%
+                          OFERTA
                         </span>
                       )}
                     </div>
@@ -652,6 +730,11 @@ export default function ProductsPage() {
                         {product.seller}
                       </span>
                       <h3 className="product-card__title">{product.title}</h3>
+                      {(product.offer_2x1 || product.offer_3x2) && (
+                        <span className="product-card__quantity-offer">
+                          {product.offer_2x1 ? "Oferta 2x1" : "Oferta 3x2"}
+                        </span>
+                      )}
 
                       <div className="product-card__pricing">
                         {product.originalPrice > 1 && (
@@ -673,6 +756,11 @@ export default function ProductsPage() {
                               </span>
                             )}
                         </div>
+                        {product.freeShipping && (
+                          <span className="product-card__shipping">
+                            Envío Gratis
+                          </span>
+                        )}
                         {product.wholesale && (
                           <div className="product-card__wholesale">
                             <span className="product-card__wholesale-badge">
@@ -687,7 +775,7 @@ export default function ProductsPage() {
                         )}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </AsyncWrapper>
             </div>
