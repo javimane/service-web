@@ -96,6 +96,8 @@
 }
 
 .buyer-order-card {
+  max-width: 50rem;
+  box-sizing: border-box;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
