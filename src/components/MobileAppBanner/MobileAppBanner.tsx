@@ -3,19 +3,41 @@ import { useState, useEffect } from "react";
 import { X, Smartphone } from "lucide-react";
 import "./MobileAppBanner.css";
 
+const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=com.sercio.sercio";
+const APP_STORE_URL = "https://apps.apple.com/ar/app/sercio/id6787519258";
+const STORE_OPENED_KEY = "sercio_mobile_store_opened";
+const BANNER_DISMISSED_KEY = "mobile_app_banner_dismissed";
+
 export default function MobileAppBanner() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const isDismissed = sessionStorage.getItem("mobile_app_banner_dismissed");
-    if (!isDismissed) {
-      setIsVisible(true);
+    const userAgent = navigator.userAgent;
+    const storeUrl = /\biPhone\b/i.test(userAgent)
+      ? APP_STORE_URL
+      : /\bAndroid\b.*\bMobile\b/i.test(userAgent)
+        ? GOOGLE_PLAY_URL
+        : null;
+
+    try {
+      if (sessionStorage.getItem(BANNER_DISMISSED_KEY)) return;
+      if (storeUrl && !sessionStorage.getItem(STORE_OPENED_KEY)) {
+        sessionStorage.setItem(STORE_OPENED_KEY, "true");
+        window.location.assign(storeUrl);
+      }
+    } catch {
+      // The manual links still work if browser storage is unavailable.
     }
+    setIsVisible(true);
   }, []);
 
   const handleDismiss = () => {
     setIsVisible(false);
-    sessionStorage.setItem("mobile_app_banner_dismissed", "true");
+    try {
+      sessionStorage.setItem(BANNER_DISMISSED_KEY, "true");
+    } catch {
+      // The banner can still close in the current page.
+    }
   };
 
   if (!isVisible) return null;
@@ -48,7 +70,7 @@ export default function MobileAppBanner() {
 
         <div className="mobile-app-banner__actions">
           <a
-            href="https://play.google.com/store/apps/details?id=com.sercio.sercio"
+            href={GOOGLE_PLAY_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="mobile-app-banner__btn mobile-app-banner__btn--play"
@@ -64,7 +86,7 @@ export default function MobileAppBanner() {
           </a>
 
           <a
-            href="https://apps.apple.com/ar/app/sercio/id6787519258"
+            href={APP_STORE_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="mobile-app-banner__btn mobile-app-banner__btn--apple"

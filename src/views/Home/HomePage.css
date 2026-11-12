@@ -308,7 +308,10 @@
 /* ===== RESPONSIVE ===== */
 @media (max-width: 640px) {
   .home-page {
-    --section-padding-x: var(--space-4);
+    --section-padding-x: var(--space-3);
+    width: 100%;
+    min-width: 0;
+    overflow-x: clip;
   }
 
   .home-page .navbar__inner {
