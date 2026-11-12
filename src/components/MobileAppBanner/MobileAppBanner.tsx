@@ -5,29 +5,21 @@ import "./MobileAppBanner.css";
 
 const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=com.sercio.sercio";
 const APP_STORE_URL = "https://apps.apple.com/ar/app/sercio/id6787519258";
-const STORE_OPENED_KEY = "sercio_mobile_store_opened";
+const ANDROID_APP_URL =
+  `intent://sercio.com.ar/#Intent;scheme=https;package=com.sercio.sercio;S.browser_fallback_url=${encodeURIComponent(GOOGLE_PLAY_URL)};end`;
 const BANNER_DISMISSED_KEY = "mobile_app_banner_dismissed";
 
 export default function MobileAppBanner() {
   const [isVisible, setIsVisible] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
-    const userAgent = navigator.userAgent;
-    const storeUrl = /\biPhone\b/i.test(userAgent)
-      ? APP_STORE_URL
-      : /\bAndroid\b.*\bMobile\b/i.test(userAgent)
-        ? GOOGLE_PLAY_URL
-        : null;
-
     try {
       if (sessionStorage.getItem(BANNER_DISMISSED_KEY)) return;
-      if (storeUrl && !sessionStorage.getItem(STORE_OPENED_KEY)) {
-        sessionStorage.setItem(STORE_OPENED_KEY, "true");
-        window.location.assign(storeUrl);
-      }
     } catch {
       // The manual links still work if browser storage is unavailable.
     }
+    setIsAndroid(/\bAndroid\b/i.test(navigator.userAgent));
     setIsVisible(true);
   }, []);
 
@@ -60,7 +52,7 @@ export default function MobileAppBanner() {
           </div>
           <div className="mobile-app-banner__info">
             <span className="mobile-app-banner__title">
-              ¡Descargá la App de Sercio!
+              Sercio en tu celular
             </span>
             <p className="mobile-app-banner__desc">
               Accedé a más servicios y comercios directo en tu celular.
@@ -70,8 +62,8 @@ export default function MobileAppBanner() {
 
         <div className="mobile-app-banner__actions">
           <a
-            href={GOOGLE_PLAY_URL}
-            target="_blank"
+            href={isAndroid ? ANDROID_APP_URL : GOOGLE_PLAY_URL}
+            target={isAndroid ? undefined : "_blank"}
             rel="noopener noreferrer"
             className="mobile-app-banner__btn mobile-app-banner__btn--play"
           >
@@ -82,7 +74,7 @@ export default function MobileAppBanner() {
             >
               <path d="M3.609 1.814L13.792 12 3.61 22.186a1.98 1.98 0 0 1-.61-1.428V3.242c0-.555.228-1.057.609-1.428zm11.597 8.772l2.946-2.946-13.064-7.53 10.118 10.476zm0 2.828L5.088 23.89l13.064-7.53-2.946-2.946zm1.414-1.414l3.582 2.067a1.98 1.98 0 0 0 0-3.434l-3.582-2.067-2.732 2.732 2.732 2.702z" />
             </svg>
-            <span>Google Play</span>
+            <span>{isAndroid ? "Abrir la app" : "Google Play"}</span>
           </a>
 
           <a
