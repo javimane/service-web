@@ -275,7 +275,7 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
           Para conocer el detalle completo sobre tratamiento de datos,
           validación de identidad ante RENAPER, tokenización bancaria, cifrado
           AES-256 de chats y ejercicio de derechos ARCO, consultá nuestra{" "}
-          <a href="/privacidad" className="terms-link">
+          <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="terms-link">
             Política de Privacidad y Tratamiento de Datos Personales
           </a>
           .
@@ -563,7 +563,7 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
         </p>
         <p>
           Más información en anexo de{" "}
-          <a href="/devoluciones" className="terms-link">
+          <a href="/devoluciones" target="_blank" rel="noopener noreferrer" className="terms-link">
             Políticas de Devolución, Arrepentimiento y Cancelación
           </a>
           .

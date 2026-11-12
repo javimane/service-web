@@ -131,7 +131,10 @@ export default function BannerCarousel() {
     if (destination) {
       if (
         destination.startsWith("http://") ||
-        destination.startsWith("https://")
+        destination.startsWith("https://") ||
+        destination === "/devoluciones" ||
+        destination === ROUTES.terms ||
+        destination === ROUTES.privacy
       ) {
         window.open(destination, "_blank", "noopener,noreferrer");
         return;

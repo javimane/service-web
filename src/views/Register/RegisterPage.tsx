@@ -16,7 +16,6 @@ import "../Login/LoginPage.css";
 import "./RegisterPage.css";
 import Footer from "@/components/Footer/Footer";
 import { Check, Circle, Eye, EyeOff } from "lucide-react";
-import { TERMS_SECTIONS } from "../Terms/TermsPage";
 
 type RegisterPageProps = {
   isModal?: boolean;
@@ -53,7 +52,6 @@ export default function RegisterPage({
   >(null);
   const [requirementsConfirmed, setRequirementsConfirmed] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
   const { refreshSession } = useAuth();
   const passwordRequirements = [
     { id: "length", label: "Mínimo 9 caracteres", met: formData.password.length >= 9 },
@@ -487,13 +485,15 @@ export default function RegisterPage({
             />
             <span className="register-terms__text">
               Acepto los{" "}
-              <button
-                type="button"
+              <Link
+                href={ROUTES.terms}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="register-terms__link"
-                onClick={() => setShowTermsModal(true)}
+                aria-label="Términos y condiciones (abre en una nueva pestaña)"
               >
                 términos y condiciones
-              </button>
+              </Link>
               {" y la "}
               <Link
                 href={ROUTES.privacy}
@@ -577,46 +577,6 @@ export default function RegisterPage({
         onClose={handleModalClose}
       />
 
-      <Modal
-        isOpen={showTermsModal}
-        title="Términos y Condiciones"
-        onClose={() => setShowTermsModal(false)}
-        maxWidth="800px"
-      >
-        <div className="terms-modal-body">
-          {TERMS_SECTIONS.map((section, index) => (
-            <div key={index} className="terms-modal-section">
-              <h3 className="terms-modal-section__title">{section.title}</h3>
-              <div className="terms-modal-section__content">
-                {section.content}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="terms-modal-actions">
-          <button
-            type="button"
-            data-action-tone="cancel"
-            className="btn-secondary"
-            onClick={() => setShowTermsModal(false)}
-          >
-            Volver al registro
-          </button>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => {
-              setAcceptedTerms(true);
-              if (errors.terms) {
-                setErrors((prev) => ({ ...prev, terms: "" }));
-              }
-              setShowTermsModal(false);
-            }}
-          >
-            Aceptar y volver
-          </button>
-        </div>
-      </Modal>
       <ProfessionalRequirementsDialog
         open={requirementsAction !== null}
         onBack={() => setRequirementsAction(null)}

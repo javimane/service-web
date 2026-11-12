@@ -120,13 +120,13 @@ export default function Footer() {
           <Link href={ROUTES.faq} className="footer__link-btn">
             Preguntas Frecuentes
           </Link>
-          <Link href={ROUTES.terms} className="footer__link-btn">
+          <Link href={ROUTES.terms} target="_blank" rel="noopener noreferrer" className="footer__link-btn">
             Términos y Condiciones
           </Link>
-          <Link href={ROUTES.privacy} className="footer__link-btn">
+          <Link href={ROUTES.privacy} target="_blank" rel="noopener noreferrer" className="footer__link-btn">
             Privacidad
           </Link>
-          <Link href="/devoluciones" className="footer__link-btn">
+          <Link href="/devoluciones" target="_blank" rel="noopener noreferrer" className="footer__link-btn">
             Devoluciones
           </Link>
           <button

@@ -66,16 +66,18 @@ describe("RegisterPage", () => {
     expect(screen.getByLabelText(/^NOMBRE$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^APELLIDO$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/CONFIRMAR/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /términos y condiciones/i }),
-    ).toBeInTheDocument();
+    const termsLink = screen.getByRole("link", {
+      name: "Términos y condiciones (abre en una nueva pestaña)",
+    });
+    expect(termsLink).toHaveAttribute("href", ROUTES.terms);
+    expect(termsLink).toHaveAttribute("target", "_blank");
+    fireEvent.click(termsLink);
     expect(screen.getByRole("checkbox")).not.toBeChecked();
-    expect(
-      screen.getByRole("link", { name: /Política de privacidad/i }),
-    ).toHaveAttribute("href", ROUTES.privacy);
-    expect(
-      screen.getByRole("link", { name: /Política de privacidad/i }),
-    ).toHaveAttribute("target", "_blank");
+    const privacyLink = screen.getByRole("link", {
+      name: "Política de privacidad (abre en una nueva pestaña)",
+    });
+    expect(privacyLink).toHaveAttribute("href", ROUTES.privacy);
+    expect(privacyLink).toHaveAttribute("target", "_blank");
     expect(screen.getByLabelText("Busco Servicios/Productos")).toBeChecked();
     expect(screen.getByLabelText("Soy Profesional/Comercio")).not.toBeChecked();
     expect(screen.getByLabelText(/^CONTRASEÑA$/)).toHaveAccessibleDescription(
@@ -159,47 +161,6 @@ describe("RegisterPage", () => {
         "Debes aceptar los términos y condiciones antes de registrarte con Google",
       ),
     ).toBeInTheDocument();
-  });
-
-  it("permite abrir el modal de términos y condiciones y volver atrás al formulario", () => {
-    renderWithRouter(React.createElement(RegisterPage));
-    const termsLink = screen.getByRole("button", {
-      name: /términos y condiciones/i,
-    });
-
-    fireEvent.click(termsLink);
-
-    expect(
-      screen.getByRole("heading", { name: "Términos y Condiciones" }),
-    ).toBeInTheDocument();
-
-    const backBtn = screen.getByRole("button", {
-      name: /volver al registro/i,
-    });
-    fireEvent.click(backBtn);
-
-    expect(
-      screen.queryByRole("heading", { name: "Términos y Condiciones" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("permite aceptar los términos desde el modal y volver al formulario", () => {
-    renderWithRouter(React.createElement(RegisterPage));
-    const termsLink = screen.getByRole("button", {
-      name: /términos y condiciones/i,
-    });
-
-    fireEvent.click(termsLink);
-
-    const acceptBtn = screen.getByRole("button", {
-      name: /aceptar y volver/i,
-    });
-    fireEvent.click(acceptBtn);
-
-    expect(
-      screen.queryByRole("heading", { name: "Términos y Condiciones" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole("checkbox")).toBeChecked();
   });
 
   it.each(["Abcdef1!", "Abcdefg1!"])(

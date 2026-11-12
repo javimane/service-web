@@ -276,7 +276,7 @@ export default function DashboardReferrals() {
           </form>
 
           <div className="dash-referrals__terms">
-            <a href={ROUTES.terms} className="dash-referrals__terms-link">
+            <a href={ROUTES.terms} target="_blank" rel="noopener noreferrer" className="dash-referrals__terms-link">
               Ver Términos y Condiciones
             </a>
 
