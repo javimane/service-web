@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { legalConsentService } from "../../services/legalConsentService";
+import { ROUTES } from "../../routes/paths";
 import "./LegalConsentGate.css";
 
 function ConsentDialog({
@@ -81,7 +82,7 @@ function ConsentDialog({
             />
             <span>
               Acepto los{" "}
-              <a href="/terminos" target="_blank" rel="noopener noreferrer">
+              <a href={ROUTES.terms} target="_blank" rel="noopener noreferrer">
                 términos y condiciones
               </a>
               .
@@ -135,7 +136,7 @@ function ConsentDialog({
 export default function LegalConsentGate() {
   const { user, loading, logout } = useAuth();
   const pathname = usePathname();
-  if (/^\/(?:terminos|privacidad)(?:\/|$)/.test(pathname || "")) return null;
+  if (/^\/(?:terminos-y-condiciones|terminos|privacidad)(?:\/|$)/.test(pathname || "")) return null;
   if (loading || !user?.id) return null;
   return <ConsentDialog key={user.id} userId={user.id} logout={logout} />;
 }

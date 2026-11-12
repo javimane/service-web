@@ -17,7 +17,7 @@ export const ROUTES = {
   favorites: "/favoritos",
   professionalStore: "/perfil/:id/tienda",
   reels: "/reels",
-  terms: "/terminos",
+  terms: "/terminos-y-condiciones",
   termsHtml: "/terminos.html",
   privacy: "/privacidad",
   privacyHtml: "/privacidad.html",

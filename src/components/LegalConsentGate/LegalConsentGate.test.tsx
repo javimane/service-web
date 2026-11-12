@@ -54,7 +54,7 @@ beforeEach(() => {
   };
 });
 describe("LegalConsentGate", () => {
-  it.each(["/terminos", "/privacidad"])(
+  it.each(["/terminos-y-condiciones", "/terminos", "/privacidad"])(
     "allows reading %s before accepting",
     (pathname) => {
       route.pathname = pathname;
