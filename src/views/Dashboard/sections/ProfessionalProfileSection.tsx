@@ -1,4 +1,5 @@
 "use client";
+import { useAlert } from "@/context/AlertContext";
 import { type ChangeEvent, useRef, useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -134,6 +135,7 @@ const createId = (prefix: string) =>
 const DEFAULT_AVATAR = "/foto-perfil.png";
 
 export default function ProfessionalProfileSection() {
+  const { showSuccess } = useAlert();
   const { sessionStatus, subscriptionPlan, user } = useAuth();
   const router = useRouter();
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
@@ -1022,7 +1024,7 @@ export default function ProfessionalProfileSection() {
                 navigator.share(shareData).catch(() => {});
               } else {
                 navigator.clipboard.writeText(shareUrl);
-                alert("Enlace del perfil copiado al portapapeles");
+                showSuccess("Enlace del perfil copiado al portapapeles");
               }
             }}
           >

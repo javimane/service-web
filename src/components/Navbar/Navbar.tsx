@@ -1,4 +1,5 @@
 "use client";
+import { useAlert } from "@/context/AlertContext";
 import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -73,6 +74,7 @@ import {
 import "./Navbar.css";
 
 export default function Navbar() {
+  const { showError } = useAlert();
   const pathname = usePathname();
   const router = useRouter();
   const {
@@ -218,7 +220,7 @@ export default function Navbar() {
       if (downloadUrl)
         window.open(downloadUrl, "_blank", "noopener,noreferrer");
       else
-        window.alert(
+        showError(
           "El enlace de este reporte no está disponible. Solicitá un nuevo reporte.",
         );
       return;

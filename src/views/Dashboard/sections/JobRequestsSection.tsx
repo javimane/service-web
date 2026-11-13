@@ -32,7 +32,7 @@ interface JobRequestRow {
 
 export default function JobRequestsSection() {
   const { hasProfessionalSubscription, user } = useAuth();
-  const { showError } = useAlert();
+  const { showError, showAlert } = useAlert();
   const queryClient = useQueryClient();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -166,9 +166,18 @@ export default function JobRequestsSection() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
+  const handleDelete = (id: string) => {
+    showAlert({
+      type: "warning",
+      title: "Eliminar solicitud",
+      message: "¿Querés eliminar esta solicitud?",
+      confirmText: "Eliminar",
+      showCancel: true,
+      onConfirm: () => void handleDeleteConfirmed(id),
+    });
+  };
 
+  const handleDeleteConfirmed = async (id: string) => {
     try {
       const token = await getAccessToken();
       await deleteJobRequestAction({ id, token });

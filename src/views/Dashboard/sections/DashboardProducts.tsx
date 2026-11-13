@@ -1888,7 +1888,7 @@ export default function DashboardProducts({
                             navigator.share(shareData).catch(() => {});
                           } else {
                             navigator.clipboard.writeText(shareUrl);
-                            alert("Enlace copiado al portapapeles");
+                            showSuccess("Enlace copiado al portapapeles");
                           }
                         }}
                       >

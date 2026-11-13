@@ -1,5 +1,6 @@
 "use client";
 
+import { useAlert } from "@/context/AlertContext";
 import React, { useState, useEffect } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -20,6 +21,7 @@ import Skeleton from "@/components/Skeleton/Skeleton";
 import "./PublicationsPage.css";
 
 export default function PublicationsPage() {
+  const { showSuccess } = useAlert();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -83,7 +85,7 @@ export default function PublicationsPage() {
         .catch(console.error);
     } else {
       navigator.clipboard.writeText(url);
-      alert("¡Enlace copiado al portapapeles!");
+      showSuccess("¡Enlace copiado al portapapeles!");
     }
   };
 

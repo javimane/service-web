@@ -313,7 +313,7 @@ export default function MessagesPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { user, sessionStatus } = useAuth();
-  const { showWarning, showError, showSuccess } = useAlert();
+  const { showWarning, showError, showSuccess, showAlert } = useAlert();
 
   const targetProfessional =
     searchParams?.get("to") || searchParams?.get("professionalId");
@@ -806,13 +806,14 @@ export default function MessagesPage() {
       activeRequestId || activeConversation.receiverId || activeConversation.id;
     if (!otherUserId) return;
 
-    if (
-      window.confirm(
-        `¿Estás seguro de que querés eliminar la conversación con ${activeConversation.name}?`,
-      )
-    ) {
-      deleteChatMutation.mutate(otherUserId);
-    }
+    showAlert({
+      type: "warning",
+      title: "Eliminar conversación",
+      message: `¿Querés eliminar la conversación con ${activeConversation.name}?`,
+      confirmText: "Eliminar",
+      showCancel: true,
+      onConfirm: () => deleteChatMutation.mutate(otherUserId),
+    });
   };
 
   const sendMessageMutation = useMutation<

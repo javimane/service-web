@@ -1,4 +1,5 @@
 "use client";
+import { useAlert } from "@/context/AlertContext";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useCalendarApp, ScheduleXCalendar } from "@schedule-x/react";
 import {
@@ -106,6 +107,7 @@ const formatForScheduleX = (isoString: any) => {
 // ── component ──────────────────────────────────────────────────
 
 export default function CalendarSection() {
+  const { showAlert, showError } = useAlert();
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -294,23 +296,31 @@ export default function CalendarSection() {
     }
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
-    if (!window.confirm("¿Estás seguro de que deseas eliminar esta cita?"))
-      return;
+  const handleDeleteEvent = (eventId: string) => {
+    showAlert({
+      type: "warning",
+      title: "Eliminar cita",
+      message: "¿Querés eliminar esta cita?",
+      confirmText: "Eliminar",
+      showCancel: true,
+      onConfirm: () => void handleDeleteEventConfirmed(eventId),
+    });
+  };
 
+  const handleDeleteEventConfirmed = async (eventId: string) => {
     try {
       setSyncing(true);
       const res = await deleteGoogleCalendarEventAction(eventId);
       if (res.error) {
         console.error("Error al eliminar la cita:", res.error);
-        alert("Ocurrió un error al eliminar la cita.");
+        showError("Ocurrió un error al eliminar la cita.");
         return;
       }
       eventsService.remove(eventId);
       setGcalEvents((prev) => prev.filter((e) => e.id !== eventId));
     } catch (e) {
       console.error(e);
-      alert("Ocurrió un error al eliminar la cita.");
+      showError("Ocurrió un error al eliminar la cita.");
     } finally {
       setSyncing(false);
     }

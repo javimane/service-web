@@ -1,5 +1,6 @@
 "use client";
 
+import { useAlert } from "@/context/AlertContext";
 import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getJobByIdAction } from "@/app/actions/jobs";
@@ -22,6 +23,7 @@ export default function JobDetailPage({
   initialData,
   jobId,
 }: JobDetailPageProps = {}) {
+  const { showSuccess } = useAlert();
   const params = useParams();
   const rawSeo = params?.seoPath as string | string[] | undefined;
   const id = jobId || (params?.id as string) || extractIdFromSlug(rawSeo);
@@ -54,7 +56,7 @@ export default function JobDetailPage({
         .catch(console.error);
     } else {
       navigator.clipboard.writeText(url);
-      alert("¡Enlace copiado al portapapeles!");
+      showSuccess("¡Enlace copiado al portapapeles!");
     }
   };
 

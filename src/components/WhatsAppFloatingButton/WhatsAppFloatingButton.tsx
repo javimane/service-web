@@ -1,10 +1,12 @@
 "use client";
 
+import { useAlert } from "@/context/AlertContext";
 import { useState } from "react";
 import { userService } from "@/services/userService";
 import "./WhatsAppFloatingButton.css";
 
 export default function WhatsAppFloatingButton() {
+  const { showError } = useAlert();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
@@ -17,11 +19,11 @@ export default function WhatsAppFloatingButton() {
         const message = encodeURIComponent("Necesito ayuda");
         window.open(`https://wa.me/${cleanNumber}?text=${message}`, "_blank");
       } else {
-        alert("El número de WhatsApp no está disponible en este momento.");
+        showError("El número de WhatsApp no está disponible en este momento.");
       }
     } catch (error) {
       console.error("Error fetching mobile phone:", error);
-      alert("Hubo un error al intentar obtener el número de soporte.");
+      showError("Hubo un error al intentar obtener el número de soporte.");
     } finally {
       setIsLoading(false);
     }

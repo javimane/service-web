@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { CheckCircle, AlertTriangle, Info, XCircle } from "lucide-react";
 import "./AlertModal.css";
 
@@ -42,29 +42,14 @@ export default function AlertModal({
   onConfirm,
   showCancel = false,
 }: AlertModalProps) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "Enter") {
-        if (onConfirm) {
-          onConfirm();
-        }
-        onClose();
-      }
-    },
-    [onClose, onConfirm],
-  );
-
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden";
-    }
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = previousOverflow;
     };
-  }, [isOpen, handleKeyDown]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -76,6 +61,12 @@ export default function AlertModal({
       <div
         className="alert-modal"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.stopPropagation();
+            onClose();
+          }
+        }}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="alert-modal-title"
@@ -96,21 +87,24 @@ export default function AlertModal({
         <div className="alert-modal__footer">
           {showCancel && (
             <button
-              data-action-tone={/^cancelar\b/i.test(cancelText) ? "cancel" : undefined}
+              type="button"
+              data-action-tone="cancel"
               className="alert-modal__btn alert-modal__btn--secondary"
               onClick={onClose}
+              autoFocus
             >
               {cancelText}
             </button>
           )}
           <button
+            type="button"
             data-action-tone={/^(agregar|añadir)\b/i.test(confirmText) ? "add" : /^subir\b/i.test(confirmText) ? "upload" : undefined}
             className="alert-modal__btn alert-modal__btn--primary"
             onClick={() => {
-              if (onConfirm) onConfirm();
               onClose();
+              onConfirm?.();
             }}
-            autoFocus
+            autoFocus={!showCancel}
           >
             {confirmText}
           </button>

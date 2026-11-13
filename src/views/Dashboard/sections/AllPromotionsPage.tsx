@@ -39,7 +39,7 @@ const STATUS_LABELS = {
 
 export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   const { sessionStatus } = useAuth();
-  const { showError } = useAlert();
+  const { showError, showAlert, showSuccess } = useAlert();
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
     sessionStatus?.professional_id;
@@ -80,11 +80,14 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
   });
 
   const handleDelete = (id: string) => {
-    if (
-      window.confirm("¿Estás seguro de que deseas eliminar esta promoción?")
-    ) {
-      deleteMutation.mutate(id);
-    }
+    showAlert({
+      type: "warning",
+      title: "Eliminar promoción",
+      message: "¿Querés eliminar esta promoción?",
+      confirmText: "Eliminar",
+      showCancel: true,
+      onConfirm: () => deleteMutation.mutate(id),
+    });
   };
 
   const handleView = (promoId: string) => {
@@ -325,7 +328,7 @@ export default function AllPromotionsPage({ onCreateNew, onEdit }) {
                         navigator.share(shareData).catch(() => {});
                       } else {
                         navigator.clipboard.writeText(shareUrl);
-                        alert("Enlace copiado al portapapeles");
+                        showSuccess("Enlace copiado al portapapeles");
                       }
                     }}
                   >

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAlert } from "@/context/AlertContext";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getJobsAction, Job } from "@/app/actions/jobs";
@@ -21,6 +22,7 @@ import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
 
 export default function JobsPage() {
+  const { showSuccess } = useAlert();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
@@ -87,7 +89,7 @@ export default function JobsPage() {
         .catch(console.error);
     } else {
       navigator.clipboard.writeText(url);
-      alert("¡Enlace copiado al portapapeles!");
+      showSuccess("¡Enlace copiado al portapapeles!");
     }
   };
 

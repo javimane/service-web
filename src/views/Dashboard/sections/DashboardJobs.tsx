@@ -1,5 +1,6 @@
 "use client";
 
+import { useAlert } from "@/context/AlertContext";
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -30,6 +31,7 @@ interface DashboardJobsProps {
 }
 
 export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
+  const { showAlert, showWarning, showSuccess } = useAlert();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState<string | null>(
@@ -207,9 +209,14 @@ export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("¿Estás seguro de que deseas eliminar este empleo?")) {
-      deleteMutation.mutate(id);
-    }
+    showAlert({
+      type: "warning",
+      title: "Eliminar empleo",
+      message: "¿Querés eliminar este aviso de empleo?",
+      confirmText: "Eliminar",
+      showCancel: true,
+      onConfirm: () => deleteMutation.mutate(id),
+    });
   };
 
   if (isLoading) {
@@ -231,7 +238,7 @@ export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
           className="btn-primary"
           onClick={() => {
             if (!canCreate) {
-              alert("Debes tener un plan Básico o Premium para crear empleos.");
+              showWarning("Debes tener un plan Básico o Premium para crear empleos.");
               return;
             }
             openForm();
@@ -439,7 +446,7 @@ export default function DashboardJobs({ professionalId }: DashboardJobsProps) {
                         navigator.share(shareData).catch(() => {});
                       } else {
                         navigator.clipboard.writeText(shareUrl);
-                        alert("Enlace copiado al portapapeles");
+                        showSuccess("Enlace copiado al portapapeles");
                       }
                     }}
                     title="Compartir"

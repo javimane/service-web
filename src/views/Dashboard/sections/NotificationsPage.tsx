@@ -1,4 +1,5 @@
 "use client";
+import { useAlert } from "@/context/AlertContext";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../../../routes/paths";
@@ -38,6 +39,7 @@ const filterOptions = [
 ];
 
 export default function NotificationsPage() {
+  const { showError } = useAlert();
   const { user, sessionStatus } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -95,7 +97,7 @@ export default function NotificationsPage() {
     if (String(notif.type || "").toUpperCase() === "REPORT_READY") {
       const downloadUrl = getReportDownloadUrl(notif);
       if (downloadUrl) window.open(downloadUrl, "_blank", "noopener,noreferrer");
-      else window.alert("El enlace de este reporte no está disponible. Solicitá un nuevo reporte.");
+      else showError("El enlace de este reporte no está disponible. Solicitá un nuevo reporte.");
       return;
     }
     const targetUrl = getNotificationTargetUrl(notif, { isProfessional, currentUserId: user?.id });

@@ -1,4 +1,5 @@
 "use client";
+import { useAlert } from "@/context/AlertContext";
 import React, { useState, useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import {
@@ -23,6 +24,7 @@ export default function PublicationSlider({
   professionalId,
   provinceId,
 }: PublicationSliderProps) {
+  const { showSuccess } = useAlert();
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -112,7 +114,7 @@ export default function PublicationSlider({
         .catch(console.error);
     } else {
       navigator.clipboard.writeText(url);
-      alert("¡Enlace copiado al portapapeles!");
+      showSuccess("¡Enlace copiado al portapapeles!");
     }
   };
 

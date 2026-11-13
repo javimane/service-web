@@ -1,4 +1,5 @@
 "use client";
+import { useAlert } from "@/context/AlertContext";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   useInfiniteQuery,
@@ -34,6 +35,7 @@ import CommissionsModal from "../../../components/CommissionsModal/CommissionsMo
 import "./DashboardServices.css";
 
 export default function DashboardServices() {
+  const { showSuccess } = useAlert();
   const queryClient = useQueryClient();
   const { sessionStatus } = useAuth();
 
@@ -408,7 +410,7 @@ export default function DashboardServices() {
                         navigator.share(shareData).catch(() => {});
                       } else {
                         navigator.clipboard.writeText(shareUrl);
-                        alert("Enlace copiado al portapapeles");
+                        showSuccess("Enlace copiado al portapapeles");
                       }
                     }}
                     title="Compartir servicio"

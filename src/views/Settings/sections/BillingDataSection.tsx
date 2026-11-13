@@ -35,7 +35,7 @@ interface BillingDataSectionProps {
 export default function BillingDataSection({ userId }: BillingDataSectionProps) {
   const queryClient = useQueryClient();
   const { user, sessionStatus } = useAuth();
-  const { showSuccess, showError } = useAlert();
+  const { showSuccess, showError, showAlert } = useAlert();
 
   // Modal & form states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -252,13 +252,14 @@ export default function BillingDataSection({ userId }: BillingDataSectionProps) 
                       type="button"
                       className="billing-section__action-btn billing-section__action-btn--delete"
                       onClick={() => {
-                        if (
-                          window.confirm(
-                            "¿Seguro que deseás eliminar este registro de facturación?",
-                          )
-                        ) {
-                          deleteMutation.mutate(item.id);
-                        }
+                        showAlert({
+                          type: "warning",
+                          title: "Eliminar datos de facturación",
+                          message: "¿Querés eliminar estos datos de facturación?",
+                          confirmText: "Eliminar",
+                          showCancel: true,
+                          onConfirm: () => deleteMutation.mutate(item.id),
+                        });
                       }}
                       title="Eliminar datos"
                     >

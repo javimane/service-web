@@ -143,7 +143,7 @@ export default function BuyerOrdersSection() {
   const token = getAccessToken();
   setApiAccessToken(token);
   const queryClient = useQueryClient();
-  const { showSuccess, showError } = useAlert();
+  const { showSuccess, showError, showAlert } = useAlert();
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1822,15 +1822,14 @@ export default function BuyerOrdersSection() {
                         className="btn-primary"
                         disabled={confirmCoordinatedDeliveryMutation.isPending}
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              "¿Ya recibiste el producto? La entrega quedará registrada y se programará la liquidación al comercio.",
-                            )
-                          ) {
-                            confirmCoordinatedDeliveryMutation.mutate(
-                              selectedOrder.id,
-                            );
-                          }
+                          showAlert({
+                            type: "warning",
+                            title: "Confirmar recepción",
+                            message: "¿Ya recibiste el producto? La entrega quedará registrada y se programará la liquidación al comercio.",
+                            confirmText: "Confirmar recepción",
+                            showCancel: true,
+                            onConfirm: () => confirmCoordinatedDeliveryMutation.mutate(selectedOrder.id),
+                          });
                         }}
                       >
                         {confirmCoordinatedDeliveryMutation.isPending ? (

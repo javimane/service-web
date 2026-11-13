@@ -19,7 +19,7 @@ export default function ProductVariantsSection({
   onBack,
 }: ProductVariantsSectionProps) {
   const queryClient = useQueryClient();
-  const { showError, showSuccess } = useAlert();
+  const { showError, showSuccess, showAlert } = useAlert();
   const [mode, setMode] = useState<"list" | "create" | "edit">("list");
   const [editing, setEditing] = useState<ProductVariant | null>(null);
   const { data: family = [], isLoading } = useQuery<ProductVariant[]>({
@@ -46,13 +46,18 @@ export default function ProductVariantsSection({
     );
   }
 
-  const unlink = async (product: ProductVariant) => {
-    if (
-      !window.confirm(
-        `¿Desvincular ${product.name} del producto principal? Seguirá publicado como producto independiente.`,
-      )
-    )
-      return;
+  const unlink = (product: ProductVariant) => {
+    showAlert({
+      type: "warning",
+      title: "Desvincular variante",
+      message: `¿Querés desvincular ${product.name}? Seguirá publicado como producto independiente.`,
+      confirmText: "Desvincular",
+      showCancel: true,
+      onConfirm: () => void unlinkConfirmed(product),
+    });
+  };
+
+  const unlinkConfirmed = async (product: ProductVariant) => {
     try {
       await commerceService.deleteVariant(product.id);
       await queryClient.invalidateQueries({

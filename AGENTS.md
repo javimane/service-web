@@ -384,3 +384,11 @@ Para ver ejemplos reales de componentes bien estilados, revisar:
 - `src/setupTests.ts` importa `@testing-library/jest-dom`.
 - Mockear Supabase y servicios externos en tests.
 - Componentes con `next/navigation` usar setup compatible con Next.
+
+
+## Confirmaciones y alertas de la aplicación
+
+- Para confirmar un borrado o cualquier acción, usá `useAlert().showAlert` con `showCancel: true`, título, mensaje, texto de acción y `onConfirm`. Para avisos usá `showInfo`, `showWarning`, `showError` o `showSuccess`.
+- Usá el `AlertModal` compartido, centrado y con los colores del tema. Cancelar usa rojo claro y recibe el foco inicial. Ambos botones tienen 42 px de altura.
+- Ejecutá la acción solo en `onConfirm`. Escape o Cancelar cierran el diálogo. Enter activa el botón enfocado.
+- Evitá los diálogos nativos del navegador (`confirm`, `alert`, `prompt`). Si hace falta pedir datos, usá el componente `Modal` con un formulario.

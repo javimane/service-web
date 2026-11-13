@@ -55,3 +55,11 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+## Confirmaciones y alertas de la aplicación
+
+- Para confirmar un borrado o cualquier acción, usá `useAlert().showAlert` con `showCancel: true`, título, mensaje, texto de acción y `onConfirm`. Para avisos usá `showInfo`, `showWarning`, `showError` o `showSuccess`.
+- Usá el `AlertModal` compartido, centrado y con los colores del tema. Cancelar usa rojo claro y recibe el foco inicial. Ambos botones tienen 42 px de altura.
+- Ejecutá la acción solo en `onConfirm`. Escape o Cancelar cierran el diálogo. Enter activa el botón enfocado.
+- Evitá los diálogos nativos del navegador (`confirm`, `alert`, `prompt`). Si hace falta pedir datos, usá el componente `Modal` con un formulario.

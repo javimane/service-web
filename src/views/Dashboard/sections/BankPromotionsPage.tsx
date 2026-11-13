@@ -49,7 +49,7 @@ const PAYMENT_METHODS = [
 
 export default function BankPromotionsPage() {
   const queryClient = useQueryClient();
-  const { showError } = useAlert();
+  const { showError, showSuccess } = useAlert();
   const getAccessToken = () =>
     typeof window !== "undefined"
       ? localStorage.getItem("access_token") || undefined
@@ -448,7 +448,7 @@ export default function BankPromotionsPage() {
                               navigator.share(shareData).catch(() => {});
                             } else {
                               navigator.clipboard.writeText(shareUrl);
-                              alert("Enlace copiado al portapapeles");
+                              showSuccess("Enlace copiado al portapapeles");
                             }
                           }}
                           title={

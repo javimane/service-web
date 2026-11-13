@@ -1,3 +1,4 @@
+import { useAlert } from "@/context/AlertContext";
 import React, { useState, useEffect, useRef } from "react";
 import {
   useQuery,
@@ -41,6 +42,7 @@ function moveArrayItem<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
 }
 
 export default function DashboardPublications() {
+  const { showAlert, showError, showWarning, showSuccess } = useAlert();
   const queryClient = useQueryClient();
   const { sessionStatus } = useAuth();
   const professionalId =
@@ -194,9 +196,14 @@ export default function DashboardPublications() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("¿Estás seguro de eliminar esta publicación?")) {
-      deleteMutation.mutate(id);
-    }
+    showAlert({
+      type: "warning",
+      title: "Eliminar publicación",
+      message: "¿Querés eliminar esta publicación?",
+      confirmText: "Eliminar",
+      showCancel: true,
+      onConfirm: () => deleteMutation.mutate(id),
+    });
   };
 
   const handleCloseCreator = () => {
@@ -298,7 +305,7 @@ export default function DashboardPublications() {
         });
       }
     } catch (err: any) {
-      alert("Error guardando publicación: " + err.message);
+      showError("Error guardando publicación: " + err.message);
     }
   };
 
@@ -440,7 +447,7 @@ export default function DashboardPublications() {
           className="dash-pubs__btn-add"
           onClick={() => {
             if (!canCreate) {
-              alert(
+              showWarning(
                 "Debes tener un plan Básico o Premium para crear publicaciones.",
               );
               return;
@@ -542,7 +549,7 @@ export default function DashboardPublications() {
                         navigator.share(shareData).catch(() => {});
                       } else {
                         navigator.clipboard.writeText(shareUrl);
-                        alert("Enlace copiado al portapapeles");
+                        showSuccess("Enlace copiado al portapapeles");
                       }
                     }}
                     title="Compartir"

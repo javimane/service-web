@@ -1,4 +1,5 @@
 "use client";
+import { useAlert } from "@/context/AlertContext";
 import React, { useState } from "react";
 import { notFound, useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Share2, Calendar } from "lucide-react";
@@ -15,6 +16,7 @@ interface PublicationPageProps {
 }
 
 export default function PublicationPage({ publication }: PublicationPageProps) {
+  const { showSuccess } = useAlert();
   const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -57,7 +59,7 @@ export default function PublicationPage({ publication }: PublicationPageProps) {
         .catch(console.error);
     } else {
       navigator.clipboard.writeText(url);
-      alert("¡Enlace copiado al portapapeles!");
+      showSuccess("¡Enlace copiado al portapapeles!");
     }
   };
 

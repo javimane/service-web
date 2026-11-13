@@ -101,7 +101,7 @@ export default function DeliveryAddressSection({
 }: DeliveryAddressSectionProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { showSuccess, showError } = useAlert();
+  const { showSuccess, showError, showAlert } = useAlert();
 
   useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -602,13 +602,14 @@ export default function DeliveryAddressSection({
                       title="Eliminar dirección"
                       disabled={deleteMutation.isPending}
                       onClick={() => {
-                        if (
-                          confirm(
-                            "¿Estás seguro de que deseas eliminar esta dirección de entrega?",
-                          )
-                        ) {
-                          deleteMutation.mutate(addr.id);
-                        }
+                        showAlert({
+                          type: "warning",
+                          title: "Eliminar dirección de entrega",
+                          message: "¿Querés eliminar esta dirección de entrega?",
+                          confirmText: "Eliminar",
+                          showCancel: true,
+                          onConfirm: () => deleteMutation.mutate(addr.id),
+                        });
                       }}
                     >
                       <Trash2 size={16} />
