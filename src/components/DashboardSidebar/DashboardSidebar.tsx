@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Settings,
   HelpCircle,
+  BookOpen,
   LogOut,
   Plus,
   PanelLeftClose,
@@ -169,6 +170,8 @@ export default function DashboardSidebar({
   const isFreePlan = subscriptionPlan === "free";
 
   const isItemLocked = (key: string) => {
+    if (key === "training") return false;
+
     // Role 3 (Company) that is professional and active has access to ALL menus!
     if (isCompanyActive) {
       return false;
@@ -481,6 +484,12 @@ export default function DashboardSidebar({
       label: "AYUDA",
       icon: HelpCircle,
       onClick: handleSupport,
+    },
+    {
+      key: "training",
+      label: "CAPACITACIONES",
+      icon: BookOpen,
+      onClick: () => router.push(ROUTES.training),
     },
     {
       key: "faq",

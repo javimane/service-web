@@ -1,0 +1,194 @@
+.training-page {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding: var(--space-10) var(--section-padding-x);
+  color: var(--text-primary);
+}
+
+.training-page__intro {
+  border-block-end: 1px solid var(--border-color);
+  padding-bottom: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.training-page__intro h1 {
+  font-size: clamp(var(--text-2xl), 5vw, var(--text-4xl));
+  font-weight: var(--weight-black);
+}
+
+.training-page__intro p {
+  margin-block: var(--space-2) var(--space-4);
+}
+
+.training-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.training-page__menu,
+.training-page__guide {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+  scroll-margin-top: var(--space-16);
+}
+
+.training-page__menu {
+  position: sticky;
+  top: calc(var(--space-16) + var(--space-12));
+  max-height: calc(100dvh - var(--space-16) - var(--space-16));
+  overflow-y: auto;
+}
+
+.training-page__menu h2,
+.training-page__guide h2 {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+
+.training-page__menu details {
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.training-page__menu summary {
+  cursor: pointer;
+  font-weight: var(--weight-semibold);
+}
+
+.training-page__menu ul {
+  list-style: none;
+  padding-top: var(--space-2);
+}
+
+.training-page__menu a {
+  display: block;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.training-page a {
+  color: var(--brand-blue);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
+.training-page a:focus-visible,
+.training-page summary:focus-visible {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
+}
+
+.training-page__menu a:hover {
+  background: var(--surface-soft);
+}
+
+.training-page__guides,
+.training-page__guide {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.training-page__guide {
+  scroll-margin-top: calc(var(--space-16) + var(--space-16));
+}
+
+.training-page__guide:target {
+  border-color: var(--brand-blue);
+}
+
+.training-page__guide p,
+.training-page__guide li {
+  line-height: 1.65;
+}
+
+.training-page__guide h3 {
+  font-size: var(--text-md);
+}
+
+.training-page__guide ol {
+  padding-inline-start: var(--space-6);
+}
+
+.training-page__guide li + li {
+  margin-top: var(--space-2);
+}
+
+.training-page__requirements,
+.training-page__screenshot {
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background: var(--surface-soft);
+}
+
+.training-page__requirements {
+  border-inline-start: 3px solid var(--brand-blue);
+}
+
+.training-page__screenshot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--space-16);
+  border: 1px dashed var(--border-color);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.training-page__screenshot svg {
+  flex-shrink: 0;
+}
+
+.training-page__capture {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.training-page__capture a {
+  display: block;
+  max-width: 100%;
+}
+
+.training-page__capture img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.training-page__guide-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .training-page {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .training-page__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .training-page__menu {
+    position: static;
+    max-height: none;
+  }
+
+  .training-page__guide {
+    padding: var(--space-4);
+  }
+}

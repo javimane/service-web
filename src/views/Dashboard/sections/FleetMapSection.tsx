@@ -141,6 +141,22 @@ export default function FleetMapSection() {
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: GOOGLE_MAPS_LIBRARIES,
   });
+  const [mapAuthFailed, setMapAuthFailed] = useState(false);
+
+  useEffect(() => {
+    const mapsWindow = window as Window & { gm_authFailure?: () => void };
+    const previousHandler = mapsWindow.gm_authFailure;
+    const handleAuthFailure = () => {
+      setMapAuthFailed(true);
+      previousHandler?.();
+    };
+    mapsWindow.gm_authFailure = handleAuthFailure;
+    return () => {
+      if (mapsWindow.gm_authFailure === handleAuthFailure) {
+        mapsWindow.gm_authFailure = previousHandler;
+      }
+    };
+  }, []);
 
   const { data: fetchedTrackingItems = [], refetch } = useQuery<
     FleetTrackingItem[]
@@ -356,17 +372,21 @@ export default function FleetMapSection() {
             </button>
           </div>
 
-          {!isLoaded ? (
+          {!GOOGLE_MAPS_API_KEY || loadError || mapAuthFailed ? (
+            <div className="fleet-map-loading" role="alert">
+              <AlertCircle size={32} color="var(--error-color)" />
+              <span>
+                {!GOOGLE_MAPS_API_KEY
+                  ? "El mapa no está configurado para este sitio."
+                  : mapAuthFailed
+                    ? "Google Maps rechazó la configuración del sitio. Consultá el código de error en la consola del navegador."
+                    : "No se pudo cargar Google Maps. Recargá la página para reintentar."}
+              </span>
+            </div>
+          ) : !isLoaded ? (
             <div className="fleet-map-loading">
               <Loader2 size={32} className="fleet-map-loading-spinner" />
               <span>Cargando Google Maps...</span>
-            </div>
-          ) : loadError ? (
-            <div className="fleet-map-loading">
-              <AlertCircle size={32} color="var(--error-color)" />
-              <span>
-                Error al conectar con Google Maps. Verifica la clave de API.
-              </span>
             </div>
           ) : (
             <GoogleMap

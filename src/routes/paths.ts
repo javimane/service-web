@@ -22,6 +22,7 @@ export const ROUTES = {
   privacy: "/privacidad",
   privacyHtml: "/privacidad.html",
   faq: "/preguntas-frecuentes",
+  training: "/capacitaciones",
   publication: "/publicacion",
   publications: "/publicaciones",
   jobs: "/empleos",
