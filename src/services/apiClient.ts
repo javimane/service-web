@@ -97,7 +97,7 @@ axiosInstance.interceptors.response.use(
       window.dispatchEvent(new Event("account-restricted"));
     }
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !/\/api\/(?:backend\/)?auth\/(login|register|sync-oauth|refresh)(?:[/?]|$)/.test(originalRequest.url || "")) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !/\/api\/(?:backend\/)?auth\/(login|register|sync-oauth|refresh|logout)(?:[/?]|$)/.test(originalRequest.url || "")) {
       // Si estamos en el servidor, verificar si podemos escribir cookies (Server Actions / Route Handlers)
       // Si no podemos (SSR page render), no refrescamos para no desincronizar/rotar el token
       if (!isBrowser) {

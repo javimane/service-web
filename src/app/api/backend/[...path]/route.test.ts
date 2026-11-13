@@ -106,6 +106,23 @@ describe("HttpOnly API proxy", () => {
     expect(headers.get("cookie")).toBe(`access_token=${apiToken}`);
   });
 
+  it.each([200, 500, 502])("expires host and shared session cookies on logout (%s)", async (status) => {
+    if (status === 502) upstreamFetch.mockRejectedValue(new Error("Offline"));
+    else upstreamFetch.mockResolvedValue(Response.json({}, { status }));
+    const response = await POST(new NextRequest("http://localhost:3000/api/backend/auth/logout", {
+      method: "POST",
+      headers: { origin: "https://www.sercio.com.ar", "sec-fetch-site": "same-origin", cookie: "refresh_token=opaque" },
+    }), context(["auth", "logout"]));
+    expect(response.status).toBe(status);
+    expect(upstreamFetch.mock.calls[0][1].headers.get("cookie")).toBe("refresh_token=opaque");
+    const cookies = response.headers.getSetCookie();
+    for (const name of ["access_token", "refresh_token", "token"]) {
+      const expired = `${name}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure`;
+      expect(cookies).toContain(expired);
+      expect(cookies).toContain(`${expired}; Domain=sercio.com.ar`);
+    }
+  });
+
   it("rejects cross-origin mutations before sending credentials", async () => {
     const response = await POST(new NextRequest("https://web.example.com/api/backend/orders", {
       method: "POST", headers: { origin: "https://other.example.com" }, body: "{}",

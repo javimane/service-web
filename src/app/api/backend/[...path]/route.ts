@@ -33,6 +33,19 @@ async function forward(request: NextRequest, context: RouteContext) {
   const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
   const target = new URL(`${base.replace(/\/$/, "")}/api/${path.map(encodeURIComponent).join("/")}`);
   target.search = request.nextUrl.search;
+  const isLogout = request.method === "POST" && path.join("/") === "auth/logout";
+  const webUrl = publicOrigin ?? request.nextUrl;
+  const responseHeaders = new Headers({ "Cache-Control": "no-store" });
+  if (isLogout) {
+    const secure = webUrl.protocol === "https:" ? "; Secure" : "";
+    for (const name of ["access_token", "refresh_token", "token"]) {
+      const expired = `${name}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure}`;
+      responseHeaders.append("set-cookie", expired);
+      if (productionWebOrigins.has(webUrl.origin)) {
+        responseHeaders.append("set-cookie", `${expired}; Domain=sercio.com.ar`);
+      }
+    }
+  }
 
   const headers = new Headers();
   for (const name of ["accept", "content-type", "accept-language", "idempotency-key"]) {
@@ -56,12 +69,11 @@ async function forward(request: NextRequest, context: RouteContext) {
       redirect: "manual",
       signal: AbortSignal.timeout(60_000),
     });
-    const responseHeaders = new Headers({ "Cache-Control": "no-store" });
     for (const name of ["content-type", "content-disposition", "location", "retry-after"]) {
       const value = upstream.headers.get(name);
       if (value) responseHeaders.set(name, value);
     }
-    for (const cookie of upstream.headers.getSetCookie()) {
+    for (const cookie of isLogout ? [] : upstream.headers.getSetCookie()) {
       // Keep shared production domains; adapt API-only domains for local or
       // preview hosts so login/refresh cookies reach subsequent server calls.
       const adapted = cookie.replace(/;\s*Domain=([^;]+)/i, (attribute, domain: string) => {
@@ -73,7 +85,7 @@ async function forward(request: NextRequest, context: RouteContext) {
     }
     return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
   } catch {
-    return Response.json({ message: "No se pudo conectar con la API" }, { status: 502 });
+    return Response.json({ message: "No se pudo conectar con la API" }, { status: 502, headers: responseHeaders });
   }
 }
 

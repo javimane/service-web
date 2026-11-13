@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from "./api.config";
-import { apiClient } from "./apiClient";
+import { apiClient, setApiAccessToken } from "./apiClient";
 
 type LoginRequest = {
   email?: string;
@@ -205,6 +205,7 @@ export const authService = {
    * @returns {Promise<any>}
    */
   logout: async () => {
+    setApiAccessToken(undefined);
     try {
       if (typeof window !== "undefined") {
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
