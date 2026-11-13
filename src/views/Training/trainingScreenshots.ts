@@ -51,6 +51,10 @@ export const trainingScreenshots: Partial<Record<string, TrainingScreenshot[]>> 
   "perfil": [
     { file: "Perfil (2).png", width: 1093, height: 707, caption: "Edición del perfil profesional" },
   ],
+  "presupuestos": [
+    { file: "Creacion de Presupuesto.png", width: 2107, height: 1108, caption: "Formulario para crear un presupuesto" },
+    { file: "Presupuestos.png", width: 854, height: 719, caption: "Listado de presupuestos" },
+  ],
   "promociones": [
     { file: "crear nueva promocion.png", width: 689, height: 1710, caption: "Formulario para crear una promoción" },
   ],
