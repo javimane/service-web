@@ -126,12 +126,14 @@ export default function RootLayout({
     <html lang="es" className={`${outfit.variable} ${jetbrainsMono.variable}`}>
       <body>
         <DeepLinkRedirect />
-        <WhatsAppFloatingButton />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <Providers>{children}</Providers>
+        <Providers>
+          <WhatsAppFloatingButton />
+          {children}
+        </Providers>
       </body>
     </html>
   );
