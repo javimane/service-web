@@ -561,6 +561,7 @@ export default function DashboardPage() {
               <ProductCreator
                 onBack={handleShowProducts}
                 productToEdit={editingProduct}
+                foodMode={searchParams.get("comidas") === "1"}
               />
             ) : view === "products-variants" ? (
               <ProductVariantsSection

@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getProfessionalDetailAction } from "../../app/actions/professionals";
-import { getProductsAction } from "../../app/actions/products";
+import { getProductsAction, getProfessionalProductCategoriesAction } from "../../app/actions/products";
 import {
   getProductCategoriesAction,
   getProductSubcategoriesAction,
@@ -65,12 +65,13 @@ export default function ProfessionalStorePage() {
     : extractIdFromSlug(seoPathParam as string);
   const router = useRouter();
 
+  const [foodStore] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("comidas") === "1");
   const [filters, setFilters] = useState(defaultFilters);
   const [searchInput, setSearchInput] = useState(filters.search);
   const [debouncedSearchInput, setDebouncedSearchInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [debouncedEan, setDebouncedEan] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(foodStore ? "list" : "grid");
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -140,24 +141,39 @@ export default function ProfessionalStorePage() {
     gcTime: 1000 * 60 * 60 * 24,
   });
 
+  const foodCategoryId = categories.find((category: { name: string }) => category.name === "Comidas elaboradas")?.id;
+  const storeCategoryId = foodStore ? (foodCategoryId ? String(foodCategoryId) : "") : filters.categoryId;
+
   const { data: subcategories = [] } = useQuery({
-    queryKey: ["store-product-subcategories", filters.categoryId],
+    queryKey: ["store-product-subcategories", storeCategoryId],
     queryFn: async () => {
-      const categoryId = filters.categoryId;
+      const categoryId = storeCategoryId;
       if (!categoryId) return [];
       const result = await getProductSubcategoriesAction({
         categoryId,
       });
       return result?.data ?? [];
     },
-    enabled: !!filters.categoryId,
+    enabled: !!storeCategoryId && storeCategoryId !== "all",
     staleTime: 1000 * 60 * 60,
     gcTime: 1000 * 60 * 60 * 2,
   });
 
+  const { data: availableSubcategories = [] } = useQuery({
+    queryKey: ["store-menu-categories", id],
+    enabled: foodStore && Boolean(id),
+    queryFn: async () => {
+      const result = await getProfessionalProductCategoriesAction({ professionalId: Number(id) });
+      return result?.data?.subcategories ?? [];
+    },
+  });
+  const menuSubcategories = subcategories.filter((item: { id: string }) =>
+    availableSubcategories.some((available: { id: string }) => String(available.id) === String(item.id)),
+  );
+
   // Fetch product name suggestions when debouncedSearchInput changes
   const { data: suggestions = [], isLoading: loadingSuggestions } = useQuery({
-    queryKey: ["product-suggestions", id, debouncedSearchInput],
+    queryKey: ["product-suggestions", id, debouncedSearchInput, foodStore, storeCategoryId],
     queryFn: async () => {
       if (!debouncedSearchInput || debouncedSearchInput.trim().length < 2)
         return [];
@@ -166,6 +182,7 @@ export default function ProfessionalStorePage() {
         limit: 6,
         professionalId: id ? Number(id) : undefined,
         name: debouncedSearchInput.trim(),
+        categoryId: foodStore ? Number(storeCategoryId) : undefined,
       });
       const p = result?.data;
       if (!p) return [];
@@ -173,22 +190,23 @@ export default function ProfessionalStorePage() {
       if (Array.isArray(p.data)) return p.data;
       return [];
     },
-    enabled: !!id && debouncedSearchInput.trim().length >= 2,
+    enabled: !!id && (!foodStore || !!storeCategoryId) && debouncedSearchInput.trim().length >= 2,
     staleTime: 1000 * 60 * 2, // 2 minutes
     gcTime: 1000 * 60 * 5,
   });
 
   const { data: offerProductsData } = useQuery({
-    queryKey: ["store-offer-products", id],
+    queryKey: ["store-offer-products", id, foodStore, storeCategoryId],
     queryFn: async () => {
       const result = await getProductsAction({
         professionalId: id ? Number(id) : undefined,
         has_offer: true,
+        categoryId: foodStore ? Number(storeCategoryId) : undefined,
         limit: 20,
       });
       return result?.data;
     },
-    enabled: !!id,
+    enabled: !!id && (!foodStore || !!storeCategoryId),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 15,
   });
@@ -261,7 +279,8 @@ export default function ProfessionalStorePage() {
       id,
       filters.search,
       debouncedEan,
-      filters.categoryId,
+      foodStore,
+      storeCategoryId,
       filters.subcategoryId,
       filters.priceMin,
       filters.priceMax,
@@ -277,7 +296,7 @@ export default function ProfessionalStorePage() {
         professionalId: id ? Number(id) : undefined,
         name: filters.search || undefined,
         categoryId:
-          filters.categoryId !== "all" ? Number(filters.categoryId) : undefined,
+          storeCategoryId !== "all" ? Number(storeCategoryId) : undefined,
         subcategoryId:
           filters.subcategoryId !== "all" ? filters.subcategoryId : undefined,
         priceMin: filters.priceMin ? Number(filters.priceMin) : undefined,
@@ -289,7 +308,7 @@ export default function ProfessionalStorePage() {
       });
       return result?.data;
     },
-    enabled: !!id,
+    enabled: !!id && (!foodStore || !!storeCategoryId),
     staleTime: 1000 * 60 * 5, // 5 minutos
     gcTime: 1000 * 60 * 15,
   });
@@ -454,7 +473,7 @@ export default function ProfessionalStorePage() {
   }
 
   return (
-    <div className="professional-store">
+    <div className={foodStore ? "professional-store professional-store--food" : "professional-store"}>
       <SEO
         title={`Tienda de ${storeName} - Productos y Ofertas`}
         description={`Explorá el catálogo de productos de ${storeName}. Encontrá los mejores precios y ofertas disponibles.`}
@@ -489,7 +508,7 @@ export default function ProfessionalStorePage() {
             </div>
             <div className="store-banner__text">
               <div className="store-banner__badge">
-                <ShoppingBag size={13} /> Tienda Oficial
+                <ShoppingBag size={13} /> {foodStore ? "Tienda de comidas" : "Tienda oficial"}
               </div>
               <h1 className="store-banner__name">{storeName}</h1>
               <p className="store-banner__meta">
@@ -502,6 +521,16 @@ export default function ProfessionalStorePage() {
       </header>
 
       <main className="store-main">
+        {foodStore && (
+          <nav aria-label="Filtrar comidas" className="store-food-categories">
+            {[{ id: "all", name: "Todas" }, ...menuSubcategories].map((item: { id: string; name: string }) => (
+              <button key={item.id} type="button" aria-pressed={filters.subcategoryId === item.id}
+                onClick={() => { setFilters((current) => ({ ...current, subcategoryId: item.id })); setPage(1); }}>
+                {item.name}
+              </button>
+            ))}
+          </nav>
+        )}
         {/* OFFERS CAROUSEL */}
         {offerProductsList.length > 0 && (
           <section className="store-offers-section">

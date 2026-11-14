@@ -33,6 +33,62 @@
   letter-spacing: -0.02em;
 }
 
+.dash-products__title-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dash-products__title-btn:hover {
+  border-color: var(--brand-blue);
+  color: var(--brand-blue);
+}
+
+.dash-products__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.dash-products__food-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--radius-full);
+  background: var(--accent-transparent);
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dash-products__food-btn:hover,
+.dash-products__food-btn[aria-pressed="true"] {
+  background: var(--accent-hover);
+  color: var(--white);
+}
+
 .dash-products__add-btn {
   display: flex;
   align-items: center;

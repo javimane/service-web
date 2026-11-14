@@ -28,6 +28,7 @@ const professionalListSchema = z.object({
   emergency: z.string().optional(), // 'true' | 'false'
   specialty: z.string().optional(),
   publicTrade: z.string().optional(), // 'true' | 'false'
+  is_gastronomic: z.boolean().optional(),
   public_trade: z.string().optional(), // 'true' | 'false'
   sortBy: z.string().optional(),
   sort_by: z.string().optional(),

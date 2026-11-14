@@ -172,9 +172,9 @@ export default function ShippingRatesModal({
               Tarifario de Envíos sin Riders Propios
             </h3>
             <p className="shipping-rates-modal__hero-subtitle">
-              Costos oficiales aplicables cuando ofrecés <strong>Envío Gratis</strong>{" "}
-              y los repartos son realizados por los riders y transportistas de la
-              red de la plataforma.
+              Costos oficiales aplicables cuando ofrecés{" "}
+              <strong>Envío Gratis</strong> y los repartos son realizados por
+              los riders y transportistas de la red de la plataforma.
             </p>
           </div>
         </div>
@@ -192,10 +192,18 @@ export default function ShippingRatesModal({
                 <tr>
                   <th>Vehículo</th>
                   <th className="shipping-rates-modal__th-right">Carga Máx.</th>
-                  <th className="shipping-rates-modal__th-right">Mínimo (1er Km)</th>
-                  <th className="shipping-rates-modal__th-right">Precio / Km</th>
-                  <th className="shipping-rates-modal__th-right">Km Nocturno</th>
-                  <th className="shipping-rates-modal__th-right">Adicional / Kg</th>
+                  <th className="shipping-rates-modal__th-right">
+                    Mínimo (1er Km)
+                  </th>
+                  <th className="shipping-rates-modal__th-right">
+                    Precio / Km
+                  </th>
+                  <th className="shipping-rates-modal__th-right">
+                    Km Nocturno
+                  </th>
+                  <th className="shipping-rates-modal__th-right">
+                    Adicional / Kg
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -225,18 +233,24 @@ export default function ShippingRatesModal({
                         Hasta {rate.max_weight_kg} kg
                       </td>
                       <td className="shipping-rates-modal__td-right shipping-rates-modal__td-min">
-                        ${Number(rate.min_price_first_km).toLocaleString("es-AR")}
+                        $
+                        {Number(rate.min_price_first_km).toLocaleString(
+                          "es-AR",
+                        )}
                       </td>
                       <td className="shipping-rates-modal__td-right">
                         ${Number(rate.price_per_km).toLocaleString("es-AR")}
                       </td>
                       <td className="shipping-rates-modal__td-right shipping-rates-modal__td-night">
-                        ${Number(rate.night_price_per_km).toLocaleString("es-AR")}
+                        $
+                        {Number(rate.night_price_per_km).toLocaleString(
+                          "es-AR",
+                        )}
                       </td>
                       <td className="shipping-rates-modal__td-right">
                         {Number(rate.extra_price_per_kg) > 0
                           ? `+$${Number(rate.extra_price_per_kg).toLocaleString(
-                              "es-AR"
+                              "es-AR",
                             )}`
                           : "Bonificado"}
                       </td>
@@ -316,11 +330,11 @@ export default function ShippingRatesModal({
           <div className="shipping-rates-modal__callout-body">
             <strong>¿Quién asume este costo?</strong>
             <p>
-              Si el producto tiene <strong>Envío Gratis</strong> activado por vos,
-              el comprador paga $0 de envío y este importe se deduce del pago que
-              recibís por la venta. Si tu comercio cuenta con riders propios,
-              podés gestionar los pedidos con tu propia flota sin incurrir en este
-              costo de plataforma.
+              Si el producto tiene <strong>Envío Gratis</strong> activado por
+              vos, el comprador paga $0 de envío y este importe se deduce del
+              pago que recibís por la venta. Si tu comercio cuenta con riders
+              propios, podés gestionar los pedidos con tu propia flota sin
+              incurrir en este costo de plataforma.
             </p>
           </div>
         </div>

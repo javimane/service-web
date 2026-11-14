@@ -1,0 +1,40 @@
+.gastronomic-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 42px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gastronomic-checkbox:hover,
+.gastronomic-checkbox:has(:checked) {
+  border-color: var(--accent-color);
+  background: var(--accent-transparent);
+}
+
+.gastronomic-checkbox:focus-within {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
+}
+
+.gastronomic-checkbox .gastronomic-checkbox__input {
+  width: var(--space-5);
+  height: var(--space-5);
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--brand-blue);
+  cursor: pointer;
+}
+
+.gastronomic-checkbox__icon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+}

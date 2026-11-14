@@ -1,4 +1,6 @@
 "use client";
+import FoodStoresSection from "./sections/FoodStoresSection";
+import FoodCategoryCarousel from "@/components/FoodCategoryCarousel";
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
@@ -290,8 +292,9 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
         <BannerCarousel />
+        <FoodCategoryCarousel />
+        <FoodStoresSection provinceId={userProvinceId} />
         <CategoriesSection />
 
         <PublicationSlider provinceId={userProvinceId} />

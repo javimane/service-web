@@ -20,6 +20,7 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
           "Configurá tu cuenta, prepará tu perfil público y dejá listos los datos para cobrar.",
         steps: [
           "Entrá en Crear cuenta y seleccioná Soy Profesional/Comercio. Completá el registro y aceptá los términos y la política de privacidad.",
+          "Si vas a vender comidas preparadas, marcá Soy un comercio gastronómico al registrarte con correo. Esa opción te permite publicar platos desde el panel de Productos.",
           "Abrí el correo de verificación. Si no lo encontrás, revisá la carpeta de correo no deseado. Después de verificar tu correo, iniciá sesión.",
           "Seleccioná un plan de suscripción para tu cuenta de comercio o profesional. Revisá qué incluye cada plan y confirmá tu elección para continuar con la configuración de tu cuenta.",
           "En Tus datos, revisá tu nombre y apellido. Agregá tu DNI y teléfono. En Dirección, guardá una dirección de entrega para continuar.",
@@ -61,6 +62,20 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
         ],
         cases:
           "Si hay un reclamo, abrí el detalle para consultar el estado y las acciones disponibles. Si la venta sigue pendiente de pago, esperá la acreditación antes de prepararla.",
+      },
+      {
+        id: "envios",
+        title: "Envíos y evidencia de despacho",
+        purpose: "Registrá el despacho y mantené al comprador informado sobre la entrega.",
+        steps: [
+          "En el panel, entrá en Ventas y abrí el pedido. Revisá si se entrega por delivery o si el envío se acordó con el comprador.",
+          "Cuando el paquete esté listo, subí una foto donde se vea cómo lo preparaste para despacharlo. Buscá Foto de evidencia del paquete en el detalle de la venta.",
+          "Para envíos por acuerdo entre partes, confirmá la preparación y, con la foto guardada, usá Confirmar que ya se despachó cuando entregues el paquete al transporte.",
+          "Después de confirmar el despacho acordado, completá Transporte Larga Distancia / Encomienda y elegí Guardar guía de transporte.",
+          "Para delivery, subí la foto antes de marcar que el paquete está listo para que lo retire el rider.",
+        ],
+        required:
+          "La foto de evidencia es obligatoria para confirmar el despacho acordado o avisar que el paquete está listo para el rider. En los envíos por acuerdo entre partes, es obligatorio registrar la empresa de transporte y el número de seguimiento. Si el transporte ofrece una URL de seguimiento, también podés guardarla.",
       },
       {
         id: "liquidaciones",
@@ -171,6 +186,20 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
           "Al crear un producto, completá nombre, categoría, condición, precio, stock, peso y dimensiones. Ingresá el EAN o marcá que no tiene código de barras. Revisá los campos obligatorios que se muestran para tu categoría.",
         cases:
           "El precio de oferta se puede combinar con una promoción 2x1 o 3x2. Las unidades que se cobran se calculan al precio de oferta. Si la compra alcanza el mínimo para aplicar el precio mayorista, se aplica solo ese precio. El mínimo de compra para envío gratis es una política del comercio. El envío gratis individual se configura sobre los productos que elijas.",
+      },
+      {
+        id: "productos-gastronomia",
+        title: "Comidas y alimentos",
+        purpose: "Publicá platos y configurá los sabores, condimentos y agregados que puede elegir el comprador.",
+        steps: [
+          "En el panel, entrá en Productos → Agregar Producto. En Comidas y alimentos podés filtrar los platos que ya publicaste.",
+          "Elegí la categoría Comidas elaboradas y la subcategoría que corresponda, como Sushi, Helados, Viandas o Hamburguesas. Completá la ficha con el nombre, una descripción, fotos, precio, stock, peso y dimensiones del paquete. Si el plato no tiene código de barras, marcá esa opción.",
+          "Guardá el plato y abrí Personalización desde su publicación. Agregá grupos como Sabores, Condimentos o Acompañamientos. Indicá un mínimo y un máximo de elecciones. Usá mínimo 0 para un grupo opcional y recargo 0 para las opciones incluidas en el precio.",
+          "Si varios platos usan las mismas opciones, creá una lista compartida y elegí Usar en este plato. Cada plato conserva sus propios límites y recargos. Por ejemplo, podés usar la misma lista de sabores para el pote de 1 kg y para el pote de regalo, con límites distintos.",
+          "Consultá las elecciones del comprador en el detalle de la venta antes de preparar el pedido. Si se agota una opción compartida, desactivala en la lista para retirarla de todos los platos vinculados.",
+        ],
+        cases:
+          "Podés usar las promociones del catálogo para tus platos. Las comidas elaboradas se venden en un pago y la cancelación por arrepentimiento se restringe desde que empieza la preparación, incluido el envío en camino.",
       },
       {
         id: "servicios",

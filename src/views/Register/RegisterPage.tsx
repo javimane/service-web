@@ -1,4 +1,5 @@
 "use client";
+import GastronomicCheckbox from "@/components/GastronomicCheckbox/GastronomicCheckbox";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -45,20 +46,43 @@ export default function RegisterPage({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
-  const [registrationNextStep, setRegistrationNextStep] = useState<"login" | "setup" | "plans">("login");
+  const [registrationNextStep, setRegistrationNextStep] = useState<
+    "login" | "setup" | "plans"
+  >("login");
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [requirementsAction, setRequirementsAction] = useState<
     "register" | "google" | null
   >(null);
   const [requirementsConfirmed, setRequirementsConfirmed] = useState(false);
+  const [isGastronomic, setIsGastronomic] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { refreshSession } = useAuth();
   const passwordRequirements = [
-    { id: "length", label: "Mínimo 9 caracteres", met: formData.password.length >= 9 },
-    { id: "uppercase", label: "Al menos 1 mayúscula", met: /[A-Z]/.test(formData.password) },
-    { id: "number", label: "Al menos 1 número", met: /\d/.test(formData.password) },
-    { id: "special", label: "Al menos 1 carácter especial (!, @, #…)", met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(formData.password) },
-    { id: "spaces", label: "Sin espacios", met: formData.password.length > 0 && !/\s/.test(formData.password) },
+    {
+      id: "length",
+      label: "Mínimo 9 caracteres",
+      met: formData.password.length >= 9,
+    },
+    {
+      id: "uppercase",
+      label: "Al menos 1 mayúscula",
+      met: /[A-Z]/.test(formData.password),
+    },
+    {
+      id: "number",
+      label: "Al menos 1 número",
+      met: /\d/.test(formData.password),
+    },
+    {
+      id: "special",
+      label: "Al menos 1 carácter especial (!, @, #…)",
+      met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(formData.password),
+    },
+    {
+      id: "spaces",
+      label: "Sin espacios",
+      met: formData.password.length > 0 && !/\s/.test(formData.password),
+    },
   ];
 
   const validate = () => {
@@ -128,6 +152,9 @@ export default function RegisterPage({
         password: formData.password,
         role: role,
         acceptedTerms: true,
+        ...(role === "professional" && isGastronomic
+          ? { is_gastronomic: true }
+          : {}),
       });
 
       if (role === "professional" && typeof window !== "undefined") {
@@ -321,6 +348,13 @@ export default function RegisterPage({
           </label>
         </div>
 
+        {role === "professional" && (
+          <GastronomicCheckbox
+            checked={isGastronomic}
+            onChange={setIsGastronomic}
+          />
+        )}
+
         <div className="form-row">
           <div className="input-group">
             <label htmlFor="firstName">NOMBRE</label>
@@ -413,13 +447,22 @@ export default function RegisterPage({
                 )}
               </button>
             </div>
-            <ul id="register-password-requirements" className="register-password__requirements" aria-label="Requisitos de la contraseña">
+            <ul
+              id="register-password-requirements"
+              className="register-password__requirements"
+              aria-label="Requisitos de la contraseña"
+            >
               {passwordRequirements.map((requirement) => (
-                <li key={requirement.id}
+                <li
+                  key={requirement.id}
                   className={`register-password__requirement${requirement.met ? " register-password__requirement--met" : ""}`}
                   aria-label={`${requirement.met ? "Cumplido" : "Pendiente"}: ${requirement.label}`}
                 >
-                  {requirement.met ? <Check size={14} aria-hidden="true" /> : <Circle size={14} aria-hidden="true" />}
+                  {requirement.met ? (
+                    <Check size={14} aria-hidden="true" />
+                  ) : (
+                    <Circle size={14} aria-hidden="true" />
+                  )}
                   <span>{requirement.label}</span>
                 </li>
               ))}

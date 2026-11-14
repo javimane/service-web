@@ -1,4 +1,5 @@
 "use client";
+import GastronomicCheckbox from "@/components/GastronomicCheckbox/GastronomicCheckbox";
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -69,6 +70,7 @@ export default function CommercialDataSection({ requireVerification = false, onS
   const [isEditingCompany, setIsEditingCompany] = useState(false);
 
   // Commercial form state
+  const [isGastronomic, setIsGastronomic] = useState(false);
   const [businessType, setBusinessType] = useState("individual");
   const [tradeName, setTradeName] = useState("");
   const [cuit, setCuit] = useState("");
@@ -198,6 +200,7 @@ export default function CommercialDataSection({ requireVerification = false, onS
   // Sync state with backend data
   useEffect(() => {
     if (profMe) {
+      setIsGastronomic(profMe.is_gastronomic === true);
       setBusinessType(profMe.account_type || "individual");
     }
 
@@ -276,6 +279,7 @@ export default function CommercialDataSection({ requireVerification = false, onS
         id: professionalId,
         data: {
           account_type: businessType,
+          is_gastronomic: isGastronomic,
         },
         token,
       });
@@ -615,6 +619,8 @@ export default function CommercialDataSection({ requireVerification = false, onS
                   cuit={cuit}
                   setCuit={setCuit}
                 />
+
+                <GastronomicCheckbox checked={isGastronomic} onChange={setIsGastronomic} />
 
                 {/* 2. Categories selection */}
                 <CategoriesSection

@@ -77,6 +77,7 @@ export type GeneratedReportNotification = {
 };
 
 export type OrderPricingSnapshot = {
+  food_options?: { id: string; name: string; price: number; group: string }[];
   version: 1;
   original_unit_price: number;
   applied_unit_price: number;
@@ -674,7 +675,12 @@ export type ShippingPolicy = {
   national_price_per_extra_kg?: number;
 };
 
+export type FoodList = { id: string; name: string; options: FoodGroup["options"] };
+export type FoodGroup = { list_id?: string; link_id?: string; name: string; min: number; max: number; options: { id: string; name: string; price: number; enabled: boolean }[] };
 export type CartItem = {
+  food_option_ids?: string[];
+  food_options_unavailable?: boolean;
+  food_options?: { id: string; name: string; price: number; group: string }[];
   id: string;
   product_id?: string | null;
   professional_product_id?: string | null;
@@ -742,7 +748,7 @@ export type Cart = {
 export type CalculateShippingDto = {
   merchant_id?: number;
   professional_product_id?: string;
-  items?: Array<{ professional_product_id: string; quantity: number }>;
+  items?: Array<{ professional_product_id: string; quantity: number; food_option_ids?: string[] }>;
   quantity?: number;
   installments?: number;
   delivery_type?: DeliveryType;
@@ -934,6 +940,7 @@ export type CheckoutDto = {
     service_id?: string;
     quantity: number;
     unit_price?: number;
+    food_option_ids?: string[];
   }>;
   delivery_type: DeliveryType;
   branch_id?: string;
@@ -1821,7 +1828,18 @@ export const commerceService = {
   // Cart
   cart: () => apiClient<Cart>(API_ENDPOINTS.users.cart),
 
+  foodLists: () => apiClient<FoodList[]>(API_ENDPOINTS.products.list + "/food-option-lists"),
+  setFoodOptionAvailability: (listId: string, optionId: string, enabled: boolean) =>
+    apiClient<FoodList>(API_ENDPOINTS.products.list + "/food-option-lists/" + encodeURIComponent(listId) + "/options/" + encodeURIComponent(optionId),
+      { method: "PATCH", body: JSON.stringify({ enabled }) }),
+  saveFoodList: ({ id, name, options }: FoodList) => apiClient<FoodList>(
+    API_ENDPOINTS.products.list + "/food-option-lists/" + encodeURIComponent(id),
+    { method: "PUT", body: JSON.stringify({ name, options }) },
+  ),
+  foodOptions: (id: string, manage = false) => apiClient<FoodGroup[]>(API_ENDPOINTS.products.list + "/professional-product/" + encodeURIComponent(id) + "/food-options" + (manage ? "/manage" : "")),
+  saveFoodOptions: (id: string, groups: FoodGroup[]) => apiClient<FoodGroup[]>(API_ENDPOINTS.products.list + "/professional-product/" + encodeURIComponent(id) + "/food-options", { method: "PUT", body: JSON.stringify({ groups }) }),
   addCartItem: (data: {
+    food_option_ids?: string[];
     product_id?: string;
     professional_product_id?: string;
     service_id?: string;

@@ -1130,3 +1130,31 @@
 }
 
 
+
+
+.professional-store--food .store-banner {
+  background-color: #075b58;
+}
+
+.store-food-categories {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-block: 1rem;
+}
+
+.store-food-categories button {
+  flex-shrink: 0;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 2rem;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+.store-food-categories button[aria-pressed="true"] {
+  background: #075b58;
+  color: #fff;
+  border-color: #075b58;
+}

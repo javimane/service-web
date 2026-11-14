@@ -768,7 +768,12 @@ export default function SalesSection() {
       queryClient.invalidateQueries({ queryKey: ["merchant-orders"] });
       setSelectedOrder(null);
     },
-    onError: (error: any) => showError(error?.response?.data?.message || error?.message || "No se pudo validar el código de entrega."),
+    onError: (error: any) =>
+      showError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "No se pudo validar el código de entrega.",
+      ),
   });
 
   const invoiceMutation = useMutation({
@@ -2398,22 +2403,23 @@ export default function SalesSection() {
                   ).toLocaleString("es-AR")}
                 </span>
               </div>
-              {(!selectedOrder.shipping_amount_hidden && (!isServiceSale(selectedOrder) ||
-                Number(selectedOrder.shipping_cost ?? 0) > 0)) && (
-                <div className="order-detail-row">
-                  <span>
-                    {isServiceSale(selectedOrder)
-                      ? "Costo de traslado:"
-                      : "Costo de envío:"}
-                  </span>
-                  <span>
-                    $
-                    {Number(selectedOrder.shipping_cost ?? 0).toLocaleString(
-                      "es-AR",
-                    )}
-                  </span>
-                </div>
-              )}
+              {!selectedOrder.shipping_amount_hidden &&
+                (!isServiceSale(selectedOrder) ||
+                  Number(selectedOrder.shipping_cost ?? 0) > 0) && (
+                  <div className="order-detail-row">
+                    <span>
+                      {isServiceSale(selectedOrder)
+                        ? "Costo de traslado:"
+                        : "Costo de envío:"}
+                    </span>
+                    <span>
+                      $
+                      {Number(selectedOrder.shipping_cost ?? 0).toLocaleString(
+                        "es-AR",
+                      )}
+                    </span>
+                  </div>
+                )}
               <div className="order-detail-row order-detail-row--total">
                 <span>Total:</span>
                 <span>

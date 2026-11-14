@@ -11,7 +11,9 @@ import "./TrainingPage.css";
 export default function TrainingPage() {
   return (
     <>
-      <Navbar />
+      <div className="training-page__navbar">
+        <Navbar />
+      </div>
       <main className="training-page" id="capacitaciones">
         <header className="training-page__intro">
           <h1>Capacitaciones</h1>

@@ -1,4 +1,6 @@
 "use client";
+import FoodOptionsEditor, { validateFoodOptions } from "@/components/FoodOptionsEditor";
+import type { FoodGroup } from "@/services/commerceService";
 import { variantParentImageUrls } from "./variant-image-selection";
 import { VariantImageInheritanceOption } from "./VariantImageInheritanceOption";
 import ProductBranchStock from "@/components/ProductBranchStock/ProductBranchStock";
@@ -86,12 +88,14 @@ interface ProductCreatorProps {
   onBack: () => void;
   productToEdit?: any;
   variantParent?: any;
+  foodMode?: boolean;
 }
 
 export default function ProductCreator({
   onBack,
   productToEdit,
   variantParent,
+  foodMode = false,
 }: ProductCreatorProps) {
   const router = useRouter();
   const { showError } = useAlert();
@@ -142,6 +146,8 @@ export default function ProductCreator({
   // Video state (up to 2 videos per product)
   const [videoFiles, setVideoFiles] = useState<(File | null)[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
+  const [foodGroups, setFoodGroups] = useState<FoodGroup[]>();
+  const [pendingFoodListingId, setPendingFoodListingId] = useState<string>();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [attributes, setAttributes] = useState<ProductAttribute[]>([
     emptyAttribute(),
@@ -212,6 +218,13 @@ export default function ProductCreator({
     },
   });
 
+  const preparedCategory = categories.find((category: { name: string }) => category.name === "Comidas elaboradas");
+  const preparedFood = foodMode || Boolean(preparedCategory && String(preparedCategory.id) === String(newProduct.categoryId));
+  useEffect(() => {
+    if (!foodMode || !preparedCategory) return;
+    setNewProduct((current) => current.categoryId === String(preparedCategory.id) ? current : { ...current, categoryId: String(preparedCategory.id), has_ean: true });
+  }, [foodMode, preparedCategory]);
+
   const selectedCategoryObj = categories.find(
     (c: any) => String(c.id) === String(newProduct.categoryId),
   );
@@ -236,6 +249,13 @@ export default function ProductCreator({
     gcTime: 1000 * 60 * 60 * 24,
   });
 
+  const foodListingId = productToEdit?.professional_product_id;
+  const foodOptions = useQuery({
+    queryKey: ["manage-food-options", foodListingId],
+    queryFn: () => commerceService.foodOptions(String(foodListingId), true),
+    enabled: preparedFood && Boolean(foodListingId),
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       const token = getAccessToken();
@@ -245,10 +265,6 @@ export default function ProductCreator({
       });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["professional-products"] });
-      setShowSuccessModal(true);
     },
   });
 
@@ -284,10 +300,6 @@ export default function ProductCreator({
       });
       if (result?.serverError) throw new Error(result.serverError);
       return result?.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["professional-products"] });
-      setShowSuccessModal(true);
     },
   });
 
@@ -672,10 +684,24 @@ export default function ProductCreator({
     } finally { setLinkingVariant(false); }
   };
 
+  async function saveFoodPersonalization(listingId: string, groups: FoodGroup[]) {
+    setPendingFoodListingId(listingId);
+    await commerceService.saveFoodOptions(listingId, groups);
+    await queryClient.invalidateQueries({ queryKey: ["manage-food-options", listingId] });
+    setPendingFoodListingId(undefined);
+  }
+
   /* ── Submit ── */
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      const optionsToSave = preparedFood || pendingFoodListingId ? foodGroups : undefined;
+      if (optionsToSave) validateFoodOptions(optionsToSave);
+      if (pendingFoodListingId && optionsToSave) {
+        await saveFoodPersonalization(pendingFoodListingId, optionsToSave);
+        setShowSuccessModal(true);
+        return;
+      }
       const e: Record<string, string> = {};
       if (
         !(
@@ -683,12 +709,12 @@ export default function ProductCreator({
         )?.trim()
       )
         e.name = "El nombre es obligatorio.";
-      const normalizedAttributes = attributes.map((attribute) => ({
+      const normalizedAttributes = (preparedFood ? [] : attributes).map((attribute) => ({
         name: attribute.name.trim(),
         value: attribute.value.trim(),
       }));
       if (
-        normalizedAttributes.length === 0 ||
+        (!preparedFood && normalizedAttributes.length === 0) ||
         normalizedAttributes.some(
           (attribute) => !attribute.name || !attribute.value,
         )
@@ -704,11 +730,11 @@ export default function ProductCreator({
       ) {
         e.attributes = "No repitas el nombre de una característica.";
       }
-      if (!newProduct.has_ean && !newProduct.ean.trim())
+      if (!preparedFood && !newProduct.has_ean && !newProduct.ean.trim())
         e.ean =
           "El EAN es obligatorio si no marcas la opción 'No tiene código de barra'.";
       if (!formPrice) e.price = "El precio es obligatorio.";
-      if (!newProduct.product_condition) e.product_condition = "Elegí la condición del producto.";
+      if (!newProduct.product_condition || (preparedFood && !['frozen','fresh','vacuum_packed','canned','dried','refrigerated','ready_to_eat'].includes(newProduct.product_condition))) e.product_condition = "Elegí la condición del producto.";
       if (!(variantParent?.categories_products_id || newProduct.categoryId))
         e.categoryId = "La categoría es obligatoria.";
       if (!formStock) e.stock = "El stock es obligatorio.";
@@ -810,7 +836,7 @@ export default function ProductCreator({
       const payload = {
         product_condition: newProduct.product_condition,
         ean: newProduct.has_ean ? undefined : newProduct.ean,
-        attributes: normalizedAttributes,
+        ...(preparedFood && productToEdit ? {} : { attributes: normalizedAttributes }),
         color: attributeValue("Color") || null,
         size_letter: sizeValue && !numericSize ? sizeValue : null,
         size_number:
@@ -851,7 +877,7 @@ export default function ProductCreator({
           variantParent && inheritDescription
             ? variantParent.description || ""
             : newProduct.description,
-        brand: newProduct.brand,
+        brand: preparedFood ? undefined : newProduct.brand,
         image_url: images,
         videos_url: videos_url,
         videos_to_save: videos_to_save,
@@ -873,19 +899,19 @@ export default function ProductCreator({
         offer_price: Number(newProduct.offerPrice) || 0,
         currency_code: newProduct.currency_code || "ARG",
         percent_discount: Number(newProduct.percent_discount) || 0,
-        wholesale: newProduct.wholesale,
+        wholesale: !preparedFood && newProduct.wholesale,
         offer_2x1: newProduct.offer_2x1,
         offer_3x2: newProduct.offer_3x2,
         wholesale_price: Number(newProduct.wholesale_price) || 0,
         wholesale_unit: Number(newProduct.wholesale_unit) || 0,
-        installments_enabled: !isFoodCategory && installmentsEnabled,
+        installments_enabled: !preparedFood && !isFoodCategory && installmentsEnabled,
         max_installments:
           !isFoodCategory && installmentsEnabled
             ? normalizeMaxInstallments(maxInstallments)
             : 1,
         free_shipping: freeShipping,
         warranty:
-          variantParent && inheritWarranty
+          preparedFood ? 0 : variantParent && inheritWarranty
             ? variantParent.warranty != null
               ? Number(variantParent.warranty)
               : 0
@@ -970,13 +996,21 @@ export default function ProductCreator({
           },
         });
       } else {
-        await createMutation.mutateAsync({
+        const listing = await createMutation.mutateAsync({
           ...payload,
           image_url: payload.image_url[0] || "",
           images_url: payload.image_url,
           images_to_save: payload.image_url,
         });
+        if (optionsToSave?.length) {
+          if (!listing?.id) throw new Error("No se obtuvo la publicación para guardar la personalización.");
+          await saveFoodPersonalization(String(listing.id), optionsToSave);
+        }
       }
+      if (productToEdit && optionsToSave && foodListingId) {
+        await saveFoodPersonalization(String(foodListingId), optionsToSave);
+      }
+      setShowSuccessModal(true);
     } catch (err) {
       console.error("Error submitting product:", err);
       const errMessage =
@@ -990,6 +1024,7 @@ export default function ProductCreator({
         err instanceof Error ? err.message : "No se pudo guardar el producto.",
       );
     } finally {
+      void queryClient.invalidateQueries({ queryKey: ["professional-products"] });
       setIsSubmitting(false);
     }
   };
@@ -1046,7 +1081,7 @@ export default function ProductCreator({
 
       {/* ── Sección 1: Identificación EAN ── */}
       <div className="product-creator__body">
-        <div className="product-creator__section">
+        {!preparedFood &&         <div className="product-creator__section">
           <p className="product-creator__section-title">
             <Barcode
               size={13}
@@ -1411,7 +1446,7 @@ export default function ProductCreator({
               onClose={() => setIsScannerOpen(false)}
             />
           )}
-        </div>
+        </div>}
 
         {/* ── Sección 2: Datos del producto ── */}
         {!eanMatch && (
@@ -1478,7 +1513,7 @@ export default function ProductCreator({
                   />
                 </div>
 
-                <div className="product-creator__field product-creator__field--full product-creator__attributes">
+                {!preparedFood &&                 <div className="product-creator__field product-creator__field--full product-creator__attributes">
                   <div className="product-creator__attributes-heading">
                     <div>
                       <label>Características *</label>
@@ -1569,13 +1604,13 @@ export default function ProductCreator({
                       {errors.attributes}
                     </span>
                   )}
-                </div>
+                </div>}
 
                 <div className="product-creator__field">
                   <label>Categoría *</label>
                   <select
                     value={newProduct.categoryId}
-                    disabled={Boolean(variantParent)}
+                    disabled={foodMode || Boolean(variantParent)}
                     onChange={(e) => {
                       set("categoryId", e.target.value);
                       set("subcategoryId", "");
@@ -1860,6 +1895,7 @@ export default function ProductCreator({
                 </div>
 
                 {/* Wholesale */}
+                {!preparedFood && <>
                 <label className="product-creator__wholesale-row">
                   <input
                     type="checkbox"
@@ -1893,6 +1929,7 @@ export default function ProductCreator({
                     </div>
                   </>
                 )}
+                </>}
 
                 <div className="product-creator__field product-creator__field--full">
                   <label htmlFor="product-quantity-offer">
@@ -1925,13 +1962,21 @@ export default function ProductCreator({
                   <label htmlFor="product-condition">Condición del producto *</label>
                   <select id="product-condition" required value={newProduct.product_condition} onChange={event => set("product_condition", event.target.value)}>
                     <option value="">Seleccioná una opción</option>
+                    {preparedFood ? <>
+                    <option value="frozen">Congelado</option><option value="fresh">Fresco</option>
+                      <option value="vacuum_packed">Envasado al vacío</option><option value="canned">Enlatado</option>
+                      <option value="dried">Seco</option><option value="refrigerated">Refrigerado</option>
+                      <option value="ready_to_eat">Listo para consumir</option>
+                    </> : <>
                     <option value="original">Original</option><option value="replica">Réplica</option>
-                    <option value="used">Usado</option><option value="alternative">Alternativo</option>
+                      <option value="used">Usado</option><option value="alternative">Alternativo</option>
                     <option value="artisanal">Artesanal</option>
+                    </>}
                   </select>
                   {errors.product_condition && <span role="alert">{errors.product_condition}</span>}
                 </div>
 
+                {!preparedFood && <>
                 {/* Cuotas sin interés */}
                 <div className="product-creator__field product-creator__field--full">
                   <label className="product-creator__wholesale-row">
@@ -2075,6 +2120,21 @@ export default function ProductCreator({
                     </>
                   )}
                 </div>
+                </>}
+
+                {(preparedFood || pendingFoodListingId) && (
+                  <div className="product-creator__field product-creator__field--full">
+                    {foodListingId && !foodOptions.isSuccess ? (
+                      foodOptions.isError ? (
+                        <p role="alert">No se pudo cargar la personalización. <button type="button" disabled={foodOptions.isFetching} onClick={() => void foodOptions.refetch()}>
+                          {foodOptions.isFetching && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
+                          {foodOptions.isFetching ? "Cargando…" : "Reintentar"}
+                        </button></p>
+                      ) : <p role="status">Cargando personalización…</p>
+                    ) : <FoodOptionsEditor groups={foodGroups ?? foodOptions.data ?? []} setGroups={setFoodGroups} busy={isSaving} />}
+                    {pendingFoodListingId && <p role="status">La comida ya se guardó. Volvé a guardar para aplicar solo la personalización pendiente.</p>}
+                  </div>
+                )}
 
                 {/* Envío gratis */}
                 <div className="product-creator__field product-creator__field--full">
@@ -2095,7 +2155,7 @@ export default function ProductCreator({
                 </div>
 
                 {/* Garantía */}
-                <div className="product-creator__field product-creator__field--full">
+                {!preparedFood && <div className="product-creator__field product-creator__field--full">
                   <label htmlFor="product-warranty">
                     Garantía del producto
                   </label>
@@ -2189,7 +2249,7 @@ export default function ProductCreator({
                       />
                     </div>
                   )}
-                </div>
+                </div>}
 
                 {/* Variantes de producto */}
                 {!variantParent && (

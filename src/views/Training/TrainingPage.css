@@ -1,3 +1,7 @@
+.training-page__navbar {
+  display: contents;
+}
+
 .training-page {
   width: 100%;
   max-width: var(--content-max-width);
@@ -175,6 +179,10 @@
 }
 
 @media (max-width: 768px) {
+  .training-page__navbar {
+    display: none;
+  }
+
   .training-page {
     padding: var(--space-6) var(--space-4);
   }

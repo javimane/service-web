@@ -9,6 +9,7 @@ export default function OrderItemPricing({ pricing, unitPrice }: {
 }) {
   if (!pricing || pricing.version !== 1) return <div className="order-item-pricing">Precio unitario: {money(unitPrice)}</div>;
   return <div className="order-item-pricing">
+    {pricing.food_options?.map((option) => <span key={option.id}>{option.group} · {option.name}{option.price > 0 && " +" + money(option.price) + " c/u"}</span>)}
     <span>Precio original: {money(pricing.original_unit_price)} c/u</span>
     {pricing.price_type === "offer" && <span>Precio de oferta: {money(pricing.applied_unit_price)} c/u · Descuento: {money(pricing.unit_discount_amount)} ({pricing.unit_discount_percent}%)</span>}
     {pricing.price_type === "wholesale" && <span>Precio por mayor: {money(pricing.applied_unit_price)} c/u</span>}

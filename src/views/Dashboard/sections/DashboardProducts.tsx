@@ -1,4 +1,6 @@
 "use client";
+import { getProfessionalMeAction } from "@/app/actions/professionals";
+import FoodListsManager from "@/components/FoodListsManager";
 import ProductBranchStock from "@/components/ProductBranchStock/ProductBranchStock";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -30,6 +32,7 @@ import {
   Truck,
   Car,
   Layers,
+  Utensils,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { useAlert } from "../../../context/AlertContext";
@@ -199,6 +202,15 @@ export default function DashboardProducts({
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
     sessionStatus?.professional_id;
+
+  const { data: professional } = useQuery({
+    queryKey: ["professional-me", professionalId],
+    enabled: Boolean(professionalId),
+    queryFn: async () =>
+      (await getProfessionalMeAction({ token: await getAccessToken() }))
+        ?.data ?? null,
+  });
+  const isGastronomic = professional?.is_gastronomic === true;
 
   const { data: commissionRates = [] } = useQuery<MarketplaceCommission[]>({
     queryKey: ["marketplace-commissions"],
@@ -1476,13 +1488,54 @@ export default function DashboardProducts({
     }
   };
 
+  const showAllProducts = () => {
+    setSearchQuery("");
+    setEanSearchQuery("");
+    setCategoryFilter("");
+    setSubcategoryFilter("");
+    setPage(1);
+  };
+
   return (
     <div className="dash-products">
       {/* Header */}
       <div className="dash-products__header">
         <div>
           <span className="dash-products__label">GESTIÓN</span>
-          <h1 className="dash-products__title">Productos</h1>
+          <div className="dash-products__title-row">
+            <h1 className="dash-products__title">
+              <button
+                type="button"
+                className="dash-products__title-btn"
+                onClick={showAllProducts}
+                title="Ver todos los productos"
+              >
+                Productos
+              </button>
+            </h1>
+            {isGastronomic &&
+              categories
+                .filter(
+                  (category: { name: string }) =>
+                    category.name === "Comidas elaboradas",
+                )
+                .map((category: { id: number }) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    className="dash-products__food-btn"
+                    aria-pressed={categoryFilter === String(category.id)}
+                    onClick={() => {
+                      setCategoryFilter(String(category.id));
+                      setSubcategoryFilter("");
+                    }}
+                  >
+                    <Utensils size={20} aria-hidden="true" />
+                    Comidas y alimentos
+                  </button>
+                ))}
+            {isGastronomic && <FoodListsManager />}
+          </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button
@@ -1515,6 +1568,15 @@ export default function DashboardProducts({
             />
             <span>Refrescar</span>
           </button>
+          {hasAddress && isGastronomic && (
+            <button
+              type="button"
+              className="dash-products__add-btn"
+              onClick={() => router.push("?view=products-create&comidas=1")}
+            >
+              Agregar comida
+            </button>
+          )}
           {hasAddress ? (
             <button
               data-action-tone="add"
@@ -1637,12 +1699,7 @@ export default function DashboardProducts({
           subcategoryFilter) && (
           <button
             className="dash-products__clear-filters"
-            onClick={() => {
-              setSearchQuery("");
-              setEanSearchQuery("");
-              setCategoryFilter("");
-              setSubcategoryFilter("");
-            }}
+            onClick={showAllProducts}
             title="Limpiar todos los filtros"
           >
             <X size={14} />
@@ -1864,7 +1921,14 @@ export default function DashboardProducts({
                       >
                         Total: {product.stock}
                       </span>
-                      <ProductBranchStock listingId={product.professional_product_id || product.id} onSaved={() => { void refetchProducts(); }} />
+                      <ProductBranchStock
+                        listingId={
+                          product.professional_product_id || product.id
+                        }
+                        onSaved={() => {
+                          void refetchProducts();
+                        }}
+                      />
                     </div>
                   </td>
                   <td className="dash-products__cell-right">
@@ -2965,7 +3029,10 @@ export default function DashboardProducts({
                       {editProductErrors.stock}
                     </span>
                   )}
-                  <small>El stock se administra desde «Stock por sucursal» en la lista de productos.</small>
+                  <small>
+                    El stock se administra desde «Stock por sucursal» en la
+                    lista de productos.
+                  </small>
                 </div>
 
                 <div className="dash-products__modal-field dash-products__field--full">

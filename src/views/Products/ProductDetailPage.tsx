@@ -271,8 +271,40 @@ export default function ProductDetailPage({
     staleTime: 1000 * 60 * 5,
   });
 
+  const [foodSelection, setFoodSelection] = useState<{
+    listing?: string;
+    ids: string[];
+  }>({ ids: [] });
+  const selectedFoodIds =
+    foodSelection.listing === professionalProductId ? foodSelection.ids : [];
+  const isPreparedFood = productCategory === "Comidas elaboradas";
+  const menu = useQuery({
+    queryKey: ["food-options", professionalProductId],
+    queryFn: () => commerceService.foodOptions(professionalProductId!),
+    enabled: Boolean(professionalProductId) && isPreparedFood,
+  });
+  const groups = menu.data ?? [];
+  const foodIds = selectedFoodIds.filter((id) =>
+    groups.some((group) =>
+      group.options.some((option) => option.enabled && option.id === id),
+    ),
+  );
+  const foodReady =
+    (!isPreparedFood || !professionalProductId || menu.isSuccess) &&
+    groups.every((group) => {
+      const count = group.options.filter(
+        (option) => option.enabled && foodIds.includes(option.id),
+      ).length;
+      return count >= group.min && count <= group.max;
+    });
+  const foodExtra = groups
+    .flatMap((group) => group.options)
+    .filter((option) => option.enabled && foodIds.includes(option.id))
+    .reduce((total, option) => total + option.price, 0);
   const addToCartMutation = useMutation({
     mutationFn: (cartQuantity: number) => {
+      if (!user && groups.length)
+        throw new Error("Iniciá sesión para comprar un plato personalizado.");
       if (!user) {
         return Promise.resolve(
           addGuestCartItem(Number(professionalId) || null, {
@@ -313,11 +345,14 @@ export default function ProductDetailPage({
           ? { professional_product_id: professionalProductId }
           : { product_id: String(item?.id || id) }),
         quantity: cartQuantity,
+        ...(foodIds.length ? { food_option_ids: foodIds } : {}),
       });
     },
     onSuccess: (updatedCart) => {
       queryClient.setQueryData(["user-cart", user?.id ?? "guest"], updatedCart);
-      showSuccess("Producto listo en el carrito. Ya podés continuar la compra.");
+      showSuccess(
+        "Producto listo en el carrito. Ya podés continuar la compra.",
+      );
     },
     onError: (err: any) => {
       const rawMsg =
@@ -496,7 +531,7 @@ export default function ProductDetailPage({
   );
 
   const handleAddToCart = () => {
-    if (!canPurchase) return;
+    if (!canPurchase || !foodReady) return;
     addToCartMutation.mutate(Math.min(quantity, availableStock));
   };
 
@@ -713,14 +748,22 @@ export default function ProductDetailPage({
                 </span>
               </div>
               <h1 className="product-detail__title">{productName}</h1>
-              <div className="product-detail__metrics" aria-label="Ventas y calificaciones del producto">
+              <div
+                className="product-detail__metrics"
+                aria-label="Ventas y calificaciones del producto"
+              >
                 <span className="product-detail__rating">
                   <span className="product-detail__stars" aria-hidden="true">
                     {Array.from({ length: 5 }, (_, index) => (
                       <Star
                         key={index}
                         size={16}
-                        fill={index < Math.round(Number(itemAny?.rating_average ?? 0)) ? "currentColor" : "none"}
+                        fill={
+                          index <
+                          Math.round(Number(itemAny?.rating_average ?? 0))
+                            ? "currentColor"
+                            : "none"
+                        }
                       />
                     ))}
                   </span>
@@ -815,8 +858,32 @@ export default function ProductDetailPage({
                     <span>{sellerProvince}</span>
                   </div>
                   <ProfessionalReputation professionalId={professionalId} />
-                  <p>Condición: {({ original: "Original", replica: "Réplica", used: "Usado", alternative: "Alternativo", artisanal: "Artesanal" } as Record<string, string>)[professionalProduct?.product_condition || ""] || "No informada"}</p>
-                  {professionalProduct?.id && <ListingReportButton targetType="professional_product" targetId={String(professionalProduct.id)} />}
+                  <p>
+                    Condición:{" "}
+                    {(
+                      {
+                        original: "Original",
+                        replica: "Réplica",
+                        used: "Usado",
+                        alternative: "Alternativo",
+                        artisanal: "Artesanal",
+                        frozen: "Congelado",
+                        fresh: "Fresco",
+                        vacuum_packed: "Envasado al vacío",
+                        canned: "Enlatado",
+                        dried: "Seco",
+                        refrigerated: "Refrigerado",
+                        ready_to_eat: "Listo para consumir",
+                      } as Record<string, string>
+                    )[professionalProduct?.product_condition || ""] ||
+                      "No informada"}
+                  </p>
+                  {professionalProduct?.id && (
+                    <ListingReportButton
+                      targetType="professional_product"
+                      targetId={String(professionalProduct.id)}
+                    />
+                  )}
 
                   {/* Variants selector (if product has variants) */}
                   {variants.length > 1 && (
@@ -1188,6 +1255,7 @@ export default function ProductDetailPage({
                               onClick={handleAddToCart}
                               disabled={
                                 availableStock === 0 ||
+                                !foodReady ||
                                 addToCartMutation.isPending
                               }
                             >
@@ -1207,14 +1275,125 @@ export default function ProductDetailPage({
                               </span>
                             </button>
                           </div>
-                          <button
-                            type="button"
-                            className="seller-buy-btn"
-                            onClick={() => router.push(`/pagar/producto/${item.id}?quantity=${quantity}`)}
-                          >
-                            <CreditCard size={18} />
-                            <span>Comprar ahora</span>
-                          </button>
+                          {groups.map((group, index) => {
+                            const count = group.options.filter(
+                              (option) =>
+                                option.enabled && foodIds.includes(option.id),
+                            ).length;
+                            return (
+                              <fieldset
+                                key={index}
+                                style={{
+                                  marginBlock: 12,
+                                  padding: 12,
+                                  borderRadius: 12,
+                                  border: "1px solid var(--border-color)",
+                                }}
+                              >
+                                <legend>
+                                  {group.name} · {count}/{group.max}
+                                </legend>
+                                <p>
+                                  {group.min
+                                    ? "Elegí de " +
+                                      group.min +
+                                      " a " +
+                                      group.max
+                                    : "Opcional · hasta " + group.max}
+                                </p>
+                                {group.options.map((option) => {
+                                  const selected =
+                                    option.enabled &&
+                                    foodIds.includes(option.id);
+                                  return (
+                                    <label
+                                      key={option.id}
+                                      style={{
+                                        display: "flex",
+                                        gap: 8,
+                                        marginBlock: 8,
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={selected}
+                                        disabled={
+                                          !option.enabled ||
+                                          (!selected && count >= group.max)
+                                        }
+                                        onChange={() =>
+                                          setFoodSelection({
+                                            listing: professionalProductId,
+                                            ids: selected
+                                              ? foodIds.filter(
+                                                  (id) => id !== option.id,
+                                                )
+                                              : [...foodIds, option.id],
+                                          })
+                                        }
+                                      />
+                                      {option.name}
+                                      {!option.enabled
+                                        ? " · Agotada"
+                                        : option.price > 0
+                                          ? " + $" +
+                                            option.price.toLocaleString("es-AR")
+                                          : ""}
+                                    </label>
+                                  );
+                                })}
+                              </fieldset>
+                            );
+                          })}
+                          {groups.length > 0 && (
+                            <p>
+                              <strong>
+                                Total ·{" "}
+                                {(
+                                  calculateProductPricing(
+                                    {
+                                      ...professionalProduct,
+                                      price: activeOriginalPrice,
+                                      offer_price: activeOfferPrice,
+                                    },
+                                    quantity,
+                                  ).subtotal +
+                                  foodExtra * quantity
+                                ).toLocaleString("es-AR", {
+                                  style: "currency",
+                                  currency: "ARS",
+                                })}
+                              </strong>
+                            </p>
+                          )}
+                          {foodExtra > 0 && (
+                            <p>
+                              Agregados por unidad ·{" "}
+                              {foodExtra.toLocaleString("es-AR", {
+                                style: "currency",
+                                currency: "ARS",
+                              })}
+                            </p>
+                          )}
+                          {menu.isError && (
+                            <p role="alert">
+                              No se pudieron consultar las opciones del plato.
+                            </p>
+                          )}
+                          {groups.length === 0 && foodReady && (
+                            <button
+                              type="button"
+                              className="seller-buy-btn"
+                              onClick={() =>
+                                router.push(
+                                  `/pagar/producto/${item.id}?quantity=${quantity}`,
+                                )
+                              }
+                            >
+                              <CreditCard size={18} />
+                              <span>Comprar ahora</span>
+                            </button>
+                          )}
 
                           <div className="seller-protected-badge">
                             <ShieldCheck

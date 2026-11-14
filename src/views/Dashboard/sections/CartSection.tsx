@@ -311,6 +311,7 @@ export default function CartSection() {
           const productReference = {
             product_id: item.product_id || undefined,
             professional_product_id: item.professional_product_id || undefined,
+            ...(item.food_option_ids?.length ? { food_option_ids: item.food_option_ids } : {}),
           };
 
           updatedCart = await commerceService.addCartItem({
@@ -456,6 +457,7 @@ export default function CartSection() {
       return commerceService.calculateShipping({
         items: products.map((item) => ({
           professional_product_id: item.professional_product_id!,
+          food_option_ids: item.food_option_ids,
           quantity: item.quantity,
         })),
         delivery_type: "shipment",
@@ -519,6 +521,7 @@ export default function CartSection() {
             .filter((item) => item.professional_product_id)
             .map((item) => ({
               professional_product_id: item.professional_product_id!,
+          food_option_ids: item.food_option_ids,
               quantity: item.quantity,
             })),
           delivery_type: "shipment",
@@ -600,6 +603,7 @@ export default function CartSection() {
           professional_id: merchantId!,
           items: items.map((item) => ({
             professional_product_id: item.professional_product_id || undefined,
+            ...(item.food_option_ids?.length ? { food_option_ids: item.food_option_ids } : {}),
             service_id: item.service_id || undefined,
             quantity: item.quantity,
           })),
@@ -946,6 +950,8 @@ export default function CartSection() {
                           product={item.product}
                           description={item.service?.description}
                         />
+                        {item.food_options?.map((option) => <div key={option.id}>{option.group} · {option.name}</div>)}
+                        {item.food_options_unavailable && <p role="alert">Quitá el plato y volvé a elegir sus opciones.</p>}
                         <span className="cart-item-unit-price">
                           ${unitPrice.toLocaleString("es-AR")}
                           {isServiceItem ? " por servicio" : " c/u"}
