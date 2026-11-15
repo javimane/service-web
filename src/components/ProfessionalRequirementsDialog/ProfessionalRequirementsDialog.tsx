@@ -38,13 +38,8 @@ export default function ProfessionalRequirementsDialog({
           Requisitos para una cuenta profesional
         </h2>
         <p className="professional-requirements__intro">
-          Para continuar necesitás tener una de estas condiciones fiscales activas:
+          Para vender, verificá tu identidad, mayoría de edad y CBU de cobro.
         </p>
-        <ul className="professional-requirements__list">
-          <li>Monotributo activo</li>
-          <li>Responsable inscripto</li>
-          <li>Sociedad activa</li>
-        </ul>
         <h3 className="professional-requirements__subtitle">CBU requerido</h3>
         <ul className="professional-requirements__list">
           <li>

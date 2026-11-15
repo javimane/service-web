@@ -512,7 +512,7 @@ export default function CommercialDataSection({ requireVerification = false, onS
           <ShieldCheck size={22} aria-hidden="true" />
           <div>
             <strong>Verificación obligatoria para continuar</strong>
-            <p>Datos fiscales en ARCA: {sessionStatus?.arca_verified ? "Verificados" : "Pendientes"}. CBU de cobro: {sessionStatus?.cbu_verified ? "Verificado" : "Pendiente"}.</p>
+            <p>CBU de cobro: {sessionStatus?.cbu_verified ? "Verificado" : "Pendiente"}.</p>
             <p>Usá «Verificar ahora» en Datos Fiscales y Empresa y guardá tu cuenta en Datos de Cobro para validar su titularidad.</p>
           </div>
         </div>
@@ -598,7 +598,8 @@ export default function CommercialDataSection({ requireVerification = false, onS
                 )}
               </div>
 
-              {/* ARCA Verification Form / Badge */}
+              <p>Si sos monotributista, responsable inscripto o tenés una razón social, verificá tu cuenta en ARCA para guardar los datos de facturación de los servicios prestados por Sercio.</p>
+              {/* Verificación fiscal opcional */}
               <ArcaVerificationSection
                 professionalId={professionalId}
                 companyId={companyId || actualCompany?.id}

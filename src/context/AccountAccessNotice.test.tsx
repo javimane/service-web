@@ -51,7 +51,7 @@ describe('Account access notice', () => {
       blocked={false}
       verificationRequired
       identityVerified={false}
-      arcaVerified
+
       cbuVerified
       refresh={vi.fn()}
       logout={vi.fn()}

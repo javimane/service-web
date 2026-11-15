@@ -579,7 +579,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         <AccountAccessNotice blocked={sessionStatus?.is_blocked === true}
           verificationRequired={!sessionStatus?.is_blocked && !sessionStatus?.is_paused && sessionStatus?.sell_verification_required === true}
           identityVerified={sessionStatus?.identity_verified === true}
-          arcaVerified={sessionStatus?.arca_verified === true}
+
           cbuVerified={sessionStatus?.cbu_verified === true}
           reason={sessionStatus?.is_blocked ? sessionStatus?.blocked_reason : sessionStatus?.paused_reason}
           refresh={refreshSession} logout={logout} />}

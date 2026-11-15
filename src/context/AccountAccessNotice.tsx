@@ -11,7 +11,6 @@ type AccountAccessNoticeProps = {
   blocked: boolean;
   verificationRequired?: boolean;
   identityVerified?: boolean;
-  arcaVerified?: boolean;
   cbuVerified?: boolean;
   reason?: string | null;
   refresh: () => Promise<unknown>;
@@ -22,7 +21,6 @@ export function AccountAccessNotice({
   blocked,
   verificationRequired = false,
   identityVerified,
-  arcaVerified,
   cbuVerified,
   reason,
   refresh,
@@ -61,19 +59,14 @@ export function AccountAccessNotice({
 
   const missingVerifications = [
     !identityVerified && "DNI, rostro y mayoría de edad desde la app",
-    !arcaVerified && "datos fiscales en ARCA",
     !cbuVerified && "CBU de cobro a tu nombre o empresa",
   ].filter(Boolean).join("; ");
   const verificationHref = !cbuVerified
     ? `${ROUTES.dashboard}?view=commercial-data&tab=banking`
-    : !arcaVerified
-      ? `${ROUTES.dashboard}?view=commercial-data`
-      : ROUTES.settings;
+    : ROUTES.settings;
   const verificationAction = !cbuVerified
     ? "Verificar CBU en Datos comerciales"
-    : !arcaVerified
-      ? "Verificar datos en ARCA"
-      : "Revisar datos personales";
+    : "Revisar datos personales";
 
   if (verificationRequired && !blocked) {
     if (configuringAccount) return null;

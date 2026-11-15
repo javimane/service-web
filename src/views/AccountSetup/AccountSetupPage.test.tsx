@@ -152,10 +152,20 @@ describe("AccountSetupPage", () => {
     expect(screen.getByText("Formulario comercial")).toBeInTheDocument();
   });
 
+  it("avanza con el CBU verificado aunque ARCA esté pendiente", async () => {
+    auth.sessionStatus = { is_professional: true, professional_id: 82 };
+    localStorage.setItem("account_setup_step_user-1", "commercial");
+    auth.refreshSession.mockResolvedValue({ arca_verified: false, cbu_verified: true });
+    vi.mocked(getProfessionalMeAction).mockResolvedValue({ data: { companies: { name: "Mi negocio", tax_code: "20123456789" } } } as any);
+    render(<AccountSetupPage />);
+    await screen.findByText("Formulario comercial");
+    fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
+    expect(await screen.findByText("Formulario del perfil público")).toBeInTheDocument();
+  });
+
   it.each([
-    [{ arca_verified: false, cbu_verified: true }, "los datos fiscales en ARCA"],
     [{ arca_verified: true, cbu_verified: false }, "el CBU de cobro"],
-    [null, "los datos fiscales en ARCA y el CBU de cobro"],
+    [null, "el CBU de cobro"],
   ])("no avanza de datos comerciales si falta verificar la cuenta (%j)", async (session, message) => {
     auth.sessionStatus = { is_professional: true, professional_id: 82 };
     localStorage.setItem("account_setup_step_user-1", "commercial");

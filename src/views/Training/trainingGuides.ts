@@ -24,7 +24,7 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
           "Abrí el correo de verificación. Si no lo encontrás, revisá la carpeta de correo no deseado. Después de verificar tu correo, iniciá sesión.",
           "Seleccioná un plan de suscripción para tu cuenta de comercio o profesional. Revisá qué incluye cada plan y confirmá tu elección para continuar con la configuración de tu cuenta.",
           "En Tus datos, revisá tu nombre y apellido. Agregá tu DNI y teléfono. En Dirección, guardá una dirección de entrega para continuar.",
-          "En Datos comerciales, guardá el nombre del negocio, el CUIT/CUIL y la categoría de servicio. Completá la verificación fiscal en ARCA y la del CBU de cobro.",
+          "En Datos comerciales, guardá el nombre del negocio, el CUIT/CUIL y la categoría de servicio. Verificá el CBU de cobro. La verificación fiscal en ARCA es opcional.",
           "En Perfil público, escribí y guardá una descripción que explique qué ofrecés y dónde atendés.",
           "En Identidad, podés ir al panel. Para comprar con esa cuenta, abrí la app de Sercio y entrá en Menú → Configuración → Verificación de Identidad y Edad. Cargá tu DNI y una foto de tu rostro.",
         ],
@@ -96,12 +96,12 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
         purpose:
           "Identificá al negocio, configurá su operación y registrá la cuenta donde vas a cobrar.",
         steps: [
-          "Completá el nombre comercial, CUIT/CUIL y al menos una categoría de servicio. Guardá y verificá los datos fiscales en ARCA.",
+          "Completá el nombre comercial, CUIT/CUIL y al menos una categoría de servicio. Guardá tus datos. Si necesitás cargar tus datos fiscales para las facturas de Sercio, podés verificarlos en ARCA.",
           "En Datos de Cobro, ingresá y verificá el CBU/CVU de una cuenta cuya titularidad coincida con el CUIT verificado.",
           "En Operaciones, indicá si tenés local al público. Si corresponde, ubicá el local en el mapa y guardá sus datos.",
         ],
         required:
-          "Nombre comercial, CUIT/CUIL de 11 dígitos, categoría y verificaciones fiscal y de cobro para completar el alta. Al declarar un local al público, guardá su dirección y ubicación.",
+          "Nombre comercial, CUIT/CUIL de 11 dígitos, categoría y verificación del CBU para completar el alta. Al declarar un local al público, guardá su dirección y ubicación.",
       },
       {
         id: "sucursales",

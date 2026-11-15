@@ -163,12 +163,8 @@ export default function AccountSetupPage() {
           throw new Error("Guardá el nombre comercial y un CUIT/CUIL de 11 dígitos para continuar.");
         }
         const verifiedSession = await refreshSession();
-        const missing = [
-          verifiedSession?.arca_verified !== true && "los datos fiscales en ARCA",
-          verifiedSession?.cbu_verified !== true && "el CBU de cobro",
-        ].filter(Boolean);
-        if (missing.length) {
-          throw new Error(`Para continuar, verificá ${missing.join(" y ")} después de guardar los datos comerciales.`);
+        if (verifiedSession?.cbu_verified !== true) {
+          throw new Error("Para continuar, verificá el CBU de cobro después de guardar los datos comerciales.");
         }
       }
       if (step === "profile") {
@@ -262,7 +258,7 @@ export default function AccountSetupPage() {
           )}
           {step === "commercial" && (
             <div className="account-setup__embedded">
-              <p>Guardá los datos de tu negocio y verificá los datos fiscales en ARCA y el CBU de cobro. Ambas verificaciones son obligatorias para continuar al perfil público.</p>
+              <p>Guardá los datos de tu negocio y verificá el CBU de cobro para continuar al perfil público.</p>
               <CommercialDataSection requireVerification onSaved={() => setError("")} />
             </div>
           )}
