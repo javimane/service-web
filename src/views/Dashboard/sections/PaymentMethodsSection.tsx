@@ -84,6 +84,7 @@ export default function PaymentMethodsSection() {
   const {
     data: identityStatus,
     isLoading: isLoadingIdentity,
+    isFetching: isFetchingIdentity,
     isError: isIdentityError,
     refetch: refetchIdentity,
   } = useQuery({
@@ -323,15 +324,17 @@ export default function PaymentMethodsSection() {
             <div className="payment-methods__verification-actions">
               <IdentityVerificationQr onVerified={async () => {
                 await Promise.all([refreshSession(), refetchIdentity()]);
-              }} />
+              }}>
               <button
                 type="button"
                 onClick={() => void refetchIdentity()}
                 className="payment-methods__btn-secondary"
-                disabled={isLoadingIdentity}
+                disabled={isFetchingIdentity}
               >
-                Actualizar estado
+                {isFetchingIdentity && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
+                {isFetchingIdentity ? "Actualizando…" : "Actualizar estado"}
               </button>
+              </IdentityVerificationQr>
             </div>
           )}
         </div>

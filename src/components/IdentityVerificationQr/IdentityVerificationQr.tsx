@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { sileo } from "sileo";
 import Image from "next/image";
 import { Loader2, QrCode } from "lucide-react";
@@ -10,9 +10,10 @@ import "./IdentityVerificationQr.css";
 
 type Props = {
   onVerified: () => Promise<unknown>;
+  children?: ReactNode;
 };
 
-export default function IdentityVerificationQr({ onVerified }: Props) {
+export default function IdentityVerificationQr({ onVerified, children }: Props) {
   const [link, setLink] = useState<{ url: string; qr: string }>();
   const [pending, setPending] = useState<"start" | "check" | null>(null);
   const [message, setMessage] = useState("");
@@ -129,6 +130,7 @@ export default function IdentityVerificationQr({ onVerified }: Props) {
             {pending === "start" ? "Generando…" : "Verificar identidad con QR"}
           </button>
         )}
+        {children}
       </div>
       {message && <p role="status">{message}</p>}
     </div>
