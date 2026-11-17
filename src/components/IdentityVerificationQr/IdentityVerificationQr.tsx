@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { sileo } from "sileo";
 import Image from "next/image";
 import { Loader2, QrCode } from "lucide-react";
@@ -72,16 +72,21 @@ export default function IdentityVerificationQr({ onVerified }: Props) {
     }
   };
 
-  const checkAutomatically = useEffectEvent((isActive: () => boolean) => {
+  const checkAutomatically = (isActive: () => boolean) => {
     if (document.visibilityState === "visible" && pending !== "start") {
       void check(false, isActive);
     }
+  };
+  const automaticCheckRef = useRef(checkAutomatically);
+
+  useEffect(() => {
+    automaticCheckRef.current = checkAutomatically;
   });
 
   useEffect(() => {
     if (!link) return;
     let active = true;
-    const updateStatus = () => checkAutomatically(() => active);
+    const updateStatus = () => automaticCheckRef.current(() => active);
     const timer = window.setInterval(updateStatus, 5000);
     window.addEventListener("focus", updateStatus);
     document.addEventListener("visibilitychange", updateStatus);

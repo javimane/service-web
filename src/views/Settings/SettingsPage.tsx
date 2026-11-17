@@ -19,6 +19,7 @@ import HeadquartersSection from "./sections/HeadquartersSection";
 import OperationsSection from "./sections/OperationsSection";
 import PaymentMethodsSection from "./sections/PaymentMethodsSection";
 import PersonalInfoSection from "./sections/PersonalInfoSection";
+import IdentityVerificationSection from "./sections/IdentityVerificationSection";
 import BillingDataSection from "./sections/BillingDataSection";
 import DeliveryAddressSection from "./sections/DeliveryAddressSection";
 import ProvinceNovedadesSection from "./sections/ProvinceNovedadesSection";
@@ -550,6 +551,7 @@ export default function SettingsPage() {
             </button>
 
             <section className="settings-grid">
+              <IdentityVerificationSection />
               {/* Always show personal info */}
               <PersonalInfoSection
                 userId={user?.id}

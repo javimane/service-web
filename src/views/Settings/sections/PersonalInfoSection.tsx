@@ -1,6 +1,6 @@
 "use client";
 
-import IdentityVerificationQr from "@/components/IdentityVerificationQr/IdentityVerificationQr";
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -43,7 +43,7 @@ export default function PersonalInfoSection({
   initialData,
 }: PersonalInfoSectionProps) {
   const queryClient = useQueryClient();
-  const { user, isAgeVerified, sessionStatus, refreshSession } = useAuth();
+  const { sessionStatus, refreshSession } = useAuth();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingPersonalName, setIsEditingPersonalName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -364,9 +364,6 @@ export default function PersonalInfoSection({
       </div>
 
       <div className="personal-fields">
-        {user && !isAgeVerified && (
-          <IdentityVerificationQr key={user.id} onVerified={refreshSession} />
-        )}
         {fetching ? (
           <div className="personal-fetching">
             <div className="fetching-spinner"></div>

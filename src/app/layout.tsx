@@ -1,20 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import Providers from "./providers";
 import "@/index.css";
 import DeepLinkRedirect from "@/components/DeepLinkRedirect/DeepLinkRedirect";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton/WhatsAppFloatingButton";
 
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+const outfit = localFont({
+  src: "./fonts/Outfit-Variable.ttf",
+  weight: "100 900",
+  style: "normal",
   variable: "--font-primary",
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
+const jetbrainsMono = localFont({
+  src: "./fonts/JetBrainsMono-Variable.ttf",
+  weight: "100 800",
+  style: "normal",
   variable: "--font-mono",
   display: "swap",
 });

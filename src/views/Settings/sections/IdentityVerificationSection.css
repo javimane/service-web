@@ -1,0 +1,26 @@
+.identity-verification-section {
+  scroll-margin-top: var(--space-16);
+}
+
+.identity-verification-section > p,
+.identity-verification-section > div > p {
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  margin-bottom: var(--space-3);
+}
+
+.identity-verification-section .section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.identity-verification-section button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+}
