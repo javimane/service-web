@@ -102,6 +102,7 @@ export type OrderSummary = {
   has_return?: boolean;
   has_chargeback?: boolean;
   dispatch_evidence_path?: string | null;
+  merchant_reported_delivery_at?: string | null;
   dispatch_evidence_uploaded_at?: string | null;
   shipping_cost?: number | null;
   delivery_eta_minutes?: number | null;
@@ -1063,6 +1064,11 @@ export const commerceService = {
 
   markCoordinatedPreparing: (id: string) =>
     apiClient<OrderSummary>(API_ENDPOINTS.orders.coordinatedPreparing(id), {
+      method: "POST",
+    }),
+
+  reportCoordinatedDelivery: (id: string) =>
+    apiClient<OrderSummary>(API_ENDPOINTS.orders.reportCoordinatedDelivery(id), {
       method: "POST",
     }),
 

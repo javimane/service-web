@@ -50,6 +50,7 @@ export const API_ENDPOINTS = {
     dispatchEvidenceComplete: (id: string) => `${API_BASE_URL}/api/orders/${id}/dispatch-evidence/complete`,
     confirm: (id: string) => `${API_BASE_URL}/api/orders/${id}/confirm`,
     coordinatedPreparing: (id: string) => `${API_BASE_URL}/api/orders/${id}/coordinated-preparing`,
+    reportCoordinatedDelivery: (id: string) => `${API_BASE_URL}/api/orders/${id}/report-coordinated-delivery`,
     coordinatedDispatched: (id: string) => `${API_BASE_URL}/api/orders/${id}/coordinated-dispatched`,
     pickupReady: (id: string) => `${API_BASE_URL}/api/orders/${id}/pickup-ready`,
     confirmCoordinatedDelivery: (id: string) => `${API_BASE_URL}/api/orders/${id}/confirm-coordinated-delivery`,

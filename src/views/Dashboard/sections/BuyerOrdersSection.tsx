@@ -1812,11 +1812,10 @@ export default function BuyerOrdersSection() {
                   })()}
                   {selectedOrder.status === "dispatched" && (
                     <div className="buyer-confirm-receipt-box">
-                      <p>
-                        Confirmá únicamente si ya recibiste el producto. Si no
-                        llegó o hay un problema, contactá al comercio o iniciá
-                        un reclamo.
-                      </p>
+                      {selectedOrder.merchant_reported_delivery_at && (
+                        <p>El comercio informó que entregó el producto.</p>
+                      )}
+                      <p>Confirmá únicamente si ya lo recibiste. Si no llegó, podés pedir la cancelación en Ayuda con esta compra.</p>
                       <button
                         type="button"
                         className="btn-primary"
@@ -2367,7 +2366,10 @@ export default function BuyerOrdersSection() {
                       ? "Iniciar reclamo"
                       : isServiceOrder(selectedOrder)
                         ? "Informar servicio no realizado"
-                        : "Informar problema de entrega"}
+                        : selectedOrder.delivery_type === "coordinate_with_merchant" &&
+                          selectedOrder.status === "dispatched"
+                          ? "Pedir cancelación por falta de entrega"
+                          : "Informar problema de entrega"}
                   </button>
                 )}
                 {selectedOrder.claim_resolution_confirmable && (
@@ -2535,7 +2537,10 @@ export default function BuyerOrdersSection() {
                   : "Contanos por qué el servicio no se realizó y adjuntá evidencia si la tenés."
                 : isOrderDelivered(selectedOrder)
                   ? "Contanos qué ocurrió. Para garantía o devolución desde lejos, coordiná con el comercio antes de enviar el producto."
-                  : "Contanos qué pasó con la entrega y adjuntá evidencia si la tenés."}
+                  : selectedOrder.delivery_type === "coordinate_with_merchant" &&
+                    selectedOrder.status === "dispatched"
+                    ? "Indicá qué productos no recibiste. El comercio o Sercio revisará tu solicitud de cancelación."
+                    : "Contanos qué pasó con la entrega y adjuntá evidencia si la tenés."}
             </p>
             {renderProductSelection(false)}
             <label htmlFor="buyer-claim-type">Tipo de reclamo</label>

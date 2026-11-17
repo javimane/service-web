@@ -748,6 +748,15 @@ export default function SalesSection() {
     onError: () => showError("No se pudo confirmar el despacho."),
   });
 
+  const reportDeliveryMutation = useMutation({
+    mutationFn: (id: string) => commerceService.reportCoordinatedDelivery(id),
+    onSuccess: async (_, id) => {
+      await refreshSelectedOrder(id);
+      showSuccess("Entrega informada. Falta que el comprador confirme la recepción.");
+    },
+    onError: (error: Error) => showError(error.message || "No se pudo informar la entrega."),
+  });
+
   const dispatchEvidenceMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) =>
       commerceService.uploadDispatchEvidence(id, file),
@@ -2966,6 +2975,22 @@ export default function SalesSection() {
                         "Confirmar que ya se despachó"
                       )}
                     </button>
+                  </div>
+                )}
+
+              {selectedOrder.delivery_type === "coordinate_with_merchant" &&
+                !isServiceSale(selectedOrder) && selectedOrder.status === "dispatched" && (
+                  <div className="order-actions-group">
+                    {selectedOrder.merchant_reported_delivery_at ? (
+                      <p>Entrega informada. Falta que el comprador confirme la recepción.</p>
+                    ) : (
+                      <button type="button" className="btn-primary"
+                        disabled={reportDeliveryMutation.isPending}
+                        onClick={() => reportDeliveryMutation.mutate(selectedOrder.id)}>
+                        {reportDeliveryMutation.isPending && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
+                        {reportDeliveryMutation.isPending ? "Registrando…" : "Confirmar que se entregó"}
+                      </button>
+                    )}
                   </div>
                 )}
 

@@ -72,6 +72,8 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
           "Cuando el paquete esté listo, subí una foto donde se vea cómo lo preparaste para despacharlo. Buscá Foto de evidencia del paquete en el detalle de la venta.",
           "Para envíos por acuerdo entre partes, confirmá la preparación y, con la foto guardada, usá Confirmar que ya se despachó cuando entregues el paquete al transporte.",
           "Después de confirmar el despacho acordado, completá Transporte Larga Distancia / Encomienda y elegí Guardar guía de transporte.",
+          "Cuando el transporte entregue el producto, usá Confirmar que se entregó en la venta. Conservá el comprobante de recepción.",
+          "El comprador debe confirmar la recepción después de recibir el producto. Si no lo hace, Sercio puede revisar el comprobante y programar la liberación de la liquidación si verifica la entrega.",
           "Para delivery, subí la foto antes de marcar que el paquete está listo para que lo retire el rider.",
         ],
         required:
@@ -225,6 +227,7 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
         steps: [
           "Abrí Ver detalle y seguimiento.",
           "Consultá el estado del pedido, el pago y la modalidad de entrega. Usá las acciones de devolución, reclamo o calificación cuando estén habilitadas.",
+          "Si el envío se acordó con el comercio, entrá en Compras y elegí Confirmar recepción cuando tengas el producto. Si no llegó, pedí la cancelación por falta de entrega. Sercio puede revisar el comprobante y programar la liquidación si verifica que el producto llegó.",
         ],
         cases:
           "Para un retiro en tienda, revisá el aviso de que el pedido está listo. El plazo de retiro es de 30 días desde ese aviso.",

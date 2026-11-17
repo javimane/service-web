@@ -319,6 +319,23 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
           por el estado y entrega puntual del paquete.
         </p>
 
+        <p>
+          <strong>Confirmación de recepción en envíos por acuerdo.</strong> El
+          Comprador debe confirmar la recepción en Sercio una vez que haya
+          recibido efectivamente el producto. El Comercio puede informar que
+          realizó la entrega y deberá conservar el comprobante de recepción.
+        </p>
+        <p>
+          Si el Comprador aún no confirmó la recepción, Sercio podrá revisar el
+          comprobante del transporte u otra evidencia verificable. Si la
+          revisión acredita la entrega, Sercio podrá registrarla y programar la
+          liberación del pago al Comercio conforme al plazo de liquidación
+          aplicable. La falta de confirmación por sí sola no acredita la
+          entrega. Si el producto no llegó o hubo un problema, el Comprador
+          puede presentar un reclamo. La revisión administrativa no limita sus
+          derechos como consumidor.
+        </p>
+
         <h3 className="terms-section__subtitle">5.1. Retiro en tienda</h3>
         <p>
           En las compras de productos con retiro en tienda, el Comprador tiene
