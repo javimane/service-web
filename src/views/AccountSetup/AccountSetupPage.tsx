@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import IdentityVerificationQr from "@/components/IdentityVerificationQr/IdentityVerificationQr";
+
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { sileo } from "sileo";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
 import Navbar from "@/components/Navbar/Navbar";
@@ -102,6 +105,31 @@ export default function AccountSetupPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const setupFinished = useRef(false);
+  const finishSetup = useCallback(() => {
+    if (!user?.id || setupFinished.current) return false;
+    setupFinished.current = true;
+    localStorage.removeItem("show_setup_on_login");
+    localStorage.removeItem(`account_setup_step_${user.id}`);
+    router.push(ROUTES.dashboard);
+    return true;
+  }, [router, user?.id]);
+
+  useEffect(() => {
+    if (
+      !loading && profileLoaded && !personalNameOnly && isAgeVerified &&
+      (step === "identity" || step === "done") && finishSetup()
+    ) {
+      sileo.success({ title: "Identidad verificada correctamente" });
+    }
+  }, [finishSetup, isAgeVerified, loading, personalNameOnly, profileLoaded, step]);
+
+  const handleIdentityVerified = async () => {
+    const session = await refreshSession();
+    if (session?.is_age_verified !== true) throw new Error("La sesión todavía no refleja la verificación");
+    finishSetup();
+  };
+
   const continueSetup = async (event?: FormEvent) => {
     event?.preventDefault();
     if (!user?.id || busy) return;
@@ -178,9 +206,7 @@ export default function AccountSetupPage() {
         }
       }
       if (step === "identity" || step === "done") {
-        localStorage.removeItem("show_setup_on_login");
-        localStorage.removeItem(`account_setup_step_${user.id}`);
-        router.push(ROUTES.dashboard);
+        finishSetup();
         return;
       }
       moveTo(steps[currentIndex + 1]);
@@ -271,10 +297,8 @@ export default function AccountSetupPage() {
           {step === "identity" && (
             <div className="account-setup__identity">
               <ShieldCheck size={40} aria-hidden="true" />
-              <h3>Verificá tu identidad desde la aplicación Sercio</h3>
-              <p>Ya cargaste tus datos. Abrí la aplicación principal con esta misma cuenta y seguí el paso de verificación: te pedirá una foto de tu DNI y una foto de tu rostro. Esto confirma tu identidad y te permite usar tu cuenta para comprar.</p>
-              <p>Ingresá en la app a <strong>Menú - Configuración - Verificación de Identidad y Edad</strong>.</p>
-              <p>Podés entrar al panel ahora y completar la verificación desde la app. La aprobación puede quedar pendiente mientras se revisan tus fotos.</p>
+              <h3>{isAgeVerified ? "Identidad verificada" : "Verificá tu identidad"}</h3>
+              {!isAgeVerified && <IdentityVerificationQr onVerified={handleIdentityVerified} />}
             </div>
           )}
           {step === "done" && (
@@ -285,8 +309,7 @@ export default function AccountSetupPage() {
                 <p>Ya tenés tus datos personales y una dirección de entrega. Podés comprar productos y servicios o completar otros datos cuando quieras.</p>
               ) : (
                 <>
-                  <p>Para comprar productos o contratar servicios, verificá tu identidad desde la aplicación de Sercio. Ingresá con esta misma cuenta y completá la verificación con tu DNI y una foto de tu rostro.</p>
-                  <p>Ingresá en la app a <strong>Menú - Configuración - Verificación de Identidad y Edad</strong>.</p>
+                  <IdentityVerificationQr onVerified={handleIdentityVerified} />
                   <p>Los datos de tu cuenta deben coincidir con los del titular de la tarjeta que uses para pagar. Podés explorar la web mientras completás este paso.</p>
                 </>
               )}

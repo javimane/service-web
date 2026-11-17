@@ -1,5 +1,7 @@
 "use client";
 
+import IdentityVerificationQr from "@/components/IdentityVerificationQr/IdentityVerificationQr";
+
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -56,7 +58,7 @@ export default function PaymentMethodsSection() {
   setApiAccessToken(token);
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useAlert();
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -169,7 +171,7 @@ export default function PaymentMethodsSection() {
     const { data: currentStatus } = await refetchIdentity();
     if (!currentStatus?.purchase_eligible) {
       showError(
-        "Verificá tu identidad y edad en la app de Sercio antes de registrar una tarjeta.",
+        "Verificá tu identidad y edad antes de registrar una tarjeta.",
       );
       return;
     }
@@ -315,10 +317,13 @@ export default function PaymentMethodsSection() {
                 : identityStatus?.purchase_eligible
                   ? "Tu identidad está verificada. El nombre y DNI declarados para cada tarjeta deben coincidir con los de tu verificación."
                   : identityStatus?.session?.rejection_reason ||
-                    "Para registrar tarjetas y comprar, verificá tu DNI, rostro y mayoría de edad en la aplicación de Sercio con esta misma cuenta."}
+                    "Para registrar tarjetas y comprar, verificá tu DNI, rostro y mayoría de edad desde el navegador de tu teléfono."}
           </p>
           {!identityStatus?.purchase_eligible && (
             <div className="payment-methods__verification-actions">
+              <IdentityVerificationQr onVerified={async () => {
+                await Promise.all([refreshSession(), refetchIdentity()]);
+              }} />
               <button
                 type="button"
                 onClick={() => void refetchIdentity()}

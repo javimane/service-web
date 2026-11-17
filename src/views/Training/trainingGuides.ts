@@ -26,7 +26,7 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
           "En Tus datos, revisá tu nombre y apellido. Agregá tu DNI y teléfono. En Dirección, guardá una dirección de entrega para continuar.",
           "En Datos comerciales, guardá el nombre del negocio, el CUIT/CUIL y la categoría de servicio. Verificá el CBU de cobro. La verificación fiscal en ARCA es opcional.",
           "En Perfil público, escribí y guardá una descripción que explique qué ofrecés y dónde atendés.",
-          "En Identidad, podés ir al panel. Para comprar con esa cuenta, abrí la app de Sercio y entrá en Menú → Configuración → Verificación de Identidad y Edad. Cargá tu DNI y una foto de tu rostro.",
+          "En Identidad, podés ir al panel. Para comprar con esa cuenta, escaneá el QR de verificación y completá el proceso en el navegador con tu DNI y una foto de tu rostro.",
         ],
         required:
           "En el registro se pide nombre, apellido, correo, contraseña y su confirmación. Usá al menos 9 caracteres, una mayúscula, un número y un carácter especial, sin espacios. En el asistente, el DNI debe tener 7 u 8 dígitos y el teléfono al menos 8. El CUIT/CUIL tiene 11 dígitos y el CBU/CVU, 22.",
@@ -428,7 +428,7 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
         required:
           "Facturación: nombre y apellido, CUIT/CUIL y condición frente al IVA. La razón social también es obligatoria para Responsable Inscripto. Dirección de entrega: calle y número. Cuando el formulario se abre para completar una dirección exigida por el pago, también pide provincia, localidad y código postal.",
         cases:
-          "La dirección de entrega indica dónde querés recibir el pedido. Los datos de facturación identifican a quién se emite el comprobante. Si comprás para una empresa y recibís el pedido en otro lugar, podés seleccionar los datos fiscales de la empresa y la dirección de entrega que corresponda. La verificación de identidad y edad se completa desde la app de Sercio.",
+          "La dirección de entrega indica dónde querés recibir el pedido. Los datos de facturación identifican a quién se emite el comprobante. Si comprás para una empresa y recibís el pedido en otro lugar, podés seleccionar los datos fiscales de la empresa y la dirección de entrega que corresponda. Podés completar la verificación de identidad y edad en el navegador de tu teléfono escaneando el QR de la web.",
         screenshot: "Formularios de facturación y dirección de entrega con ubicación en el mapa",
       },
       {

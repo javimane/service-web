@@ -89,6 +89,8 @@ export const API_ENDPOINTS = {
   },
   identityVerification: {
     me: `${API_BASE_URL}/api/identity-verification/me`,
+    sessions: `${API_BASE_URL}/api/identity-verification/me/sessions`,
+    sync: `${API_BASE_URL}/api/identity-verification/me/sync`,
   },
   shipments: {
     merchant: `${API_BASE_URL}/api/shipments/merchant`,

@@ -1,5 +1,7 @@
 "use client";
 
+import IdentityVerificationQr from "@/components/IdentityVerificationQr/IdentityVerificationQr";
+
 import { useEffect, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import Modal from "@/components/Modal/Modal";
@@ -62,10 +64,10 @@ export default function PurchaseVerificationPrompt() {
         try {
           const verification = await commerceService.getIdentityVerificationStatus();
           setMessage(verification.session?.rejection_reason ||
-            "Todavía no figura verificada. Completá el proceso en la app y volvé a consultar.");
+            "Todavía no figura verificada. Completá la verificación en tu teléfono y volvé a consultar.");
         } catch {
           setMessage(session
-            ? "Todavía no figura verificada. Completá el proceso en la app y volvé a consultar."
+            ? "Todavía no figura verificada. Completá la verificación en tu teléfono y volvé a consultar."
             : "No pudimos consultar la sesión. Intentá de nuevo en unos instantes.");
         }
       }
@@ -87,13 +89,9 @@ export default function PurchaseVerificationPrompt() {
           <ShieldCheck aria-hidden="true" size={34} />
           <p>
             Para comprar, verificá tu DNI, rostro y mayoría de edad desde la
-            aplicación de Sercio en tu teléfono. Ingresá con esta misma cuenta y
-            abrí “Verificar identidad y edad”.
+            navegador de tu teléfono.
           </p>
-          <p>
-            Cuando termines, volvé a esta página y pulsá “Sí” en el aviso que
-            quedará visible.
-          </p>
+          <IdentityVerificationQr key={user.id} onVerified={refreshSession} />
           <button
             type="button"
             className="purchase-verification__modal-button"
@@ -110,7 +108,7 @@ export default function PurchaseVerificationPrompt() {
             <strong>¿Verificaste la cuenta?</strong>
           </div>
           <p>
-            Hacelo desde la app de Sercio en tu teléfono para poder comprar.
+            Si todavía no verificaste tu identidad, elegí “No” para abrir el QR.
           </p>
           {message && (
             <p className="purchase-verification__message">{message}</p>

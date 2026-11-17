@@ -1971,6 +1971,16 @@ export const commerceService = {
     ),
 
   // User Payment Methods (Saved Cards)
+  startIdentityVerification: () =>
+    apiClient<{ url: string }>(API_ENDPOINTS.identityVerification.sessions, {
+      method: "POST",
+    }),
+
+  syncIdentityVerification: () =>
+    apiClient<IdentityVerificationStatus>(API_ENDPOINTS.identityVerification.sync, {
+      method: "POST",
+    }),
+
   getIdentityVerificationStatus: () =>
     apiClient<IdentityVerificationStatus>(
       API_ENDPOINTS.identityVerification.me,

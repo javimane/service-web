@@ -1,5 +1,7 @@
 "use client";
 
+import IdentityVerificationQr from "@/components/IdentityVerificationQr/IdentityVerificationQr";
+
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Modal from "@/components/Modal/Modal";
@@ -58,7 +60,7 @@ export function AccountAccessNotice({
   };
 
   const missingVerifications = [
-    !identityVerified && "DNI, rostro y mayoría de edad desde la app",
+    !identityVerified && "DNI, rostro y mayoría de edad",
     !cbuVerified && "CBU de cobro a tu nombre o empresa",
   ].filter(Boolean).join("; ");
   const verificationHref = !cbuVerified
@@ -82,7 +84,7 @@ export function AccountAccessNotice({
             Para recibir nuevas ventas, completá: {missingVerifications}.
             Podés seguir gestionando tus pedidos anteriores.
           </p>
-          {!identityVerified && <p>Para verificar tu identidad, ingresá en la app a <strong>Menú - Configuración - Verificación de Identidad y Edad</strong>.</p>}
+          {!identityVerified && <IdentityVerificationQr onVerified={refresh} />}
           {reason && <p>{reason}</p>}
           <div className="account-access__actions">
             <a href={verificationHref} onClick={() => setVerificationDismissed(true)}>

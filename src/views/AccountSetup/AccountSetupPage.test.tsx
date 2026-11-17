@@ -41,7 +41,14 @@ vi.mock("@/app/actions/professionals", () => ({
   getProfessionalDetailAction: vi.fn(),
 }));
 vi.mock("@/services/commerceService", () => ({
-  commerceService: { getUserAddresses: vi.fn() },
+  commerceService: {
+    getUserAddresses: vi.fn(),
+    startIdentityVerification: vi.fn(),
+    getIdentityVerificationStatus: vi.fn(),
+  },
+}));
+vi.mock("qrcode", () => ({
+  default: { toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,cXI=") },
 }));
 vi.mock("@/utils/auth", () => ({ getAccessToken: () => "token" }));
 
@@ -50,6 +57,7 @@ describe("AccountSetupPage", () => {
     vi.stubGlobal("scrollTo", vi.fn());
     localStorage.clear();
     vi.clearAllMocks();
+    auth.isAgeVerified = false;
     auth.sessionStatus = { is_professional: false, professional_id: null };
     auth.refreshSession.mockResolvedValue({ arca_verified: true, cbu_verified: true });
     vi.mocked(getProfileAction).mockResolvedValue({
@@ -79,7 +87,7 @@ describe("AccountSetupPage", () => {
     ));
   });
 
-  it("informa en el último paso que el comprador debe verificarse en la app antes de pagar", async () => {
+  it("informa en el último paso que el comprador debe verificarse antes de pagar", async () => {
     vi.mocked(commerceService.getUserAddresses).mockResolvedValue([{ id: "address-1" }] as any);
     render(<AccountSetupPage />);
 
@@ -94,7 +102,7 @@ describe("AccountSetupPage", () => {
     expect(screen.getByText(/titular de la tarjeta que uses para pagar/i)).toBeInTheDocument();
   });
 
-  it("lleva al profesional hasta la indicación de verificar DNI y rostro en la app", async () => {
+  it("permite al profesional iniciar por QR y actualizar la sesión", async () => {
     auth.sessionStatus = { is_professional: true, professional_id: 82 };
     vi.mocked(commerceService.getUserAddresses).mockResolvedValue([{ id: "address-1" }] as any);
     vi.mocked(getProfessionalMeAction).mockResolvedValue({ data: { companies: { name: "Mi negocio", tax_code: "20123456789" } } } as any);
@@ -112,7 +120,38 @@ describe("AccountSetupPage", () => {
     await screen.findByText("Formulario del perfil público");
     fireEvent.click(screen.getByRole("button", { name: /Guardar y continuar/i }));
 
-    expect(await screen.findByText(/foto de tu DNI y una foto de tu rostro/i)).toBeInTheDocument();
+    vi.mocked(commerceService.startIdentityVerification).mockResolvedValue({
+      url: "https://verify.didit.me/es/session/test-session",
+    });
+    vi.mocked(commerceService.getIdentityVerificationStatus).mockResolvedValue({
+      is_age_verified: true,
+      purchase_eligible: true,
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /Verificar identidad con QR/i }));
+    expect(await screen.findByRole("img", { name: /Código QR para abrir la verificación/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Abrir en este dispositivo/i }))
+      .toHaveAttribute("href", "https://verify.didit.me/es/session/test-session");
+    auth.refreshSession.mockClear();
+    auth.refreshSession.mockResolvedValueOnce({ is_age_verified: true });
+    fireEvent.focus(window);
+    expect(await screen.findByText("Tu identidad está verificada.")).toBeInTheDocument();
+    expect(auth.refreshSession).toHaveBeenCalledOnce();
+    expect(router.push).toHaveBeenCalledWith("/panel");
+  });
+
+  it("avanza al panel si la sesión se actualiza antes que el QR", async () => {
+    auth.sessionStatus = { is_professional: true, professional_id: 82 };
+    localStorage.setItem("show_setup_on_login", "true");
+    localStorage.setItem("account_setup_step_user-1", "identity");
+    const { rerender } = render(<AccountSetupPage />);
+    await screen.findByRole("button", { name: /Verificar identidad con QR/i });
+
+    auth.isAgeVerified = true;
+    rerender(<AccountSetupPage />);
+
+    await waitFor(() => expect(router.push).toHaveBeenCalledExactlyOnceWith("/panel"));
+    expect(localStorage.getItem("show_setup_on_login")).toBeNull();
   });
 
   it("permite completar el nombre y apellido si no se guardaron en el registro", async () => {
