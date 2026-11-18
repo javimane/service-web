@@ -183,6 +183,9 @@ export const trainingGroups: { title: string; guides: Guide[] }[] = [
           "Completá los datos del producto, cargá sus imágenes y guardá el precio y stock.",
           "Si tiene talles, colores u otras características distintas, creá variantes. Revisá su precio, stock y EAN por separado.",
           "Revisá el stock por sucursal y configurá descuentos, cuotas o envío gratis según corresponda.",
+          "Para cargar varios productos, usá Importar Excel. Descargá la plantilla con su instructivo, completá Productos y copiá los ID de Categorias y Subcategorias. Elegí la sucursal que recibirá el stock.",
+          "Cada fila requiere un codigo único. Para una variante, codigo_padre identifica al principal del mismo archivo. Cada variante tiene precio y stock propios. Se admiten hasta 1000 filas por archivo .xlsx de 5 MB.",
+          "Revisá el resultado de la importación. Si hay errores, no se crea ninguna fila: corregí el archivo y volvé a subirlo. Los códigos que ya se importaron se editan desde el catálogo.",
         ],
         required:
           "Al crear un producto, completá nombre, categoría, condición, precio, stock, peso y dimensiones. Ingresá el EAN o marcá que no tiene código de barras. Revisá los campos obligatorios que se muestran para tu categoría.",

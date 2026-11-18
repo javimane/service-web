@@ -1,0 +1,65 @@
+.product-excel-import {
+  display: grid;
+  gap: var(--space-3);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+}
+.product-excel-import ol {
+  padding-left: var(--space-6);
+}
+.product-excel-import li {
+  margin-bottom: var(--space-2);
+}
+.product-excel-import__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.product-excel-import button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-4);
+}
+.product-excel-import :is(select, input) {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.product-excel-import__job {
+  padding: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow-wrap: anywhere;
+}
+.product-excel-import__errors {
+  overflow-x: auto;
+  max-height: 320px;
+}
+.product-excel-import table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.product-excel-import :is(th, td) {
+  padding: var(--space-2);
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+.product-excel-import button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

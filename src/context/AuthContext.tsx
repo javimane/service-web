@@ -21,6 +21,7 @@ import {
 } from "../services/notificationStorage";
 import Modal from "../components/Modal/Modal";
 import { sileo } from "sileo";
+import { browserApiUrl } from "../utils/apiAuth";
 import "./AuthContext.css";
 import { AccountAccessNotice } from "./AccountAccessNotice";
 import { showDesktopNotification } from "../services/desktopNotifications";
@@ -312,22 +313,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     let eventSource: EventSource | null = null;
     let reconnectTimeout: NodeJS.Timeout;
 
     const connectSSE = () => {
       try {
-        const token = localStorage.getItem("access_token") || "";
-        const sseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/api/notifications/stream?token=${token}`;
+        const sseUrl = browserApiUrl("/api/notifications/stream");
 
         if (eventSource) {
           eventSource.close();
         }
 
         eventSource = new EventSource(sseUrl, { withCredentials: true });
+
 
         eventSource.onmessage = (event) => {
           try {
@@ -347,7 +349,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Inyectar en React Query caché (para la NavBar y NotificationsPage)
             queryClient.setQueryData(
-              ["notifications", user.id],
+              ["notifications", userId],
               (old: any[]) => {
                 if (!old) return [payload];
                 return [payload, ...old];
@@ -356,8 +358,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Si es notificación de reporte de error o actualización, invalidar la query de reportes
             queryClient.invalidateQueries({
-              queryKey: ["error-reports", user.id],
+              queryKey: ["error-reports", userId],
             });
+
+            if (payload.type === "PRODUCT_IMPORT_FINISHED") {
+              void queryClient.invalidateQueries({ queryKey: ["product-import-jobs", userId] });
+              void queryClient.invalidateQueries({ queryKey: ["professional-products"] });
+              void queryClient.invalidateQueries({ queryKey: ["professional-product-categories"] });
+            }
 
             // Mostrar la notificación flotante con sileo
             sileo.info({
@@ -403,7 +411,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearTimeout(reconnectTimeout);
       }
     };
-  }, [user]);
+  }, [userId, queryClient]);
 
   // Keep Supabase session alive and listen to auth changes
   useEffect(() => {

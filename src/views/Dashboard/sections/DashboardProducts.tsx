@@ -1,4 +1,5 @@
 "use client";
+import ProductExcelImport from "@/components/ProductExcelImport/ProductExcelImport";
 import { getProfessionalMeAction } from "@/app/actions/professionals";
 import FoodListsManager from "@/components/FoodListsManager";
 import ProductBranchStock from "@/components/ProductBranchStock/ProductBranchStock";
@@ -1568,6 +1569,7 @@ export default function DashboardProducts({
             />
             <span>Refrescar</span>
           </button>
+          {hasAddress && <ProductExcelImport />}
           {hasAddress && isGastronomic && (
             <button
               type="button"

@@ -34,6 +34,7 @@ async function forward(request: NextRequest, context: RouteContext) {
   const target = new URL(`${base.replace(/\/$/, "")}/api/${path.map(encodeURIComponent).join("/")}`);
   target.search = request.nextUrl.search;
   const isLogout = request.method === "POST" && path.join("/") === "auth/logout";
+  const isNotificationsStream = request.method === "GET" && path.join("/") === "notifications/stream";
   const webUrl = publicOrigin ?? request.nextUrl;
   const responseHeaders = new Headers({ "Cache-Control": "no-store" });
   if (isLogout) {
@@ -67,7 +68,7 @@ async function forward(request: NextRequest, context: RouteContext) {
       body: ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer(),
       cache: "no-store",
       redirect: "manual",
-      signal: AbortSignal.timeout(60_000),
+      signal: isNotificationsStream ? request.signal : AbortSignal.timeout(60_000),
     });
     for (const name of ["content-type", "content-disposition", "location", "retry-after"]) {
       const value = upstream.headers.get(name);

@@ -108,6 +108,10 @@
 }
 
 /* ── Sidebar & Results Layout ───────────────────────────────── */
+.categories-page .categories-page__content {
+  margin-top: var(--space-8);
+}
+
 .categories-page__content {
   display: grid;
   grid-template-columns: 340px 1fr;

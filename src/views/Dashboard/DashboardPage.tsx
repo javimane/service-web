@@ -320,7 +320,10 @@ export default function DashboardPage() {
   }, [routeView]);
 
   useEffect(() => {
-    if (sessionStatus?.sell_verification_required && (view === "products" || view === "services")) {
+    if (
+      sessionStatus?.sell_verification_required &&
+      (view === "products" || view === "services")
+    ) {
       window.dispatchEvent(new Event(SELL_VERIFICATION_NOTICE_EVENT));
     }
   }, [view, sessionStatus?.sell_verification_required]);
@@ -359,7 +362,12 @@ export default function DashboardPage() {
 
   // Mostrar el modal de cuenta no verificada una vez por sesión de browser
   useEffect(() => {
-    if (!myProfessional || !isProfessionalUser || sessionStatus?.sell_verification_required) return;
+    if (
+      !myProfessional ||
+      !isProfessionalUser ||
+      sessionStatus?.sell_verification_required
+    )
+      return;
 
     const isVerified =
       myProfessional?.companies_arca?.[0]?.is_verified ||
@@ -378,7 +386,11 @@ export default function DashboardPage() {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [myProfessional, isProfessionalUser, sessionStatus?.sell_verification_required]);
+  }, [
+    myProfessional,
+    isProfessionalUser,
+    sessionStatus?.sell_verification_required,
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -430,7 +442,9 @@ export default function DashboardPage() {
 
       {/* Modal flotante de verificación de cuenta */}
       <UnverifiedAccountModal
-        isOpen={isUnverifiedModalOpen && !sessionStatus?.sell_verification_required}
+        isOpen={
+          isUnverifiedModalOpen && !sessionStatus?.sell_verification_required
+        }
         onClose={() => setIsUnverifiedModalOpen(false)}
       />
 
@@ -1091,15 +1105,24 @@ export default function DashboardPage() {
               </li>
               <li className="dashboard-welcome__benefit">
                 <span aria-hidden="true">✅</span>
-                <span>Ofrecé <strong>cuotas sin interés</strong> en tus productos y servicios.</span>
+                <span>
+                  Ofrecé <strong>cuotas sin interés</strong> en tus productos y
+                  servicios.
+                </span>
               </li>
               <li className="dashboard-welcome__benefit">
                 <span aria-hidden="true">✅</span>
-                <span>Ofrecé <strong>envíos gratis por delivery o a todo el país.</strong></span>
+                <span>
+                  Ofrecé{" "}
+                  <strong>envíos gratis por delivery o a todo el país.</strong>
+                </span>
               </li>
               <li className="dashboard-welcome__benefit">
                 <span aria-hidden="true">✅</span>
-                <span>Integrá tu flota con tus propios <strong>deliverys y fleteros.</strong></span>
+                <span>
+                  Integrá tu flota con tus propios{" "}
+                  <strong>deliverys y fleteros.</strong>
+                </span>
               </li>
             </ul>
             <button
