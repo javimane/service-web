@@ -37,7 +37,7 @@ export async function GET() {
       const attributes = {
         id: entry.listingId,
         external_seller_id: entry.sellerId,
-        title: entry.name.slice(0, 150),
+        title: entry.title,
         description: entry.description.slice(0, 5000),
         link: entry.url,
         image_link: entry.image,

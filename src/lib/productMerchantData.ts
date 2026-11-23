@@ -99,6 +99,12 @@ export function getMerchantProduct(product: MerchantProduct) {
   const seller = (Array.isArray(company) ? company[0]?.name : company?.name) ||
     listing.Professional?.Profile?.display_name;
   const brand = product.brand?.trim() || undefined;
+  const normalizedName = name.toLocaleLowerCase("es").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const normalizedBrand = brand?.toLocaleLowerCase("es").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const title = brand && normalizedBrand &&
+    !` ${normalizedName} `.includes(` ${normalizedBrand} `)
+    ? `${name.slice(0, Math.max(0, 150 - brand.length - 3)).trimEnd()} - ${brand}`.slice(0, 150)
+    : name.slice(0, 150);
   const description = product.description?.trim() || name;
   const salePrice = Number.isFinite(offer) && offer > 0 && offer < price ? offer : undefined;
   const condition = listing.product_condition === "used" ? "used" : "new";
@@ -114,6 +120,7 @@ export function getMerchantProduct(product: MerchantProduct) {
     brand,
     gtin,
     name,
+    title,
     description,
     image: images[0],
     url,
