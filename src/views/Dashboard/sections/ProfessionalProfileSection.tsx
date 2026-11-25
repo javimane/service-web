@@ -1,4 +1,5 @@
 "use client";
+import { getProfessionalDisplayName } from "@/utils/professionalDisplayName";
 import { useAlert } from "@/context/AlertContext";
 import { type ChangeEvent, useRef, useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -135,7 +136,7 @@ const createId = (prefix: string) =>
 const DEFAULT_AVATAR = "/foto-perfil.png";
 
 export default function ProfessionalProfileSection() {
-  const { showSuccess } = useAlert();
+  const { showSuccess, showError } = useAlert();
   const { sessionStatus, subscriptionPlan, user } = useAuth();
   const router = useRouter();
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
@@ -250,6 +251,8 @@ export default function ProfessionalProfileSection() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const [savingPhotos, setSavingPhotos] = useState({ profile: false, cover: false });
+  const photoUploadInProgress = useRef({ profile: false, cover: false });
   const [profilePhoto, setProfilePhoto] = useState("");
   const [profilePhotoFileName, setProfilePhotoFileName] = useState("");
   const [portfolioPhoto, setPortfolioPhoto] = useState("");
@@ -282,24 +285,12 @@ export default function ProfessionalProfileSection() {
     return `${window.location.origin}${profilePath}`;
   }, [professionalId, professional?.seo_path]);
 
-  const qrDisplayName = useMemo(() => {
-    const candidates = [
-      sessionStatus?.company_name,
+  const qrDisplayName = useMemo(() => getProfessionalDisplayName({
+    ...professional,
+    company_name: professional?.company_name || sessionStatus?.company_name ||
       (sessionStatus as any)?.companyName,
-      professional?.company_name,
-      (professional as any)?.companyName,
-      professional?.companies?.[0]?.name,
-      professional?.Company?.[0]?.name,
-      displayName,
-      "Profesional",
-    ];
-
-    const firstValid = candidates.find(
-      (value) => typeof value === "string" && value.trim().length > 0,
-    );
-
-    return firstValid || "Profesional";
-  }, [displayName, professional, sessionStatus]);
+    Profile: { display_name: displayName },
+  }), [displayName, professional, sessionStatus]);
 
   const handleOpenQrModal = async () => {
     try {
@@ -338,13 +329,16 @@ export default function ProfessionalProfileSection() {
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
   useEffect(() => {
-    if (profile) {
-      setDisplayName(profile.display_name || "");
-      if (profile.avatar_url) setProfilePhoto(profile.avatar_url);
-      if (profile.portfolio_image_url)
-        setPortfolioPhoto(profile.portfolio_image_url);
-    }
-  }, [profile]);
+    setDisplayName(profile?.display_name || "");
+  }, [profile?.display_name]);
+
+  useEffect(() => {
+    setProfilePhoto(profile?.avatar_url || "");
+  }, [profile?.avatar_url]);
+
+  useEffect(() => {
+    setPortfolioPhoto(profile?.portfolio_image_url || "");
+  }, [profile?.portfolio_image_url]);
 
   useEffect(() => {
     if (professional) {
@@ -435,100 +429,66 @@ export default function ProfessionalProfileSection() {
     };
   }, [newVideoFile]);
 
-  const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Actualizar nombre y preview de forma inmediata, sin esperar el upload
-    setProfilePhotoFileName(file.name);
-
-    if (profilePhotoObjectUrlRef.current) {
-      URL.revokeObjectURL(profilePhotoObjectUrlRef.current);
-      profilePhotoObjectUrlRef.current = null;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    profilePhotoObjectUrlRef.current = objectUrl;
-    setProfilePhoto(objectUrl);
-
-    if (!userId) return;
-
-    try {
-      const uploaded = await uploadProfileImage({
-        file,
-        entityId: displayName || "profile",
-        fileName: file.name,
-      });
-
-      if (profilePhotoObjectUrlRef.current) {
-        URL.revokeObjectURL(profilePhotoObjectUrlRef.current);
-        profilePhotoObjectUrlRef.current = null;
-      }
-
-      setProfilePhoto(uploaded.publicUrl);
-
-      const updateResult = await updateProfileAction({
-        id: userId,
-        data: {
-          avatar_url: uploaded.publicUrl,
-        },
-        token: getAccessToken(),
-      });
-      if (updateResult?.serverError) throw new Error(updateResult.serverError);
-      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
-
-      setSavedMessage("Foto de perfil actualizada.");
-    } catch {
-      setSavedMessage("No se pudo subir la foto de perfil.");
-    }
-  };
-
-  const handlePortfolioPhotoChange = async (
+  const handlePhotoChange = async (
     event: ChangeEvent<HTMLInputElement>,
+    kind: "profile" | "cover" = "profile",
   ) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    setPortfolioPhotoFileName(file.name);
-
-    if (portfolioPhotoObjectUrlRef.current) {
-      URL.revokeObjectURL(portfolioPhotoObjectUrlRef.current);
-      portfolioPhotoObjectUrlRef.current = null;
+    event.target.value = "";
+    if (!file || photoUploadInProgress.current[kind]) return;
+    if (!userId) {
+      showError("Iniciá sesión para guardar la imagen.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      showError("Seleccioná un archivo de imagen.");
+      return;
     }
 
+    const isProfile = kind === "profile";
+    const setPhoto = isProfile ? setProfilePhoto : setPortfolioPhoto;
+    const setFileName = isProfile ? setProfilePhotoFileName : setPortfolioPhotoFileName;
+    const objectUrlRef = isProfile ? profilePhotoObjectUrlRef : portfolioPhotoObjectUrlRef;
+    const previousPhoto = isProfile ? profilePhoto : portfolioPhoto;
+    const previousFileName = isProfile ? profilePhotoFileName : portfolioPhotoFileName;
+    const upload = isProfile ? uploadProfileImage : uploadProfileWorkImage;
+    const field = isProfile ? "avatar_url" : "portfolio_image_url";
+    photoUploadInProgress.current[kind] = true;
+    setSavingPhotos((current) => ({ ...current, [kind]: true }));
+    setSavedMessage("");
     const objectUrl = URL.createObjectURL(file);
-    portfolioPhotoObjectUrlRef.current = objectUrl;
-    setPortfolioPhoto(objectUrl);
-
-    if (!userId) return;
+    objectUrlRef.current = objectUrl;
+    setPhoto(objectUrl);
+    setFileName(file.name);
 
     try {
-      const uploaded = await uploadProfileWorkImage({
+      const uploaded = await upload({
         file,
-        entityId: displayName || "portfolio",
+        entityId: displayName || (isProfile ? "profile" : "portfolio"),
         fileName: file.name,
       });
-
-      if (portfolioPhotoObjectUrlRef.current) {
-        URL.revokeObjectURL(portfolioPhotoObjectUrlRef.current);
-        portfolioPhotoObjectUrlRef.current = null;
-      }
-
-      setPortfolioPhoto(uploaded.publicUrl);
-
-      const updateResult = await updateProfileAction({
+      const result = await updateProfileAction({
         id: userId,
-        data: {
-          portfolio_image_url: uploaded.publicUrl,
-        },
+        data: { [field]: uploaded.publicUrl },
         token: getAccessToken(),
       });
-      if (updateResult?.serverError) throw new Error(updateResult.serverError);
-      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
-
-      setSavedMessage("Imagen de portfolio actualizada.");
+      if (result?.serverError) throw new Error(result.serverError);
+      if (result?.validationErrors) throw new Error("No se pudo guardar la imagen.");
+      setPhoto(uploaded.publicUrl);
+      queryClient.setQueryData(["profile", userId], (current: typeof profile) =>
+        current ? { ...current, [field]: uploaded.publicUrl } : current,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      setSavedMessage(isProfile ? "Foto de perfil guardada automáticamente." : "Portada guardada automáticamente.");
     } catch {
-      setSavedMessage("No se pudo subir la imagen de portfolio.");
+      setPhoto(previousPhoto);
+      setFileName(previousFileName);
+      showError(isProfile ? "No se pudo guardar la foto de perfil. Volvé a seleccionarla para reintentar." : "No se pudo guardar la portada. Volvé a seleccionarla para reintentar.");
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+      objectUrlRef.current = null;
+      photoUploadInProgress.current[kind] = false;
+      setSavingPhotos((current) => ({ ...current, [kind]: false }));
     }
   };
 
@@ -970,13 +930,15 @@ export default function ProfessionalProfileSection() {
           />
           <label
             className="professional-profile__avatar-edit"
-            title="Cambiar foto"
+            title={savingPhotos.profile ? "Guardando foto…" : "Cambiar foto"}
+            aria-busy={savingPhotos.profile}
           >
-            <Camera size={14} />
+            {savingPhotos.profile ? <Loader2 size={14} className="btn-spinner" aria-hidden="true" /> : <Camera size={14} />}
             <input
               type="file"
               accept="image/*"
               onChange={handlePhotoChange}
+              disabled={savingPhotos.profile}
               hidden
             />
           </label>
@@ -1016,7 +978,7 @@ export default function ProfessionalProfileSection() {
               );
               const shareUrl = `${window.location.origin}${profilePath}`;
               const shareData = {
-                title: displayName || "Perfil Profesional",
+                title: qrDisplayName,
                 text: description || "Perfil profesional en Sercio",
                 url: shareUrl,
               };
@@ -1099,15 +1061,17 @@ export default function ProfessionalProfileSection() {
                     data-action-tone="upload"
                     className="professional-profile__upload-btn"
                   >
-                    <Camera size={16} /> Subir nueva foto
+                    {savingPhotos.profile ? <Loader2 size={16} className="btn-spinner" aria-hidden="true" /> : <Camera size={16} />}
+                    {savingPhotos.profile ? "Guardando foto…" : "Subir nueva foto"}
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handlePhotoChange}
+                      disabled={savingPhotos.profile}
                     />
                   </label>
                   <span className="professional-profile__file-name">
-                    {profilePhotoFileName || "Ningún archivo seleccionado"}
+                    {profilePhotoFileName || "Se guarda automáticamente al seleccionar una foto."}
                   </span>
                 </div>
                 {profilePhoto ? (
@@ -1124,15 +1088,17 @@ export default function ProfessionalProfileSection() {
                     data-action-tone="upload"
                     className="professional-profile__upload-btn"
                   >
-                    <Camera size={16} /> Subir nueva imagen
+                    {savingPhotos.cover ? <Loader2 size={16} className="btn-spinner" aria-hidden="true" /> : <Camera size={16} />}
+                    {savingPhotos.cover ? "Guardando portada…" : "Subir nueva imagen"}
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handlePortfolioPhotoChange}
+                      onChange={(event) => void handlePhotoChange(event, "cover")}
+                      disabled={savingPhotos.cover}
                     />
                   </label>
                   <span className="professional-profile__file-name">
-                    {portfolioPhotoFileName || "Ningún archivo seleccionado"}
+                    {portfolioPhotoFileName || "Se guarda automáticamente al seleccionar una imagen."}
                   </span>
                 </div>
                 {portfolioPhoto ? (

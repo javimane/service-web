@@ -49,7 +49,7 @@ const defaultFilters = {
   is_offer: "all",
   interest_free_installments: "all",
   free_shipping: "all",
-  limit: "10",
+  limit: "22",
   sortBy: "price-asc",
 };
 
@@ -249,11 +249,17 @@ export default function ProductsPage() {
   });
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ["products", effectiveFilters, page],
+    queryKey: ["products", effectiveFilters, page, professionalIdParam],
     queryFn: async () => {
+      const professionalId = Number(professionalIdParam);
       const params = {
         page,
         limit: Number(effectiveFilters.limit),
+        include_pagination: true,
+        professionalId:
+          Number.isSafeInteger(professionalId) && professionalId > 0
+            ? professionalId
+            : undefined,
         name: effectiveFilters.search || undefined,
         sortBy: effectiveFilters.sortBy || undefined,
         categoryId:

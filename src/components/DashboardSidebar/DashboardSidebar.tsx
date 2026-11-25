@@ -121,7 +121,7 @@ export default function DashboardSidebar({
   const [isLoadingWhatsApp, setIsLoadingWhatsApp] = useState(false);
 
   const { data: userProfile } = useQuery({
-    queryKey: ["user-profile-me"],
+    queryKey: ["user-profile-me", user?.id],
     queryFn: () => commerceService.getUserProfile(),
     enabled: Boolean(user),
     staleTime: 5 * 60 * 1000,
@@ -140,6 +140,7 @@ export default function DashboardSidebar({
   );
 
   const isEmployer =
+    (sessionStatus?.role_id === 6 && isProfessionalActive) ||
     userProfile?.logistics_role === "transport_company" ||
     userProfile?.logistics_role === "company" ||
     isCompanyActive;

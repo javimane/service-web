@@ -256,7 +256,11 @@ export default function HomePage() {
             <div
               className="home-hero__quick-links"
               ref={quickLinksRef}
-              onPointerDown={handleQuickLinksPointerDown}
+              onPointerDown={(event) => {
+                if (event.currentTarget.scrollWidth > event.currentTarget.clientWidth) {
+                  handleQuickLinksPointerDown(event);
+                }
+              }}
               onPointerMove={handleQuickLinksPointerMove}
               onPointerUp={handleQuickLinksPointerUp}
               onPointerCancel={handleQuickLinksPointerUp}

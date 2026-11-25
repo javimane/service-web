@@ -347,6 +347,7 @@ export default function CommercialDataSection({ requireVerification = false, onS
     },
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["professional-me"] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile-me"] });
       await refreshSession();
       showSuccess("Datos comerciales guardados correctamente ✨");
       setIsEditingCompany(false);

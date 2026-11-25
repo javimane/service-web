@@ -1,4 +1,5 @@
 "use client";
+import { getProfessionalDisplayName } from "@/utils/professionalDisplayName";
 import { useState, useRef, useMemo, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import WhatsAppContactButton from "@/components/WhatsAppContactButton/WhatsAppContactButton";
@@ -775,7 +776,7 @@ export default function ProfilePage({
 
   const profile = professional?.Profile;
   const company = professional?.Companies?.[0] || professional?.Company;
-  const name = company?.name || profile?.display_name || "Profesional";
+  const name = getProfessionalDisplayName(professional);
   const avatar =
     profile?.avatar_url ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;

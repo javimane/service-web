@@ -1,7 +1,7 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Check, AlertCircle, CheckCircle2, Loader2, X, User } from "lucide-react";
+import { Camera, AlertCircle, CheckCircle2, Loader2, X, User } from "lucide-react";
 import { uploadProfileImage } from "../../../services/storageUploads";
 import { getProfileAction, updateProfileAction } from "../../../app/actions/profile";
 import { getAccessToken } from "../../../utils/auth";
@@ -15,7 +15,9 @@ export default function AvatarSection({ userId }: AvatarSectionProps) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  useEffect(() => {
+    return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
+  }, [previewUrl]);
   const [notification, setNotification] = useState<{
     type: "success" | "error";
     message: string;
@@ -43,12 +45,15 @@ export default function AvatarSection({ userId }: AvatarSectionProps) {
         token: getAccessToken(),
       });
       if (result?.serverError) throw new Error(result.serverError);
+      if (result?.validationErrors) throw new Error("No se pudo guardar la foto.");
       return publicUrl;
     },
     onSuccess: (publicUrl) => {
-      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      queryClient.setQueryData(["profile", userId], (current: typeof profile) =>
+        current ? { ...current, avatar_url: publicUrl } : current,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["profile", userId] });
       setPreviewUrl(null);
-      setPendingFile(null);
       setNotification({
         type: "success",
         message: "Foto de perfil actualizada correctamente.",
@@ -56,6 +61,7 @@ export default function AvatarSection({ userId }: AvatarSectionProps) {
       setTimeout(() => setNotification(null), 5000);
     },
     onError: () => {
+      setPreviewUrl(null);
       setNotification({
         type: "error",
         message: "Error al subir la imagen. Intentá de nuevo.",
@@ -66,19 +72,11 @@ export default function AvatarSection({ userId }: AvatarSectionProps) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    setPendingFile(file);
+    e.target.value = "";
+    if (!file || uploadMutation.isPending) return;
+    setNotification(null);
     setPreviewUrl(URL.createObjectURL(file));
-  };
-
-  const handleConfirm = () => {
-    if (pendingFile) uploadMutation.mutate(pendingFile);
-  };
-
-  const handleCancel = () => {
-    setPendingFile(null);
-    setPreviewUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    uploadMutation.mutate(file);
   };
 
   const isUploading = uploadMutation.isPending;
@@ -118,7 +116,7 @@ export default function AvatarSection({ userId }: AvatarSectionProps) {
             <img
               src={currentAvatar}
               alt="Foto de perfil"
-              className={`avatar-preview-img ${pendingFile ? "avatar-preview-img--pending" : ""}`}
+              className="avatar-preview-img"
             />
           ) : (
             <div className="avatar-placeholder">
@@ -131,15 +129,15 @@ export default function AvatarSection({ userId }: AvatarSectionProps) {
             type="button"
             className="avatar-camera-btn"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
+            disabled={isUploading || isLoading}
             aria-label="Cambiar foto de perfil"
           >
             <Camera size={18} />
           </button>
 
-          {pendingFile && !isUploading && (
-            <span className="avatar-pending-badge">Nuevo</span>
-          )}
+          {isUploading && <div className="avatar-saving-overlay" role="status" aria-label="Guardando foto de perfil">
+            <Loader2 size={28} className="btn-spinner" aria-hidden="true" />
+          </div>}
         </div>
 
         {/* Right side info & actions */}
@@ -154,46 +152,20 @@ export default function AvatarSection({ userId }: AvatarSectionProps) {
             accept="image/jpeg,image/png,image/webp"
             onChange={handleFileChange}
             className="avatar-file-input"
+            disabled={isUploading || isLoading}
           />
 
-          {pendingFile ? (
-            <div className="avatar-confirm-row">
-              <button
-                type="button"
-                className="avatar-confirm-btn avatar-confirm-btn--save"
-                onClick={handleConfirm}
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 size={15} className="avatar-spinner" /> Subiendo...
-                  </>
-                ) : (
-                  <>
-                    <Check size={15} /> Guardar foto
-                  </>
-                )}
-              </button>
-              <button data-action-tone="cancel"
-                type="button"
-                className="avatar-confirm-btn avatar-confirm-btn--cancel"
-                onClick={handleCancel}
-                disabled={isUploading}
-              >
-                <X size={15} /> Cancelar
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="avatar-upload-btn"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              <Camera size={16} />
-              Cambiar foto
-            </button>
-          )}
+          <button
+            type="button"
+            data-action-tone="upload"
+            className="avatar-upload-btn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading || isLoading}
+          >
+            {isUploading ? <Loader2 size={16} className="btn-spinner" aria-hidden="true" /> : <Camera size={16} />}
+            {isUploading ? "Guardando foto…" : "Cambiar foto"}
+          </button>
+          <p className="avatar-hint">La foto se guarda automáticamente al seleccionarla.</p>
         </div>
       </div>
     </article>

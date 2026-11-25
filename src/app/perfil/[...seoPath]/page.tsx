@@ -1,3 +1,4 @@
+import { getProfessionalDisplayName } from "@/utils/professionalDisplayName";
 import type { Metadata } from "next";
 import { API_ENDPOINTS } from "@/services/api.config";
 import { fetchWithApiKey } from "@/lib/serverFetch";
@@ -28,10 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         professional?.Companies?.[0] ||
         professional?.Company?.[0] ||
         professional?.companies?.[0];
-      const name =
-        company?.name?.trim() ||
-        professional?.Profile?.display_name?.trim() ||
-        "Profesional";
+      const name = getProfessionalDisplayName(professional);
       const avatar = professional?.Profile?.avatar_url;
 
       const categories = professional?.professional_categories
@@ -66,6 +64,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description,
         alternates: {
           canonical: `https://sercio.com.ar${fullPath}`,
+        },
+        twitter: {
+          card: "summary_large_image",
+          title,
+          description,
+          images: avatar ? [avatar] : [],
         },
         openGraph: {
           title,
@@ -105,10 +109,7 @@ export default async function Page({ params }: Props) {
         profData?.Companies?.[0] ||
         profData?.Company?.[0] ||
         profData?.companies?.[0];
-      const name =
-        company?.name?.trim() ||
-        profData?.Profile?.display_name?.trim() ||
-        "Profesional";
+      const name = getProfessionalDisplayName(profData);
       const avatar = profData?.Profile?.avatar_url;
 
       const categories = profData?.professional_categories

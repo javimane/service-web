@@ -9,6 +9,7 @@ import { buildActionHeaders } from "./_utils/authHeaders";
 const productListSchema = z.object({
   page: z.number().optional(),
   limit: z.number().optional(),
+  include_pagination: z.boolean().optional(),
   professionalId: z.number().optional(),
   name: z.string().optional(),
   sortBy: z.string().optional(),

@@ -26,6 +26,7 @@ describe("DashboardSidebar visibility", () => {
   beforeEach(() => {
     auth.sessionStatus.is_professional = false;
     auth.sessionStatus.professional_active = false;
+    auth.sessionStatus.role_id = 2;
     auth.hasProfessionalSubscription = false;
     auth.subscriptionPlan = null;
     push.mockReset();
@@ -57,5 +58,17 @@ describe("DashboardSidebar visibility", () => {
     render(<DashboardSidebar />);
     fireEvent.click(screen.getByRole("button", { name: "SUSCRIPCIÓN" }));
     expect(push).toHaveBeenCalledWith(expect.stringContaining("view=subscription"));
+  });
+
+  it.each([3, 6])("shows fleet menus for an active company with role %s", (roleId) => {
+    auth.sessionStatus.is_professional = true;
+    auth.sessionStatus.professional_active = true;
+    auth.sessionStatus.role_id = roleId;
+    auth.hasProfessionalSubscription = true;
+    render(<DashboardSidebar />);
+    fireEvent.click(screen.getByRole("button", { name: "RIDERS Y FLETEROS" }));
+    expect(push).toHaveBeenCalledWith(expect.stringContaining("view=riders"));
+    fireEvent.click(screen.getByRole("button", { name: "MAPA DE ENVÍOS" }));
+    expect(push).toHaveBeenCalledWith(expect.stringContaining("view=fleet-map"));
   });
 });
