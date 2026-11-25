@@ -37,7 +37,7 @@ const GOOGLE_MAPS_API_KEY =
 const GOOGLE_MAPS_LIBRARIES: ("places" | "geometry")[] = ["places", "geometry"];
 const DEFAULT_MAP_CENTER = { lat: -34.6037, lng: -58.3816 };
 
-type MapAddress = { street: string; number: string; zipCode: string; province: string };
+type MapAddress = { street: string; number: string; zipCode: string; province: string; department: string };
 
 const normalizeProvince = (value: string) => value.toLocaleLowerCase("es")
   .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -59,37 +59,41 @@ function addressFromGeocode(results: google.maps.GeocoderResult[]): MapAddress {
     ) ??
     results[0];
   const getPart = (type: string) =>
-    bestMatch.address_components.find((part) => part.types.includes(type))
-      ?.long_name ?? "";
+    bestMatch?.address_components.find((part) => part.types.includes(type))
+      ?.long_name ??
+    results.flatMap((result) => result.address_components)
+      .find((part) => part.types.includes(type))?.long_name ?? "";
   return {
     street: getPart("route"),
     number: getPart("street_number"),
     province: getPart("administrative_area_level_1"),
-    zipCode:
-      getPart("postal_code") ||
-      results
-        .flatMap((result) => result.address_components)
-        .find((part) => part.types.includes("postal_code"))?.long_name ||
-      "",
+    department: getPart("administrative_area_level_2") || getPart("locality"),
+    zipCode: getPart("postal_code"),
   };
 }
 
-function BranchLocationMap({
+export function BranchLocationMap({
   latitude,
   longitude,
   address,
   onSelect,
   onAddressResolved,
+  onBusyChange,
 }: {
   latitude: number | "";
   longitude: number | "";
   address: string;
   onSelect: (latitude: number, longitude: number) => number;
   onAddressResolved: (address: MapAddress, editRevision: number) => void;
+  onBusyChange: (busy: boolean) => void;
 }) {
   const [searchError, setSearchError] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  useEffect(() => {
+    onBusyChange(isSearching || isResolving || isLocating);
+  }, [isSearching, isResolving, isLocating, onBusyChange]);
   const requestVersion = useRef(0);
   useEffect(
     () => () => {
@@ -112,6 +116,8 @@ function BranchLocationMap({
   ) => {
     if (!position) return;
     const request = ++requestVersion.current;
+    setIsLocating(false);
+    setIsSearching(false);
     const coordinates = {
       lat: Number(position.lat().toFixed(6)),
       lng: Number(position.lng().toFixed(6)),
@@ -165,6 +171,8 @@ function BranchLocationMap({
       return;
     }
     const request = ++requestVersion.current;
+    setIsResolving(false);
+    setIsLocating(false);
     setIsSearching(true);
     setSearchError("");
     new google.maps.Geocoder().geocode(
@@ -180,6 +188,33 @@ function BranchLocationMap({
           );
         }
       },
+    );
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setSearchError("Tu navegador no permite obtener la ubicación actual.");
+      return;
+    }
+    const request = ++requestVersion.current;
+    setIsLocating(true);
+    setIsSearching(false);
+    setIsResolving(false);
+    setSearchError("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (request !== requestVersion.current) return;
+        selectPosition(new google.maps.LatLng(
+          position.coords.latitude,
+          position.coords.longitude,
+        ));
+      },
+      () => {
+        if (request !== requestVersion.current) return;
+        setIsLocating(false);
+        setSearchError("No se pudo obtener tu ubicación. Revisá los permisos del navegador.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   };
 
@@ -214,7 +249,12 @@ function BranchLocationMap({
           onClick={searchAddress}
           disabled={isSearching}
         >
+          {isSearching && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
           {isSearching ? "Buscando…" : "Buscar dirección"}
+        </button>
+        <button type="button" className="branch-gps-btn" onClick={useCurrentLocation} disabled={isLocating}>
+          {isLocating ? <Loader2 size={16} className="btn-spinner" aria-hidden="true" /> : <MapPin size={16} aria-hidden="true" />}
+          {isLocating ? "Obteniendo ubicación…" : "Usar mi ubicación GPS actual"}
         </button>
       </div>
       <div className="branch-location-map__canvas">
@@ -325,6 +365,7 @@ export default function BranchesSection() {
   const [lng, setLng] = useState<number | "">("");
   const [addressFromMap, setAddressFromMap] = useState(false);
   const addressEditRevision = useRef(0);
+  const [mapBusy, setMapBusy] = useState(false);
 
   const clearLocation = () => {
     setLat("");
@@ -472,12 +513,15 @@ export default function BranchesSection() {
   };
 
   const closeModal = () => {
+    addressEditRevision.current += 1;
+    setMapBusy(false);
     setModalOpen(false);
     setEditingBranch(null);
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (mapBusy) { showError("Esperá a que termine de buscar la dirección."); return; }
     if (provinceId && !departmentId) { showError("Seleccioná el departamento / partido de la sucursal."); return; }
     if (!companyId) {
       showError("No encontramos el comercio asociado a tu cuenta. Completá primero el perfil comercial.");
@@ -968,27 +1012,7 @@ export default function BranchesSection() {
                 <span className="commercial-label">
                   Ubicación Geográfica (Coordenadas)
                 </span>
-                <button
-                  type="button"
-                  className="branch-gps-btn"
-                  onClick={() => {
-                    if (navigator.geolocation) {
-                      navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                          setLat(Number(pos.coords.latitude.toFixed(6)));
-                          setLng(Number(pos.coords.longitude.toFixed(6)));
-                          showSuccess("Coordenadas GPS obtenidas con éxito.");
-                        },
-                        () =>
-                          showError(
-                            "No se pudo obtener la ubicación GPS actual.",
-                          ),
-                      );
-                    }
-                  }}
-                >
-                  📍 Usar mi ubicación GPS actual
-                </button>
+
               </div>
               <p className="branch-coords-hint">
                 Coordenadas para el cálculo de distancia y envíos por rider.
@@ -1000,6 +1024,7 @@ export default function BranchesSection() {
                   .filter(Boolean)
                   .join(" ")}
                 onSelect={(latitude, longitude) => {
+                  addressEditRevision.current += 1;
                   setLat(latitude);
                   setLng(longitude);
                   setStreet("");
@@ -1010,7 +1035,8 @@ export default function BranchesSection() {
                   setAddressFromMap(true);
                   return addressEditRevision.current;
                 }}
-                onAddressResolved={(resolved, editRevision) => {
+                onBusyChange={setMapBusy}
+                onAddressResolved={async (resolved, editRevision) => {
                   if (editRevision !== addressEditRevision.current) return;
                   setStreet(resolved.street);
                   setNumber(resolved.number);
@@ -1018,19 +1044,34 @@ export default function BranchesSection() {
                   const matchedProvince = provinces.find((province) =>
                     normalizeProvince(province.name) === normalizeProvince(resolved.province),
                   );
-                  if (matchedProvince) setProvinceId(matchedProvince.id);
+                  if (!matchedProvince) return;
+                  setProvinceId(matchedProvince.id);
+                  if (!resolved.department) return;
+                  try {
+                    const options = await queryClient.fetchQuery<{ id: number; name: string }[]>({
+                      queryKey: ["departments", matchedProvince.id],
+                      queryFn: async () => (await getDepartmentsAction({ provinceId: matchedProvince.id }))?.data ?? [],
+                    });
+                    if (editRevision !== addressEditRevision.current) return;
+                    const matchedDepartment = options.find((department) =>
+                      normalizeProvince(department.name) === normalizeProvince(resolved.department),
+                    );
+                    if (matchedDepartment) setDepartmentId(matchedDepartment.id);
+                  } catch {
+                    // The form still allows selecting the department manually.
+                  }
                 }}
               />
               <div className="branch-form-group">
                 <label className="commercial-label" htmlFor="branch-province">Provincia de la sucursal</label>
-                <select id="branch-province" value={provinceId} onChange={(event) => { setProvinceId(Number(event.target.value) || ""); setDepartmentId(""); }}>
+                <select id="branch-province" value={provinceId} onChange={(event) => { addressEditRevision.current += 1; setProvinceId(Number(event.target.value) || ""); setDepartmentId(""); }}>
                   <option value="">Seleccioná una provincia</option>
                   {provinces.map((province) => <option key={province.id} value={province.id}>{province.name}</option>)}
                 </select>
               </div>
               <div className="branch-form-group">
                 <label className="commercial-label" htmlFor="branch-department">Departamento / partido</label>
-                <select id="branch-department" value={departmentId} disabled={!provinceId} onChange={event => setDepartmentId(Number(event.target.value) || "")}>
+                <select id="branch-department" value={departmentId} disabled={!provinceId} onChange={event => { addressEditRevision.current += 1; setDepartmentId(Number(event.target.value) || ""); }}>
                   <option value="">Seleccioná un departamento</option>
                   {departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}
                 </select>
@@ -1075,9 +1116,10 @@ export default function BranchesSection() {
               <button
                 type="submit"
                 className="branches-section__add-btn"
-                disabled={saveMutation.isPending}
+                disabled={saveMutation.isPending || mapBusy}
               >
-                {editingBranch ? "Guardar cambios" : "Crear sucursal"}
+                {saveMutation.isPending && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
+                {saveMutation.isPending ? "Guardando…" : mapBusy ? "Buscando dirección…" : editingBranch ? "Guardar cambios" : "Crear sucursal"}
               </button>
             </div>
           </form>
