@@ -18,9 +18,9 @@ export default function UnverifiedAccountModal({
 }: UnverifiedAccountModalProps) {
   const router = useRouter();
 
-  const handleGoSettings = () => {
+  const handleGoCommercialData = () => {
     onClose();
-    router.push(ROUTES.settings);
+    router.push(`${ROUTES.dashboard}?view=commercial-data&tab=company`);
   };
 
   if (!isOpen) return null;
@@ -43,24 +43,23 @@ export default function UnverifiedAccountModal({
         </div>
 
         {/* Content */}
-        <h2 className="uav-modal__title">¡Verificá tu cuenta!</h2>
+        <h2 className="uav-modal__title">Verificá tus datos fiscales en ARCA</h2>
         <p className="uav-modal__body">
-          Tu perfil aún no está verificado. Los perfiles verificados generan{" "}
-          <strong>mayor confianza</strong> en los clientes, aparecen destacados
-          en los resultados de búsqueda y aumentan tus chances de ser
-          contratado.
+          Tu comercio tiene pendiente la validación fiscal en{" "}
+          <strong>ARCA</strong>. Desde Datos comerciales podés verificar el CUIT/CUIL
+          y la razón social de tu actividad comercial.
         </p>
 
         <ul className="uav-modal__benefits">
-          <li>✓ Distintivo de cuenta verificada visible en tu perfil</li>
-          <li>✓ Mayor credibilidad ante tus clientes</li>
-          <li>✓ Mejor posicionamiento en búsquedas</li>
+          <li>✓ Validación del CUIT/CUIL del comercio</li>
+          <li>✓ Comprobación de la razón social</li>
+          <li>✓ Consulta del estado fiscal en ARCA</li>
         </ul>
 
         {/* Actions */}
         <div className="uav-modal__actions">
-          <button className="uav-modal__btn-primary" onClick={handleGoSettings}>
-            Verificar ahora
+          <button className="uav-modal__btn-primary" onClick={handleGoCommercialData}>
+            Verificar datos en ARCA
             <ArrowRight size={16} />
           </button>
           <button className="uav-modal__btn-secondary" onClick={onClose}>

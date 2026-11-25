@@ -493,16 +493,17 @@ export default function DashboardPage() {
                 <div className="dashboard-unverified-banner__content">
                   <AlertTriangle size={20} className="unverified-icon" />
                   <span>
-                    No te olvides de verificar tu cuenta en Configuración
+                    Tenés pendiente verificar los datos fiscales de tu comercio
+                    en ARCA. Podés hacerlo desde Datos Comerciales.
                   </span>
                 </div>
                 <div className="dashboard-unverified-banner__actions">
                   <button
                     type="button"
                     className="dashboard-unverified-banner__btn"
-                    onClick={() => router.push(ROUTES.settings)}
+                    onClick={() => router.push(`${ROUTES.dashboard}?view=commercial-data&tab=company`)}
                   >
-                    Ir a Configuración
+                    Verificar datos en ARCA
                   </button>
                   <button
                     type="button"
