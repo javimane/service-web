@@ -83,7 +83,9 @@ const categoryConditions = [
 export default function ReturnsPolicyPage() {
   return (
     <div className="returns-policy">
-      <Navbar />
+      <div className="returns-policy__navbar">
+        <Navbar />
+      </div>
       <main className="returns-policy__main">
         <header className="returns-policy__intro">
           <span className="returns-policy__eyebrow">
@@ -594,8 +596,8 @@ export default function ReturnsPolicyPage() {
                   {categoryConditions.map(([category, products, condition]) => (
                     <tr key={`${category}-${products}`}>
                       <th scope="row">{category}</th>
-                      <td>{products}</td>
-                      <td>{condition}</td>
+                      <td data-label="Productos específicos">{products}</td>
+                      <td data-label="Condición para devolución">{condition}</td>
                     </tr>
                   ))}
                 </tbody>

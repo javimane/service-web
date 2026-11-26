@@ -959,7 +959,9 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
 export default function TermsPage() {
   return (
     <>
-      <Navbar />
+      <div className="terms-page__navbar">
+        <Navbar />
+      </div>
       <main className="terms-page">
         <header className="terms-header">
           <span className="terms-header__badge">

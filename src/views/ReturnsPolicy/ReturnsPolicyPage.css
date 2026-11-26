@@ -1,8 +1,15 @@
 .returns-policy {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
   min-height: 100vh;
   background: var(--bg-color);
   color: var(--text-primary);
   font-family: var(--font-primary);
+}
+
+.returns-policy__navbar {
+  display: contents;
 }
 
 .returns-policy__main {
@@ -94,11 +101,13 @@
 
 .returns-policy__content {
   display: grid;
+  min-width: 0;
   gap: var(--space-8);
   padding-top: var(--space-8);
 }
 
 .returns-policy__section {
+  min-width: 0;
   scroll-margin-top: var(--space-12);
   padding: var(--space-8);
   border: 1px solid var(--border-color);
@@ -217,6 +226,8 @@
 }
 
 .returns-policy__table-wrap {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -263,6 +274,12 @@
   font-size: var(--text-sm);
 }
 
+@media (max-width: 768px) {
+  .returns-policy__navbar {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .returns-policy__main {
     width: calc(100% - var(--space-8));
@@ -282,7 +299,25 @@
   }
 
   .returns-policy__section {
-    padding: var(--space-5);
+    padding: var(--space-4);
+  }
+
+  .returns-policy__guarantee-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .returns-policy__nav a {
+    max-width: 100%;
+    box-sizing: border-box;
+    white-space: normal;
+  }
+
+  .returns-policy__item-card,
+  .returns-policy__highlight-box,
+  .returns-policy__logistics-block,
+  .returns-policy__guarantee-card,
+  .returns-policy__limit-notice {
+    padding: var(--space-3);
   }
 
   .returns-policy__section h2 {
@@ -290,6 +325,34 @@
   }
 
   .returns-policy__table-wrap table {
-    min-width: 680px;
+    display: block;
+    min-width: 0;
+  }
+
+  .returns-policy__table-wrap caption,
+  .returns-policy__table-wrap tbody,
+  .returns-policy__table-wrap tr,
+  .returns-policy__table-wrap tbody th,
+  .returns-policy__table-wrap td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .returns-policy__table-wrap thead {
+    display: none;
+  }
+
+  .returns-policy__table-wrap tbody th {
+    background: var(--surface-soft);
+  }
+
+  .returns-policy__table-wrap td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: var(--space-2);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
   }
 }

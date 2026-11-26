@@ -1,4 +1,8 @@
 /* TermsPage.css */
+.terms-page__navbar {
+  display: contents;
+}
+
 .terms-page {
   padding: var(--section-padding-y) var(--section-padding-x);
   max-width: 900px;
@@ -150,6 +154,10 @@
 }
 
 @media (max-width: 768px) {
+  .terms-page__navbar {
+    display: none;
+  }
+
   .terms-page {
     padding: var(--space-6) var(--space-4);
   }
