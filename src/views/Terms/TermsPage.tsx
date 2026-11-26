@@ -375,6 +375,29 @@ export const TERMS_SECTIONS: TermSectionItem[] = [
             vehiculares en la plataforma.
           </li>
         </ul>
+        <h3 className="terms-section__subtitle">
+          5.3. Disponibilidad del Comercio durante la Entrega y la Devolución
+        </h3>
+        <p>
+          Cuando una compra sea enviada mediante riders de Sercio, el Comercio
+          deberá mantener el local de origen abierto y disponer de una persona
+          responsable para recibir al repartidor hasta que se confirme la
+          entrega al Comprador o, si corresponde, se complete la devolución de
+          la mercadería al Comercio.
+        </p>
+        <p>
+          Esta obligación comprende las cancelaciones y los intentos de entrega
+          fallidos, incluida la ausencia del Comprador o su falta de respuesta
+          para recibir el pedido. Si se produce alguna de estas situaciones,
+          el Comercio deberá permanecer disponible durante el tiempo necesario
+          para que el rider regrese y entregue la compra, aun cuando se alcance
+          el horario habitual de cierre.
+        </p>
+        <p>
+          El Comercio deberá seguir el estado del envío en Sercio y mantenerse
+          atento a las comunicaciones del rider y de la Plataforma para
+          coordinar la recepción de la devolución.
+        </p>
       </>
     ),
   },
