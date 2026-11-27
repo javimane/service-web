@@ -23,7 +23,7 @@ export default function PaymentMethodsSection({
 
       <div className="settings-fields">
         <div className="settings-field">
-          <span>Medios de pago que acepta</span>
+          <span>Medios de pago que aceptas en tu local físico</span>
           <MultiChoiceChips
             values={selectedPayments}
             onToggle={onTogglePayment}
