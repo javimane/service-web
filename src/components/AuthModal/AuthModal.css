@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: var(--space-3);
   animation: authFadeIn 0.25s ease-out;
 }
 
@@ -35,8 +35,11 @@
   position: relative;
   width: 100%;
   max-width: 400px;
-  max-height: 90vh;
+  max-height: calc(100vh - var(--space-6));
+  max-height: calc(100dvh - var(--space-6));
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
@@ -44,15 +47,6 @@
     0 24px 48px rgba(0, 0, 0, 0.25),
     0 0 0 1px rgba(255, 255, 255, 0.05);
   animation: authSlideUp 0.3s ease-out;
-}
-
-.auth-modal::-webkit-scrollbar {
-  width: 4px;
-}
-
-.auth-modal::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 10px;
 }
 
 .auth-modal__close {
@@ -101,31 +95,62 @@
   margin-bottom: 1.5rem;
 }
 
-.auth-modal__content .register-card {
-  max-width: 100%;
+.auth-modal--login {
+  max-width: 440px;
 }
 
-/* Expand modal for register form */
-.auth-modal:has(.register-card) {
-  max-width: 460px;
+.auth-modal--login .auth-modal__content {
+  padding: var(--space-5) var(--space-6);
 }
 
-@media (max-width: 600px) {
-  .auth-modal-backdrop {
-    padding: 1rem;
-    align-items: center;
-  }
+.auth-modal--login .login-card__home-button,
+.auth-modal--login .login-subtitle {
+  margin-bottom: var(--space-3);
+}
 
-  .auth-modal {
-    max-height: 95vh;
-    border-radius: var(--radius-xl);
-  }
+.auth-modal--login .login-form {
+  gap: var(--space-3);
+}
 
-  .auth-modal__content {
-    padding: 1.5rem 1.25rem;
-  }
-  
-  .auth-modal__content .login-form {
-    gap: 1rem;
+.auth-modal--login .login-form .btn-primary,
+.auth-modal--login .login-form .divider,
+.auth-modal--login .login-form .register-prompt {
+  margin-block: 0;
+}
+
+.auth-modal--register {
+  max-width: 600px;
+}
+
+.auth-modal--register .auth-modal__content {
+  padding: var(--space-5) var(--space-6);
+}
+
+.auth-modal--register .login-title {
+  padding-inline-end: var(--space-10);
+}
+
+.auth-modal--register .login-subtitle {
+  margin-bottom: var(--space-3);
+}
+
+.auth-modal--register .register-form {
+  gap: var(--space-2);
+}
+
+.auth-modal--register .register-form .role-option {
+  padding: var(--space-2);
+}
+
+.auth-modal--register .register-form input:not([type="checkbox"]):not([type="radio"]) {
+  min-height: 42px;
+  padding-block: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .auth-modal__content,
+  .auth-modal--login .auth-modal__content,
+  .auth-modal--register .auth-modal__content {
+    padding: var(--space-4);
   }
 }

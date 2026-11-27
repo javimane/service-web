@@ -1,0 +1,178 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Loader2, MailCheck } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo/BrandLogo";
+import { useAuth, normalizeSessionPayload } from "@/context/AuthContext";
+import { authService } from "@/services/authService";
+import { ROUTES } from "@/routes/paths";
+import RegisterPlanSelection from "@/views/Register/RegisterPlanSelection";
+import "./EmailConfirmationPage.css";
+
+export default function EmailConfirmationPage() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const registrationEmail = params.get("email");
+  const { refreshSession, setUser, setSessionStatus } = useAuth();
+  const [email, setEmail] = useState(registrationEmail || "");
+  const [code, setCode] = useState("");
+  const [pending, setPending] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [cooldown, setCooldown] = useState(60);
+  const [showPlans, setShowPlans] = useState(false);
+  const verificationRequest = useRef<Promise<unknown> | null>(null);
+  const finished = useRef(false);
+  const busy = useRef(false);
+
+  const complete = async (response: unknown) => {
+    if (finished.current) return;
+    const { nextUser, nextSessionStatus } = normalizeSessionPayload(response);
+    if (nextSessionStatus?.logistics_role === "delivery" ||
+        ["delivery", "rider"].includes(nextUser?.user_metadata?.role)) {
+      await authService.logout();
+      throw new Error("Correo confirmado. Para usar tu cuenta de rider, ingresá en Sercio Envíos.");
+    }
+    localStorage.setItem("show_setup_on_login", "true");
+    if (nextUser) setUser(nextUser);
+    if (nextSessionStatus) setSessionStatus(nextSessionStatus);
+    const status = await refreshSession() || nextSessionStatus;
+    if (!status) throw new Error("Tu correo se confirmó, pero no pudimos cargar tu sesión. Ingresá para continuar.");
+    finished.current = true;
+    localStorage.setItem("was_logged_in", "true");
+    if (status.is_professional) {
+      localStorage.setItem("show_plans_on_login", "true");
+      setShowPlans(true);
+    } else {
+      router.replace(ROUTES.accountSetup);
+    }
+  };
+  const completeRef = useRef(complete);
+  useEffect(() => { completeRef.current = complete; });
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setTimeout(() => setCooldown((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
+
+  useEffect(() => {
+    const tokenHash = params.get("token_hash");
+    const type = params.get("type");
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = fragment.get("access_token");
+    const refreshToken = fragment.get("refresh_token");
+    if (!tokenHash && !accessToken) return;
+    if (type === "recovery" || fragment.get("type") === "recovery") {
+      router.replace("/auth/confirm?" + params.toString() + window.location.hash);
+      return;
+    }
+    if (tokenHash && type !== "email" && type !== "signup") {
+      setError("El enlace de confirmación no es válido.");
+      return;
+    }
+    let active = true;
+    setPending(true);
+    if (!verificationRequest.current) {
+      verificationRequest.current = tokenHash
+        ? authService.verifyOtp({ token_hash: tokenHash, type: type! })
+        : authService.syncOAuth({ access_token: accessToken!, refresh_token: refreshToken || "" });
+    }
+    verificationRequest.current.then(async (response) => {
+      if (!active) return;
+      window.history.replaceState(null, "", window.location.pathname);
+      await completeRef.current(response);
+    }).catch((reason) => {
+      setError(reason instanceof Error ? reason.message : "El enlace venció o no es válido.");
+    }).finally(() => setPending(false));
+    return () => { active = false; };
+  }, [params, router]);
+
+  const verify = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy.current || pending || resending) return;
+    if (!/^\d{6,10}$/.test(code)) {
+      setError("Ingresá el código completo que recibiste por correo.");
+      return;
+    }
+    busy.current = true;
+    setPending(true);
+    setError("");
+    try {
+      const response = await authService.verifyRegistrationEmail({ email: email.trim(), token: code });
+      await complete(response);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No se pudo confirmar el código.");
+    } finally {
+      busy.current = false;
+      setPending(false);
+    }
+  };
+
+  const resend = async () => {
+    if (busy.current || pending || resending || cooldown > 0) return;
+    busy.current = true;
+    setResending(true);
+    setError("");
+    setMessage("");
+    try {
+      await authService.resendRegistrationEmail(email.trim());
+      setMessage("Revisá tu bandeja de entrada y el correo no deseado. Usá el código más reciente.");
+      setCooldown(60);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No se pudo reenviar el correo.");
+    } finally {
+      busy.current = false;
+      setResending(false);
+    }
+  };
+
+  return (
+    <main className="email-confirmation">
+      <div className="email-confirmation__card">
+        <BrandLogo />
+        <h1>Confirmá tu correo</h1>
+        {registrationEmail ? (
+          <div className="email-confirmation__notice">
+            <MailCheck size={20} aria-hidden="true" />
+            <div>
+              <strong>Código de verificación enviado</strong>
+              <p>Te enviamos un código a <strong>{registrationEmail}</strong>. Ingresalo abajo para confirmar tu cuenta. Si no lo encontrás, revisá el correo no deseado.</p>
+            </div>
+          </div>
+        ) : (
+          <p>Ingresá el correo y el código de verificación para confirmar tu cuenta.</p>
+        )}
+        <form className="email-confirmation__form" onSubmit={verify}>
+          <label htmlFor="confirmation-email">Correo electrónico</label>
+          <input id="confirmation-email" type="email" autoComplete="email" required value={email}
+            onChange={(event) => setEmail(event.target.value)} disabled={pending || resending} />
+          <label htmlFor="confirmation-code">Código de confirmación</label>
+          <input id="confirmation-code" inputMode="numeric" autoComplete="one-time-code" required
+            minLength={6} maxLength={10} value={code}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+            disabled={pending || resending} />
+          {error && <p role="alert" className="email-confirmation__error">{error}</p>}
+          {message && <p role="status">{message}</p>}
+          <div className="email-confirmation__actions">
+            <button type="submit" disabled={pending || resending} className="btn-primary">
+              {pending && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
+              {pending ? "Confirmando…" : "Confirmar y continuar"}
+            </button>
+            <button type="button" className="btn-secondary" onClick={resend}
+              disabled={pending || resending || cooldown > 0 || !email.trim()}>
+              {resending && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
+              {resending ? "Reenviando…" : cooldown > 0 ? `Reenviar en ${cooldown} s` : "Reenviar código"}
+            </button>
+          </div>
+        </form>
+        <p>Si ya confirmaste tu correo, <Link href={ROUTES.login}>ingresá para continuar</Link>.</p>
+        <Link href={ROUTES.home}>Volver al inicio</Link>
+      </div>
+      {showPlans && <RegisterPlanSelection onClose={() => router.replace(`${ROUTES.dashboard}?view=subscription`)} />}
+    </main>
+  );
+}

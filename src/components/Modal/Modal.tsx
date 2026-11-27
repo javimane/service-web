@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import "./Modal.css";
 
@@ -22,21 +22,11 @@ export default function Modal({
   noPadding = false,
   maxWidth,
 }: ModalProps) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" data-lock-page-scroll onClick={onClose}>
       <div className="modal-container" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} style={{ '--modal-max-width': maxWidth } as React.CSSProperties}>
         {title && (
           <div className="modal-header">

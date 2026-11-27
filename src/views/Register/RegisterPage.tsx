@@ -7,16 +7,13 @@ import { ROUTES } from "../../routes/paths";
 import { authService } from "../../services/authService";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 
-import Modal from "../../components/Modal/Modal";
-import { supabase } from "../../services/supabaseClient";
 import { API_BASE_URL } from "../../services/api.config";
-import RegisterPlanSelection from "./RegisterPlanSelection";
 import ProfessionalRequirementsDialog from "../../components/ProfessionalRequirementsDialog/ProfessionalRequirementsDialog";
 import { useAuth } from "../../context/AuthContext";
 import "../Login/LoginPage.css";
 import "./RegisterPage.css";
 import Footer from "@/components/Footer/Footer";
-import { Check, Circle, Eye, EyeOff } from "lucide-react";
+import { Check, Circle, Eye, EyeOff, Loader2 } from "lucide-react";
 
 type RegisterPageProps = {
   isModal?: boolean;
@@ -43,13 +40,6 @@ export default function RegisterPage({
   const [authError, setAuthError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalTitle, setModalTitle] = useState("");
-  const [modalMessage, setModalMessage] = useState("");
-  const [registrationNextStep, setRegistrationNextStep] = useState<
-    "login" | "setup" | "plans"
-  >("login");
-  const [showPlanModal, setShowPlanModal] = useState(false);
   const [requirementsAction, setRequirementsAction] = useState<
     "register" | "google" | null
   >(null);
@@ -141,7 +131,6 @@ export default function RegisterPage({
   const submitRegistration = async () => {
     setIsLoading(true);
     setAuthError("");
-    setRegistrationNextStep("login");
 
     try {
       await authService.register({
@@ -163,26 +152,8 @@ export default function RegisterPage({
         localStorage.setItem("show_setup_on_login", "true");
       }
 
-      // Attempt to auto-login to create session
-      try {
-        const loginResp = await authService.login({
-          email: formData.email,
-          password: formData.password,
-        });
-
-        if (loginResp) {
-          await refreshSession();
-          setRegistrationNextStep(role === "professional" ? "plans" : "setup");
-        }
-      } catch (e) {
-        console.warn("Auto-login failed:", e);
-      }
-
-      setModalTitle("Registro exitoso");
-      setModalMessage(
-        `¡Tu cuenta fue creada! Enviamos un email a ${formData.email.trim()} para verificar tu correo electrónico. Abrí el mensaje y seguí el enlace de verificación. Si no lo encontrás, revisá la carpeta de spam o correo no deseado.`,
-      );
-      setModalOpen(true);
+      onClose?.();
+      router.push("/auth/email-confirm?email=" + encodeURIComponent(formData.email.trim()));
     } catch (err: any) {
       setAuthError(
         "Error inesperado al intentar crear la cuenta: " + err.message,
@@ -223,10 +194,6 @@ export default function RegisterPage({
     setIsLoading(true);
     setAuthError("");
     try {
-      localStorage.setItem(
-        role === "professional" ? "show_plans_on_login" : "show_setup_on_login",
-        "true",
-      );
       window.location.href = `${API_BASE_URL}/api/auth/login/google?role=${role}&acceptedTerms=true`;
     } catch (err: any) {
       setAuthError(err.message || "Error al registrarse con Google.");
@@ -240,24 +207,6 @@ export default function RegisterPage({
     setRequirementsConfirmed(true);
     if (action === "register") void submitRegistration();
     if (action === "google") startGoogleRegister();
-  };
-
-  const handleModalClose = () => {
-    setModalOpen(false);
-    if (registrationNextStep === "plans") {
-      setShowPlanModal(true);
-      return;
-    }
-    if (registrationNextStep === "setup") {
-      onClose?.();
-      router.push(ROUTES.accountSetup);
-      return;
-    }
-    if (isModal) {
-      onSwitchMode?.("login");
-    } else {
-      router.push(ROUTES.login);
-    }
   };
 
   const formCard = (
@@ -277,7 +226,6 @@ export default function RegisterPage({
             className={`role-option ${role === "normal" ? "active" : ""}`}
             style={{
               flex: 1,
-              padding: "1rem",
               border: `1px solid ${role === "normal" ? "var(--accent-color)" : "var(--border-color)"}`,
               borderRadius: "var(--radius-md)",
               cursor: "pointer",
@@ -315,7 +263,6 @@ export default function RegisterPage({
             className={`role-option ${role === "professional" ? "active" : ""}`}
             style={{
               flex: 1,
-              padding: "1rem",
               border: `1px solid ${role === "professional" ? "var(--accent-color)" : "var(--border-color)"}`,
               borderRadius: "var(--radius-md)",
               cursor: "pointer",
@@ -555,6 +502,7 @@ export default function RegisterPage({
         {authError && <div className="auth-error-alert">{authError}</div>}
 
         <button type="submit" className="btn-primary" disabled={isLoading}>
+          {isLoading && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
           {isLoading ? "Creando cuenta..." : "Registrarse"}
         </button>
 
@@ -613,13 +561,6 @@ export default function RegisterPage({
         </p>
       </form>
 
-      <Modal
-        isOpen={modalOpen}
-        title={modalTitle}
-        message={modalMessage}
-        onClose={handleModalClose}
-      />
-
       <ProfessionalRequirementsDialog
         open={requirementsAction !== null}
         onBack={() => setRequirementsAction(null)}
@@ -652,7 +593,6 @@ export default function RegisterPage({
 
       <Footer />
 
-      {showPlanModal && <RegisterPlanSelection />}
     </div>
   );
 }

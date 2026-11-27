@@ -196,6 +196,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* El último modal visible libera el desplazamiento de la página al cerrarse. */
+body:has([data-lock-page-scroll]) {
+  overflow: hidden;
+}
+
 /* Animaciones globales y utilidades */
 @keyframes fadeIn {
   from {

@@ -14,6 +14,7 @@ import { API_BASE_URL } from "../../services/api.config";
 import RegisterPlanSelection from "../Register/RegisterPlanSelection";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { checkoutReturnPath } from "@/utils/checkoutAuth";
+import { buyerNeedsOnboarding } from "@/utils/buyerOnboarding";
 
 type LoginPageProps = {
   isModal?: boolean;
@@ -84,7 +85,11 @@ export default function LoginPage({
         router.replace(checkoutReturnTo);
         return;
       }
-      if (sessionStatus.requires_personal_name) {
+      const isGoogleSignup = new URLSearchParams(window.location.search).get("google_signup") === "1";
+      if (isGoogleSignup) {
+        localStorage.setItem("show_setup_on_login", "true");
+      }
+      if (!isGoogleSignup && sessionStatus.requires_personal_name) {
         if (isModal) onClose?.();
         router.push(ROUTES.accountSetup);
         return;
@@ -147,6 +152,25 @@ export default function LoginPage({
         } else {
           router.push(ROUTES.home);
         }
+      } else {
+        if (needsSetup) {
+          onClose?.();
+          router.replace(ROUTES.accountSetup);
+          return;
+        }
+        let active = true;
+        void buyerNeedsOnboarding(user.id).then((missingData) => {
+          if (!active) return;
+          if (missingData) {
+            onClose?.();
+            router.replace(ROUTES.accountSetup);
+          } else if (isModal) {
+            onClose?.();
+          } else {
+            router.replace(ROUTES.home);
+          }
+        });
+        return () => { active = false; };
       }
     }
   }, [user, sessionStatus, isModal, onClose, router, setUser, setSessionStatus]);
@@ -312,10 +336,13 @@ export default function LoginPage({
       const needsPlan =
         typeof window !== "undefined" &&
         localStorage.getItem("show_plans_on_login") === "true";
-      const needsSetup =
+      let needsSetup =
         typeof window !== "undefined" &&
         (localStorage.getItem("show_setup_on_login") === "true" ||
           Boolean(nextUser?.id && localStorage.getItem(`account_setup_step_${nextUser.id}`)));
+      if (!isProf && !needsSetup && nextUser?.id) {
+        needsSetup = await buyerNeedsOnboarding(nextUser.id);
+      }
       if (typeof window !== "undefined") {
         localStorage.removeItem("show_plans_on_login");
       }

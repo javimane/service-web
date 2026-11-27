@@ -24,7 +24,7 @@ export default function ProfessionalRequirementsDialog({
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="professional-requirements__overlay">
+    <div className="professional-requirements__overlay" data-lock-page-scroll>
       <section
         className="professional-requirements__dialog"
         role="dialog"

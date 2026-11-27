@@ -245,18 +245,16 @@ describe("RegisterPage", () => {
         acceptedTerms: true,
       });
     });
-    expect(
-      await screen.findByRole("dialog", { name: "Registro exitoso" }),
-    ).toHaveTextContent("Enviamos un email a juan@obsidian.pro");
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(
+      "/auth/email-confirm?email=juan%40obsidian.pro",
+    ));
   });
 
   it.each(["normal", "professional"])(
-    "muestra el aviso de email antes de continuar como %s aunque el inicio de sesión sea automático",
+    "envía a confirmar el código como %s sin iniciar sesión antes de verificar el email",
     async (role) => {
       router.push.mockClear();
-      vi.mocked(authService.login).mockResolvedValueOnce({
-        user: { id: "new-user" },
-      } as any);
+      vi.mocked(authService.login).mockClear();
       render(<RegisterPage />);
       fireEvent.change(screen.getByPlaceholderText("Ej. Juan"), {
         target: { value: "Juan" },
@@ -286,17 +284,14 @@ describe("RegisterPage", () => {
           within(requirements).getByRole("button", { name: "Continuar" }),
         );
       }
-      const notice = await screen.findByRole("dialog", {
-        name: "Registro exitoso",
-      });
-      expect(notice).toHaveTextContent("Enviamos un email a juan@example.com");
-      expect(notice).toHaveTextContent("spam o correo no deseado");
-      expect(router.push).not.toHaveBeenCalled();
+      await waitFor(() => expect(router.push).toHaveBeenCalledWith(
+        "/auth/email-confirm?email=juan%40example.com",
+      ));
+      expect(authService.login).not.toHaveBeenCalled();
       expect(screen.queryByText("Selección de planes")).not.toBeInTheDocument();
-      fireEvent.click(within(notice).getByRole("button", { name: "Cerrar" }));
+      expect(localStorage.getItem("show_setup_on_login")).toBe("true");
       if (role === "professional")
-        expect(screen.getByText("Selección de planes")).toBeInTheDocument();
-      else expect(router.push).toHaveBeenCalledWith(ROUTES.accountSetup);
+        expect(localStorage.getItem("show_plans_on_login")).toBe("true");
     },
   );
 });

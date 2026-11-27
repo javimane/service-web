@@ -51,13 +51,12 @@
 .account-access__actions button:hover, .account-access__actions a:hover {
   transform: translateY(-1px);
 }
-.account-access__actions .account-access__close {
-  border-color: var(--error-color);
-  background: var(--action-cancel-bg);
-  color: var(--text-primary);
+.account-access__content--dialog .identity-verification-qr__actions {
+  justify-self: stretch;
 }
-.account-access__actions .account-access__close:hover {
-  background: var(--action-cancel-hover);
+
+.account-access__content--dialog .account-access__actions button {
+  gap: var(--space-2);
 }
 .account-access__actions button:disabled { opacity: 0.6; cursor: wait; }
 

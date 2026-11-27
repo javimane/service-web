@@ -46,7 +46,9 @@ const stepLabels: Record<SetupStep, string> = {
 export default function AccountSetupPage() {
   const router = useRouter();
   const { user, sessionStatus, loading, isAgeVerified, refreshSession } = useAuth();
-  const personalNameOnly = sessionStatus?.requires_personal_name === true;
+  const isFullSetup = typeof window !== "undefined" &&
+    localStorage.getItem("show_setup_on_login") === "true";
+  const personalNameOnly = sessionStatus?.requires_personal_name === true && !isFullSetup;
   const isProfessional = Boolean(
     sessionStatus?.is_professional ||
       sessionStatus?.professional_id ||

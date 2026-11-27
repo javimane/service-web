@@ -3,6 +3,7 @@
 import IdentityVerificationQr from "@/components/IdentityVerificationQr/IdentityVerificationQr";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Modal from "@/components/Modal/Modal";
 import { SELL_VERIFICATION_NOTICE_EVENT } from "./sellVerificationNotice";
@@ -37,6 +38,8 @@ export function AccountAccessNotice({
     localStorage.getItem("show_plans_on_login") === "true"
   );
   const configuringAccount = pathname === ROUTES.accountSetup ||
+    (pathname === ROUTES.login && typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("google_signup") === "1") ||
     (setupPending && !verificationRequested);
 
   useEffect(() => {
@@ -67,41 +70,41 @@ export function AccountAccessNotice({
     ? `${ROUTES.dashboard}?view=commercial-data&tab=banking`
     : ROUTES.settings;
   const verificationAction = !cbuVerified
-    ? "Verificar CBU en Datos comerciales"
+    ? "Ingresar CBU"
     : "Revisar datos personales";
 
   if (verificationRequired && !blocked) {
     if (configuringAccount) return null;
+    const actions = (
+      <>
+        <a className="btn-secondary" href={verificationHref} onClick={() => setVerificationDismissed(true)}>
+          {verificationAction}
+        </a>
+        <button className="btn-secondary" type="button" disabled={refreshing} onClick={reload}>
+          {refreshing && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
+          {refreshing ? "Actualizando…" : "Actualizar estado"}
+        </button>
+      </>
+    );
+
     return (
       <Modal
         isOpen={!verificationDismissed}
         onClose={() => setVerificationDismissed(true)}
         title="Completá las verificaciones para vender"
-        maxWidth="600px"
+        maxWidth="700px"
       >
         <div className="account-access__content account-access__content--dialog">
           <p>
             Para recibir nuevas ventas, completá: {missingVerifications}.
             Podés seguir gestionando tus pedidos anteriores.
           </p>
-          {!identityVerified && <IdentityVerificationQr onVerified={refresh} />}
           {reason && <p>{reason}</p>}
-          <div className="account-access__actions">
-            <a href={verificationHref} onClick={() => setVerificationDismissed(true)}>
-              {verificationAction}
-            </a>
-            <button type="button" disabled={refreshing} onClick={reload}>
-              {refreshing ? "Actualizando…" : "Actualizar estado"}
-            </button>
-            <button
-              type="button"
-              data-action-tone="cancel"
-              className="account-access__close"
-              onClick={() => setVerificationDismissed(true)}
-            >
-              Cerrar
-            </button>
-          </div>
+          {identityVerified ? (
+            <div className="account-access__actions">{actions}</div>
+          ) : (
+            <IdentityVerificationQr onVerified={refresh}>{actions}</IdentityVerificationQr>
+          )}
         </div>
       </Modal>
     );

@@ -9,12 +9,7 @@ export default function ProductBranchStock({ listingId, onSaved }: { listingId: 
   const [rows, setRows] = useState<Array<Branch & { stock: number; assigned: boolean }>>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     let active = true;
@@ -40,7 +35,7 @@ export default function ProductBranchStock({ listingId, onSaved }: { listingId: 
   };
   return <>
     <button type="button" className="product-branch-stock__button" onClick={() => setOpen(true)}>Stock por sucursal</button>
-    {open && createPortal(<div className="product-branch-stock__overlay"><section role="dialog" aria-modal="true" aria-label="Stock por sucursal" className="product-branch-stock__dialog">
+    {open && createPortal(<div className="product-branch-stock__overlay" data-lock-page-scroll><section role="dialog" aria-modal="true" aria-label="Stock por sucursal" className="product-branch-stock__dialog">
       <h2>Stock por sucursal</h2>
       <p>Asigná las tiendas donde está disponible este producto o variante. El stock total es la suma de sus sucursales.</p>
       {rows.map((row, index) => <div className="product-branch-stock__row" key={row.id}>

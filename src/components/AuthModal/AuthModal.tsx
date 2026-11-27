@@ -18,17 +18,6 @@ export default function AuthModal() {
     }
   }, [user, authMode, closeAuth]);
 
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (authMode) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [authMode]);
 
   // Close on Escape
   useEffect(() => {
@@ -49,8 +38,8 @@ export default function AuthModal() {
   const switchMode = (mode) => openAuth(mode);
 
   return (
-    <div className="auth-modal-backdrop" onClick={handleBackdropClick}>
-      <div className="auth-modal">
+    <div className="auth-modal-backdrop" data-lock-page-scroll onClick={handleBackdropClick}>
+      <div className={`auth-modal auth-modal--${authMode}`}>
         <button
           className="auth-modal__close"
           onClick={closeAuth}

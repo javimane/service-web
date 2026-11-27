@@ -99,10 +99,9 @@ export default function IdentityVerificationQr({ onVerified, children }: Props) 
     };
   }, [link]);
 
-  if (verified) return <p role="status">Tu identidad está verificada.</p>;
-
   return (
     <div className="identity-verification-qr">
+      {verified && <p role="status">Tu identidad está verificada.</p>}
       {link && (
         <>
           <p>Escaneá el QR con la cámara de tu teléfono para verificar tu DNI y tu rostro en el navegador.</p>
@@ -124,12 +123,12 @@ export default function IdentityVerificationQr({ onVerified, children }: Props) 
               {pending === "start" ? "Generando…" : "Generar otro QR"}
             </button>
           </>
-        ) : (
+        ) : !verified ? (
           <button type="button" className="btn-primary" disabled={pending !== null} onClick={start}>
             {pending === "start" ? <Loader2 size={16} className="btn-spinner" aria-hidden="true" /> : <QrCode size={18} aria-hidden="true" />}
             {pending === "start" ? "Generando…" : "Verificar identidad con QR"}
           </button>
-        )}
+        ) : null}
         {children}
       </div>
       {message && <p role="status">{message}</p>}

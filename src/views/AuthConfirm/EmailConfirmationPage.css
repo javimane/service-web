@@ -1,0 +1,102 @@
+.email-confirmation {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6) var(--space-4);
+  background: var(--bg-color);
+}
+
+.email-confirmation__card {
+  width: 100%;
+  max-width: 560px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--space-6);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.email-confirmation__card h1 {
+  font-size: var(--text-2xl);
+}
+
+.email-confirmation__card p {
+  line-height: 1.6;
+}
+
+.email-confirmation__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--brand-blue);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  overflow-wrap: anywhere;
+}
+
+.email-confirmation__notice > svg {
+  flex-shrink: 0;
+  color: var(--brand-blue);
+}
+
+.email-confirmation__form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.email-confirmation__form label {
+  margin-top: var(--space-2);
+  font-weight: var(--weight-semibold);
+}
+
+.email-confirmation__form input {
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.email-confirmation__form input:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.email-confirmation__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.email-confirmation__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  border-width: 1px;
+  border-style: solid;
+  line-height: 1;
+}
+
+.email-confirmation__error {
+  color: var(--error-color);
+}
+
+@media (max-width: 640px) {
+  .email-confirmation__card {
+    padding: var(--space-4);
+  }
+}

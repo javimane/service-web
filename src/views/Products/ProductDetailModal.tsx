@@ -28,15 +28,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      setCurrentImageIndex(0);
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
+    if (isOpen) setCurrentImageIndex(0);
   }, [isOpen, product]);
 
   const images = product?.images?.length ? product.images : [product?.image];
@@ -64,7 +56,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }) {
   };
 
   return (
-    <div className="product-modal-overlay" onClick={onClose}>
+    <div className="product-modal-overlay" data-lock-page-scroll onClick={onClose}>
       <div className="product-modal" onClick={(e) => e.stopPropagation()}>
         <button className="product-modal__close" onClick={onClose}>
           <X size={20} />

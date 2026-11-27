@@ -1,4 +1,4 @@
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { AccountAccessNotice } from './AccountAccessNotice';
 import { SELL_VERIFICATION_NOTICE_EVENT } from './sellVerificationNotice';
@@ -52,15 +52,18 @@ describe('Account access notice', () => {
       verificationRequired
       identityVerified={false}
 
-      cbuVerified
+      cbuVerified={false}
       refresh={vi.fn()}
       logout={vi.fn()}
     />);
 
     const dialog = screen.getByRole('dialog', { name: 'Completá las verificaciones para vender' });
-    expect(dialog).toHaveTextContent('DNI, rostro y mayoría de edad desde la app');
+    expect(dialog).toHaveTextContent('DNI, rostro y mayoría de edad');
     expect(dialog).not.toHaveTextContent('datos fiscales en ARCA');
-    fireEvent.click(screen.getAllByRole('button', { name: 'Cerrar' }).at(-1)!);
+    const qrButton = within(dialog).getByRole('button', { name: 'Verificar identidad con QR' });
+    expect(within(dialog).getByRole('link', { name: 'Ingresar CBU' }).parentElement).toBe(qrButton.parentElement);
+    expect(within(dialog).getByRole('button', { name: 'Actualizar estado' }).parentElement).toBe(qrButton.parentElement);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 

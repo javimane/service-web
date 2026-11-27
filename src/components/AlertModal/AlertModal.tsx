@@ -1,5 +1,4 @@
 "use client";
-import { useEffect } from "react";
 import { CheckCircle, AlertTriangle, Info, XCircle } from "lucide-react";
 import "./AlertModal.css";
 
@@ -42,14 +41,6 @@ export default function AlertModal({
   onConfirm,
   showCancel = false,
 }: AlertModalProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -57,7 +48,7 @@ export default function AlertModal({
   const displayTitle = title || defaultTitles[type];
 
   return (
-    <div className="alert-modal-overlay" onClick={onClose}>
+    <div className="alert-modal-overlay" data-lock-page-scroll onClick={onClose}>
       <div
         className="alert-modal"
         onClick={(e) => e.stopPropagation()}

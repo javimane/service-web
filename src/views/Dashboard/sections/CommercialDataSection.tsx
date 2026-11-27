@@ -13,6 +13,7 @@ import {
   EyeOff,
   Edit2,
   ShieldCheck,
+  Loader2,
   Save,
   X,
 } from "lucide-react";
@@ -103,9 +104,6 @@ export default function CommercialDataSection({ requireVerification = false, onS
   // Bank form state
   const [cbuInput, setCbuInput] = useState("");
   const [aliasInput, setAliasInput] = useState("");
-  const [bankNameInput, setBankNameInput] = useState("");
-  const [holderInput, setHolderInput] = useState("");
-  const [holderCuitInput, setHolderCuitInput] = useState("");
 
   const professionalId =
     sessionStatus?.subscription?.professional_id ??
@@ -463,9 +461,6 @@ export default function CommercialDataSection({ requireVerification = false, onS
   const openBankModal = () => {
     setCbuInput(bankData?.cbu_cvu || "");
     setAliasInput(bankData?.alias || "");
-    setBankNameInput(bankData?.bank_name || "");
-    setHolderInput(bankData?.account_holder || "");
-    setHolderCuitInput(bankData?.cuit_cuil || "");
     setEditBankModalOpen(true);
   };
 
@@ -476,17 +471,19 @@ export default function CommercialDataSection({ requireVerification = false, onS
       showError("No se encontró el comercio para validar la cuenta bancaria.");
       return;
     }
-    if (!cbuInput || cbuInput.length < 22) {
+    if (!/^\d{22}$/.test(cbuInput)) {
       showError("El CBU/CVU debe tener 22 dígitos numéricos.");
+      return;
+    }
+    const alias = aliasInput.trim();
+    if (!alias) {
+      showError("Ingresá el alias de la cuenta bancaria.");
       return;
     }
     saveBankMutation.mutate({
       company_id: bankCompanyId,
       cbu_cvu: cbuInput.trim(),
-      alias: aliasInput.trim() || undefined,
-      bank_name: bankNameInput.trim() || undefined,
-      account_holder: holderInput.trim() || undefined,
-      cuit_cuil: holderCuitInput.trim() || undefined,
+      alias,
     });
   };
 
@@ -833,11 +830,13 @@ export default function CommercialDataSection({ requireVerification = false, onS
         >
           <form onSubmit={handleSaveBank} className="bank-edit-form">
             <div className="bank-form-group">
-              <label className="commercial-label">
+              <label className="commercial-label" htmlFor="bank-cbu">
                 CBU / CVU (22 dígitos obligatorios)
               </label>
               <input
+                id="bank-cbu"
                 type="text"
+                inputMode="numeric"
                 maxLength={22}
                 placeholder="0000003100010000000000"
                 value={cbuInput}
@@ -847,48 +846,14 @@ export default function CommercialDataSection({ requireVerification = false, onS
             </div>
 
             <div className="bank-form-group">
-              <label className="commercial-label">Alias (opcional)</label>
+              <label className="commercial-label" htmlFor="bank-alias">Alias (obligatorio)</label>
               <input
+                id="bank-alias"
                 type="text"
                 placeholder="mi.negocio.mp"
                 value={aliasInput}
                 onChange={(e) => setAliasInput(e.target.value)}
-              />
-            </div>
-
-            <div className="bank-form-group">
-              <label className="commercial-label">
-                Nombre del Banco o Entidad
-              </label>
-              <input
-                type="text"
-                placeholder="Banco Santander / Mercado Pago"
-                value={bankNameInput}
-                onChange={(e) => setBankNameInput(e.target.value)}
-              />
-            </div>
-
-            <div className="bank-form-group">
-              <label className="commercial-label">Titular de la Cuenta</label>
-              <input
-                type="text"
-                placeholder="Nombre y Apellido o Razón Social"
-                value={holderInput}
-                onChange={(e) => setHolderInput(e.target.value)}
-              />
-            </div>
-
-            <div className="bank-form-group">
-              <label className="commercial-label">
-                CUIT / CUIL del Titular
-              </label>
-              <input
-                type="text"
-                placeholder="30712345679"
-                value={holderCuitInput}
-                onChange={(e) =>
-                  setHolderCuitInput(e.target.value.replace(/\D/g, ""))
-                }
+                required
               />
             </div>
 
@@ -905,6 +870,7 @@ export default function CommercialDataSection({ requireVerification = false, onS
                 className="branches-section__add-btn"
                 disabled={saveBankMutation.isPending}
               >
+                {saveBankMutation.isPending && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
                 {saveBankMutation.isPending ? "Guardando..." : "Guardar cuenta"}
               </button>
             </div>

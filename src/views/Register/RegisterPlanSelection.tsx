@@ -62,11 +62,6 @@ export default function RegisterPlanSelection({ onClose }: { onClose?: () => voi
     loadData();
   }, []);
 
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previous; };
-  }, []);
 
   const activatePlan = async (planId: string) => {
     if (submittingRef.current) return;
@@ -140,7 +135,7 @@ export default function RegisterPlanSelection({ onClose }: { onClose?: () => voi
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="register-plan-selection__overlay" onClick={(event) => {
+    <div className="register-plan-selection__overlay" data-lock-page-scroll onClick={(event) => {
       if (event.target === event.currentTarget && submittingPlanId === null) onClose?.();
     }}>
     <section className="subscription-plans register-plan-selection" role="dialog" aria-modal="true" aria-labelledby="register-plan-selection-title">

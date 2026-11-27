@@ -55,15 +55,7 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
   ];
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      setCurrentImageIndex(0);
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
+    if (isOpen) setCurrentImageIndex(0);
   }, [isOpen]);
 
   if (!isOpen || !product) return null;
@@ -81,7 +73,7 @@ export default function NearbyProductDetailModal({ product, isOpen, onClose }) {
   };
 
   return (
-    <div className="np-modal-overlay" onClick={onClose}>
+    <div className="np-modal-overlay" data-lock-page-scroll onClick={onClose}>
       <div className="np-modal" onClick={(e) => e.stopPropagation()}>
         <button className="np-modal__close" onClick={onClose}>
           <X size={20} />

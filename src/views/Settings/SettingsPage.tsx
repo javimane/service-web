@@ -276,12 +276,12 @@ export default function SettingsPage() {
   const handleDeleteAccount = () => {
     if (isSubscriptionActive) return;
     showAlert({
-      title: "Eliminar cuenta",
+      title: "Dar de baja la cuenta",
       message:
-        "Estás por eliminar tu cuenta. Se borrará toda tu información y no podrás recuperar tus datos. ¿Estás seguro de que deseás continuar?",
+        "Si tenés una cuenta profesional o ya hiciste compras, tu cuenta se desactivará y se conservará el historial de ventas y compras. Podés reactivarla al volver a iniciar sesión. Las cuentas de comprador sin compras pueden eliminarse definitivamente. El contenido retirado del perfil profesional se pierde.",
       type: "warning",
       showCancel: true,
-      confirmText: "Sí, eliminar cuenta",
+      confirmText: "Confirmar baja",
       cancelText: "Cancelar",
       onConfirm: async () => {
         setIsDeleting(true);
@@ -291,7 +291,7 @@ export default function SettingsPage() {
           if (response?.serverError) {
             throw new Error(response.serverError);
           }
-          showSuccess("Tu cuenta ha sido eliminada exitosamente.");
+          showSuccess(response?.data?.message ?? "La baja de tu cuenta se completó.");
           await logout();
           router.replace(ROUTES.home);
         } catch (error) {
@@ -662,7 +662,7 @@ export default function SettingsPage() {
                   ) : isDeleting ? (
                     "Eliminando..."
                   ) : (
-                    "Eliminar cuenta"
+                    "Dar de baja la cuenta"
                   )}
                 </button>
               </div>

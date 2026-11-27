@@ -10,6 +10,13 @@ const loginNavigation = vi.hoisted(() => ({
   replace: vi.fn(),
   back: vi.fn(),
 }));
+const oauthSession = vi.hoisted(() => ({
+  user: null as { id: string } | null,
+  status: null as { is_professional: boolean; requires_personal_name: boolean } | null,
+}));
+vi.mock("../Register/RegisterPlanSelection", () => ({
+  default: () => <div>Elegí tu plan profesional</div>,
+}));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     ...loginNavigation,
@@ -18,8 +25,8 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("../../context/AuthContext", () => ({
   useAuth: () => ({
-    user: null,
-    sessionStatus: null,
+    user: oauthSession.user,
+    sessionStatus: oauthSession.status,
     hasProfessionalSubscription: false,
     subscriptionPlan: null,
     refreshUser: vi.fn(),
@@ -60,11 +67,30 @@ const signInWithPasswordMock = vi.mocked(supabase.auth.signInWithPassword);
 
 describe("LoginPage", () => {
   beforeEach(() => {
+    oauthSession.user = null;
+    oauthSession.status = null;
+    localStorage.clear();
     loginNavigation.push.mockClear();
     loginNavigation.replace.mockClear();
     window.history.replaceState({}, "", "/login");
   });
   const renderWithRouter = (ui) => render(ui);
+
+  it.each([false, true])("continúa el registro de Google con is_professional=%s", async (isProfessional) => {
+    window.history.replaceState({}, "", "/login?google_signup=1");
+    oauthSession.user = { id: "google-user" };
+    oauthSession.status = { is_professional: isProfessional, requires_personal_name: true };
+
+    render(<LoginPage />);
+
+    if (isProfessional) {
+      expect(await screen.findByText("Elegí tu plan profesional")).toBeInTheDocument();
+      expect(loginNavigation.push).not.toHaveBeenCalled();
+    } else {
+      await waitFor(() => expect(loginNavigation.replace).toHaveBeenCalledWith("/completar-perfil"));
+    }
+    expect(localStorage.getItem("show_setup_on_login")).toBe("true");
+  });
 
   it("se renderiza correctamente", () => {
     renderWithRouter(React.createElement(LoginPage));

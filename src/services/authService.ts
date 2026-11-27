@@ -110,6 +110,18 @@ export const authService = {
       body: JSON.stringify(data),
     }),
 
+  verifyRegistrationEmail: (data: { email: string; token: string }) =>
+    apiClient(API_ENDPOINTS.auth.register + "/verify-email", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  resendRegistrationEmail: (email: string) =>
+    apiClient(API_ENDPOINTS.auth.register + "/resend-email", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
   /**
    * @route POST /api/auth/login
    * @auth No

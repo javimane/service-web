@@ -57,6 +57,10 @@
   margin: 0;
 }
 
+.register-form .role-option {
+  padding: var(--space-4);
+}
+
 .register-form .form-row {
   gap: var(--space-3);
 }
