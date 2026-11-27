@@ -11,9 +11,9 @@ export default function AuthModal() {
   const { authMode, closeAuth, openAuth } = useAuthModal();
   const { user } = useAuth();
 
-  // Auto-close modal when user logs in
+  // Registration closes after confirmation or plan selection.
   useEffect(() => {
-    if (user && authMode) {
+    if (user && authMode === "login") {
       closeAuth();
     }
   }, [user, authMode, closeAuth]);

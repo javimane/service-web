@@ -2,7 +2,7 @@
 import GastronomicCheckbox from "@/components/GastronomicCheckbox/GastronomicCheckbox";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { EmailConfirmationForm } from "@/views/AuthConfirm/EmailConfirmationPage";
 import { ROUTES } from "../../routes/paths";
 import { authService } from "../../services/authService";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
@@ -26,7 +26,6 @@ export default function RegisterPage({
   onClose,
   onSwitchMode,
 }: RegisterPageProps) {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -38,6 +37,7 @@ export default function RegisterPage({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [requirementsAction, setRequirementsAction] = useState<
@@ -146,14 +146,8 @@ export default function RegisterPage({
           : {}),
       });
 
-      if (role === "professional" && typeof window !== "undefined") {
-        localStorage.setItem("show_plans_on_login", "true");
-      } else if (typeof window !== "undefined") {
-        localStorage.setItem("show_setup_on_login", "true");
-      }
-
-      onClose?.();
-      router.push("/auth/email-confirm?email=" + encodeURIComponent(formData.email.trim()));
+      setConfirmationEmail(formData.email.trim());
+      setFormData((data) => ({ ...data, password: "", confirmPassword: "" }));
     } catch (err: any) {
       setAuthError(
         "Error inesperado al intentar crear la cuenta: " + err.message,
@@ -208,6 +202,10 @@ export default function RegisterPage({
     if (action === "register") void submitRegistration();
     if (action === "google") startGoogleRegister();
   };
+
+  if (confirmationEmail) {
+    return <EmailConfirmationForm registrationEmail={confirmationEmail} inModal={isModal} onClose={onClose} />;
+  }
 
   const formCard = (
     <div className="login-card register-card">

@@ -12,9 +12,19 @@ import RegisterPlanSelection from "@/views/Register/RegisterPlanSelection";
 import "./EmailConfirmationPage.css";
 
 export default function EmailConfirmationPage() {
-  const router = useRouter();
   const params = useSearchParams();
-  const registrationEmail = params.get("email");
+  return <EmailConfirmationForm params={params} registrationEmail={params.get("email")} />;
+}
+
+type EmailConfirmationFormProps = {
+  registrationEmail: string | null;
+  params?: URLSearchParams;
+  inModal?: boolean;
+  onClose?: () => void;
+};
+
+export function EmailConfirmationForm({ registrationEmail, params, inModal, onClose }: EmailConfirmationFormProps) {
+  const router = useRouter();
   const { refreshSession, setUser, setSessionStatus } = useAuth();
   const [email, setEmail] = useState(registrationEmail || "");
   const [code, setCode] = useState("");
@@ -22,7 +32,9 @@ export default function EmailConfirmationPage() {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [cooldown, setCooldown] = useState(60);
+  const [now, setNow] = useState(Date.now);
+  const [resendAt, setResendAt] = useState(() => !params && registrationEmail ? now + 60_000 : 0);
+  const cooldown = Math.max(0, Math.ceil((resendAt - now) / 1000));
   const [showPlans, setShowPlans] = useState(false);
   const verificationRequest = useRef<Promise<unknown> | null>(null);
   const finished = useRef(false);
@@ -44,9 +56,9 @@ export default function EmailConfirmationPage() {
     finished.current = true;
     localStorage.setItem("was_logged_in", "true");
     if (status.is_professional) {
-      localStorage.setItem("show_plans_on_login", "true");
       setShowPlans(true);
     } else {
+      onClose?.();
       router.replace(ROUTES.accountSetup);
     }
   };
@@ -55,11 +67,12 @@ export default function EmailConfirmationPage() {
 
   useEffect(() => {
     if (cooldown <= 0) return;
-    const timer = window.setTimeout(() => setCooldown((value) => value - 1), 1000);
+    const timer = window.setTimeout(() => setNow(Date.now()), 1000);
     return () => window.clearTimeout(timer);
-  }, [cooldown]);
+  }, [cooldown, now]);
 
   useEffect(() => {
+    if (!params) return;
     const tokenHash = params.get("token_hash");
     const type = params.get("type");
     const fragment = new URLSearchParams(window.location.hash.slice(1));
@@ -113,15 +126,23 @@ export default function EmailConfirmationPage() {
   };
 
   const resend = async () => {
-    if (busy.current || pending || resending || cooldown > 0) return;
+    if (busy.current || pending || resending || Date.now() < resendAt) return;
+    const destination = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destination)) {
+      setError("Ingresá un correo válido para reenviar el código.");
+      return;
+    }
     busy.current = true;
     setResending(true);
     setError("");
     setMessage("");
     try {
-      await authService.resendRegistrationEmail(email.trim());
-      setMessage("Revisá tu bandeja de entrada y el correo no deseado. Usá el código más reciente.");
-      setCooldown(60);
+      await authService.resendRegistrationEmail(destination);
+      setCode("");
+      setMessage(`Si tu cuenta todavía está pendiente, vas a recibir un código nuevo en ${destination}. Revisá también el correo no deseado.`);
+      const sentAt = Date.now();
+      setNow(sentAt);
+      setResendAt(sentAt + 60_000);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No se pudo reenviar el correo.");
     } finally {
@@ -131,7 +152,7 @@ export default function EmailConfirmationPage() {
   };
 
   return (
-    <main className="email-confirmation">
+    <div className={`email-confirmation${inModal ? " email-confirmation--embedded" : ""}`}>
       <div className="email-confirmation__card">
         <BrandLogo />
         <h1>Confirmá tu correo</h1>
@@ -147,11 +168,15 @@ export default function EmailConfirmationPage() {
           <p>Ingresá el correo y el código de verificación para confirmar tu cuenta.</p>
         )}
         <form className="email-confirmation__form" onSubmit={verify}>
-          <label htmlFor="confirmation-email">Correo electrónico</label>
-          <input id="confirmation-email" type="email" autoComplete="email" required value={email}
-            onChange={(event) => setEmail(event.target.value)} disabled={pending || resending} />
+          {(params || !registrationEmail) && (
+            <>
+              <label htmlFor="confirmation-email">Correo electrónico</label>
+              <input id="confirmation-email" type="email" autoComplete="email" required value={email}
+                onChange={(event) => setEmail(event.target.value)} disabled={pending || resending} />
+            </>
+          )}
           <label htmlFor="confirmation-code">Código de confirmación</label>
-          <input id="confirmation-code" inputMode="numeric" autoComplete="one-time-code" required
+          <input id="confirmation-code" inputMode="numeric" autoComplete="one-time-code" required autoFocus={!params}
             minLength={6} maxLength={10} value={code}
             onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
             disabled={pending || resending} />
@@ -169,10 +194,13 @@ export default function EmailConfirmationPage() {
             </button>
           </div>
         </form>
-        <p>Si ya confirmaste tu correo, <Link href={ROUTES.login}>ingresá para continuar</Link>.</p>
-        <Link href={ROUTES.home}>Volver al inicio</Link>
+        <p>Si ya confirmaste tu correo, <Link href={ROUTES.login} onClick={onClose}>ingresá para continuar</Link>.</p>
+        <Link href={ROUTES.home} onClick={onClose}>Volver al inicio</Link>
       </div>
-      {showPlans && <RegisterPlanSelection onClose={() => router.replace(`${ROUTES.dashboard}?view=subscription`)} />}
-    </main>
+      {showPlans && <RegisterPlanSelection onClose={() => {
+        onClose?.();
+        router.replace(`${ROUTES.dashboard}?view=subscription`);
+      }} />}
+    </div>
   );
 }

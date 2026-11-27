@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   verify: vi.fn(),
   verifyHash: vi.fn(),
+  resend: vi.fn(),
   refresh: vi.fn(),
   setUser: vi.fn(),
   setStatus: vi.fn(),
@@ -32,7 +33,7 @@ vi.mock("@/services/authService", () => ({
   authService: {
     verifyRegistrationEmail: mocks.verify,
     verifyOtp: mocks.verifyHash,
-    resendRegistrationEmail: vi.fn(),
+    resendRegistrationEmail: mocks.resend,
     syncOAuth: vi.fn(),
     logout: vi.fn(),
   },
@@ -80,6 +81,18 @@ describe("Email signup confirmation", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("El código venció.");
     expect(mocks.replace).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Confirmar y continuar" })).toBeEnabled();
+  });
+
+  it("allows a resend on the standalone page and clears the previous code", async () => {
+    mocks.resend.mockResolvedValue({ ok: true });
+    render(<EmailConfirmationPage />);
+    const code = screen.getByLabelText("Código de confirmación");
+    fireEvent.change(code, { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "Reenviar código" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("buyer@example.com");
+    expect(mocks.resend).toHaveBeenCalledWith("buyer@example.com");
+    expect(code).toHaveValue("");
+    expect(screen.getByRole("button", { name: /Reenviar en/ })).toBeDisabled();
   });
 
   it("exchanges a confirmation link once under StrictMode", async () => {

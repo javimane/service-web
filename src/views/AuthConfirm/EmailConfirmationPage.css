@@ -23,6 +23,19 @@
   font-size: var(--text-2xl);
 }
 
+.email-confirmation--embedded,
+.email-confirmation--embedded .email-confirmation__card {
+  padding: 0;
+  min-height: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.email-confirmation--embedded .email-confirmation__card h1 {
+  padding-inline-end: var(--space-10);
+}
+
 .email-confirmation__card p {
   line-height: 1.6;
 }
@@ -96,7 +109,7 @@
 }
 
 @media (max-width: 640px) {
-  .email-confirmation__card {
+  .email-confirmation:not(.email-confirmation--embedded) .email-confirmation__card {
     padding: var(--space-4);
   }
 }

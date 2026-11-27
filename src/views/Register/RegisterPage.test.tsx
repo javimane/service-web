@@ -33,7 +33,13 @@ vi.mock("../../context/AuthContext", () => ({
     subscriptionPlan: null,
     refreshUser: vi.fn(),
     refreshSession: vi.fn(),
+    setUser: vi.fn(),
+    setSessionStatus: vi.fn(),
     logout: vi.fn(),
+  }),
+  normalizeSessionPayload: (response: { sessionStatus: unknown }) => ({
+    nextUser: { id: "new-user" },
+    nextSessionStatus: response.sessionStatus,
   }),
 }));
 
@@ -41,6 +47,7 @@ vi.mock("../../services/authService", () => ({
   authService: {
     register: vi.fn().mockResolvedValue({ token: "token-123" }),
     login: vi.fn().mockRejectedValue(new Error("skip auto login")),
+    verifyRegistrationEmail: vi.fn(),
   },
 }));
 
@@ -245,17 +252,20 @@ describe("RegisterPage", () => {
         acceptedTerms: true,
       });
     });
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith(
-      "/auth/email-confirm?email=juan%40obsidian.pro",
-    ));
+    expect(await screen.findByLabelText("Código de confirmación")).toBeInTheDocument();
   });
 
   it.each(["normal", "professional"])(
-    "envía a confirmar el código como %s sin iniciar sesión antes de verificar el email",
+    "confirma el código como %s en el mismo registro y sigue con la sesión iniciada",
     async (role) => {
       router.push.mockClear();
+      router.replace.mockClear();
       vi.mocked(authService.login).mockClear();
-      render(<RegisterPage />);
+      vi.mocked(authService.verifyRegistrationEmail).mockResolvedValueOnce({
+        sessionStatus: { is_professional: role === "professional" },
+      });
+      const onClose = vi.fn();
+      render(<RegisterPage isModal onClose={onClose} />);
       fireEvent.change(screen.getByPlaceholderText("Ej. Juan"), {
         target: { value: "Juan" },
       });
@@ -284,14 +294,25 @@ describe("RegisterPage", () => {
           within(requirements).getByRole("button", { name: "Continuar" }),
         );
       }
-      await waitFor(() => expect(router.push).toHaveBeenCalledWith(
-        "/auth/email-confirm?email=juan%40example.com",
-      ));
+      const code = await screen.findByLabelText("Código de confirmación");
+      expect(screen.getByText("Código de verificación enviado")).toBeInTheDocument();
+      expect(screen.getByText("juan@example.com")).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+      expect(router.push).not.toHaveBeenCalled();
+      fireEvent.change(code, { target: { value: "001234" } });
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar y continuar" }));
+      if (role === "professional") {
+        expect(await screen.findByText("Selección de planes")).toBeInTheDocument();
+        expect(onClose).not.toHaveBeenCalled();
+      } else {
+        await waitFor(() => expect(router.replace).toHaveBeenCalledWith(ROUTES.accountSetup));
+        expect(onClose).toHaveBeenCalledOnce();
+      }
+      expect(authService.verifyRegistrationEmail).toHaveBeenCalledWith({
+        email: "juan@example.com",
+        token: "001234",
+      });
       expect(authService.login).not.toHaveBeenCalled();
-      expect(screen.queryByText("Selección de planes")).not.toBeInTheDocument();
-      expect(localStorage.getItem("show_setup_on_login")).toBe("true");
-      if (role === "professional")
-        expect(localStorage.getItem("show_plans_on_login")).toBe("true");
     },
   );
 });
