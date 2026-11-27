@@ -197,10 +197,15 @@ export function EmailConfirmationForm({ registrationEmail, params, inModal, onCl
         <p>Si ya confirmaste tu correo, <Link href={ROUTES.login} onClick={onClose}>ingresá para continuar</Link>.</p>
         <Link href={ROUTES.home} onClick={onClose}>Volver al inicio</Link>
       </div>
-      {showPlans && <RegisterPlanSelection onClose={() => {
-        onClose?.();
-        router.replace(`${ROUTES.dashboard}?view=subscription`);
-      }} />}
+      {showPlans && (
+        <RegisterPlanSelection
+          onActivated={onClose ?? (() => setShowPlans(false))}
+          onClose={() => {
+            onClose?.();
+            router.replace(`${ROUTES.dashboard}?view=subscription`);
+          }}
+        />
+      )}
     </div>
   );
 }

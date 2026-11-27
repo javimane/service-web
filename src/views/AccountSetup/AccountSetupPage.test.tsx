@@ -66,6 +66,21 @@ describe("AccountSetupPage", () => {
     vi.mocked(updateProfileAction).mockResolvedValue({ data: {} } as any);
   });
 
+  it("espera la confirmación del plan pago y abre el alta profesional en la misma página", async () => {
+    auth.sessionStatus = { is_professional: true, subscription: { status: "pending", plan: "standard" } };
+    const { rerender } = render(<AccountSetupPage subscriptionReturn />);
+    expect(screen.getByRole("heading", { name: "Estamos verificando tu suscripción" })).toBeInTheDocument();
+    expect(getProfileAction).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Actualizar estado" }));
+    await waitFor(() => expect(auth.refreshSession).toHaveBeenCalledOnce());
+    auth.sessionStatus = { is_professional: true, subscription: { status: "active", plan: "standard" } };
+    rerender(<AccountSetupPage subscriptionReturn />);
+
+    expect(await screen.findByRole("heading", { name: "Prepará tu perfil profesional" })).toBeInTheDocument();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
   it("exige guardar una dirección antes de avanzar al paso de facturación", async () => {
     vi.mocked(commerceService.getUserAddresses)
       .mockResolvedValueOnce([])

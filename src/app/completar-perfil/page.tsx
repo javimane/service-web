@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function CompleteProfileRoute() {
-  return <AccountSetupPage />;
+export default async function CompleteProfileRoute({
+  searchParams,
+}: {
+  searchParams: Promise<{ suscripcion?: string | string[] }>;
+}) {
+  const { suscripcion } = await searchParams;
+  return <AccountSetupPage subscriptionReturn={suscripcion === "regreso"} />;
 }

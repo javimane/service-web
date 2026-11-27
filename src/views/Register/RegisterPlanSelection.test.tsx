@@ -58,11 +58,15 @@ describe("subscription plan selection", () => {
       expect(localStorage.getItem("show_setup_on_login")).toBe("true");
       return { is_professional: true };
     });
-    render(<RegisterPlanSelection />);
+    const onClose = vi.fn();
+    const onActivated = vi.fn();
+    render(<RegisterPlanSelection onClose={onClose} onActivated={onActivated} />);
     await choosePlan("Gratuito");
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(ROUTES.accountSetup));
     expect(mocks.createProfessional).toHaveBeenCalledTimes(1);
     expect(mocks.refreshSession).toHaveBeenCalledTimes(1);
+    expect(onActivated).toHaveBeenCalledOnce();
+    expect(onClose).not.toHaveBeenCalled();
     expect(localStorage.getItem("show_setup_on_login")).toBe("true");
   });
 
@@ -70,7 +74,7 @@ describe("subscription plan selection", () => {
     render(<RegisterPlanSelection />);
     await choosePlan(name);
     await waitFor(() => expect(mocks.redirect).toHaveBeenCalledWith("https://www.mercadopago.com.ar/subscription"));
-    expect(mocks.createSubscription).toHaveBeenCalledWith({ email: "persona@example.com", planId });
+    expect(mocks.createSubscription).toHaveBeenCalledWith({ email: "persona@example.com", planId, continueOnboarding: true });
   });
 
   it("does not proceed when activating the free plan fails", async () => {

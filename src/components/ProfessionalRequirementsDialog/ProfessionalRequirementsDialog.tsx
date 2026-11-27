@@ -43,7 +43,7 @@ export default function ProfessionalRequirementsDialog({
         <h3 className="professional-requirements__subtitle">CBU requerido</h3>
         <ul className="professional-requirements__list">
           <li>
-            Monotributistas y responsables inscriptos: el CBU debe estar a nombre
+            Personas físicas: el CBU debe estar a nombre
             de la misma persona.
           </li>
           <li>

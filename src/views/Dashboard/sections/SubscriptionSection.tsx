@@ -2,6 +2,7 @@
 import { useRef, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ROUTES } from "@/routes/paths";
 import {
   Crown,
@@ -119,6 +120,7 @@ const statusIcons: Record<DisplaySubscriptionStatus, typeof Check> = {
 };
 
 export default function SubscriptionSection() {
+  const router = useRouter();
   const { sessionStatus, refreshSession } = useAuth();
   const [showPlans, setShowPlans] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -263,11 +265,20 @@ export default function SubscriptionSection() {
 
   const activatePlan = async (planId: string) => {
     setSubmittingPlanId(planId);
+    const continueOnboarding = Boolean(sessionStatus && !sessionStatus.company_name?.trim() && !sessionStatus.subscription);
     try {
       if (planId === "free" || planId === "gratuito") {
         const token = await getAccessToken();
-        await createProfessionalMeAction({ token });
+        const result = await createProfessionalMeAction({ token });
+        if (result?.serverError || !result?.data) {
+          throw new Error(result?.serverError || "No se pudo activar el plan gratuito.");
+        }
+        if (continueOnboarding) localStorage.setItem("show_setup_on_login", "true");
         await refreshSession();
+        if (continueOnboarding) {
+          router.push(ROUTES.accountSetup);
+          return;
+        }
         showFeedback(
           "success",
           "Plan gratuito activado correctamente. ¡Bienvenido!",
@@ -288,16 +299,23 @@ export default function SubscriptionSection() {
         const response = await createMercadoPagoSubscriptionAction({
           email: sessionStatus?.email || "",
           planId: mpPlanId,
+          ...(continueOnboarding && { continueOnboarding: true }),
         });
 
         if (response?.data?.initPoint) {
-          window.open(response.data.initPoint, "_blank");
+          if (continueOnboarding) {
+            localStorage.setItem("show_setup_on_login", "true");
+            window.location.assign(response.data.initPoint);
+          } else {
+            window.open(response.data.initPoint, "_blank");
+          }
         } else {
           console.error("No se recibió link de pago", response);
         }
       }
     } catch (error) {
       console.error("Error al procesar suscripción:", error);
+      showFeedback("error", error instanceof Error ? error.message : "No se pudo activar el plan.");
     } finally {
       setSubmittingPlanId(null);
     }

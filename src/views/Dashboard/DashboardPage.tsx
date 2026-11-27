@@ -85,6 +85,18 @@ export default function DashboardPage() {
   const [isVideosModalOpen, setIsVideosModalOpen] = useState(false);
   const routeView = searchParams.get("view");
 
+  useEffect(() => {
+    if (
+      (!routeView || routeView === "subscription") &&
+      sessionStatus?.is_professional &&
+      sessionStatus.subscription?.status === "active" &&
+      !sessionStatus.company_name?.trim() &&
+      localStorage.getItem("show_setup_on_login") === "true"
+    ) {
+      router.replace(ROUTES.accountSetup);
+    }
+  }, [routeView, router, sessionStatus]);
+
   const { data: myProfessional } = useQuery({
     queryKey: ["professional-me", professionalId],
     queryFn: async () => {

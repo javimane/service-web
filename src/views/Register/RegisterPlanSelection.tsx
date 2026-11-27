@@ -24,7 +24,10 @@ import ProfessionalRequirementsDialog from "../../components/ProfessionalRequire
 import "../Dashboard/sections/SubscriptionSection.css";
 import "./RegisterPlanSelection.css";
 
-export default function RegisterPlanSelection({ onClose }: { onClose?: () => void }) {
+export default function RegisterPlanSelection({ onClose, onActivated }: {
+  onClose?: () => void;
+  onActivated?: () => void;
+}) {
   const router = useRouter();
   const { refreshSession, user, sessionStatus } = useAuth();
   const [plans, setPlans] = useState(staticPlans);
@@ -81,8 +84,7 @@ export default function RegisterPlanSelection({ onClose }: { onClose?: () => voi
         localStorage.setItem("show_setup_on_login", "true");
         // Mark setup before refreshing: activating the professional also enables verification notices.
         await refreshSession();
-        onClose?.();
-        router.refresh();
+        (onActivated ?? onClose)?.();
         router.push(ROUTES.accountSetup);
         return;
       }
@@ -102,6 +104,7 @@ export default function RegisterPlanSelection({ onClose }: { onClose?: () => voi
       const response = await createMercadoPagoSubscriptionAction({
         email,
         planId: mpPlanId,
+        continueOnboarding: true,
       });
 
       const checkoutUrl = subscriptionCheckoutUrl(response?.data);

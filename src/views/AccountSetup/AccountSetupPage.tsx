@@ -5,7 +5,7 @@ import IdentityVerificationQr from "@/components/IdentityVerificationQr/Identity
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { sileo } from "sileo";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, ShieldCheck } from "lucide-react";
 import Navbar from "@/components/Navbar/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { getProfileAction, updateProfileAction } from "@/app/actions/profile";
@@ -43,11 +43,11 @@ const stepLabels: Record<SetupStep, string> = {
   done: "Listo",
 };
 
-export default function AccountSetupPage() {
+export default function AccountSetupPage({ subscriptionReturn = false }: { subscriptionReturn?: boolean }) {
   const router = useRouter();
   const { user, sessionStatus, loading, isAgeVerified, refreshSession } = useAuth();
-  const isFullSetup = typeof window !== "undefined" &&
-    localStorage.getItem("show_setup_on_login") === "true";
+  const isFullSetup = subscriptionReturn || (typeof window !== "undefined" &&
+    localStorage.getItem("show_setup_on_login") === "true");
   const personalNameOnly = sessionStatus?.requires_personal_name === true && !isFullSetup;
   const isProfessional = Boolean(
     sessionStatus?.is_professional ||
@@ -55,6 +55,10 @@ export default function AccountSetupPage() {
       sessionStatus?.subscription?.professional_id,
   );
   const steps = isProfessional ? professionalSteps : buyerSteps;
+  const awaitingSubscription = subscriptionReturn && (
+    !isProfessional || sessionStatus?.subscription?.status !== "active" ||
+    !sessionStatus?.subscription?.plan || ["free", "gratuito"].includes(sessionStatus.subscription.plan)
+  );
   const [step, setStep] = useState<SetupStep>("personal");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -64,13 +68,14 @@ export default function AccountSetupPage() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
 
   useEffect(() => {
     if (!loading && !user?.id) router.replace(ROUTES.login);
   }, [loading, router, user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || awaitingSubscription) return;
     let active = true;
     setProfileLoaded(false);
     const savedStep = localStorage.getItem(`account_setup_step_${user.id}`) as SetupStep | null;
@@ -96,7 +101,7 @@ export default function AccountSetupPage() {
       if (active) setProfileLoaded(true);
     });
     return () => { active = false; };
-  }, [user?.id, steps, personalNameOnly, sessionStatus?.company_name]);
+  }, [user?.id, steps, personalNameOnly, sessionStatus?.company_name, awaitingSubscription]);
 
   const currentIndex = Math.max(0, steps.indexOf(step));
 
@@ -119,12 +124,12 @@ export default function AccountSetupPage() {
 
   useEffect(() => {
     if (
-      !loading && profileLoaded && !personalNameOnly && isAgeVerified &&
+      !loading && !awaitingSubscription && profileLoaded && !personalNameOnly && isAgeVerified &&
       (step === "identity" || step === "done") && finishSetup()
     ) {
       sileo.success({ title: "Identidad verificada correctamente" });
     }
-  }, [finishSetup, isAgeVerified, loading, personalNameOnly, profileLoaded, step]);
+  }, [awaitingSubscription, finishSetup, isAgeVerified, loading, personalNameOnly, profileLoaded, step]);
 
   const handleIdentityVerified = async () => {
     const session = await refreshSession();
@@ -219,7 +224,33 @@ export default function AccountSetupPage() {
     }
   };
 
-  if (loading || !user?.id || !profileLoaded) return null;
+  if (loading || !user?.id) return null;
+
+  if (awaitingSubscription) {
+    return (
+      <main className="account-setup">
+        <div className="account-setup__panel">
+          <div className="account-setup__step-heading">
+            <h2>Estamos verificando tu suscripción</h2>
+          </div>
+          <p role="status">Cuando se confirme el plan, vas a poder continuar con los pasos para crear tu cuenta profesional.</p>
+          <div className="account-setup__actions">
+            <button type="button" className="account-setup__button account-setup__button--next"
+              disabled={checkingSubscription}
+              onClick={async () => {
+                setCheckingSubscription(true);
+                try { await refreshSession(); } finally { setCheckingSubscription(false); }
+              }}
+            >
+              {checkingSubscription && <Loader2 size={16} className="btn-spinner" aria-hidden="true" />}
+              {checkingSubscription ? "Consultando…" : "Actualizar estado"}
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+  if (!profileLoaded) return null;
 
   return (
     <>

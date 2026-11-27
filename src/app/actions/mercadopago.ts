@@ -23,6 +23,7 @@ export const getMercadoPagoPlansAction = publicAction.action(
 const createSubscriptionSchema = z.object({
   email: z.string().email(),
   planId: z.string(),
+  continueOnboarding: z.boolean().optional(),
 });
 
 export const createMercadoPagoSubscriptionAction = publicAction
@@ -30,13 +31,12 @@ export const createMercadoPagoSubscriptionAction = publicAction
   .action(async ({ parsedInput, ctx }) => {
     const url = `${env.NEXT_PUBLIC_API_BASE_URL}/api/webhooks/mercadopago/create`;
 
-    // El backend espera backUrl desde el webhook internamente según el usuario,
-    // pero de todas formas le pasamos los datos del body requeridos.
     const response = await axios.post(
       url,
       {
         email: parsedInput.email,
         planId: parsedInput.planId,
+        ...(parsedInput.continueOnboarding && { continueOnboarding: true }),
       },
       {
         headers: ctx.headers,
