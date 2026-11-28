@@ -257,7 +257,10 @@ export default function HomePage() {
               className="home-hero__quick-links"
               ref={quickLinksRef}
               onPointerDown={(event) => {
-                if (event.currentTarget.scrollWidth > event.currentTarget.clientWidth) {
+                if (
+                  event.currentTarget.scrollWidth >
+                  event.currentTarget.clientWidth
+                ) {
                   handleQuickLinksPointerDown(event);
                 }
               }}
@@ -301,24 +304,6 @@ export default function HomePage() {
         <FoodStoresSection provinceId={userProvinceId} />
         <CategoriesSection />
 
-        <PublicationSlider provinceId={userProvinceId} />
-
-        <PromotionsSection
-          userProvince={userProvince}
-          userProvinceId={userProvinceId}
-        />
-        <NearbyServicesSection
-          userProvince={userProvince}
-          userProvinceId={userProvinceId}
-        />
-        <FeaturedSpecialists
-          userProvince={userProvince}
-          userProvinceId={userProvinceId}
-        />
-        <StoresSection
-          userProvince={userProvince}
-          userProvinceId={userProvinceId}
-        />
         <OfferProductsSection
           userProvince={userProvince}
           userProvinceId={userProvinceId}
@@ -327,6 +312,29 @@ export default function HomePage() {
           userProvince={userProvince}
           userProvinceId={userProvinceId}
         />
+
+        <StoresSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+
+        <FeaturedSpecialists
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+
+        <NearbyServicesSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+
+        <PromotionsSection
+          userProvince={userProvince}
+          userProvinceId={userProvinceId}
+        />
+
+        <PublicationSlider provinceId={userProvinceId} />
+
         <ProfessionalReelsSection
           userProvince={userProvince}
           userProvinceId={userProvinceId}
